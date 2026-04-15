@@ -93,11 +93,15 @@ const PRESETS = [
 const XP_CUMUL     = {1:100, 2:205, 3:315, 4:431, 5:553, 6:681, 7:816, 8:958, 9:1107, 10:1264, 11:1428, 12:1599, 13:1777, 14:1963, 15:2157, 16:2359, 17:2570, 18:2790, 19:3019, 20:3258, 21:3504, 22:3757, 23:4017, 24:4285, 25:4561, 26:4845, 27:5137, 28:5438, 29:5748, 30:6067, 31:6393, 32:6727, 33:7069, 34:7419, 35:7777, 36:8143, 37:8518, 38:8902, 39:9295, 40:9697, 41:10107, 42:10525, 43:10951, 44:11385, 45:11827, 46:12277, 47:12736, 48:13204, 49:13681, 50:14167, 51:14661, 52:15163, 53:15673, 54:16191, 55:16717, 56:17251, 57:17794, 58:18346, 59:18907, 60:19477, 61:20052, 62:20632, 63:21217, 64:21807, 65:22402, 66:23002, 67:23608, 68:24220, 69:24838, 70:25462, 71:26086, 72:26710, 73:27334, 74:27958, 75:28582, 76:29206, 77:29830, 78:30454, 79:31078, 80:31702, 81:32326, 82:32950, 83:33574, 84:34198, 85:34822, 86:35446, 87:36070, 88:36694, 89:37318, 90:37942, 91:38566, 92:39190, 93:39814, 94:40438, 95:41062, 96:41686, 97:42310, 98:42934, 99:43558, 100:44182};
 const MISSIONS_CUMUL = {1:1, 2:2, 3:3, 4:4, 5:5, 6:6, 7:7, 8:8, 9:9, 10:11, 11:12, 12:13, 13:15, 14:16, 15:18, 16:19, 17:21, 18:23, 19:25, 20:27, 21:29, 22:31, 23:33, 24:35, 25:37, 26:39, 27:42, 28:44, 29:46, 30:49, 31:52, 32:54, 33:57, 34:60, 35:63, 36:66, 37:69, 38:72, 39:75, 40:78, 41:81, 42:85, 43:88, 44:92, 45:95, 46:99, 47:102, 48:106, 49:110, 50:114, 51:118, 52:122, 53:126, 54:130, 55:134, 56:139, 57:143, 58:147, 59:152, 60:156, 61:161, 62:166, 63:170, 64:175, 65:180, 66:185, 67:189, 68:194, 69:199, 70:204, 71:209, 72:214, 73:219, 74:224, 75:229, 76:234, 77:239, 78:244, 79:249, 80:254, 81:259, 82:264, 83:269, 84:274, 85:279, 86:284, 87:289, 88:294, 89:299, 90:304, 91:309, 92:314, 93:319, 94:324, 95:329, 96:334, 97:339, 98:344, 99:349, 100:354};
 // Calcule XP et missions entre deux niveaux (from → to)
+// Les missions utilisent la table officielle MISSIONS_CUMUL pour éviter les écarts d'arrondi
 function progressionEntre(from, to) {
-    const xpFrom = XP_CUMUL[from] || 0;
-    const xpTo   = XP_CUMUL[to]   || 0;
-    const xp     = Math.max(0, xpTo - xpFrom);
-    return { xp, missions: Math.ceil(xp / 125) };
+    const xpFrom  = XP_CUMUL[from]      || 0;
+    const xpTo    = XP_CUMUL[to]        || 0;
+    const xp      = Math.max(0, xpTo - xpFrom);
+    const mFrom   = MISSIONS_CUMUL[from] || 0;
+    const mTo     = MISSIONS_CUMUL[to]   || 0;
+    const missions = Math.max(0, mTo - mFrom);
+    return { xp, missions };
 }
 
 // === ÉTAT GLOBAL ===
@@ -167,10 +171,22 @@ document.addEventListener("DOMContentLoaded", async () => {
     window._allSkillsDataGlobal = allSkillsData;
     injectToolbar();
     injectDeltaSimulator();
+    adjustBoardHeight();
     order.forEach(m => { if (selectionState[m] > 0) updateDisplay(m); });
     if (urlParams.get('tab') === 'requetes') setTimeout(() => switchTab('requetes'), 50);
 });
 
+
+// ================================================================
+// AJUSTEMENT HAUTEUR DU BOARD
+// ================================================================
+function adjustBoardHeight() {
+    const board = document.getElementById('skills-container');
+    if (!board) return;
+    const top = board.getBoundingClientRect().top;
+    board.style.height = (window.innerHeight - top - 10) + 'px';
+}
+window.addEventListener('resize', adjustBoardHeight);
 
 // ================================================================
 // SIMULATEUR DE PROGRESSION (delta niveau A → niveau B)
@@ -404,11 +420,28 @@ function updateURL() {
     history.replaceState(null,'', location.pathname+(p.toString()?'?'+p:''));
 }
 window.copyShareLink = function() {
-    navigator.clipboard.writeText(location.href).then(()=>{
+    const url = location.href;
+    const showFeedback = () => {
         const b = document.getElementById("btn-share"); if(!b) return;
         const o=b.innerHTML; b.innerHTML="✅ Copié !"; b.style.borderColor="#41d37a"; b.style.color="#41d37a";
         setTimeout(()=>{b.innerHTML=o;b.style.borderColor="";b.style.color="";},2000);
-    }).catch(()=>prompt("Lien :",location.href));
+    };
+    const fallback = () => {
+        // Fallback via un élément textarea temporaire (fonctionne en HTTP)
+        try {
+            const ta = document.createElement("textarea");
+            ta.value = url; ta.style.cssText = "position:fixed;opacity:0;";
+            document.body.appendChild(ta); ta.select();
+            document.execCommand("copy");
+            document.body.removeChild(ta);
+            showFeedback();
+        } catch { prompt("Lien :", url); }
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(showFeedback).catch(fallback);
+    } else {
+        fallback();
+    }
 };
 window.loadPreset = function(p) {
     for (const [m,l] of Object.entries(p.levels)) selectionState[m]=l;

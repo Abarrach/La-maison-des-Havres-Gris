@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connexion – Maison des Havres Gris</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="fade-in">
+  <div id="loginBox">
+    <h2>Connexion</h2>
+    <input type="text" id="username" placeholder="Nom d'utilisateur" onkeypress="handleKeyPress(event)">
+    <input type="password" id="password" placeholder="Mot de passe" onkeypress="handleKeyPress(event)">
+    
+    <button id="loginBtn" onclick="login()">Se connecter</button>
+    
+    <div id="loginError" class="login-error"></div>
+    
+    <p style="margin-top:20px;">
+      <a href="register.html">Créer un compte</a>
+    </p>
+  </div>
+
+<script>
+    async function login() {
+      const userField = document.getElementById("username");
+      const passField = document.getElementById("password");
+      const errorBox = document.getElementById("loginError");
+      const btn = document.getElementById("loginBtn");
+
+      const userVal = userField.value.trim();
+      const passVal = passField.value.trim();
+
+      // Reset de l'erreur
+      errorBox.textContent = "";
+
+      if(!userVal || !passVal) {
+        errorBox.textContent = "Veuillez remplir tous les champs.";
+        // Petit effet de secousse pour indiquer l'erreur
+        shakeBox();
+        return;
+      }
+
+      // On désactive le bouton pour éviter le double-clic
+      btn.disabled = true;
+      btn.textContent = "Vérification...";
+
+      try {
+        // === NOUVELLE LOGIQUE SÉCURISÉE ===
+        // On envoie les données à auth.php au lieu de lire le fichier JSON nous-mêmes
+        const response = await fetch('auth.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user: userVal, password: passVal })
+        });
+
+        // On vérifie si le fichier auth.php existe bien (sinon erreur 404)
+        if (response.status === 404) {
+             throw new Error("Le service d'authentification (auth.php) est introuvable.");
+        }
+
+        const result = await response.json();
+
+        if (result.ok) {
+          // Connexion réussie !
+          // On garde le localStorage pour que les autres pages JS sachent qui on est
+          localStorage.setItem("user", result.user);
+          localStorage.setItem("role", result.role);
+          
+          // Redirection vers le menu
+          window.location.href = "menu.html";
+        } else {
+          // Erreur renvoyée par le PHP (ex: Mauvais mot de passe)
+          errorBox.textContent = result.error || "Identifiants incorrects.";
+          shakeBox();
+          resetBtn();
+        }
+
+      } catch(e) {
+        console.error(e);
+        errorBox.textContent = "Erreur technique : " + e.message;
+        resetBtn();
+      }
+    }
+
+    function resetBtn() {
+        const btn = document.getElementById("loginBtn");
+        btn.disabled = false;
+        btn.textContent = "Se connecter";
+    }
+
+    function shakeBox() {
+        const box = document.getElementById('loginBox');
+        box.style.animation = "none";
+        box.offsetHeight; /* trigger reflow */
+        box.style.animation = "shake 0.4s ease-in-out";
+        // On retire l'animation après coup pour pouvoir la relancer
+        setTimeout(() => box.style.animation = "", 400);
+    }
+
+    // Ajoute cette animation CSS si elle n'existe pas déjà, c'est sympa visuellement
+    const styleSheet = document.createElement("style");
+    styleSheet.innerText = `
+      @keyframes shake {
+        0%, 100% { transform: translate(-50%, -50%); }
+        25% { transform: translate(-52%, -50%); }
+        75% { transform: translate(-48%, -50%); }
+      }
+    `;
+    document.head.appendChild(styleSheet);
+
+    function handleKeyPress(e) {
+      if (e.key === "Enter") login();
+    }
+</script>
+</body>
+</html>

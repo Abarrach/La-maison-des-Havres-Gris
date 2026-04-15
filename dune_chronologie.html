@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>L'Histoire de Dune – Havres Gris</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+
+  <style>
+    /* ═══════════════════════════════════════════════
+       RESET & BASE 
+    ═══════════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    html {
+      scroll-behavior: smooth;
+      background: #050302;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif; 
+      color: #f5deb3;
+      background: radial-gradient(circle at 50% 0%, #2b1d0e 0%, #0e0804 60%, #050302 100%);
+      background-attachment: fixed;
+      overflow-x: hidden;
+      overflow-y: visible;
+      scrollbar-width: thin; 
+      scrollbar-color: #a67c33 #1a1007;
+      margin: 0; padding: 0;
+    }
+
+    body::-webkit-scrollbar { width: 8px; }
+    body::-webkit-scrollbar-track { background: #1a1007; border-left: 1px solid #5c4025; }
+    body::-webkit-scrollbar-thumb { background: #a67c33; border-radius: 4px; }
+    body::-webkit-scrollbar-thumb:hover { background: #f3c44f; }
+
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 0; mix-blend-mode: overlay;
+    }
+
+    .fade-in { animation: globalFadeIn 0.8s ease-out forwards; opacity: 0; }
+    @keyframes globalFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    /* ═══════════════════════════════════════════════
+       HEADER
+    ═══════════════════════════════════════════════ */
+    header {
+      position: fixed; top: 0; left: 0; right: 0; height: 50px;
+      display: flex; justify-content: center; align-items: center;
+      background: rgba(0, 0, 0, 0.95); color: #e8c97a;
+      box-shadow: 0 2px 15px rgba(0,0,0,0.8); z-index: 5000; border-bottom: 1px solid #5c4025;
+    }
+    .site-title { font-weight: bold; font-size: 18px; letter-spacing: 2px; text-transform: uppercase; color: #e8c97a; }
+    .header-controls { position: absolute; right: 20px; display: flex; gap: 10px; align-items: center; }
+    .btn-menu {
+      background: linear-gradient(to bottom, #a67c33, #6b4a25); border: 1px solid #d4a23b;
+      border-radius: 4px; padding: 6px 15px; cursor: pointer; font-weight: bold;
+      color: #1a1007; font-size: 12px; text-transform: uppercase; text-decoration: none;
+    }
+    .btn-menu:hover { transform: scale(1.05); filter: brightness(1.2); }
+
+    /* ═══════════════════════════════════════════════
+       NAVIGATION CHAPITRES
+    ═══════════════════════════════════════════════ */
+    #chapter-switcher {
+      position: fixed; top: 50px; left: 0; right: 0; height: 46px;
+      display: flex; justify-content: center; align-items: center; gap: 8px;
+      background: rgba(8, 5, 2, 0.95); border-bottom: 1px solid #3a2610;
+      z-index: 4000; padding: 0 16px;
+    }
+    .chap-btn {
+      background: transparent; border: 1px solid #3a2610; color: #a67c33;
+      padding: 6px 16px; border-radius: 20px; cursor: pointer; font-weight: 700;
+      transition: all 0.3s; text-transform: uppercase; font-size: 11px;
+      letter-spacing: 1.5px; text-decoration: none; display: inline-flex; align-items: center; gap: 7px;
+      font-family: 'Cinzel', serif;
+    }
+    .chap-btn.active { background: linear-gradient(to bottom, #d4a23b, #8a6e23); color: #1a0505; border-color: #f3c44f; box-shadow: 0 0 12px rgba(205, 164, 52, 0.4); }
+    .chap-pip { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+    /* ═══════════════════════════════════════════════
+       BARRE DE FILTRES ET INFOBULLES
+    ═══════════════════════════════════════════════ */
+    #filter-bar {
+      position: fixed; top: 96px; left: 0; right: 0;
+      background: rgba(5, 3, 2, 0.9); border-bottom: 1px solid #3b2a16;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.8); backdrop-filter: blur(12px);
+      z-index: 3999; padding: 10px 20px;
+      display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap;
+    }
+    .filter-label { font-family: 'Cinzel', serif; color: #7a6040; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
+    
+    .filter-btn {
+      position: relative; 
+      background: transparent; border: 1px solid #3b2a16; color: #a8b2c1;
+      padding: 4px 12px; border-radius: 4px; font-size: 11px; cursor: pointer; transition: 0.2s;
+    }
+    .filter-btn:hover { border-color: #d4a23b; color: #f3c44f; }
+    .filter-btn.active { background: rgba(212, 162, 59, 0.15); border-color: #d4a23b; color: #f3c44f; box-shadow: 0 0 10px rgba(212,162,59,0.3); }
+    .filter-divider { width: 1px; height: 15px; background: #3b2a16; margin: 0 5px; }
+
+    .tooltip-text {
+      visibility: hidden; opacity: 0; position: absolute; top: 135%; left: 50%;
+      transform: translateX(-50%) translateY(-10px); background: #14100a; color: #e0e0e0;
+      text-align: center; padding: 8px 12px; border-radius: 4px; border: 1px solid #cda434;
+      font-size: 11px; font-family: 'Segoe UI', sans-serif; text-transform: none;
+      letter-spacing: normal; width: max-content; max-width: 220px; white-space: normal;
+      z-index: 5000; box-shadow: 0 4px 15px rgba(0,0,0,0.8); transition: all 0.3s ease; pointer-events: none;
+    }
+    .tooltip-text::before {
+      content: ''; position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%);
+      border-width: 5px; border-style: solid; border-color: transparent transparent #cda434 transparent;
+    }
+    .filter-btn:hover .tooltip-text { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ═══════════════════════════════════════════════
+       CONTENU & HERO
+    ═══════════════════════════════════════════════ */
+    .page-content { padding-top: 160px; position: relative; z-index: 2; }
+    .hero { padding: 40px 40px 60px; text-align: center; }
+    .hero-sup { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 7px; color: #5c4025; text-transform: uppercase; margin-bottom: 16px; }
+    .hero-title { font-family: 'Cinzel', serif; font-size: clamp(28px, 5.5vw, 62px); font-weight: 900; color: #e8c97a; letter-spacing: 2px; margin-bottom: 14px; text-shadow: 0 0 40px rgba(212,162,59,0.3); }
+    .hero-title span { color: #f3c44f; text-shadow: 0 0 60px rgba(243,196,79,0.5); }
+    .hero-sub { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 16px; color: #7a6040; max-width: 560px; margin: 0 auto 30px; }
+    .h-line { flex: 1; height: 1px; max-width: 160px; background: linear-gradient(to right, transparent, #5c4025); } .h-line.rev { background: linear-gradient(to left, transparent, #5c4025); }
+
+    /* ═══════════════════════════════════════════════
+       CHAPITRES & SCROLL MARGIN
+    ═══════════════════════════════════════════════ */
+    .chapter { position: relative; scroll-margin-top: 160px; }
+    .chapter-header { position: relative; padding: 50px 50px; text-align: center; overflow: hidden; }
+    .chapter-roman-bg { position: absolute; font-family: 'Cinzel', serif; font-weight: 900; font-size: clamp(120px, 18vw, 220px); color: var(--chap-color); opacity: 0.04; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+    .chapter-badge { display: inline-flex; align-items: center; gap: 9px; font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 4px; color: var(--chap-color); text-transform: uppercase; background: rgba(0,0,0,0.5); border: 1px solid var(--chap-color); border-radius: 20px; padding: 6px 20px; margin-bottom: 10px; }
+    .chapter-title { font-family: 'Cinzel', serif; font-weight: 900; font-size: clamp(18px, 3.2vw, 38px); color: var(--chap-color); letter-spacing: 2px; }
+    
+    .chapter--I  { --chap-color: #6a9fc8; } .chapter--II { --chap-color: #c85530; }
+    .chapter--III{ --chap-color: #d4a23b; } .chapter--IV { --chap-color: #7a8ea8; }
+
+    /* ═══════════════════════════════════════════════
+       CARTES ET SYSTÈME DE DIMMING
+    ═══════════════════════════════════════════════ */
+    .chapter-events { padding: 10px 44px 80px; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 25px; max-width: 1400px; margin: 0 auto; }
+    
+    .event-card { 
+      background: rgba(20, 12, 4, 0.88); border: 1px solid #2a1a08; border-radius: 6px; 
+      overflow: hidden; cursor: pointer; position: relative;
+      transition: all 0.5s ease;
+    }
+    .event-card:hover { transform: translateY(-8px); border-color: var(--chap-color); box-shadow: 0 18px 45px rgba(0,0,0,0.8), 0 0 18px rgba(212,162,59,0.08); }
+    
+    /* ⚠️ LES !IMPORTANT BLINDENT LE FILTRE CONTRE L'ANIMATION DE DÉFILEMENT */
+    .event-card.dimmed {
+        opacity: 0.15 !important; 
+        filter: grayscale(100%) !important; 
+        pointer-events: none !important; 
+        transform: scale(0.95) !important; 
+        border-color: #1a1007 !important;
+    }
+
+    .badge-lvl { position: absolute; top: 10px; right: 10px; padding: 4px 8px; border-radius: 4px; font-family: 'Cinzel', serif; font-size: 9px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; z-index: 10; background: rgba(0,0,0,0.8); border: 1px solid; backdrop-filter: blur(2px); }
+    .badge-lvl-1 { color: #f3c44f; border-color: #d4a23b; }
+    .badge-lvl-2 { color: #a8b2c1; border-color: #7a8ea8; }
+    .badge-lvl-0 { color: #6a9fc8; border-color: #4a7a9c; }
+
+    .card-img-wrap { width: 100%; height: 170px; overflow: hidden; background: #0a0602; position: relative; }
+    .card-img-wrap img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(0.55) sepia(0.5) brightness(0.65); transition: 0.5s; }
+    .event-card:hover .card-img-wrap img { transform: scale(1.08); filter: grayscale(0) sepia(0.1) brightness(0.95); }
+    .card-img-overlay { position: absolute; bottom: 0; left: 0; right: 0; height: 80px; background: linear-gradient(to top, rgba(14,8,3,1) 0%, transparent 100%); }
+    .card-body { padding: 16px 16px 14px; text-align: center; }
+    .card-date { display: block; font-family: 'Cinzel', serif; font-size: 10px; color: var(--chap-color); letter-spacing: 2px; margin-bottom: 8px; }
+    .card-title { font-family: 'Cinzel', serif; font-size: 14px; font-weight: 600; color: #e8c97a; line-height: 1.45; }
+
+    /* ═══════════════════════════════════════════════
+       MODALE DE LECTURE
+    ═══════════════════════════════════════════════ */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); z-index: 10000; justify-content: center; align-items: center; padding: 18px; }
+    .modal-overlay.open { display: flex; animation: fadeModalIn 0.3s ease; }
+    @keyframes fadeModalIn { from { opacity: 0; } to { opacity: 1; } }
+    
+    .hm-box { background: #14100a; border: 2px solid #cda434; width: 800px; max-width: 96%; max-height: 90vh; border-radius: 6px; display: flex; flex-direction: column; box-shadow: 0 0 60px rgba(0,0,0,1); position: relative; }
+    .hm-img-wrap { height: 220px; overflow: hidden; flex-shrink: 0; position: relative; }
+    .hm-img-wrap img { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.65) sepia(0.25); }
+    .hm-img-gradient { position: absolute; bottom: 0; left: 0; right: 0; height: 120px; background: linear-gradient(to top, #14100a, transparent); }
+    .hm-close { position: absolute; top: 15px; right: 15px; font-size: 26px; color: #d4a23b; cursor: pointer; border: none; background: none; transition: 0.2s; z-index: 10; }
+    .hm-close:hover { color: #fff; transform: scale(1.2); }
+    
+    .hm-body { padding: 30px 40px 10px; overflow-y: auto; flex: 1; }
+    .hm-era { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 5px; color: #7a6040; text-transform: uppercase; margin-bottom: 5px; }
+    .hm-date { font-family: 'Cinzel', serif; font-size: 14px; letter-spacing: 2px; color: #d4a23b; margin-bottom: 15px; }
+    .hm-title { font-family: 'Cinzel', serif; font-weight: 900; font-size: 28px; color: #f3c44f; line-height: 1.2; margin-bottom: 20px; border-bottom: 1px solid #3b2a16; padding-bottom: 15px; }
+    .hm-text { font-family: 'Cormorant Garamond', serif; font-size: 19px; line-height: 1.8; color: #ddd; text-align: justify; }
+    
+    .hm-footer { padding: 20px; border-top: 1px solid #1a1007; text-align: center; }
+    .hm-pdf-link { display: inline-block; padding: 12px 30px; background: linear-gradient(to bottom, #d4a23b, #8b6e3b); color: #1a1007; font-weight: bold; border-radius: 4px; text-transform: uppercase; font-size: 12px; letter-spacing: 1.5px; text-decoration: none; transition: 0.2s; }
+    .hm-pdf-link:hover { transform: scale(1.05); filter: brightness(1.2); box-shadow: 0 0 20px rgba(212, 162, 59, 0.5); }
+
+    .site-footer { text-align: center; padding: 40px 20px; border-top: 1px solid #1a1007; }
+    .site-footer p { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 4px; color: #3a2610; text-transform: uppercase; }
+
+    /* Particules */
+    .particles { position: fixed; inset: 0; pointer-events: none; z-index: 1; overflow: hidden; }
+    .particle { position: absolute; border-radius: 50%; bottom: -10px; background: rgba(212,162,59,0.35); animation: drift linear infinite; }
+    @keyframes drift { 0% { transform: translateY(0) translateX(0); opacity: 0; } 10% { opacity: 0.6; } 90% { opacity: 0.15; } 100% { transform: translateY(-110vh) translateX(var(--drift)); opacity: 0; } }
+    .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.7s ease, transform 0.7s ease; }
+    .reveal.in-view { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+
+<body>
+  <div class="particles" id="particles"></div>
+
+  <header>
+    <div class="site-title">Maison des Havres Gris</div>
+    <div class="header-controls">
+      <a href="menu.html" class="btn-menu">Menu Principal</a>
+    </div>
+  </header>
+
+  <nav id="chapter-switcher">
+    <a href="#era-I"   class="chap-btn chap-btn--c1 active"><span class="chap-pip"></span>I · Expansion</a>
+    <a href="#era-II"  class="chap-btn chap-btn--c2"><span class="chap-pip"></span>II · Jihad</a>
+    <a href="#era-III" class="chap-btn chap-btn--c3"><span class="chap-pip"></span>III · Corrino</a>
+    <a href="#era-IV"  class="chap-btn chap-btn--c4"><span class="chap-pip"></span>IV · Dispersion</a>
+  </nav>
+
+  <div id="filter-bar">
+      <span class="filter-label">Implication :</span>
+      <button class="filter-btn active" id="btn-lvl-all" onclick="applyFilter('lvl', 'all')">
+        📚 Tout afficher
+        <span class="tooltip-text">Affiche l'intégralité des 28 chroniques du lore étendu.</span>
+      </button>
+      <button class="filter-btn" id="btn-lvl-1" onclick="applyFilter('lvl', 1)">
+        ⭐ Essentiel
+        <span class="tooltip-text">Les fondations absolues : Jihad Butlérien, création de l'Empire, l'Épice et l'Empereur-Dieu.</span>
+      </button>
+      <button class="filter-btn" id="btn-lvl-2" onclick="applyFilter('lvl', 2)">
+        📘 Important
+        <span class="tooltip-text">L'Essentiel + L'organisation de l'Imperium : Le Landsraad, le CHOM et les Grandes Maisons.</span>
+      </button>
+      
+      <span class="filter-divider"></span>
+      
+      <span class="filter-label">Arcs :</span>
+      <button class="filter-btn" id="btn-arc-holtzman" onclick="applyFilter('arc', 'arc-holtzman')">
+        Holtzman & Origines
+        <span class="tooltip-text">De la colonisation de l'espace à la découverte des ondes Holtzman et la seconde réunification.</span>
+      </button>
+      <button class="filter-btn" id="btn-arc-naissance" onclick="applyFilter('arc', 'arc-naissance')">
+        Naissance Imperium
+        <span class="tooltip-text">Le Jihad Butlérien, l'ascension des Sardaukar, la Guilde Spatiale et le Grand Synode.</span>
+      </button>
+      <button class="filter-btn" id="btn-arc-protecteurs" onclick="applyFilter('arc', 'arc-protecteurs')">
+        Protecteurs & Usurpateurs
+        <span class="tooltip-text">La Grande Convention, Salusa Secundus et la Première Guerre des Assassins.</span>
+      </button>
+      <button class="filter-btn" id="btn-arc-hajus" onclick="applyFilter('arc', 'arc-hajus')">
+        Hajus Corrino
+        <span class="tooltip-text">L'apogée de l'Imperium Padishah jusqu'à l'ère d'Elrood, la chute d'Arrakis et Paul Muad'Dib.</span>
+      </button>
+      <button class="filter-btn" id="btn-arc-atreides" onclick="applyFilter('arc', 'arc-atreides')">
+        L'Imperium Atréides
+        <span class="tooltip-text">La tyrannie de Leto II, la Grande Famine, les non-vaisseaux et la Dispersion.</span>
+      </button>
+  </div>
+
+  <div class="page-content">
+    <section class="hero">
+      <p class="hero-sup">Encyclopaedia Imperium · Havres Gris · d'après A. Odoardi</p>
+      <h1 class="hero-title">L'Histoire de <span>Dune</span></h1>
+      <p class="hero-sub">Sélectionnez un filtre dans la barre ci-dessus pour mettre en lumière les arcs narratifs qui vous intéressent.</p>
+    </section>
+
+    <section class="chapter chapter--I" id="era-I">
+      <div class="chapter-header"><div class="chapter-bg-glow"></div><div class="chapter-roman-bg">I</div><span class="chapter-badge">L'Âge des Étoiles</span><h2 class="chapter-title">L'Ère de l'Expansion</h2></div>
+      <div class="chapter-events">
+        <div class="event-card chapter--I reveal" data-lvl="3" data-arc="arc-origines" onclick="openModal(0)"><div class="card-img-wrap"><img src="images/chronologie/1_petite_diaspora.jpg" onerror="this.src='intro.jpg'" alt=""><div class="card-img-overlay"></div></div><div class="card-body"><span class="card-date">14 100 B.G. — 13 004 B.G.</span><span class="card-title">La Petite Diaspora</span></div></div>
+        <div class="event-card chapter--I reveal" data-lvl="3" data-arc="arc-origines" onclick="openModal(1)"><div class="card-img-wrap"><img src="images/chronologie/2_empire_dix_mondes.jpg" onerror="this.src='intro.jpg'" alt=""><div class="card-img-overlay"></div></div><div class="card-body"><span class="card-date">12 200 B.G. — 11 105 B.G.</span><span class="card-title">Empire des Dix Mondes</span></div></div>
+        <div class="event-card chapter--I reveal" data-lvl="3" data-arc="arc-holtzman" onclick="openModal(2)"><div class="card-img-wrap"><img src="images/chronologie/3_age_sombre.jpg" onerror="this.src='intro.jpg'" alt=""><div class="card-img-overlay"></div></div><div class="card-body"><span class="card-date">11 105 B.G. — 7 556 B.G.</span><span class="card-title">Le Grand Âge Sombre & Holtzman</span></div></div>
+        <div class="event-card chapter--I reveal" data-lvl="3" data-arc="arc-holtzman" onclick="openModal(3)"><div class="card-img-wrap"><img src="images/chronologie/4_reunification.jpg" onerror="this.src='intro.jpg'" alt=""><div class="card-img-overlay"></div></div><div class="card-body"><span class="card-date">7 556 B.G. — 5 022 B.G.</span><span class="card-title">Les Guerres de Réunification</span></div></div>
+        <div class="event-card chapter--I reveal" data-lvl="3" data-arc="arc-holtzman" onclick="openModal(4)"><div class="card-img-wrap"><img src="images/chronologie/5_premier_age_or.jpg" onerror="this.src='intro.jpg'" alt=""><div class="card-img-overlay"></div></div><div class="card-body"><span class="card-date">5 022 B.G. — 3 678 B.G.</span><span class="card-title">Empire 10 000 Mondes & 1er Âge d'Or</span></div></div>
+        <div class="event-card chapter--I reveal" data-lvl="3" data-arc="arc-holtzman" onclick="openModal(5)"><div class="card-img-wrap"><img src="images/chronologie/6_peste_silicium.jpg" onerror="this.src='intro.jpg'" alt=""><div class="card-img-overlay"></div></div><div class="card-body"><span class="card-date">3 678 B.G. — 2 000 B.G.</span><span class="card-title">Peste du Silicium — Petit Âge Sombre</span></div></div>
+        <div class="event-card chapter--I reveal" data-lvl="2" data-arc="arc-holtzman" onclick="openModal(6)"><div class="card-img-wrap"><div class="badge-lvl badge-lvl-2">Important</div><img src="images/chronologie/7_seconde_reunification.jpg" onerror="this.src='intro.jpg'" alt=""><div class="card-img-overlay"></div></div><div class="card-body"><span class="card-date">2 000 B.G. — 200 B.G.</span><span class="card-title">2nde Réunification & 2nd Âge d'Or</span></div></div>
+      </div>
+    </section>
+
+    <section class="chapter chapter--II" id="era-II">
+      <div class="chapter-header"><div class="chapter-bg-glow"></div><div class="chapter-roman-bg">II</div><span class="chapter-badge">Le Feu Purificateur</span><h2 class="chapter-title">Le Jihad Butlérien</h2></div>
+      <div class="chapter-events">
+        <div class="event-card chapter--II reveal" data-lvl="1" data-arc="arc-naissance" onclick="openModal(7)"><div class="card-img-wrap"><div class="badge-lvl badge-lvl-1">⭐ Essentiel</div><img src="images/chronologie/8_komos_jihad.jpg" onerror="this.src='intro.jpg'" alt=""><div class="card-img-overlay"></div></div><div class="card-body"><span class="card-date">230 B.G. — 200 B.G.</span><span class="card-title">Komos (Ix) — L'Étincelle du Jihad</span></div></div>
+        <div class="event-card chapter--II reveal" data-lvl="1" data-arc="arc-naissance" onclick="openModal(8)"><div class="card-img-wrap"><div class="badge-lvl badge-lvl-1">⭐ Essentiel</div><img src="images/chronologie/9_jihad_butlerien.jpg" onerror="this.src='intro.jpg'" alt=""><div class="card-img-overlay"></div></div><div class="card-body"><span class="card-date">200 B.G. — 182 B.G.</span><span class="card-title">Le Jihad de Jehanne Butler</span></div></div>
+        <div class="event-card chapter--II reveal" data-lvl="1" data-arc="arc-naissance" onclick="openModal(9)"><div class="card-img-wrap"><div class="badge-lvl badge-lvl-1">⭐ Essentiel</div><img src="images/chronologie/10_fin_jihad_holtzman.jpg" onerror="this.src='intro.jpg'" alt=""><div class="card-img-overlay"></div></div><div class="card-body"><span class="card-date">182 B.G. — 108 B.G.</span><span class="card-title">Fin du Jihad — Chute d'Holtzman</span></div></div>
+        <div class="event-card chapter--II reveal" data-lvl="1" data-arc="arc-naissance" onclick="openModal(10)"><div class="card-img-wrap"><div class="badge-lvl badge-lvl-1">⭐ Essentiel</div><img src="images/chronologie/11_sardaukar.jpg" onerror="this.src='intro.jpg'" alt=""><div class="card-img-overlay"></div></div><div class="card-body"><span class="card-date">108 B.G. — 88 B.G.</span><span class="card-title">Salusa Secundus & Sardaukars</span></div></div>
+        <div class="event-card chapter--II reveal" data-lvl="1" data-arc="arc-naissance" onclick="openModal(11)"><div class="card-img-wrap"><div class="badge-lvl badge-lvl-1">⭐ Essentiel</div><img src="images/chronologie/12_bataille_corrin.jpg" onerror="this.src='intro.jpg'" alt=""><div class="card-img-overlay"></div></div><div class="card-body"><span class="card-date">88 B.G.</span><span class="card-title">Bataille de Corrin — Fondation Corrino</span></div></div>
+        <div class="event-card chapter--II reveal" data-lvl="1" data-arc="arc-naissance" onclick="openModal(12)"><div class="card-img-wrap"><div class="badge-lvl badge-lvl-1">⭐ Essentiel</div><img src="images/chronologie/13_guilde_epice.jpg" onerror="this.src='intro.jpg'" alt=""><div class="card-img-overlay"></div></div><div class="card-body"><span class="card-date">84 B.G. — 12 B.G.</span><span class="card-title">Guilde Spatiale & Découverte de l'Épice</span></div></div>
+      </div>
+    </section>
+
+    <section class="chapter chapter--III" id="era-III">
+      <div class="chapter-header"><div class="chapter-bg-glow"></div><div class="chapter-roman-bg">III</div><span class="chapter-badge">L'Âge d'Or de l'Épice</span><h2 class="chapter-title">L'Hégémonie Corrino</h2></div>
+      <div class="chapter-events">
+        <div class="event-card chapter--III reveal" data-lvl="1" data-arc="arc-naissance" onclick="openModal(13)"><div class="card-img-wrap"><div class="badge-lvl badge-lvl-1">⭐ Essentiel</div><img src="images/chronologie/14_synode_chom.jpg" onerror="this.src='intro.jpg'" alt=""><div class="card-img-overlay"></div></div><div class="card-body"><span class="card-date">12 B.G. — 5 B.G.</span><span class="card-title">Le Grand Synode Financier & le CHOM</span></div></div>
+        <div class="event-card chapter--III reveal" data-lvl="2" data-arc="arc-protecteurs" onclick="openModal(14)"><div class="card-img-wrap"><div class="badge-lvl badge-lvl-2">Important</div><img src="images/chronologie/15_alternance_corrino.jpg" onerror="this.src='intro.jpg'" alt=""><div class="card-img-overlay"></div></div><div class="card-body"><span class="card-date">104 A.G. — 369 A.G.</span><span class="card-title">Alternance des Maisons Corrino</span></div></div>
+        <div class="event-card chapter--III reveal" data-lvl="2" data-arc="arc-protecteurs" onclick="openModal(15)"><div class="card-img-wrap"><div class="badge-lvl badge-lvl-2">Important</div><img src="images/chronologie/16_grande_convention.jpg" onerror="this.src='intro.jpg'" alt=""><div class="card-img-overlay"></div></div><div class="card-body"><span class="card-date">330 A.G. — 337 A.G.</span><span class="card-title">La Grande Convention de Menemtahe II</span></div></div>
+        <div class="event-card chapter--III reveal" data-lvl="2" data-arc="arc-protecteurs" onclick="openModal(16)"><div class="card-img-wrap"><div class="badge-lvl badge-lvl-2">Important</div><img src="images/chronologie/17_salusa_prison.jpg" onerror="this.src='intro.jpg'" alt=""><div class="card-img-overlay"></div></div><div class="card-body"><span class="card-date">388 A.G.</span><span class="card-title">Salusa Secundus — Planète-Prison</span></div></div>
+        <div class="event-card chapter--III reveal" data-lvl="3" data-arc="arc-protecteurs" onclick="openModal(17)"><div class="card-img-wrap"><img src="images/chronologie/18_premiere_guerre_assassins.jpg" onerror="this.src='intro.jpg'" alt=""><div class="card-img-overlay"></div></div><div class="card-body"><span class="card-date">~3 367 A.G. — 3 375 A.G.</span><span class="card-title">Première Guerre des Assassins</span></div></div>
+        <div class="event-card chapter--III reveal" data-lvl="3" data-arc="arc-hajus" onclick="openModal(18)"><div class="card-img-wrap"><img src="images/chronologie/19_imperium_padishahs.jpg" onerror="this.src='intro.jpg'" alt=""><div class="card-img-overlay"></div></div><div class="card-body"><span class="card-date">7 426 A.G. — 8 008 A.G.</span><span class="card-title">L'Imperium des Padishahs & les Atréides</span></div></div>
+        <div class="event-card chapter--III reveal" data-lvl="2" data-arc="arc-hajus" onclick="openModal(19)"><div class="card-img-wrap"><div class="badge-lvl badge-lvl-2">Important</div><img src="images/chronologie/20_ere_elrood.jpg" onerror="this.src='intro.jpg'" alt=""><div class="card-img-overlay"></div></div><div class="card-body"><span class="card-date">8 708 A.G. — 10 191 A.G.</span><span class="card-title">L'Ère Elrood — Hajus Elrood Corrino</span></div></div>
+        <div class="event-card chapter--III reveal" data-lvl="0" data-arc="arc-hajus" onclick="openModal(20)"><div class="card-img-wrap"><div class="badge-lvl badge-lvl-0">Romans</div><img src="images/chronologie/21_chute_arrakis_muaddib.jpg" onerror="this.src='intro.jpg'" alt=""><div class="card-img-overlay"></div></div><div class="card-body"><span class="card-date">10 191 A.G. — 10 196 A.G.</span><span class="card-title">Chute d'Arrakis & Avènement de Muad'Dib</span></div></div>
+        <div class="event-card chapter--III reveal" data-lvl="1" data-arc="arc-atreides" onclick="openModal(21)"><div class="card-img-wrap"><div class="badge-lvl badge-lvl-1">⭐ Essentiel</div><img src="images/chronologie/22_regne_empereur_dieu.jpg" onerror="this.src='intro.jpg'" alt=""><div class="card-img-overlay"></div></div><div class="card-body"><span class="card-date">10 219 A.G. — 13 724 A.G.</span><span class="card-title">Le Règne de l'Empereur-Dieu Leto II</span></div></div>
+      </div>
+    </section>
+
+    <section class="chapter chapter--IV" id="era-IV">
+      <div class="chapter-header"><div class="chapter-bg-glow"></div><div class="chapter-roman-bg">IV</div><span class="chapter-badge">Le Sentier d'Or</span><h2 class="chapter-title">Famine & Dispersion</h2></div>
+      <div class="chapter-events">
+        <div class="event-card chapter--IV reveal" data-lvl="0" data-arc="arc-atreides" onclick="openModal(22)"><div class="card-img-wrap"><div class="badge-lvl badge-lvl-0">Romans</div><img src="images/chronologie/23_mort_leto.jpg" onerror="this.src='intro.jpg'" alt=""><div class="card-img-overlay"></div></div><div class="card-body"><span class="card-date">13 724 A.G.</span><span class="card-title">La Chute — Mort de l'Empereur-Dieu</span></div></div>
+        <div class="event-card chapter--IV reveal" data-lvl="1" data-arc="arc-atreides" onclick="openModal(23)"><div class="card-img-wrap"><div class="badge-lvl badge-lvl-1">⭐ Essentiel</div><img src="images/chronologie/24_famine_effondrement.jpg" onerror="this.src='intro.jpg'" alt=""><div class="card-img-overlay"></div></div><div class="card-body"><span class="card-date">13 724 A.G. — 14 132 A.G.</span><span class="card-title">La Grande Famine & Effondrement</span></div></div>
+        <div class="event-card chapter--IV reveal" data-lvl="1" data-arc="arc-atreides" onclick="openModal(24)"><div class="card-img-wrap"><div class="badge-lvl badge-lvl-1">⭐ Essentiel</div><img src="images/chronologie/25_non_vaisseaux_ix.jpg" onerror="this.src='intro.jpg'" alt=""><div class="card-img-overlay"></div></div><div class="card-body"><span class="card-date">14 132 A.G.</span><span class="card-title">Les Non-Vaisseaux Ixiens</span></div></div>
+        <div class="event-card chapter--IV reveal" data-lvl="1" data-arc="arc-atreides" onclick="openModal(25)"><div class="card-img-wrap"><div class="badge-lvl badge-lvl-1">⭐ Essentiel</div><img src="images/chronologie/26_grande_dispersion.jpg" onerror="this.src='intro.jpg'" alt=""><div class="card-img-overlay"></div></div><div class="card-body"><span class="card-date">~14 200 A.G.</span><span class="card-title">La Grande Dispersion</span></div></div>
+        <div class="event-card chapter--IV reveal" data-lvl="2" data-arc="arc-atreides" onclick="openModal(26)"><div class="card-img-wrap"><div class="badge-lvl badge-lvl-2">Important</div><img src="images/chronologie/27_univers_fragmente.jpg" onerror="this.src='intro.jpg'" alt=""><div class="card-img-overlay"></div></div><div class="card-body"><span class="card-date">Après la Dispersion</span><span class="card-title">L'Univers Fragmenté</span></div></div>
+        <div class="event-card chapter--IV reveal" data-lvl="2" data-arc="arc-atreides" onclick="openModal(27)"><div class="card-img-wrap"><div class="badge-lvl badge-lvl-2">Important</div><img src="images/chronologie/28_tresor_rakis.jpg" onerror="this.src='intro.jpg'" alt=""><div class="card-img-overlay"></div></div><div class="card-body"><span class="card-date">15 525 A.G.</span><span class="card-title">Le Trésor de Rakis</span></div></div>
+      </div>
+    </section>
+
+    <footer class="site-footer"><p>Source : A. Odoardi · Dune Encyclopedia · Havres Gris</p></footer>
+  </div>
+
+  <div id="history-modal" class="modal-overlay" onclick="closeModal()">
+    <div class="hm-box" onclick="event.stopPropagation()">
+      <button class="hm-close" onclick="closeModal()">✕</button>
+      <div class="hm-img-wrap"><img id="hm-img" src="" alt=""><div class="hm-img-gradient"></div></div>
+      <div class="hm-body"><p class="hm-era" id="hm-era"></p><p class="hm-date" id="hm-date"></p><h2 class="hm-title" id="hm-title"></h2><p class="hm-text" id="hm-text"></p></div>
+      <div class="hm-footer"><a id="hm-pdf" href="#" target="_blank" class="hm-pdf-link">📜 &nbsp;Lire le chapitre source (PDF)</a></div>
+    </div>
+  </div>
+<script>
+const PDF_BASE = 'http://havresgris.ddns.net/histoire_de_dune_A-Odoardi.pdf';
+
+const ERAS = [
+  'Chapitre I · L\'Ère de l\'Expansion','Chapitre I · L\'Ère de l\'Expansion','Chapitre I · L\'Ère de l\'Expansion','Chapitre I · L\'Ère de l\'Expansion','Chapitre I · L\'Ère de l\'Expansion','Chapitre I · L\'Ère de l\'Expansion','Chapitre I · L\'Ère de l\'Expansion',
+  'Chapitre II · Le Jihad Butlérien','Chapitre II · Le Jihad Butlérien','Chapitre II · Le Jihad Butlérien','Chapitre II · Le Jihad Butlérien','Chapitre II · Le Jihad Butlérien','Chapitre II · Le Jihad Butlérien',
+  'Chapitre III · L\'Hégémonie Corrino','Chapitre III · L\'Hégémonie Corrino','Chapitre III · L\'Hégémonie Corrino','Chapitre III · L\'Hégémonie Corrino','Chapitre III · L\'Hégémonie Corrino','Chapitre III · L\'Hégémonie Corrino','Chapitre III · L\'Hégémonie Corrino','Chapitre III · L\'Hégémonie Corrino','Chapitre III · L\'Hégémonie Corrino',
+  'Chapitre IV · Famine & Dispersion','Chapitre IV · Famine & Dispersion','Chapitre IV · Famine & Dispersion','Chapitre IV · Famine & Dispersion','Chapitre IV · Famine & Dispersion','Chapitre IV · Famine & Dispersion'
+];
+
+const EVENTS = [
+  {date:'14 100 B.G. — 13 004 B.G.',title:'La Petite Diaspora',page:7,img:'images/chronologie/1_petite_diaspora.jpg',text:'Entre 14 100 et 13 600 B.G., l\'Humanité colonisa méthodiquement le système solaire, fuyant une Terre surpeuplée. En 13 402 B.G., un planétoïde percuta la Terre. Cérès devint alors la nouvelle capitale. Un vaste programme de sauvetage préserva la culture. En 13 004 B.G., Verifax Marktoo découvrit l\'effet de suspension-nullification, ouvrant la voie aux voyages interstellaires.'},
+  {date:'12 200 B.G. — 11 105 B.G.',title:'Empire des Dix Mondes',page:8,img:'images/chronologie/2_empire_dix_mondes.jpg',text:'L\'Humanité colonisa ses premières étoiles sous l\'égide de l\'Empire des Dix Mondes. Le Siège Impérial fut solennellement transféré vers la Terre restaurée. L\'Empire connut une relative prospérité, mais sa fragilité se révéla fatale : une rébellion majeure embrasa Cérès en 11 105 B.G., provoquant la destruction du principal centre névralgique et précipitant l\'Humanité dans les ténèbres.'},
+  {date:'11 105 B.G. — 7 556 B.G.',title:'Le Grand Âge Sombre & Holtzman',page:10,img:'images/chronologie/3_age_sombre.jpg',text:'La destruction de Cérès plongea l\'Humanité dans un isolement mortifère. Ibrahim Vaughn Holtzman, mathématicien de génie transplanté dans une machine, s\'exila en orbite et découvrit les Ondes Holtzman. Traqué en 7 556 B.G., il diffusa sa découverte aux systèmes voisins avant de se mettre en veille, rendant possible la communication instantanée.'},
+  {date:'7 556 B.G. — 5 022 B.G.',title:'Les Guerres de Réunification',page:12,img:'images/chronologie/4_reunification.jpg',text:'Si les Ondes Holtzman rompirent le silence, l\'Humanité s\'engagea dans de brutales Guerres de Réunification. La destruction d\'Ecaz par le feu atomique en fut le paroxysme. La création de Transcom stabilisa les relations. Ladislaus le Grand paracheva cette reconquête en 5 022 B.G., posant les fondations de l\'Empire des Dix Mille Mondes.'},
+  {date:'5 022 B.G. — 3 678 B.G.',title:'Empire 10 000 Mondes & 1er Âge d\'Or',page:13,img:'images/chronologie/5_premier_age_or.jpg',text:'L\'Empire des Dix Mille Mondes inaugura une ère de prospérité commerciale de quatorze siècles. Holtzman réapparut pour transmettre de nouvelles avancées. Cet Âge d\'Or rayonnant prit brutalement fin en 3 678 B.G. lorsqu\'un mal foudroyant, la terrifiante Peste du Silicium, émergea du néant.'},
+  {date:'3 678 B.G. — 2 000 B.G.',title:'Peste du Silicium — Petit Âge Sombre',page:14,img:'images/chronologie/6_peste_silicium.jpg',text:'Ce fléau détruisit méthodiquement les composants électroniques. Le commerce s\'effondra, des systèmes retombèrent dans la barbarie. Pendant seize siècles de Petit Âge Sombre, l\'Humanité lutta pour inventer des matériaux de substitution. L\'espoir renaquit en 2 000 B.G. avec la production de conducteurs organiques.'},
+  {date:'2 000 B.G. — 200 B.G.',title:'2nde Réunification & 2nd Âge d\'Or',page:15,img:'images/chronologie/7_seconde_reunification.jpg',text:'Les nouveaux conducteurs permirent d\'amorcer la Seconde Réunification. Le Landsraad fut fondé pour fédérer les Grandes Maisons. Si l\'on célébra un Second Âge d\'Or, les tensions sociales couvaient. Vers 711 B.G. éclatèrent les premiers pogroms anti-ordinateurs, attisés par l\'Ordre du Bene Gesserit.'},
+  {date:'230 B.G. — 200 B.G.',title:'Komos (Ix) — L\'Étincelle du Jihad',page:18,img:'images/chronologie/8_komos_jihad.jpg',text:'En 205 B.G., sur Komos, Jehanne Butler découvrit que le Directeur Mécanique de l\'hôpital avait provoqué l\'avortement de sa fille. Cette cruauté des intelligences artificielles déclencha une émeute. L\'existence de camps de travail sur Richèse mua instantanément cette révolte en guerre sainte.'},
+  {date:'200 B.G. — 182 B.G.',title:'Le Jihad de Jehanne Butler',page:20,img:'images/chronologie/9_jihad_butlerien.jpg',text:'Le Jihad Butlérien s\'étendit rapidement. Des batailles dantesques libérèrent des systèmes entiers. Cependant, la bataille de Carthagos en 182 B.G. vit la mort tragique de Jehanne Butler. Privée de son leader moral, la croisade bascula dans une folie destructrice absolue.'},
+  {date:'182 B.G. — 108 B.G.',title:'Fin du Jihad — Chute d\'Holtzman',page:20,img:'images/chronologie/10_fin_jihad_holtzman.jpg',text:'Le Jihad annihilait toute trace de technologie. Ibrahim Vaughn Holtzman fut traqué et désigné comme l\'incarnation de la machine pensante. Son lynchage en 108 B.G. marqua la fin du Jihad. Le dogme suprême fut gravé : « Tu ne feras point de machine à l\'image de l\'esprit humain ».'},
+  {date:'108 B.G. — 88 B.G.',title:'Naissance des Sardaukar',page:22,img:'images/chronologie/11_sardaukar.jpg',text:'Reléguée sur la planète infernale de Salusa Secundus, une tribu bannie y forgea une culture martiale brutale. Les conditions environnementales agirent comme un creuset darwinien. De ces survivants émergea l\'ordre militaire impitoyable des Sardaukar, garantissant la suprématie sur les champs de bataille.'},
+  {date:'88 B.G.',title:'La Bataille de Corrin',page:22,img:'images/chronologie/12_bataille_corrin.jpg',text:'Terrifié par les Sardaukar, le Landsraad tenta de les écraser lors de la Bataille de Corrin en 88 B.G. Le commandant Sardaukar, Sheuset Ecevit, triompha et fonda la Maison Corrino. Si l\'héroïsme de Demetrios Atréides valut l\'anoblissement, la désertion d\'Abulurd Harkonnen entraîna leur exil et une haine millénaire.'},
+  {date:'84 B.G. — 12 B.G.',title:'Guilde Spatiale & Découverte de l\'Épice',page:26,img:'images/chronologie/13_guilde_epice.jpg',text:'La Guilde Spatiale se constitua secrètement. En 84 B.G., l\'utilisation du Mélange permit d\'éveiller les capacités de prescience de navigateurs mutés, guidant les vaisseaux à travers les plis de l\'espace. Assurant un monopole absolu, la Guilde se révéla publiquement à l\'Empereur en 12 B.G.'},
+  {date:'12 B.G. — 5 B.G.',title:'Le Grand Synode Financier & le CHOM',page:30,img:'images/chronologie/14_synode_chom.jpg',text:'Jasta Mason, maître de la Guilde, proposa un pacte : un contrôle total sur la logistique en échange de richesses. L\'Empereur convoqua le Grand Synode Financier. De ces négociations émergea le CHOM, cartel qui féodalisa l\'économie et posa les bases d\'une prospérité de cinq siècles.'},
+  {date:'104 A.G. — 369 A.G.',title:'Alternance des Maisons Corrino',page:33,img:'images/chronologie/15_alternance_corrino.jpg',text:'À la mort d\'Elrood I, l\'usurpation du Trône scinda la dynastie en deux branches rivales. Pendant deux cents ans, elles se disputèrent farouchement le Trône. La Maison Atréides, par sa loyauté indéfectible envers la lignée légitime, fut récompensée par l\'octroi de fiefs prestigieux.'},
+  {date:'330 A.G. — 337 A.G.',title:'La Grande Convention de Menemtahe II',page:34,img:'images/chronologie/16_grande_convention.jpg',text:'Conscient du danger des arsenaux atomiques, l\'Empereur convoqua un Synode. La Grande Convention fut ratifiée en 337 A.G. Ce traité autorisait l\'atomique mais bannissait son usage humain. Il réglementait aussi les Guerres des Assassins et codifiait le Kanly, la vendetta légale.'},
+  {date:'388 A.G.',title:'Salusa Secundus — Planète-Prison',page:38,img:'images/chronologie/17_salusa_prison.jpg',text:'L\'Empereur Wallach I décida de capitaliser sur la planète d\'origine des Corrino. Salusa Secundus fut transformée en planète-prison et laboratoire d\'entraînement. Seuls les plus brutaux y survivaient, hissant l\'efficacité des Sardaukar à son apogée et terrorisant l\'univers.'},
+  {date:'~3 367 A.G. — 3 375 A.G.',title:'Première Guerre des Assassins',page:55,img:'images/chronologie/18_premiere_guerre_assassins.jpg',text:'Le conflit entre Harkonnen et Pardee testa la Convention. Rejetant les méthodes propres, les Harkonnen usèrent de poisons de zone. Le "Massacre au Lasgun" sur New Salem anéantit la lignée Pardee, dévoilant la nature profondément sadique et sans scrupule du baronnat Harkonnen.'},
+  {date:'7 426 A.G. — 8 008 A.G.',title:'L\'Imperium des Padishahs & les Atréides',page:74,img:'images/chronologie/19_imperium_padishahs.jpg',text:'Fredhrick al-Hajus renversa une branche décadente, se proclamant premier Empereur "Padishah". Son union avec la Duchesse Hippolute Atréides consolida son pouvoir. Cette lune de miel prit tragiquement fin en 8 008 A.G., lorsque le duc Atréides fut exécuté pour haute trahison.'},
+  {date:'8 708 A.G. — 10 191 A.G.',title:'L\'Ère Elrood — Hajus Elrood Corrino',page:78,img:'images/chronologie/20_ere_elrood.jpg',text:'Les Hajus Elrood Corrino régnèrent 1 500 ans. Shaddam IV fut couronné suite à l\'empoisonnement de son père. Conscient du carcan imposé par la Guilde, il chercha à briser le monopole de l\'Épice via le projet secret Amal, décision fatale qui précipitera la chute des Corrino.'},
+  {date:'10 191 A.G. — 10 196 A.G.',title:'Chute d\'Arrakis & Avènement de Muad\'Dib',page:83,img:'images/chronologie/21_chute_arrakis_muaddib.jpg',text:'Shaddam IV confia Arrakis au Duc Leto Atréides pour préparer sa perte. Trahi, le Duc périt, mais Paul et Jessica s\'échappèrent. Reconnu par les Fremen comme Lisan al-Gaib, Paul Muad\'Dib unit le peuple, écrasa les Sardaukar, s\'empara du Trône et déclencha un Jihad.'},
+  {date:'10 219 A.G. — 13 724 A.G.',title:'Le Règne de l\'Empereur-Dieu Leto II',page:87,img:'images/chronologie/22_regne_empereur_dieu.jpg',text:'Pour sauver l\'Humanité, Leto II fusionna avec les truites des sables. Durant 3 500 ans de « Paix de Leto », il imposa une stagnation forcée. En supprimant les vers géants, il tint l\'univers à sa merci, tout en conditionnant l\'espèce humaine à travers le projet du Sentier d\'Or.'},
+  {date:'13 724 A.G.',title:'La Chute — Mort de l\'Empereur-Dieu',page:93,img:'images/chronologie/23_mort_leto.jpg',text:'Sachant sa mort nécessaire, Leto II se laissa piéger. Siona Atréides et Duncan firent s\'effondrer le pont royal. Le corps de l\'Empereur-Dieu se désagrégea, libérant des millions de truites des sables porteuses de sa conscience — le Dieu Fractionné — qui réensemencèrent Arrakis.'},
+  {date:'13 724 A.G. — 14 132 A.G.',title:'La Grande Famine & Effondrement',page:96,img:'images/chronologie/24_famine_effondrement.jpg',text:'La chute de Leto II disloqua le réseau commercial interstellaire. Sans réserves d\'Épice, l\'approvisionnement s\'arrêta. La Guilde perdit son pouvoir. Des mondes entiers moururent de faim lors de la Grande Famine, plongeant l\'Ancien Empire dans des guerres de ressources désespérées.'},
+  {date:'14 132 A.G.',title:'Les Non-Vaisseaux Ixiens',page:96,img:'images/chronologie/25_non_vaisseaux_ix.jpg',text:'Le salut vint d\'Ix. Les technocrates conçurent la Machine de Navigation, capable de calculer les plis de l\'espace sans Épice ni prescience. Intégrées dans les « Non-Vaisseaux », ces formidables machines brisèrent à tout jamais le monopole commercial de l\'Ancien Empire.'},
+  {date:'~14 200 A.G.',title:'La Grande Dispersion',page:98,img:'images/chronologie/26_grande_dispersion.jpg',text:'S\'emparant des Non-Vaisseaux, des milliards d\'humains s\'envolèrent loin de l\'Ancien Empire. Cet exode massif fut nommé la Grande Dispersion. L\'Humanité se fractionna, accomplissant la promesse du Sentier d\'Or : s\'étendre à un point tel qu\'aucune menace ne pourrait l\'anéantir.'},
+  {date:'Après la Dispersion',title:'L\'Univers Fragmenté',page:98,img:'images/chronologie/27_univers_fragmente.jpg',text:'Une partie de l\'Humanité resta dans l\'Ancien Empire en cendres. Le Landsraad, le CHOM, le Bene Gesserit et la Guilde durent se battre et se métamorphoser pour survivre dans cet univers pauvre, ignorant les évolutions que les Dispersés développaient dans l\'univers profond.'},
+  {date:'15 525 A.G.',title:'Le Trésor de Rakis',page:98,img:'images/chronologie/28_tresor_rakis.jpg',text:'Sur Rakis, des excavations mirent au jour une antique non-chambre souterraine. Elle recelait le Trésor de Rakis : journaux personnels et mémos dictés par Leto II. Cette découverte ralluma la flamme de la connaissance historique et fonda la création de la Dune Encyclopedia.'}
+];
+
+function openModal(i) {
+  const ev = EVENTS[i];
+  document.getElementById('hm-era').textContent  = ERAS[i];
+  document.getElementById('hm-date').textContent = ev.date;
+  document.getElementById('hm-title').textContent= ev.title;
+  document.getElementById('hm-text').textContent = ev.text;
+  const img = document.getElementById('hm-img');
+  img.src = ev.img; img.onerror = () => img.src = 'intro.jpg';
+  document.getElementById('hm-pdf').href = PDF_BASE + '#page=' + ev.page;
+  document.getElementById('history-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('history-modal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', e => { 
+  if (e.key === 'Escape') closeModal(); 
+});
+
+function applyFilter(type, val) {
+  document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+  
+  if (type === 'lvl') {
+    if(val === 'all') document.getElementById('btn-lvl-all').classList.add('active');
+    if(val === 1) document.getElementById('btn-lvl-1').classList.add('active');
+    if(val === 2) document.getElementById('btn-lvl-2').classList.add('active');
+  } else if (type === 'arc') {
+    document.getElementById('btn-' + val).classList.add('active');
+  }
+
+  const cards = document.querySelectorAll('.event-card');
+  cards.forEach(card => {
+    let lvl = parseInt(card.getAttribute('data-lvl'));
+    
+    if (type === 'lvl') {
+      if (val === 'all') {
+        card.classList.remove('dimmed');
+      } else {
+        if (lvl === 0) card.classList.add('dimmed');
+        else if (lvl <= val) card.classList.remove('dimmed');
+        else card.classList.add('dimmed');
+      }
+    } 
+    else if (type === 'arc') {
+      let arc = card.getAttribute('data-arc');
+      if (arc === val) card.classList.remove('dimmed');
+      else card.classList.add('dimmed');
+    }
+  });
+}
+
+/* Particules flottantes */
+(function() {
+  const c = document.getElementById('particles');
+  for (let i = 0; i < 26; i++) {
+    const p = document.createElement('span');
+    p.className = 'particle';
+    const sz = 1 + Math.random() * 2;
+    p.style.cssText = `left:${Math.random()*100}%;width:${sz}px;height:${sz}px;animation-duration:${14+Math.random()*22}s;animation-delay:-${Math.random()*22}s;--drift:${(Math.random()-.5)*120}px;opacity:${0.15+Math.random()*0.4}`;
+    c.appendChild(p);
+  }
+})();
+
+const revObs = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (!entry.isIntersecting) return;
+    const el = entry.target;
+    const siblings = [...el.parentElement.querySelectorAll('.reveal')];
+    el.style.transitionDelay = (siblings.indexOf(el) * 0.08) + 's';
+    el.classList.add('in-view');
+    revObs.unobserve(el);
+  });
+}, { threshold: 0.08 });
+document.querySelectorAll('.reveal').forEach(el => revObs.observe(el));
+
+/* ════════════════════════════════════════════════════════
+   1. FORÇAGE MANUEL AU CLIC POUR ÉVITER LES HOQUETS
+═════════════════════════════════════════════════════════ */
+let isNavigating = false;
+
+document.querySelectorAll('.chap-btn').forEach(btn => {
+  btn.addEventListener('click', function(e) {
+    isNavigating = true; // On fige le radar pendant le trajet !
+    
+    document.querySelectorAll('.chap-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    
+    // Le défilement fluide prend un peu de temps. On libère le radar après 800ms.
+    setTimeout(() => { isNavigating = false; }, 800);
+  });
+});
+
+/* ════════════════════════════════════════════════════════
+   2. SCROLL SPY : ON SURVEILLE LA POSITION DE L'ÉCRAN
+═════════════════════════════════════════════════════════ */
+window.addEventListener('scroll', () => {
+    if (isNavigating) return; // Si on est en train de voyager suite à un clic, le radar est aveugle (zéro hoquet)
+    
+    const scrollPosition = window.scrollY || window.pageYOffset;
+    let currentId = '';
+    const chapters = document.querySelectorAll('.chapter');
+    
+    chapters.forEach(chap => {
+        const rect = chap.getBoundingClientRect();
+        // Si le haut du chapitre est passé sous la barre (avec une petite marge de 200px)
+        if (rect.top <= 200) {
+            currentId = chap.getAttribute('id');
+        }
+    });
+
+    // Cas spécial pour la fin de page
+    if ((window.innerHeight + Math.round(window.scrollY)) >= document.body.offsetHeight - 50) {
+        currentId = chapters[chapters.length - 1].getAttribute('id');
+    }
+
+    // Mise à jour de l'allumage
+    if (currentId) {
+        document.querySelectorAll('.chap-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.getAttribute('href') === `#${currentId}`) {
+                btn.classList.add('active');
+            }
+        });
+    }
+});
+
+// Exécution immédiate au chargement pour allumer le Chapitre 1
+window.dispatchEvent(new Event('scroll'));
+
+</script>
+</body>
+</html>

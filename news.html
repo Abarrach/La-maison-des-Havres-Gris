@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Meta Tags pour la prévisualisation Discord (Open Graph) -->
+    <title>Actualités | Dune: Awakening</title>
+    <meta property="og:title" content="Dune: Awakening - Mise à jour de développement : Le Grand Faiseur" />
+    <meta property="og:description" content="Découvrez Shai-Hulud comme jamais auparavant. Le chevauchement du ver des sables arrive sur Arrakis." />
+    <meta property="og:image" content="https://images.unsplash.com/photo-1509316785289-025f54246b21?auto=format&fit=crop&q=80&w=1200" />
+    <meta property="og:type" content="website" />
+    <meta name="theme-color" content="#c5a059">
+    <meta name="twitter:card" content="summary_large_image">
+
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React and Babel for running JSX in browser -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0a0a0a;
+        }
+        .dune-gradient {
+            background: linear-gradient(to top, #0a0a0a, transparent);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0a0a0a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c5a059;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const App = () => {
+            const [scrolled, setScrolled] = useState(false);
+
+            useEffect(() => {
+                const handleScroll = () => setScrolled(window.scrollY > 50);
+                window.addEventListener('scroll', handleScroll);
+                return () => window.removeEventListener('scroll', handleScroll);
+            }, []);
+
+            useEffect(() => {
+                if (window.lucide) {
+                    window.lucide.createIcons();
+                }
+            });
+
+            return (
+                <div className="min-h-screen text-[#e0e0e0] selection:bg-[#c5a059] selection:text-black">
+                    {/* Navigation Bar */}
+                    <nav className={`fixed w-full z-50 transition-all duration-300 border-b ${scrolled ? 'bg-black/95 border-[#c5a059]/30 py-2' : 'bg-transparent border-transparent py-4'}`}>
+                        <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
+                            <div className="flex items-center gap-8">
+                                <div className="text-2xl font-bold tracking-[0.3em] text-[#c5a059] cursor-pointer">
+                                    DUNE<span className="text-white ml-2 font-light">AWAKENING</span>
+                                </div>
+                                <div className="hidden md:flex gap-6 text-xs font-bold tracking-widest uppercase">
+                                    <a href="#" className="hover:text-[#c5a059] transition-colors">Le Jeu</a>
+                                    <a href="#" className="text-[#c5a059] border-b border-[#c5a059]">Actualités</a>
+                                    <a href="#" className="hover:text-[#c5a059] transition-colors">Médias</a>
+                                    <a href="#" className="hover:text-white transition-colors">Communauté</a>
+                                </div>
+                            </div>
+                            <button className="bg-[#c5a059] text-black px-6 py-2 text-xs font-bold tracking-widest uppercase hover:bg-white transition-all transform hover:scale-105">
+                                S'inscrire à la Beta
+                            </button>
+                        </div>
+                    </nav>
+
+                    {/* Hero Header */}
+                    <div className="relative h-[70vh] w-full overflow-hidden flex items-end">
+                        <div className="absolute inset-0 dune-gradient z-10" />
+                        <div className="absolute inset-0 bg-black/40 z-0" />
+                        
+                        <div className="absolute inset-0 z-[-1]">
+                            <div className="w-full h-full bg-[url('https://images.unsplash.com/photo-1509316785289-025f54246b21?auto=format&fit=crop&q=80&w=2000')] bg-cover bg-center opacity-60 grayscale-[0.3]" />
+                        </div>
+
+                        <div className="relative z-20 max-w-4xl mx-auto px-6 pb-12 text-center md:text-left">
+                            <div className="inline-flex items-center gap-2 bg-[#c5a059] text-black px-3 py-1 text-[10px] font-bold tracking-tighter uppercase mb-6">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg> 
+                                Mise à jour de développement
+                            </div>
+                            <h1 className="text-4xl md:text-7xl font-bold tracking-tight text-white mb-6 leading-none uppercase italic">
+                                Dominez Arrakis : <span className="text-[#c5a059]">Le Chevauchement du Ver</span> arrive
+                            </h1>
+                            <div className="flex flex-wrap justify-center md:justify-start gap-6 text-sm text-gray-400 font-medium">
+                                <span className="flex items-center gap-2 font-bold tracking-widest"><span className="text-[#c5a059]">CALENDRIER:</span> 1er AVRIL 2026</span>
+                                <span className="flex items-center gap-2 font-bold tracking-widest"><span className="text-[#c5a059]">AUTEUR:</span> FUNCOM DEV TEAM</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Article Content */}
+                    <main className="max-w-4xl mx-auto px-6 py-16">
+                        <div className="max-w-none">
+                            <p className="text-xl leading-relaxed text-gray-300 mb-8">
+                                Depuis le début du développement de <span className="text-white font-bold italic">Dune: Awakening</span>, une question brûle les lèvres de chaque membre de la communauté : "Pourrons-nous monter Shai-Hulud ?". Aujourd'hui, après des mois de recherche technique et de collaboration avec les experts de l'univers de Frank Herbert, nous sommes fiers d'annoncer que le chevauchement des vers des sables sera la fonctionnalité centrale de notre prochaine mise à jour majeure.
+                            </p>
+
+                            <div className="my-12 border-l-4 border-[#c5a059] bg-white/5 p-8">
+                                <h2 className="text-2xl font-bold text-white mb-4 uppercase tracking-wider">Le Rituel des Hameçons de Faiseur</h2>
+                                <p className="text-gray-400 leading-relaxed">
+                                    Le chevauchement ne sera pas une simple méthode de transport. C'est un test de volonté suprême. Les joueurs devront fabriquer des <strong>Hameçons de Faiseur en Plasteel</strong> et maîtriser l'art du <em>Thumper</em> (Marteleur) pour attirer un ver sans se faire dévorer. Une fois accroché, vous devrez gérer votre endurance pour rester sur le dos de la créature tout en naviguant à travers les tempêtes de sable.
+                                </p>
+                            </div>
+
+                            <h3 className="text-xl font-bold text-[#c5a059] mt-12 mb-4 uppercase">Un impact tactique sans précédent</h3>
+                            <p className="mb-6 text-gray-300">
+                                Imaginez charger les murs d'une base ennemie avec une guilde entière cramponnée aux écailles d'un ver de 400 mètres. Les structures de tiers 1 et 2 seront instantanément broyées par le passage de la créature. C'est une révolution pour le PvP de faction sur Arrakis.
+                            </p>
+
+                            <div className="grid md:grid-cols-2 gap-6 my-10">
+                                <div className="bg-zinc-900 border border-zinc-800 p-6">
+                                    <div className="text-[#c5a059] font-bold text-lg mb-2 uppercase tracking-tighter">Vitesse de Déplacement</div>
+                                    <p className="text-sm text-gray-400">Voyagez d'un bout à l'autre de la carte en moins de 3 minutes. Le ver ignore les terrains accidentés.</p>
+                                </div>
+                                <div className="bg-zinc-900 border border-zinc-800 p-6">
+                                    <div className="text-[#c5a059] font-bold text-lg mb-2 uppercase tracking-tighter">Capacité de Guilde</div>
+                                    <p className="text-sm text-gray-400">Jusqu'à 24 joueurs peuvent s'accrocher simultanément au même ver de taille moyenne.</p>
+                                </div>
+                            </div>
+
+                            <div className="relative group cursor-pointer overflow-hidden rounded-lg mb-12">
+                                <img 
+                                    src="https://images.unsplash.com/photo-1547234935-80c7145ec969?auto=format&fit=crop&q=80&w=1200" 
+                                    alt="Dune Sandworm Concept" 
+                                    className="w-full h-80 object-cover grayscale group-hover:grayscale-0 transition-all duration-700 transform group-hover:scale-105"
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                                    <div className="w-16 h-16 border-2 border-white rounded-full flex items-center justify-center">
+                                        <div className="w-0 h-0 border-t-[10px] border-t-transparent border-l-[15px] border-l-white border-b-[10px] border-b-transparent ml-1" />
+                                    </div>
+                                </div>
+                                <div className="absolute bottom-4 left-4 text-[10px] font-bold tracking-[0.2em] uppercase bg-black/80 px-3 py-1">Voir le Trailer de gameplay (4K)</div>
+                            </div>
+
+                            <p className="italic text-gray-500 border-t border-zinc-800 pt-8 text-center text-sm">
+                                Préparez-vous à l'éveil. Le désert appartient à ceux qui osent le dompter. 
+                                <br />
+                                <span className="text-[#c5a059] font-bold mt-2 block">MAJ Prévue pour le 1er Avril à 23h59 UTC.</span>
+                            </p>
+                        </div>
+
+                        {/* Share & Prank Reveal */}
+                        <div className="mt-16 pt-8 border-t border-zinc-800 flex flex-col items-center">
+                            <button className="flex items-center gap-3 bg-white text-black font-bold px-8 py-3 rounded-full hover:bg-[#c5a059] transition-all mb-8 uppercase tracking-widest text-xs">
+                                PARTAGER AVEC MA GUILDE
+                            </button>
+                            
+                            <div className="bg-zinc-900/50 p-6 text-center border border-dashed border-zinc-700 w-full">
+                                <h4 className="text-[#c5a059] font-bold uppercase mb-2">Note de développement confidentielle</h4>
+                                <p className="text-xs text-gray-500 uppercase tracking-[0.2em]">
+                                    Attention : L'exposition prolongée aux épices peut causer des hallucinations de type "Poisson d'Avril". 
+                                    <br />Bonne fête à tous les dormeurs d'Arrakis ! 🐟
+                                </p>
+                            </div>
+                        </div>
+                    </main>
+
+                    {/* Footer */}
+                    <footer className="bg-black py-12 px-6 border-t border-zinc-800">
+                        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+                            <div className="text-xl font-bold tracking-[0.3em] text-zinc-600">
+                                DUNE<span className="text-zinc-700 ml-2 font-light">AWAKENING</span>
+                            </div>
+                            <div className="flex gap-8 text-[10px] font-bold uppercase tracking-widest text-zinc-500">
+                                <a href="#" className="hover:text-white">Confidentialité</a>
+                                <a href="#" className="hover:text-white">Conditions</a>
+                                <a href="#" className="hover:text-white">Support</a>
+                                <a href="#" className="hover:text-white transition-colors">Funcom.com</a>
+                            </div>
+                            <div className="text-zinc-700 text-[10px] text-center md:text-right">
+                                © 2026 FUNCOM OSLO AS. ALL RIGHTS RESERVED. <br />
+                                DUNE IS A REGISTERED TRADEMARK OF LEGENDARY.
+                            </div>
+                        </div>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

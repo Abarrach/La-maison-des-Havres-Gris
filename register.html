@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Créer un compte</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="loginBox" class="login-box">
+    <h1>Créer un compte</h1>
+
+    <input id="regUser" placeholder="Nom d'utilisateur">
+    <input id="regPass" placeholder="Mot de passe" type="password">
+
+    <button onclick="register()">Créer le compte</button>
+    <p id="regMsg" class="login-error"></p>
+    <p style="margin-top:12px"><a href="login.html">← Retour à la connexion</a></p>
+  </div>
+
+<script>
+async function register() {
+  const user = document.getElementById('regUser').value.trim();
+  const password = document.getElementById('regPass').value.trim();
+  const msg = document.getElementById('regMsg');
+
+  if (!user || !password) {
+    msg.textContent = "Champs requis.";
+    return;
+  }
+
+  const res = await fetch('save.php', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ action:'addUser', user, password })
+  });
+  const json = await res.json();
+  if (json.ok) {
+    msg.style.color = '#41d37a';
+    msg.textContent = "Compte créé ! Vous pouvez vous connecter.";
+  } else if (json.error === 'exists') {
+    msg.textContent = "Nom déjà pris.";
+  } else {
+    msg.textContent = "Erreur de création.";
+  }
+}
+</script>
+</body>
+</html>

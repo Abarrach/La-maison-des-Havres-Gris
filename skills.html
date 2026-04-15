@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Métiers & Services - Havres Gris</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="skills.css">
+  <link rel="stylesheet" href="skills_additions.css">
+</head>
+<body class="fade-in">
+
+  <header>
+    <div class="title">Métiers & Services</div>
+    <div class="header-controls">
+        <a href="menu.html" class="disconnect">Menu Principal</a>
+    </div>
+  </header>
+
+  <div id="view-switcher" class="view-switcher">
+    <button id="btn-simulateur" class="switch-btn active" onclick="switchTab('simulateur')">Simulateur de Talents</button>
+    <button id="btn-requetes" class="switch-btn" onclick="switchTab('requetes')">Commandes & Services</button>
+  </div>
+
+  <div id="skills-container" class="skills-board"></div>
+
+  <div id="reset-btn-container" style="position:fixed; bottom:10px; right:10px; z-index:100;">
+      <button onclick="resetSkills()" class="epic-btn" style="padding:10px 20px; font-size:12px;">Tout Réinitialiser</button>
+  </div>
+
+  <div id="requests-container" class="board-container" style="display: none;">
+      <div class="board-header">
+          <h2>🛠️ Commandes & Services — Guilde Havres Gris</h2>
+          <p>Postez ici vos demandes de fabrication, raffinage ou acquisition de schémas. Nos Maîtres Fabricants vous répondront.</p>
+      </div>
+
+      <div class="request-form-box">
+
+          <!-- Ligne 1 : Type de demande -->
+          <div style="width:100%;">
+              <select id="request-type">
+                  <option value="" disabled selected>— Sélectionnez le type de demande —</option>
+
+                  <optgroup label="⚙️ Services de Raffinage">
+                      <option value="🌿 Raffinage d'Épice — +10% rendement raffinerie">🌿 Raffinage d'Épice — +10% rendement raffinerie</option>
+                      <option value="⛏️ Fonte de Minerais — +30% lingots en raffinerie">⛏️ Fonte de Minerais — +30% lingots en raffinerie</option>
+                      <option value="⚗️ Raffinage Chimique — +30% rendement raffinerie">⚗️ Raffinage Chimique — +30% rendement raffinerie</option>
+                  </optgroup>
+
+                  <optgroup label="🔨 Services de Craft">
+                      <option value="🎯 Craft Consommables — 25% chance double lot (munitions/soins)">🎯 Craft Consommables — 25% chance double lot (munitions/soins)</option>
+                      <option value="🔩 Craft d'Augmentations — Bonus qualité de statistiques">🔩 Craft d'Augmentations — Bonus qualité de statistiques</option>
+                  </optgroup>
+
+                  <optgroup label="📋 Commandes Spécifiques">
+                      <option value="🛡️ Commande d'Augment — Fabrication d'une augmentation précise">🛡️ Commande d'Augment — Fabrication d'une augmentation précise</option>
+                      <option value="📋 Recherche de Schéma — Fabricateur cherche un plan via recyclage">📋 Recherche de Schéma — Fabricateur cherche un plan via recyclage</option>
+                      <option value="🔄 Don / Échange de Schéma — Partage de plan entre membres">🔄 Don / Échange de Schéma — Partage de plan entre membres</option>
+                  </optgroup>
+              </select>
+          </div>
+
+          <!-- Ligne 2 : Notes (textarea avec compteur) -->
+          <div style="width:100%; position:relative;">
+              <textarea
+                  id="request-notes"
+                  placeholder="Décrivez votre demande en détail : nom de l'objet, niveau souhaité, quantité, emplacement de base, disponibilité... (400 caractères max)"
+                  maxlength="400"
+                  rows="3"
+                  oninput="updateNotesCounter(this)"
+                  style="width:100%; box-sizing:border-box; padding:8px; background:#111; color:#fff; border:1px solid #555; border-radius:4px; font-family:sans-serif; font-size:12px; resize:vertical; line-height:1.5;"
+              ></textarea>
+              <div id="notes-counter" style="text-align:right; font-size:10px; color:#555; margin-top:2px;">0 / 400</div>
+          </div>
+
+          <!-- Ligne 3 : Upload multiple + bouton soumettre -->
+          <div style="width:100%; display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+              <div style="display:flex; flex-direction:column; gap:6px; flex:1;">
+                  <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                      <label for="request-image" class="file-upload-label">📸 Ajouter captures (max 4 — ou Ctrl+V)</label>
+                      <input type="file" id="request-image" accept="image/png, image/jpeg, image/webp" multiple style="display:none;" onchange="handleFileSelect(this)">
+                      <span id="file-name" style="font-size:11px; color:#aaa;"></span>
+                  </div>
+                  <!-- Zone de prévisualisation des images en attente -->
+                  <div id="img-preview-zone" class="img-preview-zone"></div>
+              </div>
+              <button onclick="submitRequest()" class="btn-submit" style="align-self:flex-start; white-space:nowrap;">Poster la demande</button>
+          </div>
+
+      </div><!-- /request-form-box -->
+
+      <div id="requests-list"></div>
+      <button class="history-toggle" onclick="toggleHistory()" id="btn-history">Voir l'historique des services terminés</button>
+      <div id="history-list" style="display: none; margin-top: 15px;"></div>
+  </div>
+
+  <!-- Modal image HD -->
+  <div id="image-modal-overlay" class="modal-overlay" style="display: none;" onclick="closeImageModal()">
+      <div class="modal-content-img" onclick="event.stopPropagation()">
+          <span class="modal-close" onclick="closeImageModal()">&times;</span>
+          <img id="modal-image-hd" src="" alt="Capture HD">
+      </div>
+  </div>
+
+  <script src="skills.js"></script>
+</body>
+</html>

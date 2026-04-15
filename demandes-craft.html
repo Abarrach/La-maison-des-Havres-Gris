@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Requêtes de Fabrication - Havres Gris</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .board-container { max-width: 800px; margin: 40px auto; font-family: Arial, sans-serif; color: #e0e0e0; background: #1a1a1a; padding: 20px; border-radius: 8px; border: 1px solid #333; }
+        .board-header h2 { color: #e6a822; border-bottom: 2px solid #e6a822; padding-bottom: 10px; margin-top: 0; }
+        .request-form-box { background: #2a2a2a; padding: 15px; border-radius: 6px; margin-bottom: 25px; display: flex; flex-wrap: wrap; gap: 10px; }
+        .request-form-box select, .request-form-box input { padding: 8px; background: #111; color: #fff; border: 1px solid #555; border-radius: 4px; flex-grow: 1; }
+        .btn-submit { background: #e6a822; color: #000; font-weight: bold; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; transition: background 0.2s; }
+        .btn-submit:hover { background: #ffc13b; }
+        
+        .req-card { background: #222; border-left: 5px solid #666; padding: 15px; margin-bottom: 15px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
+        .req-info { display: flex; flex-direction: column; gap: 5px; }
+        .req-player { font-weight: bold; color: #41d37a; font-size: 1.1em; }
+        .req-type { color: #e6a822; font-weight: bold; }
+        .req-notes { font-size: 0.9em; color: #aaa; font-style: italic; }
+        
+        .req-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;}
+        .btn-action { padding: 6px 12px; border: none; border-radius: 3px; cursor: pointer; font-weight: bold; color: white; text-decoration: none; font-size: 0.9em; }
+        .status-pending { border-left-color: #ff4747; }
+        .status-progress { border-left-color: #3b82f6; }
+        .status-done { border-left-color: #41d37a; opacity: 0.6; }
+        
+        .btn-take { background: #3b82f6; }
+        .btn-done { background: #41d37a; color: #000; }
+        .btn-map { background: #5c4025; color: #fff; border: 1px solid #e6a822;}
+        .btn-map:hover { background: #e6a822; color: #000; }
+        
+        .nav-link { display: inline-block; margin-bottom: 20px; color: #e6a822; text-decoration: none; font-weight: bold; }
+        .nav-link:hover { text-decoration: underline; }
+        
+        .history-toggle { width: 100%; padding: 10px; background: #333; color: #aaa; border: 1px dashed #555; cursor: pointer; text-align: center; border-radius: 4px; margin-top: 20px; }
+        .history-toggle:hover { background: #444; color: #fff; }
+    </style>
+</head>
+<body class="fade-in">
+
+<div class="board-container">
+    <a href="map.html" class="nav-link">← Retour à la carte</a>
+    
+    <div class="board-header">
+        <h2>🛠️ Panneau des Requêtes : Fabrication</h2>
+        <p>Sollicitez nos Maîtres Fabricants pour optimiser vos rendements.</p>
+    </div>
+
+    <div class="request-form-box">
+        <select id="request-type">
+            <option value="" disabled selected>-- Sélectionnez le besoin --</option>
+            <option value="Raffinage d'Épice (Bonus Rendement)">Raffinage d'Épice (Bonus Rendement)</option>
+            <option value="Fonte de Minerais (Bonus Lingots)">Fonte de Minerais (Bonus Lingots)</option>
+            <option value="Raffinage Chimique">Raffinage Chimique</option>
+            <option value="Craft Munitions/Soins (Chance Double)">Craft Munitions/Soins (Chance Double)</option>
+            <option value="Craft d'Améliorations (Bonus Qualité)">Craft d'Améliorations (Bonus Qualité)</option>
+        </select>
+        <input type="text" id="request-notes" placeholder="Notes (ex: Hangar nord)..." maxlength="50">
+        <button onclick="submitRequest()" class="btn-submit">Poster la demande</button>
+    </div>
+
+    <div id="requests-list"></div>
+    
+    <button class="history-toggle" onclick="toggleHistory()" id="btn-history">Voir l'historique des services terminés</button>
+    
+    <div id="history-list" style="display: none; margin-top: 15px;"></div>
+</div>
+
+<script>
+// --- VÉRIFICATION IDENTITÉ ---
+const currentUser = localStorage.getItem("user");
+if (!currentUser) window.location.href = "login.html";
+
+let allRequests = [];
+let isHistoryVisible = false;
+
+// --- CHARGEMENT DEPUIS LE SERVEUR ---
+async function loadRequests() {
+    try {
+        const res = await fetch("save.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "getRequetes" })
+        });
+        allRequests = await res.json();
+        renderRequests();
+    } catch (e) { console.error("Erreur chargement :", e); }
+}
+
+// --- AFFICHAGE ---
+function renderRequests() {
+    const listActive = document.getElementById('requests-list');
+    const listHistory = document.getElementById('history-list');
+    
+    listActive.innerHTML = "";
+    listHistory.innerHTML = "";
+
+    if (!allRequests || allRequests.length === 0) {
+        listActive.innerHTML = "<p style='text-align:center;color:#aaa;'>Aucune demande enregistrée.</p>";
+        return;
+    }
+
+    // Séparation des demandes actives et terminées
+    const activeReqs = allRequests.filter(r => r.status !== 'done');
+    const doneReqs = allRequests.filter(r => r.status === 'done');
+
+    // Affichage Actives
+    if (activeReqs.length === 0) {
+        listActive.innerHTML = "<p style='text-align:center;color:#aaa;font-style:italic;'>Toutes les demandes ont été traitées.</p>";
+    } else {
+        activeReqs.forEach(req => listActive.appendChild(createCard(req)));
+    }
+
+    // Affichage Historique
+    if (doneReqs.length === 0) {
+        listHistory.innerHTML = "<p style='text-align:center;color:#aaa;'>Aucun historique pour le moment.</p>";
+    } else {
+        doneReqs.forEach(req => listHistory.appendChild(createCard(req)));
+    }
+}
+
+// --- CRÉATION DE LA CARTE HTML ---
+function createCard(req) {
+    const card = document.createElement('div');
+    card.className = `req-card status-${req.status}`;
+
+    let htmlInfo = `
+        <div class="req-info">
+            <span>👤 <span class="req-player">${req.player}</span></span>
+            <span class="req-type">⚙️ Besoin : ${req.type}</span>
+            ${req.notes ? `<span class="req-notes">📝 "${req.notes}"</span>` : ''}
+            ${req.crafterAssigned ? `<span style="font-size:0.85em;color:#3b82f6;">🛠️ Pris en charge par : ${req.crafterAssigned}</span>` : ''}
+        </div>
+    `;
+
+    let htmlActions = `<div class="req-actions">`;
+    
+    // NOUVEAU : Le bouton pointe vers map.html
+    htmlActions += `<a href="map.html?focus=${encodeURIComponent(req.player)}" class="btn-action btn-map">🗺️ Voir Base</a>`;
+    
+    if (req.status !== 'done') {
+        if (req.status === 'pending') {
+            htmlActions += `<button class="btn-action btn-take" onclick="updateStatus('${req.id}', 'progress')">Prendre en charge</button>`;
+        } else if (req.status === 'progress' && req.crafterAssigned === currentUser) {
+            htmlActions += `<button class="btn-action btn-done" onclick="updateStatus('${req.id}', 'done')">Marquer Terminé</button>`;
+        }
+    } else {
+        htmlActions += `<span style="color:#41d37a;font-weight:bold;align-self:center;">✔️ Fait</span>`;
+    }
+
+    htmlActions += `</div>`;
+    card.innerHTML = htmlInfo + htmlActions;
+    return card;
+}
+
+// --- GESTION HISTORIQUE ---
+function toggleHistory() {
+    isHistoryVisible = !isHistoryVisible;
+    const historyDiv = document.getElementById('history-list');
+    const btn = document.getElementById('btn-history');
+    
+    if (isHistoryVisible) {
+        historyDiv.style.display = "block";
+        btn.innerText = "Masquer l'historique";
+    } else {
+        historyDiv.style.display = "none";
+        btn.innerText = "Voir l'historique des services terminés";
+    }
+}
+
+// --- AJOUT ---
+async function submitRequest() {
+    const type = document.getElementById('request-type').value;
+    const notes = document.getElementById('request-notes').value;
+    if (!type) return alert("Sélectionnez un type d'intervention.");
+
+    try {
+        const res = await fetch("save.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "addRequete", user: currentUser, type: type, notes: notes })
+        });
+        const result = await res.json();
+        if (result.ok) {
+            document.getElementById('request-type').value = "";
+            document.getElementById('request-notes').value = "";
+            loadRequests();
+        } else alert("Erreur : " + result.error);
+    } catch (e) { alert("Erreur réseau."); }
+}
+
+// --- MISE À JOUR STATUT ---
+async function updateStatus(id, newStatus) {
+    try {
+        const res = await fetch("save.php", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ action: "updateRequete", id: id, status: newStatus, crafter: currentUser })
+        });
+        const result = await res.json();
+        if (result.ok) loadRequests();
+        else alert("Erreur : " + result.error);
+    } catch (e) { alert("Erreur réseau."); }
+}
+
+document.addEventListener("DOMContentLoaded", loadRequests);
+</script>
+</body>
+</html>

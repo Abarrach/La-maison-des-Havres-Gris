@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Planificateur Landsraad</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../style.css"> 
+    <style>
+        /* === MISE EN PAGE GLOBALE === */
+        body {
+            overflow-y: auto;
+            background-color: #0b0b0b;
+            color: #ccc;
+            font-family: sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* === ENTÊTE === */
+        header {
+            position: relative; height: 80px; display: flex; align-items: center; justify-content: center;
+            background: rgba(0,0,0,0.4); border-bottom: 1px solid #5a4a2a;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); margin-bottom: 20px;
+        }
+        h1 {
+            color: #cda434; font-family: 'Cinzel', serif; margin: 0;
+            text-shadow: 0 0 10px rgba(205, 164, 52, 0.3); font-size: 1.8em; letter-spacing: 2px; text-transform: uppercase;
+        }
+        .btn-menu-abs {
+            position: absolute; right: 30px; top: 50%; transform: translateY(-50%);
+            background: linear-gradient(180deg, #443311 0%, #221100 100%);
+            border: 1px solid #cda434; color: #cda434; padding: 10px 20px;
+            text-decoration: none; font-size: 0.85em; font-weight: bold; border-radius: 4px;
+            transition: all 0.3s ease; text-transform: uppercase;
+        }
+        .btn-menu-abs:hover { 
+            background: #cda434; 
+            color: #000; 
+            border-color: #fff; 
+            box-shadow: 0 0 10px #fff, 0 0 40px #cda434; 
+        }
+
+        /* === CONTENEUR === */
+        .planner-container {
+            display: flex; flex-wrap: wrap; gap: 20px; max-width: 1250px; margin: 0 auto; padding: 0 20px 100px 20px;
+        }
+        .planner-col {
+            flex: 1; min-width: 350px; background: rgba(20, 15, 10, 0.95);
+            padding: 20px; border: 1px solid #5a4a2a; border-radius: 4px; box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            display: flex; flex-direction: column; justify-content: space-between;
+        }
+        .full-width { flex-basis: 100%; margin-top: 10px; }
+        h2 { color: #cda434; border-bottom: 1px solid #5a4a2a; padding-bottom: 10px; margin-top: 0; font-family: 'Cinzel', serif; font-size: 1.2em; }
+        label { color: #aaa; font-size: 0.9em; display: block; margin-top: 10px; margin-bottom: 5px; }
+
+        input[type="text"], select {
+            width: 100%; padding: 10px; background-color: #000; border: 1px solid #555;
+            color: #fff; font-size: 1em; border-radius: 2px; box-sizing: border-box;
+        }
+        input[type="text"]:focus, select:focus { outline: none; border-color: #cda434; }
+
+        .btn-gold {
+            width: 100%; padding: 12px; margin-top: 15px; background: linear-gradient(180deg, #cda434 0%, #8a6e23 100%);
+            border: 1px solid #ffd700; color: #1a0505; font-weight: bold; text-transform: uppercase;
+            cursor: pointer; border-radius: 2px; transition: all 0.2s;
+        }
+        .btn-gold:hover { background: linear-gradient(180deg, #eac154 0%, #9a7e33 100%); box-shadow: 0 0 15px rgba(205, 164, 52, 0.3); }
+
+        .btn-reset-block {
+            background: linear-gradient(180deg, #500 0%, #300 100%); border: 1px solid #800; color: #ffcccc;
+            padding: 12px; width: 100%; text-align: center; margin-top: auto; cursor: pointer;
+            font-weight: bold; font-size: 0.9em; border-radius: 4px; box-sizing: border-box; text-transform: uppercase;
+            transition: all 0.4s ease; /* Transition un peu plus longue pour la douceur */
+        }
+        
+        /* MODIFICATION DU HALO ROUGE ICI */
+        .btn-reset-block:hover { 
+            background: #8a1c1c; /* Rouge plus vif */
+            color: #fff; 
+            border-color: #ff4444; 
+            /* Double ombre pour effet halo large */
+            box-shadow: 0 0 15px rgba(255, 68, 68, 0.6), 0 0 40px rgba(138, 28, 28, 0.4); 
+        }
+
+        #checkboxContainer {
+            background: #111; border: 1px solid #333; padding: 10px; max-height: 300px; overflow-y: auto; margin-top: 5px; margin-bottom: 10px;
+        }
+        .category-header { color: #cda434; font-weight: bold; margin-top: 10px; margin-bottom: 5px; text-transform: uppercase; font-size: 0.8em; border-bottom: 1px solid #333; }
+        .quest-item { margin-bottom: 4px; font-size: 0.9em; display: flex; align-items: center; }
+        .quest-item input { margin-right: 8px; accent-color: #cda434; }
+
+        #participantsList { list-style: none; padding: 0; flex-grow: 1; margin-bottom: 20px; }
+        .participant-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding: 8px 0; }
+        .btn-delete {
+            background: none; border: none; color: #662222; font-weight: bold; font-size: 1.2em; cursor: pointer;
+            padding: 0 5px; transition: color 0.2s; margin-left: 10px;
+        }
+        .btn-delete:hover { color: #ff3333; text-shadow: 0 0 5px #f00; }
+
+        #results-area { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+        .group-card {
+            background: rgba(30, 25, 20, 0.9); 
+            border: 1px solid #cda434; 
+            padding: 15px;
+            border-radius: 4px; 
+            flex: 1 1 30%; 
+            min-width: 320px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        .zone-subblock { margin-top: 10px; padding-left: 10px; border-left: 1px solid #555; }
+        .zone-title { color: #eac154; font-weight: bold; margin-bottom: 4px; font-size: 0.9em; text-transform: uppercase; }
+
+        .summary-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; background: rgba(0,0,0,0.3); }
+        .summary-table th { text-align: left; border-bottom: 1px solid #5a4a2a; color: #cda434; padding: 8px; text-transform: uppercase; font-size: 0.8em; }
+        .summary-table td { border-bottom: 1px solid #333; padding: 8px; color: #ccc; }
+        .stat-badge { display: inline-block; width: 20px; height: 20px; line-height: 20px; border-radius: 50%; text-align: center; font-weight: bold; font-size: 0.8em; }
+        .bg-quest { background: #d35400; color: #fff; }
+        .bg-support { background: #2980b9; color: #fff; }
+
+        /* INFOBULLES (EN DESSOUS) */
+        .tooltip-wrapper { position: relative; display: inline-block; cursor: help; width: 100%; }
+        .tooltip-content {
+            visibility: hidden; width: 280px; background-color: #000; color: #eee; text-align: left;
+            border: 1px solid #cda434; padding: 10px; border-radius: 2px; position: absolute; z-index: 999;
+            top: 100%; margin-top: 8px; /* Position en dessous */
+            left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.2s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.9); font-size: 0.85em; pointer-events: none;
+        }
+        .tooltip-wrapper:hover .tooltip-content { visibility: visible; opacity: 1; }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #5a4a2a; border-radius: 4px; }
+
+        /* POPUPS */
+        #custom-modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(3px);
+            z-index: 10000; justify-content: center; align-items: center;
+        }
+
+        .modal-box {
+            background: #14100a;
+            border: 2px solid #cda434;
+            padding: 25px;
+            width: 400px;
+            max-width: 90%;
+            text-align: center;
+            border-radius: 6px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8), 0 0 10px rgba(205, 164, 52, 0.2);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-title {
+            color: #cda434; font-family: 'Cinzel', serif; font-size: 1.4em;
+            margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px;
+        }
+        
+        .modal-message {
+            color: #ccc; margin-bottom: 25px; font-size: 1em; line-height: 1.5;
+        }
+
+        .modal-buttons {
+            display: flex; gap: 10px; justify-content: center;
+        }
+
+        .modal-btn {
+            padding: 10px 20px; border: 1px solid #555; cursor: pointer;
+            font-weight: bold; text-transform: uppercase; border-radius: 3px;
+            flex: 1; transition: all 0.2s; color: #fff;
+        }
+        
+        .modal-btn-confirm {
+            background: linear-gradient(180deg, #cda434 0%, #8a6e23 100%);
+            border-color: #ffd700; color: #1a0505;
+        }
+        .modal-btn-confirm:hover { background: #eac154; box-shadow: 0 0 10px rgba(205, 164, 52, 0.4); }
+
+        .modal-btn-cancel {
+            background: #333; border-color: #555; color: #aaa;
+        }
+        .modal-btn-cancel:hover { background: #444; color: #fff; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>PLANIFICATEUR LANDSRAAD</h1>
+        <a href="../menu.html" class="btn-menu-abs">RETOUR MENU</a>
+    </header>
+
+    <div class="planner-container">
+        
+        <div class="planner-col">
+            <div>
+                <h2>1. Ajouter un Participant</h2>
+                <label>Nom du joueur :</label>
+                <input type="text" id="playerName" placeholder="...">
+                <label>Rôle :</label>
+                <select id="playerRole" onchange="toggleQuests()">
+                    <option value="quester">Actif (Doit faire ses quêtes)</option>
+                    <option value="support">Support (Aide seulement)</option>
+                </select>
+                <div id="questSelectionArea">
+                    <p style="margin-top:15px; margin-bottom:5px; font-size:0.9em; color:#aaa;">
+                        Cochez les quêtes (<span id="selectedCount" style="color:#cda434;">0/5</span>) :
+                    </p>
+                    <div id="checkboxContainer"></div>
+                </div>
+            </div>
+            <button onclick="addPlayer()" class="btn-gold">AJOUTER AU RAID</button>
+        </div>
+
+        <div class="planner-col">
+            <div>
+                <h2>2. Participants (<span id="count">0</span>)</h2>
+                <p style="font-size:0.8em; color:#666; margin-top:-10px;">La liste se met à jour automatiquement.</p>
+            </div>
+            <ul id="participantsList">
+                <li style="color:#666; font-style:italic;">Aucun participant inscrit...</li>
+            </ul>
+            <button onclick="resetAll()" class="btn-reset-block">⚠️ NOUVELLE SOIRÉE (RAZ)</button>
+        </div>
+
+        <div class="planner-col full-width" style="margin-top:20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #5a4a2a; margin-bottom:15px; padding-bottom:10px;">
+                <h2 style="border:none; margin:0; padding:0;">3. Organisation des Escouades</h2>
+                <button onclick="calculateGroups()" class="btn-gold" style="width:auto; margin:0; padding:8px 25px; font-size:0.9em;">🚀 GÉNÉRER LES GROUPES</button>
+            </div>
+            <div id="results-area"></div>
+            <div id="stats-area" style="margin-top:30px; padding-top:20px; border-top:1px dashed #555;"></div>
+        </div>
+    </div>
+
+    <div id="custom-modal-overlay">
+        <div class="modal-box">
+            <div id="modal-title" class="modal-title">TITRE</div>
+            <div id="modal-message" class="modal-message">Message...</div>
+            <div class="modal-buttons">
+                <button id="modal-btn-cancel" class="modal-btn modal-btn-cancel">Annuler</button>
+                <button id="modal-btn-confirm" class="modal-btn modal-btn-confirm">Confirmer</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="planner.js?v=5"></script>
+</body>
+</html>

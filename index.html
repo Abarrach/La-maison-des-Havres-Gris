@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maison des Havres Gris – Accueil</title>
+  <link rel="stylesheet" href="style.css">
+  <script>
+    function enterLogin() {
+      const intro = document.getElementById("intro-screen");
+      // On lance l'animation de sortie
+      intro.style.animation = "fadeOut 1s forwards";
+      
+      setTimeout(() => {
+        window.location.href = "login.html";
+      }, 1000);
+    }
+  </script>
+</head>
+
+<!-- Ajout de la classe fade-in pour l'apparition progressive -->
+<body class="fade-in">
+  <div id="intro-screen">
+    <img src="intro.jpg" alt="La Maison des Havres Gris">
+    
+    <div id="intro-content">
+      <div id="enterButton" onclick="enterLogin()">Entrer sur Arrakis</div>
+    </div>
+  </div>
+</body>
+</html>

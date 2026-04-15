@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portail Dune - Menu</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Styles spécifiques au Menu - Version Côte à côte */
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #1e130c; /* Fond sombre */
+            font-family: sans-serif;
+        }
+
+        /* === TITRE DE RETOUR === */
+        h1 {
+            color: #cda434;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            font-size: 1.8em;
+            margin-bottom: 50px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+            text-align: center;
+        }
+
+        .cards-container {
+            display: flex;
+            gap: 25px; /* Écart réduit pour le côte à côte */
+            /* On force le côte à côte sur desktop */
+            flex-wrap: nowrap; 
+            justify-content: center;
+            width: 100%;
+            max-width: 1300px; /* Largeur max adaptée pour 4 cartes */
+            padding: 20px;
+        }
+
+        .card {
+            background-color: #0d0705;
+            border-radius: 6px;
+            overflow: hidden;
+            /* Largeur réduite pour faire tenir les 4 sur une ligne */
+            width: 280px; 
+            box-shadow: 0 15px 40px rgba(0,0,0,0.7);
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s;
+            text-decoration: none;
+            border: 1px solid #3d2b16;
+            position: relative;
+            flex-shrink: 0; /* Empêche les cartes de rétrécir */
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 50px rgba(205, 164, 52, 0.15);
+            border-color: #cda434;
+        }
+
+        .card-image {
+            width: 100%;
+            height: 160px; /* Hauteur ajustée pour la nouvelle largeur */
+            object-fit: cover;
+            border-bottom: 3px solid #cda434;
+            filter: sepia(0.2) contrast(1.1);
+            transition: filter 0.3s;
+        }
+        
+        .card:hover .card-image {
+            filter: sepia(0) contrast(1.2);
+        }
+
+        .card-content {
+            padding: 18px; /* Padding réduit */
+            text-align: center;
+            background: linear-gradient(180deg, #1a1008 0%, #0d0705 100%);
+        }
+
+        .card-title {
+            color: #ffcc00;
+            font-size: 1.2em; /* Titre légèrement plus petit */
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .card-desc {
+            color: #999;
+            font-size: 0.85em; /* Texte description plus petit */
+            font-style: italic;
+            line-height: 1.5;
+        }
+
+        /* Icônes SVG */
+        .icon { width: 22px; height: 22px; fill: #cda434; }
+
+        /* --- BOUTON DÉCONNEXION DE RETOUR --- */
+        .logout-btn {
+            margin-top: 60px;
+            
+            /* Style de base identique au bouton "Ajouter" du planificateur */
+            background: linear-gradient(180deg, #2a1a0b 0%, #1a0f05 100%);
+            color: #cda434;
+            border: 1px solid #7c5e2a;
+            
+            padding: 15px 50px; /* Un peu plus large pour le menu */
+            text-transform: uppercase;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            font-size: 1em;
+            letter-spacing: 1px;
+            display: inline-block;
+        }
+
+        .logout-btn:hover {
+            /* Effet relief et lumière au survol */
+            background: linear-gradient(180deg, #3d2610 0%, #2a1a0b 100%);
+            color: #fff;
+            border-color: #cda434;
+            box-shadow: 0 0 15px rgba(205, 164, 52, 0.3);
+            transform: translateY(-3px); /* Le bouton monte légèrement */
+        }
+
+        /* === RESPONSIVE (Optionnel pour mobile) === */
+        @media(max-width: 1200px) {
+            .cards-container {
+                flex-wrap: wrap; /* Sur petits écrans, on autorise le passage à la ligne pour l'ergonomie */
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Choisissez votre destination</h1>
+
+    <div class="cards-container">
+        
+        <a href="map.html" class="card">
+            <img src="cartes.jpg" onerror="this.src='intro.jpg'" alt="Cartographie" class="card-image">
+            <div class="card-content">
+                <div class="card-title">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>
+                    Cartographie
+                </div>
+                <div class="card-desc">Accès aux bases, ressources et stratégie territoriale.</div>
+            </div>
+        </a>
+
+        <a href="skills.html" class="card">
+            <img src="metiers.jpg" onerror="this.src='intro.jpg'" alt="Métiers" class="card-image">
+            <div class="card-content">
+                <div class="card-title">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.58 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                    Métiers
+                </div>
+                <div class="card-desc">Simulateur de talents, optimisations et commandes de craft.</div>
+            </div>
+        </a>
+
+        <a href="planner.html" class="card">
+            <img src="missions.jpg" onerror="this.src='intro.jpg'" alt="Missions" class="card-image">
+            <div class="card-content">
+                <div class="card-title">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M6.92 5c.96 0 1.63.74 2.18 1.66l-2.4 2.4L4.85 7.21C5.23 5.92 6.09 5 6.92 5zM4.17 11.23l1.87-1.87 5.16 5.16L19.1 6.62c.4-.41.41-1.07 0-1.48l-1.3-1.31c-.41-.42-1.07-.42-1.48 0L9.43 10.72 7.11 8.4c.48-1.55 1.57-2.99 3.19-3.79 1.48-.73 3.69-.64 5.37 1.05l1.31 1.31c1.68 1.68 1.76 3.88 1.04 5.36-.81 1.64-2.26 2.74-3.82 3.22l-2.31-2.31-6.72 6.72c-.39.39-1.02.39-1.41 0l-2.83-2.83c-.39-.39-.39-1.02 0-1.41l3.24-4.49z"/></svg>
+                    Missions
+                </div>
+                <div class="card-desc">Planificateur de soirées Landsraad et gestion des groupes.</div>
+            </div>
+        </a>
+
+        <a href="dune_chronologie.html" class="card">
+            <img src="menu_histoire.jpg" onerror="this.src='intro.jpg'" alt="Histoire" class="card-image">
+            <div class="card-content">
+                <div class="card-title">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1zM21 18.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z"/></svg>
+                    Chroniques
+                </div>
+                <div class="card-desc">Quinze mille ans d'histoire de l'univers de Dune (A. Odoardi).</div>
+            </div>
+        </a>
+
+    </div>
+
+    <a href="index.html" class="logout-btn">Déconnexion</a>
+
+</body>
+</html>

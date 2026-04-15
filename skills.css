@@ -1,0 +1,279 @@
+/* === CONFIGURATION GLOBALE === */
+body { overflow: hidden; background: radial-gradient(circle at center, #2b1d0e 0%, #0e0804 100%); }
+
+/* === SÉLECTEUR D'ONGLETS === */
+.view-switcher { text-align: center; margin-top: 70px; margin-bottom: 10px; }
+.switch-btn { background: #1a1007; color: #888; border: 1px solid #3b2a16; padding: 10px 20px; margin: 0 5px; cursor: pointer; font-family: 'Cinzel', serif; font-weight: bold; border-radius: 4px; transition: all 0.3s; }
+.switch-btn:hover { background: #2b1d0e; color: #ccc; }
+.switch-btn.active { background: #5c4025; color: #fff; border-color: #d4a23b; box-shadow: 0 0 10px rgba(212, 162, 59, 0.4); }
+
+/* === CONTENEUR SIMULATEUR === */
+.skills-board { display: flex; gap: 15px; margin-top: 0px; height: calc(100vh - 130px); justify-content: center; padding: 10px 20px 20px 20px; overflow-x: auto; align-items: stretch; scrollbar-width: thin; scrollbar-color: #d4a23b #1a1007; }
+@media (max-width: 1700px) { .skills-board { justify-content: flex-start; } }
+
+/* === COLONNE MÉTIER === */
+.skill-column { flex: 0 0 320px; display: flex; flex-direction: column; height: 100%; background: rgba(20, 12, 5, 0.85); border: 1px solid #3b2a16; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); backdrop-filter: blur(5px); transition: border-color 0.3s; }
+.skill-column:hover { border-color: #5c4025; }
+.skill-header { background: linear-gradient(180deg, #1a1007 0%, #2b1d0e 100%); color: #d4a23b; padding: 15px; text-align: center; font-family: 'Segoe UI', serif; font-weight: bold; font-size: 18px; letter-spacing: 2px; text-transform: uppercase; border-bottom: 2px solid #a67c33; border-radius: 8px 8px 0 0; text-shadow: 0 2px 5px rgba(0,0,0,0.8); flex-shrink: 0; }
+
+/* === ENCART STATISTIQUES === */
+.skill-stats { position: relative; z-index: 20; background: rgba(10, 5, 2, 0.6); padding: 12px; border-bottom: 1px solid #a67c33; box-shadow: inset 0 -10px 20px rgba(0,0,0,0.5); margin-bottom: 10px; min-height: 140px; max-height: 40vh; overflow-y: auto !important; flex-shrink: 0; font-size: 12px; color: #ccc; scrollbar-width: thin; }
+.stat-group-title { font-weight: bold; color: #f3c44f; border-bottom: 1px solid rgba(243, 196, 79, 0.2); margin-top: 8px; margin-bottom: 4px; padding-bottom: 2px; text-transform: uppercase; font-size: 10px; letter-spacing: 1px; }
+.stat-group:first-child .stat-group-title { margin-top: 0; }
+.stat-row { display: flex; justify-content: space-between; padding: 3px 6px; border-radius: 3px; transition: background 0.2s; }
+.stat-row:hover { background: rgba(255, 255, 255, 0.05); }
+.stat-val { font-weight: bold; font-family: monospace; font-size: 12px; }
+
+/* === LISTE DES TALENTS === */
+.skill-list { flex: 1; overflow-y: auto; padding: 10px; padding-bottom: 20px; background: rgba(0, 0, 0, 0.2); }
+.skill-item { position: relative; background: linear-gradient(90deg, #201408 0%, #1a1007 100%); border: 1px solid #3b2a16; border-left: 3px solid #3b2a16; margin-bottom: 8px; padding: 10px; border-radius: 4px; cursor: pointer; opacity: 0.6; filter: grayscale(0.8); transition: all 0.2s ease-in-out; }
+.skill-item:hover { opacity: 0.9; border-color: #7a5c29; filter: grayscale(0); transform: translateX(2px); }
+.skill-item.active { opacity: 1; filter: grayscale(0); background: linear-gradient(90deg, rgba(43, 29, 14, 1) 0%, rgba(60, 40, 15, 0.8) 100%); border-color: #a67c33; border-left-color: #f3c44f; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+.lvl-badge { float: right; background: #000; color: #888; padding: 2px 6px; font-size: 10px; border-radius: 3px; font-weight: bold; border: 1px solid #333; }
+.skill-item.active .lvl-badge { color: #f3c44f; border-color: #a67c33; box-shadow: 0 0 5px rgba(243, 196, 79, 0.2); }
+.talent-name { color: #cbb085; font-weight: bold; font-size: 13px; margin-bottom: 2px; }
+.skill-item.active .talent-name { color: #fff; text-shadow: 0 0 10px rgba(243, 196, 79, 0.3); }
+.talent-desc { font-size: 11px; color: #777; line-height: 1.3; font-style: italic; }
+.skill-item.active .talent-desc { color: #aaa; }
+
+/* === INFOBULLES === */
+.tooltip-container { position: relative; cursor: help; }
+.tooltip-text { visibility: hidden; width: 240px; background-color: #0e0804; color: #f3c44f; text-align: center; border: 1px solid #a67c33; border-radius: 4px; padding: 8px; position: absolute; z-index: 1000; top: 100%; left: 50%; transform: translateX(-50%); margin-top: 8px; font-size: 11px; font-style: normal; box-shadow: 0 5px 15px rgba(0,0,0,0.9); opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+.tooltip-text::after { content: ""; position: absolute; bottom: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: transparent transparent #a67c33 transparent; }
+.tooltip-container:hover .tooltip-text { visibility: visible; opacity: 1; }
+.stat-group:last-child .tooltip-text { top: auto; bottom: 100%; margin-top: 0; margin-bottom: 8px; }
+.stat-group:last-child .tooltip-text::after { top: 100%; bottom: auto; border-color: #a67c33 transparent transparent transparent; }
+
+/* === ICÔNE LANDSRAAD === */
+.skill-item .landsraad-icon { position: absolute !important; top: 8px !important; right: 35px !important; font-size: 14px !important; z-index: 200 !important; overflow: visible !important; opacity: 0.5; }
+.skill-item.active .landsraad-icon { opacity: 1; filter: drop-shadow(0 0 2px gold); }
+.skill-item .landsraad-icon .tooltip-text.landsraad-tip { top: auto !important; bottom: 20px !important; left: auto !important; right: -10px !important; transform: none !important; width: 140px !important; background-color: rgba(10, 20, 10, 0.98) !important; border: 1px solid #41d37a !important; color: #41d37a !important; font-size: 11px !important; font-weight: bold !important; text-align: center !important; padding: 6px !important; border-radius: 4px !important; visibility: hidden; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+.skill-item .landsraad-icon .tooltip-text.landsraad-tip::after { content: ""; position: absolute; top: 100% !important; bottom: auto !important; left: auto !important; right: 15px !important; margin: 0 !important; border-width: 6px !important; border-style: solid !important; border-color: #41d37a transparent transparent transparent !important; }
+.skill-item .landsraad-icon:hover .tooltip-text.landsraad-tip { visibility: visible !important; opacity: 1 !important; }
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #1a1007; }
+::-webkit-scrollbar-thumb { background: #5c4025; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #a67c33; }
+
+/* =========================================
+   STYLE DU PANNEAU REQUÊTES
+   ========================================= */
+
+.board-container { max-width: 800px; margin: 0 auto 40px auto; color: #e0e0e0; background: rgba(20, 12, 5, 0.85); padding: 20px; border-radius: 8px; border: 1px solid #3b2a16; box-shadow: 0 10px 30px rgba(0,0,0,0.5); backdrop-filter: blur(5px); height: calc(100vh - 130px); overflow-y: auto; }
+.board-header h2 { color: #d4a23b; border-bottom: 2px solid #a67c33; padding-bottom: 10px; margin-top: 0; font-family: 'Cinzel', serif;}
+.request-form-box { background: rgba(0,0,0,0.4); padding: 15px; border-radius: 6px; margin-bottom: 25px; display: flex; flex-direction: column; gap: 10px; border: 1px solid #3b2a16;}
+.request-form-box select, .request-form-box input { padding: 8px; background: #111; color: #fff; border: 1px solid #555; border-radius: 4px; flex-grow: 1; font-family: sans-serif;}
+
+/* Boutons UPLOAD */
+.file-upload-label { background: #3b2a16; border: 1px solid #5c4025; padding: 8px 12px; border-radius: 4px; cursor: pointer; color: #d4a23b; font-size: 12px; font-weight: bold; transition: 0.2s; display: inline-block; }
+.file-upload-label:hover { background: #5c4025; color: #fff; }
+
+.btn-submit { background: linear-gradient(180deg, #cda434 0%, #8a6e23 100%); color: #1a0505; font-weight: bold; border: 1px solid #ffd700; padding: 10px 15px; border-radius: 4px; cursor: pointer; transition: background 0.2s; }
+.btn-submit:hover { background: #eac154; box-shadow: 0 0 15px rgba(205, 164, 52, 0.4); }
+
+.req-card { background: linear-gradient(90deg, #201408 0%, #1a1007 100%); border: 1px solid #3b2a16; border-left: 5px solid #666; padding: 15px; margin-bottom: 15px; border-radius: 4px; display: flex; justify-content: space-between; align-items: flex-start; }
+.req-info { display: flex; flex-direction: column; gap: 5px; flex: 1;}
+.req-player { font-weight: bold; color: #41d37a; font-size: 1.1em; }
+.req-type { color: #d4a23b; font-weight: bold; }
+.req-notes { font-size: 0.9em; color: #aaa; font-style: italic; }
+
+/* Image miniature sur la carte */
+.req-image { max-width: 200px; max-height: 120px; object-fit: cover; border-radius: 4px; border: 1px solid #5c4025; margin-top: 8px; cursor: pointer; transition: 0.2s; }
+.req-image:hover { border-color: #d4a23b; filter: brightness(1.2); box-shadow: 0 0 10px rgba(212, 162, 59, 0.4); }
+
+.req-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;}
+.btn-action { padding: 6px 12px; border: none; border-radius: 3px; cursor: pointer; font-weight: bold; color: white; text-decoration: none; font-size: 0.9em; }
+.status-pending { border-left-color: #ff4747; }
+.status-progress { border-left-color: #3b82f6; }
+.status-done { border-left-color: #41d37a; opacity: 0.6; filter: grayscale(0.5); }
+
+.btn-take { background: #3b82f6; }
+.btn-done { background: #41d37a; color: #000; }
+.btn-map { background: #5c4025; color: #fff; border: 1px solid #d4a23b;}
+.btn-map:hover { background: #d4a23b; color: #000; }
+
+.history-toggle { width: 100%; padding: 10px; background: #1a1007; color: #aaa; border: 1px dashed #5c4025; cursor: pointer; text-align: center; border-radius: 4px; margin-top: 20px; transition: 0.2s;}
+.history-toggle:hover { background: #2b1d0e; color: #fff; border-color:#d4a23b;}
+
+/* =========================================
+   STYLE DE LA FENÊTRE MODALE (POPUP IMAGE)
+   ========================================= */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(5px);
+    z-index: 10000; display: flex; justify-content: center; align-items: center;
+    cursor: pointer; /* Un clic à l'extérieur ferme la popup */
+}
+.modal-content-img {
+    position: relative; max-width: 90%; max-height: 90vh;
+    border: 2px solid #cda434; border-radius: 8px;
+    box-shadow: 0 0 30px rgba(0,0,0,0.9); background: #14100a;
+    padding: 5px; display: flex; justify-content: center; align-items: center;
+    cursor: default; /* Empêche le curseur "pointeur" sur l'image elle-même */
+    animation: fadeInScale 0.2s ease-out;
+}
+#modal-image-hd { max-width: 100%; max-height: calc(90vh - 10px); border-radius: 4px; object-fit: contain; }
+.modal-close {
+    position: absolute; top: -15px; right: -15px;
+    background: #a83b3b; color: #fff; width: 35px; height: 35px;
+    border-radius: 50%; display: flex; justify-content: center; align-items: center;
+    font-size: 24px; font-weight: bold; cursor: pointer;
+    border: 2px solid #fff; box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    transition: 0.2s; z-index: 10001;
+}
+.modal-close:hover { background: #ff4747; transform: scale(1.1); }
+
+@keyframes fadeInScale {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+/* =========================================
+   NOUVEAUX STYLES - skills_additions.css
+   À APPENDRE à la fin de skills.css
+   ========================================= */
+
+/* === BADGE COÛT ÉPICE === */
+.spice-cost-badge {
+    float: right;
+    background: rgba(192, 132, 252, 0.15);
+    color: #c084fc;
+    padding: 2px 5px;
+    font-size: 10px;
+    border-radius: 3px;
+    font-weight: bold;
+    border: 1px solid rgba(192, 132, 252, 0.3);
+    margin-right: 2px;
+    font-family: monospace;
+}
+.skill-item.active .spice-cost-badge {
+    background: rgba(192, 132, 252, 0.25);
+    border-color: rgba(192, 132, 252, 0.6);
+    box-shadow: 0 0 4px rgba(192, 132, 252, 0.2);
+}
+
+/* === BADGE JALON IMPORTANT === */
+.milestone-badge {
+    position: absolute !important;
+    top: 8px !important;
+    right: 58px !important;
+    font-size: 12px !important;
+    z-index: 200 !important;
+    opacity: 0.55;
+    cursor: help;
+}
+.skill-item.active .milestone-badge { opacity: 1; filter: drop-shadow(0 0 3px gold); }
+.milestone-badge .tooltip-text.milestone-tip {
+    top: auto !important; bottom: 20px !important;
+    left: auto !important; right: -10px !important;
+    transform: none !important; width: 160px !important;
+    background-color: rgba(20, 15, 0, 0.98) !important;
+    border: 1px solid #d4a23b !important; color: #f3c44f !important;
+    font-size: 11px !important; font-weight: bold !important;
+    text-align: center !important; padding: 6px !important;
+    border-radius: 4px !important; visibility: hidden; opacity: 0;
+    transition: opacity 0.2s; pointer-events: none;
+}
+.milestone-badge .tooltip-text.milestone-tip::after {
+    content: ""; position: absolute;
+    top: 100% !important; bottom: auto !important;
+    left: auto !important; right: 12px !important;
+    margin: 0 !important; border-width: 6px !important;
+    border-style: solid !important;
+    border-color: #d4a23b transparent transparent transparent !important;
+}
+.milestone-badge:hover .tooltip-text.milestone-tip { visibility: visible !important; opacity: 1 !important; }
+
+/* === BARRE D'OUTILS SIMULATEUR === */
+#skills-toolbar .preset-btn { font-size: 11px; padding: 7px 12px; }
+#skills-toolbar .switch-btn { font-size: 11px; padding: 7px 12px; }
+
+/* === STATISTIQUE ÉPICE (violet) dans l'encart === */
+.stat-val-spice { color: #c084fc; font-weight: bold; font-family: monospace; font-size: 12px; }
+
+/* === ANIMATION sur chargement d'un preset === */
+@keyframes presetFlash {
+    0% { background: rgba(212, 162, 59, 0.3); }
+    100% { background: transparent; }
+}
+.skill-item.active.preset-flash { animation: presetFlash 0.4s ease-out; }
+
+/* =========================================
+   FORMULAIRE REQUÊTES — NOUVELLES ZONES
+   ========================================= */
+
+/* === GRILLE IMAGES EN ATTENTE === */
+.img-preview-zone {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 4px;
+}
+.img-thumb-wrap {
+    position: relative;
+    display: inline-block;
+    border: 1px solid #5c4025;
+    border-radius: 4px;
+    overflow: visible;
+    line-height: 0;
+}
+.img-thumb {
+    width: 80px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: filter 0.2s, border-color 0.2s;
+    display: block;
+}
+.img-thumb:hover { filter: brightness(1.2); border-radius: 4px; }
+.img-thumb-wrap:hover { border-color: #d4a23b; }
+.img-thumb-remove {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 20px;
+    height: 20px;
+    background: #a83b3b;
+    color: #fff;
+    border: 1.5px solid #fff;
+    border-radius: 50%;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: background 0.2s, transform 0.15s;
+    z-index: 10;
+}
+.img-thumb-remove:hover { background: #ff4747; transform: scale(1.15); }
+
+/* === GRILLE IMAGES SUR LES CARTES === */
+.req-images-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+.req-images-row .req-image {
+    max-width: 160px;
+    max-height: 100px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid #5c4025;
+    cursor: pointer;
+    transition: border-color 0.2s, filter 0.2s;
+}
+.req-images-row .req-image:hover { border-color: #d4a23b; filter: brightness(1.2); box-shadow: 0 0 8px rgba(212,162,59,.35); }
+
+/* === SELECT optgroup styling === */
+#request-type optgroup { color: #a67c33; font-style: normal; font-size: 11px; }
+#request-type option   { color: #fff; background: #111; font-size: 13px; }
+
+/* === TEXTAREA NOTES === */
+#request-notes:focus { outline: none; border-color: #a67c33; box-shadow: 0 0 6px rgba(166,124,51,.35); }
+
+/* === COMPTEUR NOTES === */
+#notes-counter { transition: color 0.3s; font-family: monospace; }

@@ -1,0 +1,33 @@
+{
+    "quests": [
+        { "id": 1, "name": "Frappe de décapitation", "type": "Combat", "zone": "Colonie" },
+        { "id": 2, "name": "Attaque sous fausse bannière", "type": "Combat", "zone": "Caverne rougissante" },
+        { "id": 3, "name": "Le Tombeau des lucioles", "type": "Combat", "zone": "Station d'essai n° 136" },
+        { "id": 4, "name": "Déclencher un piège", "type": "Combat", "zone": "Caverne rougissante" },
+        { "id": 5, "name": "Le cœur du problème", "type": "Combat", "zone": "Épave du Tyche" },
+
+        { "id": 6, "name": "Une leçon de botanique", "type": "Sabotage", "zone": "Station d'essai n° 195" },
+        { "id": 7, "name": "Assassinat : Maison Lindaren", "type": "Sabotage", "zone": "Bassin de Hagga" },
+        { "id": 8, "name": "Dans l'ombre", "type": "Sabotage", "zone": "Épave du Tyche" },
+        { "id": 9, "name": "Savoir, c'est pouvoir", "type": "Sabotage", "zone": "Colonie" },
+        { "id": 10, "name": "Opérations de mise en forme", "type": "Sabotage", "zone": "Colonie" },
+
+        { "id": 11, "name": "Essais sur le terrain", "type": "Récolte", "zone": "Caverne rougissante" },
+        { "id": 12, "name": "Vivre de la terre", "type": "Récolte", "zone": "Colonie" },
+        { "id": 13, "name": "Ressources précieuses", "type": "Récolte", "zone": "Station d'essai n° 24" },
+        { "id": 14, "name": "Nettoyage de station", "type": "Récolte", "zone": "Station d'essai n° 89" },
+        { "id": 15, "name": "Cycle de vie des cactus", "type": "Récolte", "zone": "Bassin de Hagga" },
+
+        { "id": 16, "name": "Trouvailles Fremen", "type": "Exploration", "zone": "Piste des contrebandiers" },
+        { "id": 17, "name": "Course contre la montre", "type": "Exploration", "zone": "Bassin de Hagga" },
+        { "id": 18, "name": "Reconnaissance de faille", "type": "Exploration", "zone": "Bassin de Hagga" },
+        { "id": 19, "name": "Sabotage à bord du Tyche", "type": "Exploration", "zone": "Épave du Tyche" },
+        { "id": 20, "name": "L'opération Opafire", "type": "Exploration", "zone": "Caverne rougissante" },
+
+        { "id": 21, "name": "Puissance de la tempête", "type": "Artisanat", "zone": "Station d'essai n° 152" },
+        { "id": 22, "name": "Lire le courrier", "type": "Artisanat", "zone": "Bassin de Hagga" },
+        { "id": 23, "name": "Les allées et venues", "type": "Artisanat", "zone": "Colonie" },
+        { "id": 24, "name": "L'énergie du futur", "type": "Artisanat", "zone": "Épave du Tyche" },
+        { "id": 25, "name": "La route des contrebandiers", "type": "Artisanat", "zone": "Piste des contrebandiers" }
+    ]
+}

@@ -24,10 +24,23 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 - Visualisation des deux zones de jeu : **Bassin de Hagga** et **Désert Profond**
 - Placement de bases avec marqueurs typés (Guilde, Landsraad, Joueur, Ressource)
 - Zoom et navigation sur des cartes haute résolution
-- Limite de bases par joueur selon la zone (1 en Hagga, 2 en Désert Profond)
 - **Wipe hebdomadaire automatique** du Désert Profond chaque mardi à 5h00 (heure de Paris)
 - Minuterie de tempête affichée en temps réel
 - Panneau d'administration pour approuver, modifier ou supprimer des bases
+
+#### Hagga — Gestion multi-sietchs
+- Liste fixe de **20 sietchs** (serveur Galacia)
+- Sélecteur de sietch au-dessus de la carte pour filtrer la vue
+- **Boutons rapides** apparaissant uniquement pour les sietchs qui ont au moins une base
+- Chaque base est taguée avec son sietch ; cliquer un joueur dans la liste bascule automatiquement sur son sietch
+- Un joueur a **une seule base principale** sur Hagga (avec son sietch)
+
+#### Désert Profond — Instances PVP / PVE
+- Le DD est split en **deux instances** : PVP et PVE
+- Au placement, le joueur choisit son instance
+- Icône avec **pastille rouge** (PVP) ou **bleue** (PVE)
+- Légende visible sur la carte du Désert Profond
+- Un joueur peut avoir une base dans chaque instance (max 2)
 
 ### Simulateur de Talents
 - Arbre de compétences interactif avec allocation de points
@@ -95,7 +108,7 @@ DuneMap/
 ├── api.php              # Données de groupe
 ├── migration_api.php    # Réservations de migration
 │
-├── bases.json           # Bases des territoires
+├── bases.json           # Bases des territoires (champs : user, x, y, type, map, note, sietch, instance)
 ├── requetes.json        # Demandes de craft
 ├── landsraad_data.json  # Quêtes disponibles
 ├── metiers.json         # Définitions des talents
@@ -120,6 +133,9 @@ git clone <url-du-repo>
 chmod 664 *.json last_wipe.txt
 chmod 775 uploads/
 ```
+
+> [!IMPORTANT]
+> Le fichier `bases.json` doit être déployé manuellement depuis la copie locale après chaque migration de données (ajout des champs `sietch` / `instance`). PHP doit pouvoir écrire dessus — si une erreur `write_error` apparaît, vérifier les permissions : `chmod 664 bases.json`.
 
 Accéder ensuite à `index.html` via le navigateur.
 

@@ -89,6 +89,103 @@
     .admin-panel.visible { display: block; animation: fadeIn 0.3s ease; }
 
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* === SIETCH SELECTOR (Hagga) === */
+    #sietch-selector-container {
+      position: absolute;
+      top: 112px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1500;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    #sietch-select {
+      background: rgba(20, 12, 4, 0.95);
+      border: 1px solid #a67c33;
+      color: #f3c44f;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      outline: none;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
+    #sietch-select option { background: #14100a; color: #f5deb3; }
+
+    #sietch-quick-btns {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      justify-content: center;
+      max-width: 650px;
+      padding: 0 10px;
+    }
+
+    .sietch-quick-btn {
+      background: rgba(20, 12, 4, 0.9);
+      border: 1px solid #5c4025;
+      color: #a67c33;
+      padding: 3px 10px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: bold;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .sietch-quick-btn:hover { border-color: #f3c44f; color: #f3c44f; }
+    .sietch-quick-btn.active {
+      background: linear-gradient(to bottom, #f3c44f, #a67c33);
+      color: #1a1007;
+      border-color: #f3c44f;
+    }
+
+    /* === LÉGENDE DD PVP/PVE === */
+    #dd-legend {
+      position: absolute;
+      bottom: 80px;
+      left: 15px;
+      z-index: 1500;
+      background: rgba(20, 12, 4, 0.92);
+      border: 1px solid #5c4025;
+      border-radius: 6px;
+      padding: 8px 14px;
+      display: none;
+      flex-direction: column;
+      gap: 6px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #f5deb3;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .legend-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      flex-shrink: 0;
+    }
+
+    /* === MODAL SELECT === */
+    .modal-input-field select,
+    select.modal-input-field {
+      background: #000;
+      color: #fff;
+      border: 1px solid #cda434;
+      border-radius: 4px;
+      padding: 10px;
+      font-family: sans-serif;
+    }
   </style>
 
   <script>
@@ -114,6 +211,18 @@
   <div id="map-switcher">
     <button class="map-switch-btn active" data-map="hagga">Bassin de Hagga</button>
     <button class="map-switch-btn" data-map="deep_desert">Deep Desert</button>
+  </div>
+
+  <div id="sietch-selector-container">
+    <select id="sietch-select">
+      <option value="">— Tous les sietchs —</option>
+    </select>
+    <div id="sietch-quick-btns"></div>
+  </div>
+
+  <div id="dd-legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#cc2222"></span> PVP</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#2255cc"></span> PVE</div>
   </div>
 
   <div id="storm-timer">
@@ -143,6 +252,7 @@
         <h3 id="modal-title" class="modal-title">TITRE</h3>
         <p id="modal-message" class="modal-message">Message...</p>
         <input type="text" id="modal-input" class="modal-input-field" placeholder="Votre note ici...">
+        <select id="modal-select" class="modal-input-field" style="display:none"></select>
         <div class="modal-buttons">
             <button id="modal-btn-cancel" class="modal-btn modal-btn-cancel">Annuler</button>
             <button id="modal-btn-confirm" class="modal-btn modal-btn-confirm">Confirmer</button>

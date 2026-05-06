@@ -18,8 +18,7 @@ function readJson($path) {
 }
 
 function writeJson($path, $data) {
-    @chmod($path, 0666);
-    if (file_exists($path) && !is_writable($path)) return false;
+    @chmod($path, 0664);
     $res = file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
     return ($res !== false);
 }
@@ -95,11 +94,13 @@ switch ($action) {
         $type = $data['type'] ?? 'joueur';
         $mapId = $data['mapId'] ?? 'hagga';
         $note = trim($data['note'] ?? '');
+        $sietch = trim($data['sietch'] ?? '');
+        $instance = trim($data['instance'] ?? '');
 
         if ($user === '') jerr("missing_user");
         $file = __DIR__ . '/bases.json';
         $bases = readJson($file);
-        $bases[] = ['user' => $user, 'x' => $x, 'y' => $y, 'type' => $type, 'map' => $mapId, 'note' => $note];
+        $bases[] = ['user' => $user, 'x' => $x, 'y' => $y, 'type' => $type, 'map' => $mapId, 'note' => $note, 'sietch' => $sietch, 'instance' => $instance];
         if (!writeJson($file, $bases)) jerr("write_error");
         echo json_encode(['ok' => true]);
         exit;

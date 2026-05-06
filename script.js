@@ -8,18 +8,26 @@ const mapConfig = {
   },
   deep_desert: {
     name: "Deep Desert",
-    image: "deep_desert.jpg?v=1", // J'ai passé le v=4 pour forcer les navigateurs à recharger ta nouvelle image
+    image: "deep_desert.jpg?v=1",
     maxBases: 2,
-    bounds: [[0, 0], [6120, 6144]] 
+    bounds: [[0, 0], [6120, 6144]]
   }
 };
+
+const SIETCHS = [
+  'Sietch Abbir', 'Sietch Alraab', 'Sietch Barkan', 'Sietch Coanua', 'Sietch Fajr',
+  'Sietch Gara Kulon', 'Sietch Hajar', 'Sietch Jacurutu', 'Sietch Kathib', 'Sietch Legg',
+  'Sietch Makab', 'Sietch Nadir', 'Sietch Ramal', 'Sietch Rifana', 'Sietch Sandrat',
+  'Sietch Saajid', 'Sietch Tabr', 'Sietch Tharwa', 'Sietch Umbu', 'Sietch Yaracuwan'
+];
 
 // === GLOBALES ===
 let map, currentLayer;
 let currentMapId = 'hagga';
+let currentSietch = null;
 let currentUser = null;
 let isAdmin = false;
-let markers = []; 
+let markers = [];
 let selectedCoords = null;
 let timerInterval = null;
 
@@ -64,7 +72,8 @@ function showCustomConfirm(title, message, onConfirm) {
     titleEl.innerText = title;
     msgEl.innerHTML = message;
     msgEl.style.display = 'block';
-    inputEl.style.display = 'none'; 
+    inputEl.style.display = 'none';
+    document.getElementById('modal-select').style.display = 'none';
     overlay.style.display = 'flex';
 
     const newBtnConf = btnConf.cloneNode(true);
@@ -87,8 +96,9 @@ function showCustomPrompt(title, message, existingText, onConfirm) {
     titleEl.innerText = title;
     msgEl.innerText = message;
     msgEl.style.display = 'block';
-    inputEl.style.display = 'block'; 
-    inputEl.value = existingText || ""; 
+    inputEl.style.display = 'block';
+    document.getElementById('modal-select').style.display = 'none';
+    inputEl.value = existingText || "";
     overlay.style.display = 'flex';
     inputEl.focus(); 
 
@@ -104,6 +114,40 @@ function showCustomPrompt(title, message, existingText, onConfirm) {
     });
     newBtnCanc.addEventListener('click', () => { overlay.style.display = 'none'; });
     inputEl.onkeydown = function(e) { if(e.key === 'Enter') newBtnConf.click(); };
+}
+
+function showCustomSelect(title, message, options, defaultValue, onConfirm) {
+    const overlay = document.getElementById('custom-modal-overlay');
+    const titleEl = document.getElementById('modal-title');
+    const msgEl = document.getElementById('modal-message');
+    const inputEl = document.getElementById('modal-input');
+    const selectEl = document.getElementById('modal-select');
+    const btnConf = document.getElementById('modal-btn-confirm');
+    const btnCanc = document.getElementById('modal-btn-cancel');
+
+    titleEl.innerText = title;
+    msgEl.innerText = message;
+    msgEl.style.display = 'block';
+    inputEl.style.display = 'none';
+    selectEl.innerHTML = options.map(o => `<option value="${o}"${o === defaultValue ? ' selected' : ''}>${o}</option>`).join('');
+    selectEl.style.display = 'block';
+    overlay.style.display = 'flex';
+
+    const newBtnConf = btnConf.cloneNode(true);
+    btnConf.parentNode.replaceChild(newBtnConf, btnConf);
+    const newBtnCanc = btnCanc.cloneNode(true);
+    btnCanc.parentNode.replaceChild(newBtnCanc, btnCanc);
+
+    newBtnConf.addEventListener('click', () => {
+        const val = selectEl.value;
+        selectEl.style.display = 'none';
+        overlay.style.display = 'none';
+        if (onConfirm) onConfirm(val);
+    });
+    newBtnCanc.addEventListener('click', () => {
+        selectEl.style.display = 'none';
+        overlay.style.display = 'none';
+    });
 }
 
 // === LOGIQUE ===
@@ -178,52 +222,119 @@ async function loadMapLayer(mapId) {
       if (mapId === 'deep_desert') timerDiv.classList.add('visible');
       else timerDiv.classList.remove('visible');
   }
-  
+
+  updateSietchUI(mapId);
+
   if (currentLayer) map.removeLayer(currentLayer);
-  
+
   if (config.image) {
       currentLayer = L.imageOverlay(config.image, config.bounds, { zIndex: 1 }).addTo(map);
       map.fitBounds(config.bounds);
   }
-  
+
   markers.forEach(m => map.removeLayer(m.marker));
   markers = [];
   await fetchAndDisplayBases();
+}
+
+function updateSietchUI(mapId) {
+  const sietchContainer = document.getElementById('sietch-selector-container');
+  const ddLegend = document.getElementById('dd-legend');
+  if (sietchContainer) sietchContainer.style.display = (mapId === 'hagga') ? 'flex' : 'none';
+  if (ddLegend) ddLegend.style.display = (mapId === 'deep_desert') ? 'flex' : 'none';
+}
+
+function reloadBases() {
+  markers.forEach(m => map.removeLayer(m.marker));
+  markers = [];
+  fetchAndDisplayBases();
+}
+
+function createInstanceIcon(type, instance) {
+  const baseIcon = iconSet[type] || iconSet.joueur;
+  if (!instance) return baseIcon;
+  const color = instance === 'pvp' ? '#cc2222' : '#2255cc';
+  return L.divIcon({
+    className: '',
+    html: `<div style="position:relative;width:48px;height:48px;">
+             <img src="${baseIcon.options.iconUrl}" width="48" height="48" style="display:block;">
+             <div style="position:absolute;top:2px;right:2px;width:13px;height:13px;background:${color};border-radius:50%;border:2px solid #fff;box-shadow:0 0 4px rgba(0,0,0,0.8);"></div>
+           </div>`,
+    iconSize: [48, 48],
+    iconAnchor: [24, 48],
+    popupAnchor: [0, -48]
+  });
+}
+
+function renderSietchQuickBtns(sietchsWithBases) {
+  const container = document.getElementById('sietch-quick-btns');
+  if (!container) return;
+  container.innerHTML = '';
+  sietchsWithBases.forEach(sietch => {
+    const btn = document.createElement('button');
+    btn.className = 'sietch-quick-btn' + (sietch === currentSietch ? ' active' : '');
+    btn.textContent = sietch.replace('Sietch ', '');
+    btn.title = sietch;
+    btn.onclick = () => {
+      currentSietch = (currentSietch === sietch) ? null : sietch;
+      const sel = document.getElementById('sietch-select');
+      if (sel) sel.value = currentSietch || '';
+      reloadBases();
+    };
+    container.appendChild(btn);
+  });
 }
 
 async function fetchAndDisplayBases() {
   try {
       const response = await fetch("bases.json?ts=" + Date.now());
       const allBases = await response.json();
-      const currentMapBases = allBases.filter(b => {
-        const baseMap = b.map || 'hagga';
-        return baseMap === currentMapId;
-      });
-      currentMapBases.forEach(b => addMarker(b.user, b.x, b.y, b.type, b.note));
-      
-      // --- NOUVEAU : Auto-focus depuis l'URL ---
+
+      let currentMapBases = allBases.filter(b => (b.map || 'hagga') === currentMapId);
+
+      if (currentMapId === 'hagga') {
+        // Boutons rapides : sietchs qui ont au moins une base
+        const sietchsWithBases = [...new Set(
+          allBases.filter(b => (b.map || 'hagga') === 'hagga' && b.sietch).map(b => b.sietch)
+        )].sort();
+        renderSietchQuickBtns(sietchsWithBases);
+
+        // Filtre par sietch sélectionné
+        if (currentSietch) {
+          currentMapBases = currentMapBases.filter(b => b.sietch === currentSietch);
+        }
+      }
+
+      currentMapBases.forEach(b => addMarker(b.user, b.x, b.y, b.type, b.note, b.sietch || '', b.instance || ''));
+
+      // Auto-focus depuis l'URL
       const urlParams = new URLSearchParams(window.location.search);
       const focusUser = urlParams.get('focus');
       if (focusUser) {
-          // On attend 500ms que la carte soit bien dessinée avant de faire le zoom
-          setTimeout(() => {
-              highlightBase(focusUser);
-          }, 500);
-          
-          // Optionnel : on nettoie l'adresse web pour éviter que ça re-zoome à chaque rafraîchissement
+          setTimeout(() => { highlightBase(focusUser); }, 500);
           window.history.replaceState({}, document.title, window.location.pathname);
       }
-      // ----------------------------------------
-      
+
   } catch (e) { console.error("Erreur chargement bases:", e); }
 }
-function addMarker(user, x, y, type = "joueur", note = "") {
-  const icon = iconSet[type] || iconSet.joueur;
+function addMarker(user, x, y, type = "joueur", note = "", sietch = "", instance = "") {
+  const icon = (currentMapId === 'deep_desert' && instance)
+    ? createInstanceIcon(type, instance)
+    : (iconSet[type] || iconSet.joueur);
   const isOwner = (user === currentUser);
-  const canEdit = isOwner || isAdmin; 
+  const canEdit = isOwner || isAdmin;
   const deleteBtn = canEdit ? `<br><button class="delete-btn" onclick="removeBasePrompt('${user}', ${x}, ${y})">🗑 Supprimer</button>` : "";
-  let popupContent = `<b>${user}</b><br><small>${type}</small>`;
-  const safeUser = user.replace(/'/g, "\\'"); 
+
+  let instanceBadge = '';
+  if (instance) {
+    const col = instance === 'pvp' ? '#cc2222' : '#2255cc';
+    instanceBadge = ` <span style="color:${col};font-size:11px;font-weight:bold;">[${instance.toUpperCase()}]</span>`;
+  }
+  let popupContent = `<b>${user}</b>${instanceBadge}`;
+  if (sietch) popupContent += `<br><small style="color:#a67c33">${sietch}</small>`;
+  popupContent += `<br><small>${type}</small>`;
+
+  const safeUser = user.replace(/'/g, "\\'");
   const safeNote = note ? note.replace(/'/g, "&apos;") : "";
 
   if (note) {
@@ -237,6 +348,8 @@ function addMarker(user, x, y, type = "joueur", note = "") {
   popupContent += deleteBtn;
 
   let tooltipContent = `<div>${user}</div>`;
+  if (sietch) tooltipContent += `<div class="tooltip-subtext">${sietch}</div>`;
+  if (instance) tooltipContent += `<div class="tooltip-subtext">${instance.toUpperCase()}</div>`;
   if (note && note.trim() !== "") tooltipContent += `<div class="tooltip-subtext">${note}</div>`;
 
   const m = L.marker([x, y], { icon }).addTo(map)
@@ -261,29 +374,68 @@ window.editBaseNote = function(user, x, y, currentNote) {
 };
 
 async function addOrReplaceOwnBase(x, y) {
+  if (currentMapId === 'hagga') {
+    await addOrReplaceHaggaBase(x, y);
+  } else if (currentMapId === 'deep_desert') {
+    await addOrReplaceDeepDesertBase(x, y);
+  }
+}
+
+async function addOrReplaceHaggaBase(x, y) {
   const res = await fetch("bases.json?ts=" + Date.now());
   const all = await res.json();
-  const myBases = all.filter(b => b.user === currentUser && (b.map || 'hagga') === currentMapId);
-  const limit = mapConfig[currentMapId].maxBases;
+  const myBases = all.filter(b => b.user === currentUser && (b.map || 'hagga') === 'hagga');
 
-  if (myBases.length >= limit) {
-    if (limit === 1) {
-        showCustomConfirm("DÉPLACEMENT", "Vous avez déjà une base.<br>Voulez-vous la déplacer ici ?", async () => {
-            await removeBase(currentUser, myBases[0].x, myBases[0].y);
-            showCustomPrompt("NOTE", "Ajouter une note ? (Optionnel)", "", (note) => { saveBase(currentUser, x, y, "joueur", note); });
-        });
-    } else if (limit > 1) {
-      showCustomConfirm("LIMITE ATTEINTE", `Vous avez atteint la limite de ${limit} bases sur cette carte.`, null);
-    }
-    return;
+  const doPlace = (sietch) => {
+    showCustomPrompt("NOTE", "Ajouter une note ? (Optionnel)", "", (note) => {
+      saveBase(currentUser, x, y, "joueur", note, sietch, '');
+    });
+  };
+
+  const askSietch = (then) => {
+    showCustomSelect("SIETCH", "Dans quel sietch vous installez-vous ?", SIETCHS, currentSietch || SIETCHS[0], then);
+  };
+
+  if (myBases.length >= 1) {
+    showCustomConfirm("DÉPLACEMENT", "Vous avez déjà une base.<br>Voulez-vous la déplacer ici ?", async () => {
+      await removeBase(currentUser, myBases[0].x, myBases[0].y);
+      askSietch(doPlace);
+    });
+  } else {
+    showCustomConfirm("NOUVELLE BASE", "Placer votre base ici ?", () => {
+      askSietch(doPlace);
+    });
   }
-  showCustomConfirm("NOUVELLE BASE", "Placer votre base ici ?", () => {
-      showCustomPrompt("NOTE", "Ajouter une note ? (Optionnel)", "", (note) => { saveBase(currentUser, x, y, "joueur", note); });
+}
+
+async function addOrReplaceDeepDesertBase(x, y) {
+  showCustomSelect("INSTANCE", "Dans quelle instance du Deep Desert ?", ["PVP", "PVE"], "PVP", async (instanceLabel) => {
+    const instance = instanceLabel.toLowerCase();
+    const res = await fetch("bases.json?ts=" + Date.now());
+    const all = await res.json();
+    const myBases = all.filter(b =>
+      b.user === currentUser && (b.map || 'hagga') === 'deep_desert' && (b.instance || '') === instance
+    );
+
+    const doPlace = () => {
+      showCustomPrompt("NOTE", "Ajouter une note ? (Optionnel)", "", (note) => {
+        saveBase(currentUser, x, y, "joueur", note, '', instance);
+      });
+    };
+
+    if (myBases.length >= 1) {
+      showCustomConfirm("DÉPLACEMENT", `Vous avez déjà une base en ${instanceLabel}.<br>Voulez-vous la déplacer ici ?`, async () => {
+        await removeBase(currentUser, myBases[0].x, myBases[0].y);
+        doPlace();
+      });
+    } else {
+      showCustomConfirm("NOUVELLE BASE", `Placer votre base en ${instanceLabel} ici ?`, doPlace);
+    }
   });
 }
 
-async function saveBase(user, x, y, type, note = "") {
-  const payload = { action: "add", user, x, y, type, mapId: currentMapId, note: note };
+async function saveBase(user, x, y, type, note = "", sietch = "", instance = "") {
+  const payload = { action: "add", user, x, y, type, mapId: currentMapId, note, sietch, instance };
   const res = await fetch("save.php", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(payload) });
   const json = await res.json();
   if(json.ok) loadMapLayer(currentMapId);
@@ -334,7 +486,19 @@ function createAdminPanel() {
     const n = document.getElementById("baseName").value.trim();
     const type = document.getElementById("baseType").value;
     const note = document.getElementById("baseNote").value.trim();
-    if(n) saveBase(n, selectedCoords.lat, selectedCoords.lng, type, note);
+    if(!n) return;
+
+    if (currentMapId === 'deep_desert') {
+      showCustomSelect("INSTANCE", "Dans quelle instance du Deep Desert ?", ["PVP", "PVE"], "PVP", (instanceLabel) => {
+        saveBase(n, selectedCoords.lat, selectedCoords.lng, type, note, '', instanceLabel.toLowerCase());
+      });
+    } else if (currentMapId === 'hagga') {
+      showCustomSelect("SIETCH", "Dans quel sietch ?", SIETCHS, currentSietch || SIETCHS[0], (sietch) => {
+        saveBase(n, selectedCoords.lat, selectedCoords.lng, type, note, sietch, '');
+      });
+    } else {
+      saveBase(n, selectedCoords.lat, selectedCoords.lng, type, note);
+    }
   };
   document.getElementById("manageUsersBtn").onclick = openUserManager;
 }
@@ -444,6 +608,21 @@ function highlightBase(user) {
 document.addEventListener("DOMContentLoaded", () => {
     const btn = document.getElementById("toggle-players");
     if(btn) btn.addEventListener("click", togglePlayerPanel);
+
+    // Sélecteur de sietch Hagga
+    const sietchSelect = document.getElementById('sietch-select');
+    if (sietchSelect) {
+        SIETCHS.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s;
+            opt.textContent = s;
+            sietchSelect.appendChild(opt);
+        });
+        sietchSelect.addEventListener('change', () => {
+            currentSietch = sietchSelect.value || null;
+            reloadBases();
+        });
+    }
 });
 
 let audioUnlocked = false;

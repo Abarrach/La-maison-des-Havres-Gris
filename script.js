@@ -247,7 +247,7 @@ function updateSietchUI(mapId) {
 function reloadBases() {
   markers.forEach(m => map.removeLayer(m.marker));
   markers = [];
-  fetchAndDisplayBases();
+  return fetchAndDisplayBases();
 }
 
 function createInstanceIcon(type, instance) {
@@ -584,10 +584,25 @@ async function togglePlayerPanel() {
           const uniqueNames = [...new Set(items.map(b => b.user))];
           uniqueNames.sort((a, b) => a.localeCompare(b));
           uniqueNames.forEach(name => {
+              const playerBase = items.find(b => b.user === name);
+              const playerSietch = playerBase ? (playerBase.sietch || '') : '';
               const d = document.createElement("div");
-              d.innerText = name;
               d.className = "player-item";
-              d.onclick = () => highlightBase(name);
+              // Affiche le sietch en sous-titre si Hagga
+              if (currentMapId === 'hagga' && playerSietch) {
+                d.innerHTML = `<span>${name}</span><br><small style="color:#a67c33;font-size:10px;">${playerSietch.replace('Sietch ', '')}</small>`;
+              } else {
+                d.innerText = name;
+              }
+              d.onclick = async () => {
+                if (currentMapId === 'hagga' && playerSietch && playerSietch !== currentSietch) {
+                  currentSietch = playerSietch;
+                  const sel = document.getElementById('sietch-select');
+                  if (sel) sel.value = currentSietch;
+                  await reloadBases();
+                }
+                highlightBase(name);
+              };
               list.appendChild(d);
           });
       }

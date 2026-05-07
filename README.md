@@ -52,6 +52,18 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 - Ajout de jusqu'à 4 images par demande
 - Suivi et gestion des requêtes côté administration
 
+### Coordinateur de Migration de Guilde
+- Outil de planification pour les migrations vers un nouveau serveur avec **plusieurs sietchs**
+- Chaque joueur pose un marqueur sur sa position cible et choisit son **sietch de destination**
+- **Boutons filtre par sietch** dans le header : apparaissent dynamiquement dès qu'un sietch a des réservations (avec compteur)
+- Types de placement : **Impératif** (rose) ou **Souhait** (cyan)
+- Disponibilité : présent seul / présent avec fief libre / absent (besoin d'aide)
+- Système d'**entraide** : un joueur présent peut offrir son sous-fief à un absent (liaison cover/uncover)
+- Données dans `migration_data.json` (fichier distinct, réinitialisable entre migrations)
+
+> [!IMPORTANT]
+> `migration_data.json` doit avoir les droits d'écriture pour www-data : `chmod 664 migration_data.json`
+
 ### Planificateur d'Événements Landsraad
 - Sélection de quêtes parmi 25 missions réparties en 5 catégories
 - Gestion des participants (ajout/suppression de membres)
@@ -130,7 +142,7 @@ git clone <url-du-repo>
 
 # Placer dans le répertoire web du serveur
 # et s'assurer que PHP peut écrire dans :
-chmod 664 *.json last_wipe.txt
+chmod 664 *.json last_wipe.txt migration_data.json
 chmod 775 uploads/
 ```
 

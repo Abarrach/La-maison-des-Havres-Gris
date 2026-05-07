@@ -106,8 +106,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $data = array_values($data);
     }
 
-    file_put_contents($file, json_encode($data, JSON_PRETTY_PRINT));
-    echo json_encode(["status" => "success"]);
+    $fp = fopen($file, 'c');
+    if (!$fp) {
+        http_response_code(500);
+        echo json_encode(["status" => "error", "message" => "Impossible d'ouvrir le fichier : " . $file . " (répertoire : " . getcwd() . ")"]);
+        exit;
+    }
+    if (flock($fp, LOCK_EX)) {
+        ftruncate($fp, 0);
+        fwrite($fp, json_encode($data, JSON_PRETTY_PRINT));
+        fflush($fp);
+        flock($fp, LOCK_UN);
+        fclose($fp);
+        echo json_encode(["status" => "success"]);
+    } else {
+        fclose($fp);
+        http_response_code(500);
+        echo json_encode(["status" => "error", "message" => "Impossible de verrouiller le fichier (permissions ?)"]);
+    }
     exit;
 }
 ?>

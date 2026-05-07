@@ -7,29 +7,45 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  
+
   <style>
     body { margin: 0; padding: 0; overflow: hidden; background: #0e0804; }
     #map { width: 100vw; height: 100vh; background: #0e0804; }
-    
+
     .header-migration {
-        position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+        position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
         background: rgba(20, 12, 4, 0.9); border: 2px solid #cda434;
         padding: 10px 20px; border-radius: 8px; z-index: 1000;
         text-align: center; box-shadow: 0 0 15px rgba(0,0,0,0.8);
+        max-width: 95vw;
     }
     .header-migration h1 { margin: 0; color: #f3c44f; font-size: 18px; text-transform: uppercase; }
     .header-migration p { margin: 5px 0 0 0; color: #ccc; font-size: 12px; }
+
+    /* === BARRE DE FILTRE SIETCH === */
+    .sietch-filter-bar {
+        display: flex; flex-wrap: wrap; gap: 6px;
+        justify-content: center; margin-top: 8px; padding-top: 8px;
+        border-top: 1px solid #5c4025;
+    }
+    .sietch-filter-btn {
+        padding: 4px 10px; font-size: 11px; cursor: pointer;
+        background: rgba(50, 30, 10, 0.9); border: 1px solid #5c4025;
+        color: #d3b46f; border-radius: 12px; transition: all 0.2s;
+        white-space: nowrap;
+    }
+    .sietch-filter-btn:hover { background: rgba(90, 60, 20, 0.9); border-color: #cda434; }
+    .sietch-filter-btn.active { background: #cda434; color: #000; border-color: #ffd700; font-weight: bold; }
+    .sietch-filter-btn.all-btn { border-color: #cda434; color: #d3b46f; }
+    .sietch-filter-btn.all-btn.active { background: #cda434; color: #000; border-color: #ffd700; font-weight: bold; }
 
     /* === BLOC D'INFORMATIONS === */
     .info-panel {
         position: absolute; bottom: 30px; left: 30px; z-index: 1000;
         display: flex; flex-direction: column; gap: 15px;
         max-height: 85vh;
-        
-        /* NOUVEAU : Limite de largeur pour ne pas cacher la carte */
-        width: 340px; 
-        max-width: 85vw; /* Sécurité pour les tout petits écrans/mobiles */
+        width: 340px;
+        max-width: 85vw;
     }
 
     .map-box {
@@ -40,18 +56,15 @@
     }
     .map-box h4 { margin: 0 0 10px 0; color: #f3c44f; text-transform: uppercase; border-bottom: 1px solid #5c4025; padding-bottom: 5px; }
 
-    /* Instructions & Légende */
     .map-instructions ul { margin: 0; padding-left: 20px; line-height: 1.6; }
     .map-instructions li { margin-bottom: 5px; }
     .map-instructions li strong { color: #f5deb3; }
-    
+
     .legend-item { margin-bottom: 6px; display: flex; align-items: center; }
     .dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; margin-right: 8px; border: 1px solid #fff; flex-shrink: 0; }
-    
     .dot-imperatif { background: #ff0066; box-shadow: 0 0 8px #ff0066; }
     .dot-souhait { background: #00e5ff; box-shadow: 0 0 8px #00e5ff; }
 
-    /* Listes d'entraide */
     .help-item {
         padding: 6px; border-bottom: 1px solid #5c4025;
         cursor: pointer; transition: background 0.2s; border-radius: 4px;
@@ -60,13 +73,14 @@
     .help-item:last-child { border-bottom: none; }
     .list-container { max-height: 110px; overflow-y: auto; padding-right: 5px; margin-bottom: 10px; }
 
-    /* Modale de réservation classique */
+    /* Modale de réservation */
     #reservation-modal {
         display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
         background: rgba(0, 0, 0, 0.8); z-index: 2000; justify-content: center; align-items: center;
     }
     .res-box {
         background: #14100a; border: 2px solid #cda434; padding: 20px; border-radius: 8px; width: 350px; color: #f5deb3;
+        max-height: 90vh; overflow-y: auto;
     }
     .res-box h3 { margin-top: 0; color: #f3c44f; text-align: center; border-bottom: 1px solid #5c4025; padding-bottom: 10px;}
     .res-box label { display: block; margin-top: 10px; font-size: 12px; color: #aaa; }
@@ -77,10 +91,10 @@
     .res-btn { flex: 1; padding: 10px; cursor: pointer; border: none; font-weight: bold; border-radius: 4px; }
     .btn-cancel { background: #333; color: #fff; border: 1px solid #555; }
     .btn-save { background: linear-gradient(to bottom, #d4a23b, #8b6e3b); color: #000; border: 1px solid #ffd700; }
-    
+
     .custom-svg-icon { background: transparent; border: none; }
 
-    /* === NOUVELLE MODALE GÉNÉRIQUE (Pour remplacer les Alerts/Prompts natifs) === */
+    /* Modale générique */
     #custom-modal-overlay {
         display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
         background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(3px);
@@ -91,8 +105,8 @@
         width: 400px; max-width: 90%; text-align: center; border-radius: 6px;
         box-shadow: 0 0 30px rgba(0,0,0,0.8), 0 0 10px rgba(205, 164, 52, 0.2);
     }
-    .generic-modal-title { 
-        color: #cda434; font-family: 'Segoe UI', serif; font-size: 1.4em; 
+    .generic-modal-title {
+        color: #cda434; font-family: 'Segoe UI', serif; font-size: 1.4em;
         margin: 0 0 15px 0; border-bottom: 1px solid #333; padding-bottom: 10px; text-transform: uppercase;
     }
     .generic-modal-message { color: #ccc; margin-bottom: 20px; font-size: 14px; line-height: 1.5; }
@@ -104,6 +118,13 @@
     }
     .generic-modal-input-field:focus { outline: none; box-shadow: 0 0 10px rgba(205, 164, 52, 0.5); }
     .generic-modal-buttons { display: flex; gap: 10px; justify-content: center; }
+
+    /* Badge sietch dans les listes */
+    .sietch-badge {
+        display: inline-block; font-size: 10px; color: #a67c33;
+        background: rgba(205,164,52,0.1); border: 1px solid #5c4025;
+        border-radius: 3px; padding: 1px 5px; margin-left: 5px;
+    }
   </style>
 </head>
 <body>
@@ -111,20 +132,23 @@
   <div class="header-migration">
       <h1>Plan de Migration</h1>
       <p>Organisez votre placement pour le déménagement de guilde.</p>
+      <div class="sietch-filter-bar" id="sietch-filter-bar">
+          <button class="sietch-filter-btn all-btn active" data-sietch="">Tous les sietchs</button>
+      </div>
   </div>
 
   <div class="info-panel">
       <div class="map-box map-instructions">
           <h4>📌 Mode d'emploi</h4>
           <ul>
-              <li><strong>Pour réserver sa place :</strong> Zoomez au max sur la carte pour être précis, puis cliquez à l'endroit désiré.</li>
+              <li><strong>Pour réserver sa place :</strong> Zoomez au max, puis cliquez à l'endroit désiré.</li>
               <li><strong>Pour modifier :</strong> Cliquez sur votre marqueur déjà posé.</li>
-              <li><strong>Pour offrir son aide :</strong> Vous pouvez cliquer sur "Je lui offre mon fief" dans la liste ci-dessous, <u>même si vous n'avez pas de base sur la carte</u>.</li>
+              <li><strong>Pour offrir son aide :</strong> Cliquez "Je lui offre mon fief" dans la liste ci-dessous.</li>
           </ul>
       </div>
 
       <div class="map-box map-legend">
-          <h4>🎨 Légende de la Carte</h4>
+          <h4>🎨 Légende</h4>
           <div class="legend-item"><span class="dot dot-imperatif"></span> Impératif (Rentre nulle part ailleurs)</div>
           <div class="legend-item"><span class="dot dot-souhait"></span> Souhait (Position flexible)</div>
           <hr style="border-color:#5c4025; margin:10px 0;">
@@ -136,7 +160,7 @@
       <div class="map-box" id="help-list-box">
           <h4 style="color:#ff6b6b;">🆘 Ont besoin d'un fief</h4>
           <div id="help-list-content" class="list-container"></div>
-          
+
           <h4 style="color:#41d37a; margin-top:5px;">🎁 Ont un fief libre</h4>
           <div id="offer-list-content" class="list-container" style="margin-bottom:0;"></div>
       </div>
@@ -147,17 +171,41 @@
   <div id="reservation-modal">
       <div class="res-box">
           <h3 id="modal-title-text">Réserver cet emplacement</h3>
-          
+
           <label>Pseudo / Nom du point (Obligatoire)</label>
           <input type="text" id="res-pseudo" placeholder="Ex: Paul Atreides">
-          
+
+          <label>Sietch de destination</label>
+          <select id="res-sietch">
+              <option value="Sietch Abbir">Sietch Abbir</option>
+              <option value="Sietch Alraab">Sietch Alraab</option>
+              <option value="Sietch Barkan">Sietch Barkan</option>
+              <option value="Sietch Coanua">Sietch Coanua</option>
+              <option value="Sietch Fajr">Sietch Fajr</option>
+              <option value="Sietch Gara Kulon">Sietch Gara Kulon</option>
+              <option value="Sietch Hajar">Sietch Hajar</option>
+              <option value="Sietch Jacurutu">Sietch Jacurutu</option>
+              <option value="Sietch Kathib">Sietch Kathib</option>
+              <option value="Sietch Legg">Sietch Legg</option>
+              <option value="Sietch Makab">Sietch Makab</option>
+              <option value="Sietch Nadir">Sietch Nadir</option>
+              <option value="Sietch Ramal">Sietch Ramal</option>
+              <option value="Sietch Rifana">Sietch Rifana</option>
+              <option value="Sietch Sandrat">Sietch Sandrat</option>
+              <option value="Sietch Saajid">Sietch Saajid</option>
+              <option value="Sietch Tabr">Sietch Tabr</option>
+              <option value="Sietch Tharwa">Sietch Tharwa</option>
+              <option value="Sietch Umbu">Sietch Umbu</option>
+              <option value="Sietch Yaracuwan">Sietch Yaracuwan</option>
+          </select>
+
           <label>Type de placement</label>
           <select id="res-type">
               <option value="souhait">Souhait (Je préfère ici, mais flexible)</option>
               <option value="imperatif">Impératif (Ma base ne rentre NULLE PART AILLEURS)</option>
           </select>
 
-          <label>Disponibilité (Déménagement Mardi soir)</label>
+          <label>Disponibilité (Déménagement)</label>
           <select id="res-dispo">
               <option value="dispo_seul">Présent (Je me débrouille seul)</option>
               <option value="dispo_aide">Présent ET j'ai de la place pour aider (Fief libre)</option>

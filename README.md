@@ -52,6 +52,28 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 - Ajout de jusqu'à 4 images par demande
 - Suivi et gestion des requêtes côté administration
 
+### Plan de Migration (`migration.html`)
+- Chaque joueur place son marqueur sur la carte source (Hagga) pour indiquer sa position souhaitée
+- Deux types de placement : **Impératif** (base ne rentre nulle part ailleurs) ou **Souhait** (flexible)
+- Gestion de la disponibilité : présent seul, présent avec fief libre à offrir, ou absent
+- Système d'entraide : lier un helper à un joueur absent (sous-fief)
+- Filtre par sietch, listes « Besoin d'un fief » et « Fief libre » en temps réel
+- **Import depuis Destination** : les bases confirmées sur `destination.html` apparaissent en marqueurs bleus pointillés ; le joueur vérifie son pseudo et finalise son inscription en un clic
+
+### Destination Galacia (`destination.html`)
+- Outil de **reconnaissance** sur le serveur de destination (ICARUS / Galacia)
+- Un éclaireur place des **bases projetées** pour chaque joueur à l'endroit exact repéré en jeu
+- Le joueur concerné confirme ou refuse l'emplacement (vérification par pseudo)
+- 3 états visuels : projeté (orange pointillé), confirmé (vert ✓), refusé (rouge ✕)
+- Ajout de **photos de la zone** par glisser-déposer ou coller (Ctrl+V), max 2 par base — compressées automatiquement côté client, stockées dans `uploads/`
+- Cohérence croisée avec Migration :
+  - Badge vert « Inscrit sur Migration » + statut dispo complet une fois le joueur inscrit
+  - Avertissement si sietch divergent ou joueur noté Absent sur Migration
+  - « Remettre en projeté » bloqué tant que l'inscription Migration est active
+  - Suppression protégée si le joueur est déjà dans Migration
+- Navigation rapide entre les deux pages (bouton haut-droite)
+- Filtre par sietch, barre de progression globale, liste latérale avec badges d'état
+
 ### Planificateur d'Événements Landsraad
 - Sélection de quêtes parmi 25 missions réparties en 5 catégories
 - Gestion des participants (ajout/suppression de membres)
@@ -93,7 +115,8 @@ DuneMap/
 ├── map.html             # Carte des territoires
 ├── skills.html          # Simulateur de talents + demandes de craft
 ├── planner.html         # Planificateur Landsraad
-├── migration.html       # Coordinateur de migration
+├── migration.html       # Coordinateur de migration (serveur source)
+├── destination.html     # Reconnaissance et bases projetées (serveur destination)
 ├── news.html            # Actualités du jeu
 ├── dune_chronologie.html # Chronologie de l'univers
 ├── login.html / register.html
@@ -102,14 +125,17 @@ DuneMap/
 ├── skills.js            # Simulateur de talents
 ├── planner.js           # Planificateur d'événements
 ├── migration.js         # Logique de migration
+├── destination.js       # Logique des bases projetées
 │
 ├── save.php             # API principale (bases, utilisateurs, craft)
 ├── auth.php             # Authentification
 ├── api.php              # Données de groupe
 ├── migration_api.php    # Réservations de migration
+├── destination_api.php  # Bases projetées + upload images
 │
 ├── bases.json           # Bases des territoires (champs : user, x, y, type, map, note, sietch, instance)
 ├── requetes.json        # Demandes de craft
+├── destination_data.json # Bases projetées sur Galacia (auto-créé au premier enregistrement)
 ├── landsraad_data.json  # Quêtes disponibles
 ├── metiers.json         # Définitions des talents
 │
@@ -132,6 +158,9 @@ git clone <url-du-repo>
 # et s'assurer que PHP peut écrire dans :
 chmod 664 *.json last_wipe.txt
 chmod 775 uploads/
+
+# destination_data.json est créé automatiquement au premier enregistrement
+# si le répertoire est accessible en écriture pour www-data.
 ```
 
 > [!IMPORTANT]

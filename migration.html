@@ -129,6 +129,17 @@
 </head>
 <body>
 
+  <a href="destination.html"
+     style="position:fixed; top:12px; right:12px; z-index:1100;
+            background:rgba(20,12,4,0.92); border:1px solid #cda434; border-radius:6px;
+            padding:6px 12px; color:#f3c44f; font-size:12px; font-weight:bold;
+            text-decoration:none; box-shadow:0 0 10px rgba(0,0,0,0.6);
+            transition:background 0.2s;"
+     onmouseover="this.style.background='rgba(80,50,10,0.95)'"
+     onmouseout="this.style.background='rgba(20,12,4,0.92)'">
+      🗺 Destination →
+  </a>
+
   <div class="header-migration">
       <h1>Plan de Migration</h1>
       <p>Organisez votre placement pour le déménagement de guilde.</p>
@@ -155,6 +166,11 @@
           <div class="legend-item" style="color:#41d37a; font-weight:bold;">✅ Présent (Se débrouille)</div>
           <div class="legend-item" style="color:#5bc0de; font-weight:bold;">🤝 Présent (Offre un sous-fief)</div>
           <div class="legend-item" style="color:#ff6b6b; font-weight:bold;">❌ Absent (A besoin d'un sous-fief)</div>
+          <hr style="border-color:#5c4025; margin:10px 0;">
+          <div class="legend-item">
+              <span class="dot" style="background:#6ab4ff; opacity:0.75; border:2px dashed #fff; box-shadow:0 0 6px #6ab4ff; flex-shrink:0;"></span>
+              <span style="color:#6ab4ff;">Position confirmée (depuis Destination)</span>
+          </div>
       </div>
 
       <div class="map-box" id="help-list-box">

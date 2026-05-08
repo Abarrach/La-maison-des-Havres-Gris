@@ -9,7 +9,9 @@ let map;
 let currentCoords = null;
 let reservations = [];
 let markersLayer = L.layerGroup();
+let ghostLayer   = L.layerGroup();
 let currentSietch = null;
+let ghostProjections = [];
 
 const bounds = [[0, 0], [2556, 2556]];
 const mapImage = "map.jpg";
@@ -21,6 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
     L.control.zoom({ position: 'bottomright' }).addTo(map);
     L.imageOverlay(mapImage, bounds).addTo(map);
     map.fitBounds(bounds);
+    ghostLayer.addTo(map);
     markersLayer.addTo(map);
 
 
@@ -33,7 +36,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     loadReservations();
+    loadGhostProjections();
     setInterval(loadReservations, 5000);
+    setInterval(loadGhostProjections, 10000);
 });
 
 function populateSietchSelect() {
@@ -425,3 +430,108 @@ function renderMarkers() {
          .bindPopup(popupContent);
     });
 }
+
+// ── MARQUEURS FANTÔMES (bases confirmées sur destination.html) ───────────────
+
+function loadGhostProjections() {
+    fetch('destination_api.php')
+        .then(res => res.json())
+        .then(data => {
+            const confirmed = (data || []).filter(r => r.status === 'confirmee');
+            if (JSON.stringify(confirmed) !== JSON.stringify(ghostProjections)) {
+                ghostProjections = confirmed;
+                renderGhostMarkers();
+            }
+        })
+        .catch(() => {}); // silencieux si destination_api.php absent
+}
+
+function getVisibleGhosts() {
+    // Exclure les joueurs déjà présents dans migration
+    const notDuplicate = ghostProjections.filter(g =>
+        !reservations.some(r => r.pseudo.toLowerCase() === g.pseudo.toLowerCase())
+    );
+    return currentSietch
+        ? notDuplicate.filter(g => g.sietch === currentSietch)
+        : notDuplicate;
+}
+
+function renderGhostMarkers() {
+    ghostLayer.clearLayers();
+
+    getVisibleGhosts().forEach(g => {
+        const ghostIcon = L.divIcon({
+            className: 'custom-svg-icon',
+            html: `
+                <div style="opacity:0.72; filter:drop-shadow(0 0 6px rgba(106,180,255,0.7));">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="36" height="36">
+                        <path fill="#6ab4ff" stroke="#ffffff" stroke-width="1.5" stroke-dasharray="3 2"
+                              d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                        <text x="12" y="9.5" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-size="6" font-weight="bold">?</text>
+                    </svg>
+                </div>`,
+            iconSize: [36, 36], iconAnchor: [18, 36], popupAnchor: [0, -36]
+        });
+
+        const sietchLine  = g.sietch   ? `<div style="font-size:11px; color:#a67c33; margin-top:2px;">📍 ${g.sietch}</div>` : '';
+        const noteLine    = g.note     ? `<div style="font-size:11px; color:#aaa; margin-top:4px; font-style:italic;">📋 ${g.note}</div>` : '';
+        const scoutLine   = g.placedBy ? `<div style="font-size:10px; color:#666; margin-top:2px;">Repéré par ${g.placedBy}</div>` : '';
+
+        const safePseudo = g.pseudo.replace(/'/g, "\\'");
+        const safeSietch = (g.sietch || '').replace(/'/g, "\\'");
+
+        const tooltipContent = `
+            <div style="text-align:center; line-height:1.4;">
+                <strong style="color:#6ab4ff; font-size:13px; text-transform:uppercase;">${g.pseudo}</strong><br>
+                ${sietchLine}
+                <span style="font-size:11px; color:#6ab4ff;">🔵 Position confirmée (Destination)</span>
+            </div>`;
+
+        const popupContent = `
+            <div style="text-align:center; font-family:sans-serif; min-width:200px;">
+                <strong style="color:#6ab4ff; font-size:15px;">${g.pseudo}</strong><br>
+                ${sietchLine}
+                ${scoutLine}
+                <div style="margin-top:6px; font-size:12px; color:#6ab4ff; font-weight:bold;">🔵 Position confirmée sur Galacia</div>
+                ${noteLine}
+                <div style="margin-top:10px; font-size:11px; color:#888;">
+                    Cliquez ci-dessous si c'est votre base pour finaliser votre inscription dans le plan de migration.
+                </div>
+                <button onclick="activateGhost('${safePseudo}', '${safeSietch}', ${g.lat}, ${g.lng})"
+                        style="margin-top:8px; width:100%; background:linear-gradient(to bottom,#5a9fd4,#2e6a9e);
+                               color:#fff; border:none; font-weight:bold; padding:8px; cursor:pointer;
+                               border-radius:4px; font-size:12px;">
+                    ✋ C'est ma base — m'inscrire
+                </button>
+            </div>`;
+
+        L.marker([g.lat, g.lng], { icon: ghostIcon })
+         .addTo(ghostLayer)
+         .bindTooltip(tooltipContent, { direction: 'top', offset: [0, -30], className: 'base-tooltip' })
+         .bindPopup(popupContent);
+    });
+}
+
+window.activateGhost = function(pseudo, sietch, lat, lng) {
+    showCustomPrompt(
+        "VÉRIFICATION",
+        `Est-ce bien la base de <strong style="color:#f3c44f;">${pseudo}</strong> ?<br>Entrez votre pseudo pour continuer :`,
+        pseudo,
+        inputPseudo => {
+            if (!inputPseudo) return;
+            if (inputPseudo.trim().toLowerCase() !== pseudo.toLowerCase()) {
+                showCustomConfirm("REFUSÉ", "Ce pseudo ne correspond pas à cette base.", null);
+                return;
+            }
+            // Ouvre le modal migration pré-rempli
+            currentCoords = { lat, lng };
+            document.getElementById('modal-title-text').innerText = "Finaliser mon inscription";
+            document.getElementById('res-pseudo').value  = pseudo;
+            document.getElementById('res-sietch').value  = sietch || SIETCHS[0];
+            document.getElementById('res-type').value    = 'souhait';
+            document.getElementById('res-dispo').value   = 'dispo_seul';
+            document.getElementById('reservation-modal').style.display = 'flex';
+            map.closePopup();
+        }
+    );
+};

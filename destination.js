@@ -10,6 +10,8 @@ let currentSietch = null, editingId = null;
 let pendingImages        = [];
 let existingImages       = [];
 let migrationReservations = [];
+let markerRefs           = {};   // id → L.marker (pour deep link)
+let urlHighlightDone     = false;
 const bounds = [[0, 0], [2556, 2556]];
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -308,8 +310,12 @@ function savePlacement() {
     .then(res => res.json())
     .then(result => {
         if (result.status === 'error') { showCustomConfirm("ERREUR", result.message, null); return; }
+        const wasNew = !editingId;
+        const savedPseudo = pseudo;
+        const savedSietch = sietch;
         closeModal();
         loadProjections();
+        if (wasNew) showDiscordModal(savedPseudo, savedSietch);
     })
     .catch(err => showCustomConfirm("ERREUR", "Impossible de joindre destination_api.php.<br><small>" + err + "</small>", null));
 }
@@ -430,9 +436,45 @@ function loadProjections() {
                 renderSietchFilterButtons();
                 renderMarkers();
                 renderSideLists();
+                handleUrlHighlight();
             }
         });
 }
+
+// ── DEEP LINK ?pseudo=xxx ────────────────────────────────────────────────────
+
+function handleUrlHighlight() {
+    if (urlHighlightDone) return;
+    const pseudo = new URLSearchParams(window.location.search).get('pseudo');
+    if (!pseudo) return;
+    const item = projections.find(r => r.pseudo.toLowerCase() === pseudo.toLowerCase());
+    if (!item) return;
+    urlHighlightDone = true;
+    setTimeout(() => {
+        map.flyTo([item.lat, item.lng], 1, { duration: 1.2 });
+        const marker = markerRefs[item.id];
+        if (marker) setTimeout(() => marker.openPopup(), 1400);
+    }, 400);
+}
+
+// ── DISCORD ──────────────────────────────────────────────────────────────────
+
+function showDiscordModal(pseudo, sietch) {
+    const url  = `${window.location.origin}${window.location.pathname}?pseudo=${encodeURIComponent(pseudo)}`;
+    const msg  = `📍 **${pseudo}** — Une base a été repérée pour toi à **${sietch}** sur Galacia !\n👉 ${url}\nClique sur ton marqueur 🟠 pour confirmer ou refuser l'emplacement.`;
+    document.getElementById('discord-msg-text').value = msg;
+    document.getElementById('discord-copy-btn').textContent = '📋 Copier';
+    document.getElementById('discord-modal').style.display = 'flex';
+}
+
+window.copyDiscordMsg = function() {
+    const text = document.getElementById('discord-msg-text').value;
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('discord-copy-btn');
+        btn.textContent = '✅ Copié !';
+        setTimeout(() => { btn.textContent = '📋 Copier'; }, 2000);
+    });
+};
 
 // ── MARQUEURS ────────────────────────────────────────────────────────────────
 
@@ -477,6 +519,7 @@ window.focusOnMarker = function(lat, lng) {
 
 function renderMarkers() {
     markersLayer.clearLayers();
+    markerRefs = {};
 
     const statusLabels = {
         projetee:  { text: '🔶 Base projetée', color: '#ff8c00' },
@@ -589,10 +632,11 @@ function renderMarkers() {
             iconSize: [36, 36], iconAnchor: [18, 36], popupAnchor: [0, -36]
         });
 
-        L.marker([res.lat, res.lng], { icon })
-         .addTo(markersLayer)
-         .bindTooltip(tooltipContent, { direction: 'top', offset: [0, -30], className: 'base-tooltip' })
-         .bindPopup(popupContent);
+        const marker = L.marker([res.lat, res.lng], { icon })
+            .addTo(markersLayer)
+            .bindTooltip(tooltipContent, { direction: 'top', offset: [0, -30], className: 'base-tooltip' })
+            .bindPopup(popupContent);
+        markerRefs[res.id] = marker;
     });
 }
 

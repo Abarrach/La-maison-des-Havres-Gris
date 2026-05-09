@@ -461,7 +461,7 @@ function handleUrlHighlight() {
 
 function showDiscordModal(pseudo, sietch) {
     const url  = `${window.location.origin}${window.location.pathname}?pseudo=${encodeURIComponent(pseudo)}`;
-    const msg  = `📍 **${pseudo}** — Une base a été repérée pour toi à **${sietch}** sur Galacia !\n👉 ${url}\nClique sur ton marqueur 🟠 pour confirmer ou refuser l'emplacement.`;
+    const msg  = `📍 **${pseudo}** — Une base a été repérée pour toi à **${sietch}** sur Icarus !\n👉 ${url}\nClique sur ton marqueur 🟠 pour confirmer ou refuser l'emplacement.`;
     document.getElementById('discord-msg-text').value = msg;
     document.getElementById('discord-copy-btn').textContent = '📋 Copier';
     document.getElementById('discord-modal').style.display = 'flex';

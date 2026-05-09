@@ -492,7 +492,7 @@ function renderGhostMarkers() {
                 <strong style="color:#6ab4ff; font-size:15px;">${g.pseudo}</strong><br>
                 ${sietchLine}
                 ${scoutLine}
-                <div style="margin-top:6px; font-size:12px; color:#6ab4ff; font-weight:bold;">🔵 Position confirmée sur Galacia</div>
+                <div style="margin-top:6px; font-size:12px; color:#6ab4ff; font-weight:bold;">🔵 Position confirmée sur Icarus</div>
                 ${noteLine}
                 <div style="margin-top:10px; font-size:11px; color:#888;">
                     Cliquez ci-dessous si c'est votre base pour finaliser votre inscription dans le plan de migration.

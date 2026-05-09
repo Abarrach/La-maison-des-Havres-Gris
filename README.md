@@ -60,8 +60,8 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 - Filtre par sietch, listes « Besoin d'un fief » et « Fief libre » en temps réel
 - **Import depuis Destination** : les bases confirmées sur `destination.html` apparaissent en marqueurs bleus pointillés ; le joueur vérifie son pseudo et finalise son inscription en un clic
 
-### Destination Galacia (`destination.html`)
-- Outil de **reconnaissance** sur le serveur de destination (ICARUS / Galacia)
+### Destination Icarus (`destination.html`)
+- Outil de **reconnaissance** sur le serveur de destination (Icarus)
 - Un éclaireur place des **bases projetées** pour chaque joueur à l'endroit exact repéré en jeu
 - Le joueur concerné confirme ou refuse l'emplacement (vérification par pseudo)
 - 3 états visuels : projeté (orange pointillé), confirmé (vert ✓), refusé (rouge ✕)
@@ -135,7 +135,7 @@ DuneMap/
 │
 ├── bases.json           # Bases des territoires (champs : user, x, y, type, map, note, sietch, instance)
 ├── requetes.json        # Demandes de craft
-├── destination_data.json # Bases projetées sur Galacia (auto-créé au premier enregistrement)
+├── destination_data.json # Bases projetées sur Icarus (auto-créé au premier enregistrement)
 ├── landsraad_data.json  # Quêtes disponibles
 ├── metiers.json         # Définitions des talents
 │

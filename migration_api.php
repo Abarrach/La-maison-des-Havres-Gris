@@ -4,7 +4,7 @@ header('Content-Type: application/json');
 $file = 'migration_data.json';
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-    if (file_exists($file)) { echo file_get_contents($file); } 
+    if (file_exists($file)) { echo file_get_contents($file); }
     else { echo json_encode([]); }
     exit;
 }
@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $input = json_decode(file_get_contents('php://input'), true);
     $data = file_exists($file) ? json_decode(file_get_contents($file), true) : [];
-    
+
     $action = isset($input['action']) ? $input['action'] : 'save';
 
     if ($action === 'delete') {
@@ -20,11 +20,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         foreach ($data as $item) {
             if (isset($item['id']) && $item['id'] === $input['id']) { $deletedItem = $item; }
         }
-        
+
         $data = array_filter($data, function($item) use ($input) {
             return isset($item['id']) && $item['id'] !== $input['id'];
         });
-        
+
         if ($deletedItem) {
             foreach ($data as &$item) {
                 if (isset($item['coveredBy']) && strcasecmp($item['coveredBy'], $deletedItem['pseudo']) === 0) unset($item['coveredBy']);
@@ -33,15 +33,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $data = array_values($data);
     }
-    elseif ($action === 'cover') { 
+    elseif ($action === 'cover') {
         $helper = trim($input['helper']);
         $helpee = trim($input['helpee']);
-        
+
         $helpeeFound = false;
 
-        // === SÉCURITÉ CÔTÉ SERVEUR ===
-        // On vérifie si le Helper a déjà une base posée sur la carte.
-        // Si oui, sa dispo DOIT être 'dispo_aide'. Sinon on bloque.
         foreach($data as $item) {
             if (strcasecmp($item['pseudo'], $helper) === 0) {
                 if ($item['dispo'] !== 'dispo_aide') {
@@ -50,8 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
         }
-        
-        // On lie les deux joueurs
+
         foreach($data as &$item) {
             if (strcasecmp($item['pseudo'], $helpee) === 0) {
                 $item['coveredBy'] = $helper;
@@ -61,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $item['covering'] = $helpee;
             }
         }
-        
+
         if (!$helpeeFound) {
             echo json_encode(["status" => "error", "message" => "Joueur introuvable."]);
             exit;
@@ -76,6 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 unset($item['refuseImages']);
             }
         }
+        unset($item);
     }
     elseif ($action === 'refuse') {
         foreach ($data as &$item) {
@@ -86,6 +83,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $item['refuseImages']  = isset($input['refuseImages']) ? $input['refuseImages'] : [];
             }
         }
+        unset($item);
+    }
+    elseif ($action === 'addImage') {
+        $id  = $input['id']    ?? null;
+        $img = $input['image'] ?? null;
+        if (!$id || !$img) { echo json_encode(['status'=>'error','message'=>'missing_data']); exit; }
+        foreach ($data as &$item) {
+            if (isset($item['id']) && $item['id'] === $id) { $item['image'] = $img; break; }
+        }
+        unset($item);
     }
     elseif ($action === 'uncover') {
         $helpee = trim($input['helpee']);
@@ -101,27 +108,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if (strcasecmp($item['pseudo'], $helper) === 0) unset($item['covering']);
             }
         }
+        unset($item);
     }
     else {
         $oldItem = null;
         foreach($data as $item) {
             if (strcasecmp($item['pseudo'], $input['pseudo']) === 0) $oldItem = $item;
         }
-        
+
         if ($oldItem) {
             // On préserve uniquement les liens de couverture (pas validated/refused : tout edit repart en attente)
             if (isset($oldItem['coveredBy'])) $input['coveredBy'] = $oldItem['coveredBy'];
             if (isset($oldItem['covering']))  $input['covering']  = $oldItem['covering'];
         }
-        
+
         foreach($data as $item) {
             if (isset($item['coveredBy']) && strcasecmp($item['coveredBy'], $input['pseudo']) === 0) {
                 $input['covering'] = $item['pseudo'];
             }
         }
-        
+
         $data = array_filter($data, function($item) use ($input) { return strcasecmp($item['pseudo'], $input['pseudo']) !== 0; });
-        
+
         $input['id'] = isset($oldItem['id']) ? $oldItem['id'] : uniqid();
         $data[] = $input;
         $data = array_values($data);

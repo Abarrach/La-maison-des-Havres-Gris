@@ -41,6 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
     setInterval(loadReservations, 5000);
     setInterval(loadGhostProjections, 10000);
     initRefuseDropZone();
+    initPlayerImgModal();
 });
 
 function populateSietchSelect() {
@@ -462,6 +463,17 @@ function renderMarkers() {
                 </div>`;
         }
 
+        const playerImgHtml = res.image
+            ? `<div style="margin:8px 0 2px 0;">
+                   <img src="${res.image}" onclick="openLightbox(this.src)"
+                        style="max-width:100%; max-height:130px; object-fit:cover; border-radius:4px;
+                               border:1px solid #5c4025; cursor:zoom-in; transition:border-color 0.2s;"
+                        onmouseover="this.style.borderColor='#cda434'"
+                        onmouseout="this.style.borderColor='#5c4025'">
+               </div>`
+            : '';
+        const imgBtnLabel = res.image ? '📸 Modifier ma capture' : '📸 Ajouter ma capture';
+
         let popupContent = `
             <div style="text-align:center; font-family:sans-serif; min-width: 200px;">
                 <strong style="color:#f3c44f; font-size:16px;">${res.pseudo}</strong><br>
@@ -469,7 +481,16 @@ function renderMarkers() {
                 <span style="font-size:12px; color:#aaa;">${typeText}</span><br>
                 <div style="margin-top:8px; font-size:12px; color:${dispoColor}; font-weight:bold;">${dispoText}</div>
 
-                ${actionBtn ? `<div style="display:flex; gap:5px; margin-top:12px;">${actionBtn}</div>` : ""}
+                ${playerImgHtml}
+                <button onclick="triggerImageUpload('${res.id}','${safePseudo}')"
+                        style="width:100%; margin-top:6px; padding:6px; background:#2b1d0e; color:#d3b46f;
+                               border:1px dashed #5c4025; border-radius:4px; cursor:pointer; font-size:11px;"
+                        onmouseover="this.style.background='#3d2a10';this.style.borderColor='#cda434'"
+                        onmouseout="this.style.background='#2b1d0e';this.style.borderColor='#5c4025'">
+                    ${imgBtnLabel}
+                </button>
+
+                ${actionBtn ? `<div style="display:flex; gap:5px; margin-top:10px;">${actionBtn}</div>` : ""}
 
                 ${validationRow}
 
@@ -733,6 +754,109 @@ window.copyDiscordMsg = function() {
         onCopied();
     }
 };
+
+// === MODAL CAPTURE JOUEUR ===
+let _playerImgId     = null;
+let _playerImgB64    = null;
+let _playerImgPseudo = null;
+
+function compressPlayerImage(dataUrl, onDone) {
+    const img = new Image();
+    img.onload = function() {
+        const MAX = 1200;
+        let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+            if (w >= h) { h = Math.round(h * MAX / w); w = MAX; }
+            else        { w = Math.round(w * MAX / h); h = MAX; }
+        }
+        const cv = document.createElement('canvas');
+        cv.width = w; cv.height = h;
+        cv.getContext('2d').drawImage(img, 0, 0, w, h);
+        onDone(cv.toDataURL('image/jpeg', 0.82));
+    };
+    img.src = dataUrl;
+}
+
+function setPlayerImgPreview(b64) {
+    _playerImgB64 = b64;
+    document.getElementById('player-img-preview-img').src = b64;
+    document.getElementById('player-img-preview').style.display = 'block';
+    document.getElementById('player-img-dropzone').style.display = 'none';
+}
+
+window.clearPlayerImgPreview = function() {
+    _playerImgB64 = null;
+    document.getElementById('player-img-preview').style.display = 'none';
+    document.getElementById('player-img-dropzone').style.display = 'flex';
+};
+
+window.triggerImageUpload = function(id, pseudo) {
+    _playerImgId     = id;
+    _playerImgB64    = null;
+    _playerImgPseudo = pseudo || '';
+    document.getElementById('player-img-preview').style.display = 'none';
+    document.getElementById('player-img-dropzone').style.display = 'flex';
+    document.getElementById('player-img-modal').style.display = 'flex';
+    map.closePopup();
+};
+
+window.closePlayerImgModal = function() {
+    document.getElementById('player-img-modal').style.display = 'none';
+    _playerImgId = null; _playerImgB64 = null; _playerImgPseudo = null;
+};
+
+window.savePlayerImage = function() {
+    if (!_playerImgB64) { showCustomConfirm("AUCUNE IMAGE", "Veuillez d'abord ajouter une capture.", null); return; }
+    const pseudo = _playerImgPseudo;
+    fetch('migration_api.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'addImage', id: _playerImgId, image: _playerImgB64 })
+    }).then(r => r.json()).then(d => {
+        if (d.status === 'success') {
+            closePlayerImgModal();
+            loadReservations();
+            const url = `${window.location.origin}${window.location.pathname}`;
+            showDiscordModal(`📸 **${pseudo}** — ton emplacement de migration a été vérifié !\nUne capture a été ajoutée à ton marqueur. Va vérifier que la position est correcte avant qu'elle soit validée.\n👉 ${url}`);
+        } else {
+            showCustomConfirm("ERREUR", d.message || "Erreur inconnue", null);
+        }
+    });
+};
+
+function initPlayerImgModal() {
+    const zone  = document.getElementById('player-img-dropzone');
+    const input = document.getElementById('player-img-input');
+    if (!zone) return;
+
+    zone.addEventListener('dragover',  e => { e.preventDefault(); zone.style.borderColor = '#cda434'; zone.style.background = 'rgba(205,164,52,0.05)'; });
+    zone.addEventListener('dragleave', () => { zone.style.borderColor = '#5c4025'; zone.style.background = ''; });
+    zone.addEventListener('drop', e => {
+        e.preventDefault(); zone.style.borderColor = '#5c4025'; zone.style.background = '';
+        const file = [...e.dataTransfer.files].find(f => f.type.startsWith('image/'));
+        if (!file) return;
+        const r = new FileReader(); r.onload = ev => compressPlayerImage(ev.target.result, setPlayerImgPreview); r.readAsDataURL(file);
+    });
+    zone.addEventListener('click', () => input && input.click());
+
+    input.addEventListener('change', () => {
+        if (!input.files[0]) return;
+        const r = new FileReader(); r.onload = ev => compressPlayerImage(ev.target.result, setPlayerImgPreview); r.readAsDataURL(input.files[0]);
+        input.value = '';
+    });
+
+    document.addEventListener('paste', e => {
+        if (document.getElementById('player-img-modal').style.display !== 'flex') return;
+        const items = e.clipboardData?.items;
+        if (!items) return;
+        for (const item of items) {
+            if (item.type.startsWith('image/')) {
+                const r = new FileReader(); r.onload = ev => compressPlayerImage(ev.target.result, setPlayerImgPreview); r.readAsDataURL(item.getAsFile());
+                break;
+            }
+        }
+    });
+}
 
 // === LIGHTBOX ===
 window.openLightbox = function(src) {

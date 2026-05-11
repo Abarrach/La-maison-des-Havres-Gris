@@ -300,6 +300,47 @@
       </div>
   </div>
 
+  <!-- Modal capture joueur -->
+  <div id="player-img-modal"
+       style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+              background:rgba(0,0,0,0.85); z-index:2500; justify-content:center; align-items:center;">
+      <div style="background:#14100a; border:2px solid #cda434; padding:20px; border-radius:8px;
+                  width:360px; max-width:92vw; color:#f5deb3; max-height:90vh; overflow-y:auto;">
+          <h3 style="margin:0 0 14px 0; color:#cda434; text-align:center;
+                     border-bottom:1px solid #5c4025; padding-bottom:10px; text-transform:uppercase; font-size:14px;">
+              📸 Ma capture d'écran
+          </h3>
+          <div id="player-img-dropzone"
+               style="display:flex; align-items:center; justify-content:center; min-height:52px;
+                      border:2px dashed #5c4025; border-radius:4px; padding:12px 10px; text-align:center;
+                      color:#888; font-size:11px; cursor:pointer; transition:border-color 0.2s, background 0.2s;">
+              <span>Glissez une capture ici, collez (Ctrl+V) ou cliquez</span>
+          </div>
+          <input type="file" id="player-img-input" accept="image/*" style="display:none;">
+          <div id="player-img-preview" style="margin-top:10px; text-align:center; display:none;">
+              <img id="player-img-preview-img" src="" alt=""
+                   style="max-width:100%; max-height:160px; object-fit:contain; border-radius:4px; border:1px solid #5c4025;">
+              <button onclick="clearPlayerImgPreview()"
+                      style="display:block; margin:6px auto 0; background:#a83b3b; color:#fff; border:none;
+                             border-radius:3px; padding:4px 10px; font-size:11px; cursor:pointer;">
+                  ✕ Retirer
+              </button>
+          </div>
+          <div style="display:flex; gap:10px; margin-top:18px;">
+              <button onclick="closePlayerImgModal()"
+                      style="flex:1; padding:10px; background:#333; color:#fff; border:1px solid #555;
+                             font-weight:bold; border-radius:4px; cursor:pointer;">
+                  Annuler
+              </button>
+              <button onclick="savePlayerImage()"
+                      style="flex:1; padding:10px; background:linear-gradient(to bottom,#d4a23b,#8b6e3b);
+                             color:#000; border:1px solid #ffd700; font-weight:bold; border-radius:4px; cursor:pointer;">
+                  Enregistrer
+              </button>
+          </div>
+      </div>
+  </div>
+
   <!-- Modal Discord -->
   <div id="discord-modal"
        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;

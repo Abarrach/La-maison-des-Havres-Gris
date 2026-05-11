@@ -1,8 +1,5 @@
 const SIETCHS = [
-  'Sietch Abbir', 'Sietch Alraab', 'Sietch Barkan', 'Sietch Coanua', 'Sietch Fajr',
-  'Sietch Gara Kulon', 'Sietch Hajar', 'Sietch Jacurutu', 'Sietch Kathib', 'Sietch Legg',
-  'Sietch Makab', 'Sietch Nadir', 'Sietch Ramal', 'Sietch Rifana', 'Sietch Sandrat',
-  'Sietch Saajid', 'Sietch Tabr', 'Sietch Tharwa', 'Sietch Umbu', 'Sietch Yaracuwan'
+  'Sietch Rajifiri', 'Sietch Fajr', 'Sietch Al Rab', 'Sietch Umbu'
 ];
 
 let map, currentCoords = null, projections = [], markersLayer = L.layerGroup();

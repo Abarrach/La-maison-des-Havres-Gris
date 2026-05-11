@@ -245,7 +245,7 @@ switch ($action) {
         array_unshift($reqs, $newReq);
 
         if (!writeJson($reqFile, $reqs)) jerr("write_error");
-        echo json_encode(['ok' => true]);
+        echo json_encode(['ok' => true, 'id' => $newReq['id']]);
         exit;
 
     case 'updateRequete':

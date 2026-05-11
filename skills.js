@@ -592,6 +592,8 @@ window.submitRequest = async function() {
         }
 
         if (r.ok) {
+            const postedType  = type;
+            const postedNotes = notes;
             document.getElementById('request-type').value     = "";
             document.getElementById('request-notes').value    = "";
             document.getElementById('file-name').textContent  = "";
@@ -600,6 +602,7 @@ window.submitRequest = async function() {
             renderImgPreviews();
             loadRequests();
             showToast("✅ Demande postée !", 'ok');
+            showDiscordModal(currentUserReq, postedType, postedNotes);
         } else {
             alert("Erreur serveur : " + r.error);
         }
@@ -687,10 +690,21 @@ window.toggleHistory = function() {
 window.updateReqStatus = async function(id,status) {
     try{const r=await fetch("save.php",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"updateRequete",id,status,crafter:currentUserReq})});const d=await r.json();if(d.ok)loadRequests();else alert("Erreur : "+d.error);}catch{alert("Erreur réseau.");}
 };
-window.deleteRequest = async function(id) {
-    if(!confirm("Supprimer cette demande ?")) return;
-    try{const r=await fetch("save.php",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"deleteRequete",id})});const d=await r.json();if(d.ok)loadRequests();else alert("Erreur : "+d.error);}catch{alert("Erreur réseau.");}
+let _pendingDeleteId = null;
+window.deleteRequest = function(id) {
+    _pendingDeleteId = id;
+    document.getElementById('delete-confirm-modal').style.display = 'flex';
+    document.getElementById('delete-confirm-yes').onclick = confirmDelete;
 };
+window.closeDeleteModal = function() {
+    document.getElementById('delete-confirm-modal').style.display = 'none';
+    _pendingDeleteId = null;
+};
+async function confirmDelete() {
+    const id = _pendingDeleteId;
+    closeDeleteModal();
+    try{const r=await fetch("save.php",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"deleteRequete",id})});const d=await r.json();if(d.ok)loadRequests();else alert("Erreur : "+d.error);}catch{alert("Erreur réseau.");}
+}
 
 // ================================================================
 // COMPRESSION IMAGE
@@ -709,3 +723,49 @@ function resizeImage(file,maxW,maxH) {
 
 // Compat ancienne fonction HTML (si encore référencée)
 window.previewImage = function(input) { handleFileSelect(input); };
+
+// ================================================================
+// DISCORD
+// ================================================================
+let discordAutoCloseTimer = null;
+
+function showDiscordModal(player, type, notes) {
+    const url = `${window.location.origin}${window.location.pathname}?tab=requetes`;
+    let msg = `🛠️ **${player}** a posté une demande de fabrication !\n⚙️ **${type}**`;
+    if (notes && notes.trim()) msg += `\n📝 "${notes.trim()}"`;
+    msg += `\n👉 ${url}`;
+    document.getElementById('discord-msg-text').value = msg;
+    document.getElementById('discord-copy-btn').textContent = '📋 Copier';
+    const modal = document.getElementById('discord-modal');
+    modal.style.display = 'flex';
+}
+
+window.closeDiscordModal = function() {
+    document.getElementById('discord-modal').style.display = 'none';
+    if (discordAutoCloseTimer) { clearTimeout(discordAutoCloseTimer); discordAutoCloseTimer = null; }
+};
+
+function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        return navigator.clipboard.writeText(text);
+    }
+    // Fallback pour HTTP (pas de HTTPS)
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;opacity:0;pointer-events:none;';
+    document.body.appendChild(ta);
+    ta.select();
+    ta.setSelectionRange(0, 99999);
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    return Promise.resolve();
+}
+
+window.copyDiscordMsg = function() {
+    const text = document.getElementById('discord-msg-text').value;
+    copyToClipboard(text).then(() => {
+        const btn = document.getElementById('discord-copy-btn');
+        btn.textContent = '✅ Copié !';
+        discordAutoCloseTimer = setTimeout(closeDiscordModal, 800);
+    });
+};

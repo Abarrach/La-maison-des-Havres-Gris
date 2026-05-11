@@ -63,7 +63,35 @@
     .legend-item { margin-bottom: 6px; display: flex; align-items: center; }
     .dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; margin-right: 8px; border: 1px solid #fff; flex-shrink: 0; }
     .dot-imperatif { background: #ff0066; box-shadow: 0 0 8px #ff0066; }
-    .dot-souhait { background: #00e5ff; box-shadow: 0 0 8px #00e5ff; }
+    .dot-souhait   { background: #00e5ff; box-shadow: 0 0 8px #00e5ff; }
+    .dot-refuse    { background: #ff8c00; box-shadow: 0 0 8px #ff8c00; }
+
+    /* Dropzone images refus */
+    #refuse-img-dropzone {
+        display: flex; align-items: center; justify-content: center;
+        border: 2px dashed #ff8c00; border-radius: 4px; padding: 12px 10px;
+        text-align: center; color: #888; font-size: 11px; cursor: pointer;
+        margin-top: 6px; transition: border-color 0.2s, background 0.2s; min-height: 40px;
+    }
+    #refuse-img-dropzone.drag-over { border-color: #ffd700; background: rgba(255,140,0,0.07); color: #ff8c00; }
+    .img-preview-item { position: relative; width: 110px; height: 72px; }
+    .img-preview-item img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; border: 1px solid #5c4025; }
+    .img-preview-remove {
+        position: absolute; top: -6px; right: -6px;
+        background: #a83b3b; color: #fff; border: none; border-radius: 50%;
+        width: 18px; height: 18px; font-size: 10px; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+    }
+    /* Lightbox */
+    #img-lightbox {
+        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(0,0,0,0.92); z-index: 20000; justify-content: center; align-items: center;
+    }
+    #img-lightbox img { max-width: 90vw; max-height: 90vh; border: 2px solid #cda434; border-radius: 4px; }
+    #img-lightbox-close {
+        position: absolute; top: 20px; right: 30px; font-size: 28px; color: #cda434;
+        cursor: pointer; background: none; border: none;
+    }
 
     .help-item {
         padding: 6px; border-bottom: 1px solid #5c4025;
@@ -129,17 +157,6 @@
 </head>
 <body>
 
-  <a href="destination.html"
-     style="position:fixed; top:12px; right:12px; z-index:1100;
-            background:rgba(20,12,4,0.92); border:1px solid #cda434; border-radius:6px;
-            padding:6px 12px; color:#f3c44f; font-size:12px; font-weight:bold;
-            text-decoration:none; box-shadow:0 0 10px rgba(0,0,0,0.6);
-            transition:background 0.2s;"
-     onmouseover="this.style.background='rgba(80,50,10,0.95)'"
-     onmouseout="this.style.background='rgba(20,12,4,0.92)'">
-      🗺 Destination →
-  </a>
-
   <div class="header-migration">
       <h1>Plan de Migration</h1>
       <p>Organisez votre placement pour le déménagement de guilde.</p>
@@ -160,17 +177,18 @@
 
       <div class="map-box map-legend">
           <h4>🎨 Légende</h4>
-          <div class="legend-item"><span class="dot dot-imperatif"></span> Impératif (Rentre nulle part ailleurs)</div>
-          <div class="legend-item"><span class="dot dot-souhait"></span> Souhait (Position flexible)</div>
+          <div style="font-size:10px; color:#888; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px;">En attente de validation</div>
+          <div class="legend-item"><span class="dot" style="background:#ff8888; border:2px dashed #fff; opacity:0.8;"></span> Impératif (non validé)</div>
+          <div class="legend-item"><span class="dot" style="background:#88eeff; border:2px dashed #fff; opacity:0.8;"></span> Souhait (non validé)</div>
+          <div style="font-size:10px; color:#888; margin:8px 0 6px; text-transform:uppercase; letter-spacing:0.5px;">Position validée</div>
+          <div class="legend-item"><span class="dot dot-imperatif"></span> Impératif (validé)</div>
+          <div class="legend-item"><span class="dot dot-souhait"></span> Souhait (validé)</div>
+          <div style="font-size:10px; color:#888; margin:8px 0 6px; text-transform:uppercase; letter-spacing:0.5px;">Position refusée</div>
+          <div class="legend-item"><span class="dot dot-refuse"></span> À repositionner</div>
           <hr style="border-color:#5c4025; margin:10px 0;">
           <div class="legend-item" style="color:#41d37a; font-weight:bold;">✅ Présent (Se débrouille)</div>
           <div class="legend-item" style="color:#5bc0de; font-weight:bold;">🤝 Présent (Offre un sous-fief)</div>
           <div class="legend-item" style="color:#ff6b6b; font-weight:bold;">❌ Absent (A besoin d'un sous-fief)</div>
-          <hr style="border-color:#5c4025; margin:10px 0;">
-          <div class="legend-item">
-              <span class="dot" style="background:#6ab4ff; opacity:0.75; border:2px dashed #fff; box-shadow:0 0 6px #6ab4ff; flex-shrink:0;"></span>
-              <span style="color:#6ab4ff;">Position confirmée (depuis Destination)</span>
-          </div>
       </div>
 
       <div class="map-box" id="help-list-box">
@@ -193,26 +211,18 @@
 
           <label>Sietch de destination</label>
           <select id="res-sietch">
-              <option value="Sietch Abbir">Sietch Abbir</option>
-              <option value="Sietch Alraab">Sietch Alraab</option>
-              <option value="Sietch Barkan">Sietch Barkan</option>
-              <option value="Sietch Coanua">Sietch Coanua</option>
-              <option value="Sietch Fajr">Sietch Fajr</option>
-              <option value="Sietch Gara Kulon">Sietch Gara Kulon</option>
-              <option value="Sietch Hajar">Sietch Hajar</option>
-              <option value="Sietch Jacurutu">Sietch Jacurutu</option>
-              <option value="Sietch Kathib">Sietch Kathib</option>
-              <option value="Sietch Legg">Sietch Legg</option>
-              <option value="Sietch Makab">Sietch Makab</option>
-              <option value="Sietch Nadir">Sietch Nadir</option>
-              <option value="Sietch Ramal">Sietch Ramal</option>
-              <option value="Sietch Rifana">Sietch Rifana</option>
-              <option value="Sietch Sandrat">Sietch Sandrat</option>
-              <option value="Sietch Saajid">Sietch Saajid</option>
-              <option value="Sietch Tabr">Sietch Tabr</option>
-              <option value="Sietch Tharwa">Sietch Tharwa</option>
-              <option value="Sietch Umbu">Sietch Umbu</option>
-              <option value="Sietch Yaracuwan">Sietch Yaracuwan</option>
+              <optgroup label="⭐ 1er choix">
+                  <option value="Sietch Rajifiri">Sietch Rajifiri</option>
+                  <option value="Sietch Fajr">Sietch Fajr</option>
+                  <option value="Sietch Al Rab">Sietch Al Rab</option>
+                  <option value="Sietch Umbu">Sietch Umbu</option>
+                  <option value="Sietch Tharwa">Sietch Tharwa</option>
+              </optgroup>
+              <optgroup label="2nd choix">
+                  <option value="Sietch Kathib">Sietch Kathib</option>
+                  <option value="Sietch Makab">Sietch Makab</option>
+                  <option value="Sietch Saajid">Sietch Saajid</option>
+              </optgroup>
           </select>
 
           <label>Type de placement</label>
@@ -245,6 +255,86 @@
               <button id="generic-modal-btn-confirm" class="res-btn btn-save">Confirmer</button>
           </div>
       </div>
+  </div>
+
+  <!-- Modale de refus -->
+  <div id="refuse-modal"
+       style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+              background:rgba(0,0,0,0.85); z-index:2500; justify-content:center; align-items:center;">
+      <div style="background:#14100a; border:2px solid #ff8c00; padding:20px; border-radius:8px;
+                  width:390px; max-width:92vw; color:#f5deb3; max-height:90vh; overflow-y:auto;">
+          <h3 style="margin:0 0 15px 0; color:#ff8c00; text-align:center;
+                     border-bottom:1px solid #5c4025; padding-bottom:10px; text-transform:uppercase;">
+              ✖ Refuser la position
+          </h3>
+          <label style="display:block; font-size:12px; color:#aaa;">
+              Raison du refus <span style="color:#ff6b6b;">*</span>
+          </label>
+          <textarea id="refuse-note"
+              placeholder="Ex: Trop proche d'une falaise, mauvais secteur..."
+              style="width:100%; padding:8px; margin-top:5px; background:#2b1d0e; border:1px solid #5c4025;
+                     color:#fff; box-sizing:border-box; resize:vertical; min-height:70px;
+                     font-family:sans-serif; font-size:12px;"></textarea>
+
+          <label style="display:block; margin-top:12px; font-size:12px; color:#aaa;">
+              Captures d'écran <span style="color:#888; font-size:10px;">(optionnel, max 2 — glisser, coller ou cliquer)</span>
+          </label>
+          <div id="refuse-img-dropzone">
+              <span>Glissez des captures ici, collez (Ctrl+V) ou cliquez</span>
+          </div>
+          <input type="file" id="refuse-img-input" accept="image/*" multiple style="display:none;">
+          <div id="refuse-img-previews" style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;"></div>
+
+          <div style="display:flex; gap:10px; margin-top:20px;">
+              <button onclick="closeRefuseModal()"
+                      style="flex:1; padding:10px; background:#333; color:#fff; border:1px solid #555;
+                             font-weight:bold; border-radius:4px; cursor:pointer;">
+                  Annuler
+              </button>
+              <button onclick="submitRefusal()"
+                      style="flex:1; padding:10px; background:linear-gradient(to bottom,#ff8c00,#c46b00);
+                             color:#fff; border:none; font-weight:bold; border-radius:4px; cursor:pointer;">
+                  ✖ Confirmer le refus
+              </button>
+          </div>
+      </div>
+  </div>
+
+  <!-- Modal Discord -->
+  <div id="discord-modal"
+       style="display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+              background:rgba(0,0,0,0.85); z-index:10000; justify-content:center; align-items:center;">
+      <div style="background:#14100a; border:2px solid #cda434; border-radius:8px; padding:24px;
+                  width:440px; max-width:92vw; box-shadow:0 0 30px rgba(0,0,0,0.8);">
+          <h3 style="margin:0 0 8px 0; color:#cda434; text-align:center; text-transform:uppercase; font-size:15px;">
+              📨 Message Discord prêt
+          </h3>
+          <p style="margin:0 0 12px 0; color:#888; font-size:11px; text-align:center;">
+              Copiez ce message et postez-le sur Discord pour prévenir le joueur.
+          </p>
+          <textarea id="discord-msg-text" readonly
+              style="width:100%; height:110px; background:#0e0804; border:1px solid #5c4025; color:#d3b46f;
+                     font-size:12px; line-height:1.6; padding:10px; box-sizing:border-box; resize:none;
+                     border-radius:4px; font-family:sans-serif;"></textarea>
+          <div style="display:flex; gap:10px; margin-top:14px;">
+              <button id="discord-copy-btn" onclick="copyDiscordMsg()"
+                  style="flex:1; padding:10px; background:linear-gradient(to bottom,#5865f2,#3c45a5);
+                         color:#fff; border:none; border-radius:4px; font-weight:bold; cursor:pointer; font-size:13px;">
+                  📋 Copier
+              </button>
+              <button onclick="document.getElementById('discord-modal').style.display='none'"
+                  style="flex:1; padding:10px; background:#333; color:#fff; border:1px solid #555;
+                         border-radius:4px; font-weight:bold; cursor:pointer; font-size:13px;">
+                  Fermer
+              </button>
+          </div>
+      </div>
+  </div>
+
+  <!-- Lightbox -->
+  <div id="img-lightbox">
+      <button id="img-lightbox-close" onclick="document.getElementById('img-lightbox').style.display='none'">✕</button>
+      <img id="img-lightbox-img" src="" alt="">
   </div>
 
   <script src="migration.js"></script>

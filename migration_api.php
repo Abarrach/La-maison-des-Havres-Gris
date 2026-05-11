@@ -67,7 +67,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
     }
-    elseif ($action === 'uncover') { 
+    elseif ($action === 'validate') {
+        foreach ($data as &$item) {
+            if (isset($item['id']) && $item['id'] === $input['id']) {
+                $item['validated']     = true;
+                $item['refused']       = false;
+                unset($item['refuseNote']);
+                unset($item['refuseImages']);
+            }
+        }
+    }
+    elseif ($action === 'refuse') {
+        foreach ($data as &$item) {
+            if (isset($item['id']) && $item['id'] === $input['id']) {
+                $item['refused']       = true;
+                $item['validated']     = false;
+                $item['refuseNote']    = isset($input['refuseNote'])   ? $input['refuseNote']   : '';
+                $item['refuseImages']  = isset($input['refuseImages']) ? $input['refuseImages'] : [];
+            }
+        }
+    }
+    elseif ($action === 'uncover') {
         $helpee = trim($input['helpee']);
         $helper = null;
         foreach($data as &$item) {
@@ -89,8 +109,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         if ($oldItem) {
+            // On préserve uniquement les liens de couverture (pas validated/refused : tout edit repart en attente)
             if (isset($oldItem['coveredBy'])) $input['coveredBy'] = $oldItem['coveredBy'];
-            if (isset($oldItem['covering'])) $input['covering'] = $oldItem['covering'];
+            if (isset($oldItem['covering']))  $input['covering']  = $oldItem['covering'];
         }
         
         foreach($data as $item) {

@@ -1,9 +1,10 @@
-const SIETCHS = [
-  'Sietch Abbir', 'Sietch Alraab', 'Sietch Barkan', 'Sietch Coanua', 'Sietch Fajr',
-  'Sietch Gara Kulon', 'Sietch Hajar', 'Sietch Jacurutu', 'Sietch Kathib', 'Sietch Legg',
-  'Sietch Makab', 'Sietch Nadir', 'Sietch Ramal', 'Sietch Rifana', 'Sietch Sandrat',
-  'Sietch Saajid', 'Sietch Tabr', 'Sietch Tharwa', 'Sietch Umbu', 'Sietch Yaracuwan'
+const SIETCHS_PREMIER = [
+  'Sietch Rajifiri', 'Sietch Fajr', 'Sietch Al Rab', 'Sietch Umbu', 'Sietch Tharwa'
 ];
+const SIETCHS_SECOND = [
+  'Sietch Kathib', 'Sietch Makab', 'Sietch Saajid'
+];
+const SIETCHS = [...SIETCHS_PREMIER, ...SIETCHS_SECOND];
 
 let map;
 let currentCoords = null;
@@ -39,12 +40,19 @@ document.addEventListener("DOMContentLoaded", () => {
     loadGhostProjections();
     setInterval(loadReservations, 5000);
     setInterval(loadGhostProjections, 10000);
+    initRefuseDropZone();
 });
 
 function populateSietchSelect() {
     const sel = document.getElementById('res-sietch');
     if (!sel) return;
-    sel.innerHTML = SIETCHS.map(s => `<option value="${s}">${s}</option>`).join('');
+    sel.innerHTML = `
+        <optgroup label="⭐ 1er choix">
+            ${SIETCHS_PREMIER.map(s => `<option value="${s}">${s}</option>`).join('')}
+        </optgroup>
+        <optgroup label="2nd choix">
+            ${SIETCHS_SECOND.map(s => `<option value="${s}">${s}</option>`).join('')}
+        </optgroup>`;
 }
 
 // === MODALES PERSONNALISÉES ===
@@ -267,11 +275,15 @@ function loadReservations() {
         });
 }
 
-function createSvgMarker(color, glowColor) {
+function createSvgMarker(color, glowColor, dashed = false) {
+    const dashAttr = dashed ? 'stroke-dasharray="4 2"' : '';
+    const wrapStyle = dashed
+        ? `opacity:0.75; filter: drop-shadow(0 0 6px ${glowColor});`
+        : `filter: drop-shadow(0 0 8px ${glowColor});`;
     return `
-        <div style="filter: drop-shadow(0 0 8px ${glowColor});">
+        <div style="${wrapStyle}">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="36" height="36">
-                <path fill="${color}" stroke="#ffffff" stroke-width="1.5" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                <path fill="${color}" stroke="#ffffff" stroke-width="1.5" ${dashAttr} d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
             </svg>
         </div>
     `;
@@ -352,17 +364,25 @@ function renderMarkers() {
     const visible = getVisible();
 
     visible.forEach(res => {
-        let mainColor = '#00e5ff';
-        let glowColor = 'rgba(0, 229, 255, 0.8)';
+        const validated = !!res.validated;
+        const refused   = !!res.refused;
+        let mainColor, glowColor;
         let typeText = "💭 Souhait";
 
-        if (res.type === 'imperatif') {
-            mainColor = '#ff0066'; glowColor = 'rgba(255, 0, 102, 0.8)'; typeText = "🛑 IMPÉRATIF";
+        if (refused) {
+            mainColor = '#ff8c00'; glowColor = 'rgba(255, 140, 0, 0.85)';
+        } else if (res.type === 'imperatif') {
+            typeText  = "🛑 IMPÉRATIF";
+            mainColor = validated ? '#ff0066' : '#ff8888';
+            glowColor = validated ? 'rgba(255, 0, 102, 0.8)' : 'rgba(255, 136, 136, 0.5)';
+        } else {
+            mainColor = validated ? '#00e5ff' : '#88eeff';
+            glowColor = validated ? 'rgba(0, 229, 255, 0.8)' : 'rgba(136, 238, 255, 0.4)';
         }
 
         let customIcon = L.divIcon({
             className: 'custom-svg-icon',
-            html: createSvgMarker(mainColor, glowColor),
+            html: createSvgMarker(mainColor, glowColor, !validated && !refused),
             iconSize: [36, 36], iconAnchor: [18, 36], popupAnchor: [0, -36]
         });
 
@@ -384,12 +404,18 @@ function renderMarkers() {
             ? `<div style="font-size:11px; color:#a67c33; margin-top:2px;">📍 ${res.sietch}</div>`
             : '';
 
+        // Ligne de statut dans le tooltip
+        let statusHint = '';
+        if (refused)        statusHint = '<br><span style="font-size:10px; color:#ff8c00; font-style:italic;">❌ Position refusée — à repositionner</span>';
+        else if (!validated) statusHint = '<br><span style="font-size:10px; color:#f3a84f; font-style:italic;">⏳ En attente de validation</span>';
+
         let tooltipContent = `
             <div style="text-align:center; line-height:1.4;">
                 <strong style="color:#f3c44f; font-size:14px; text-transform:uppercase;">${res.pseudo}</strong><br>
                 ${sietchLine}
                 <span style="font-size:11px; color:#ccc;">${typeText}</span><br>
                 <span style="font-size:11px; color:${dispoColor}; font-weight:bold;">${dispoText}</span>
+                ${statusHint}
             </div>
         `;
 
@@ -402,8 +428,42 @@ function renderMarkers() {
             }
         }
 
+        // Bloc validation / refus / état
+        let validationRow;
+        if (refused) {
+            const noteHtml = res.refuseNote
+                ? `<div style="font-size:11px; color:#ccc; font-style:italic; margin-top:4px; text-align:left; padding:0 4px;">📋 ${res.refuseNote}</div>`
+                : '';
+            const imgsHtml = (res.refuseImages && res.refuseImages.length)
+                ? `<div style="display:flex; gap:6px; margin-top:6px; justify-content:center; flex-wrap:wrap;">
+                       ${res.refuseImages.map(src => `<img src="${src}" onclick="openLightbox('${src}')" style="width:80px; height:52px; object-fit:cover; border-radius:3px; border:1px solid #ff8c00; cursor:pointer;">`).join('')}
+                   </div>`
+                : '';
+            validationRow = `
+                <div style="margin-top:10px; padding:8px; background:rgba(255,140,0,0.1); border:1px solid #ff8c00; border-radius:4px;">
+                    <div style="font-size:12px; color:#ff8c00; font-weight:bold;">❌ Position refusée</div>
+                    ${noteHtml}${imgsHtml}
+                </div>`;
+        } else if (validated) {
+            validationRow = `<div style="margin-top:8px; font-size:11px; color:#41d37a;">✅ Position validée</div>`;
+        } else {
+            validationRow = `
+                <div style="display:flex; gap:5px; margin-top:10px;">
+                    <button onclick="validateReservation('${res.id}','${safePseudo}','${safeSietch}')"
+                            style="flex:1; background:linear-gradient(to bottom,#41d37a,#2a9a58); color:#000;
+                                   border:none; font-weight:bold; padding:6px; cursor:pointer; border-radius:3px; font-size:11px;">
+                        ✔ Valider
+                    </button>
+                    <button onclick="refuseReservation('${res.id}','${safePseudo}','${safeSietch}')"
+                            style="flex:1; background:linear-gradient(to bottom,#ff8c00,#c46b00); color:#fff;
+                                   border:none; font-weight:bold; padding:6px; cursor:pointer; border-radius:3px; font-size:11px;">
+                        ✖ Refuser
+                    </button>
+                </div>`;
+        }
+
         let popupContent = `
-            <div style="text-align:center; font-family:sans-serif; min-width: 180px;">
+            <div style="text-align:center; font-family:sans-serif; min-width: 200px;">
                 <strong style="color:#f3c44f; font-size:16px;">${res.pseudo}</strong><br>
                 ${sietchLine}
                 <span style="font-size:12px; color:#aaa;">${typeText}</span><br>
@@ -411,8 +471,10 @@ function renderMarkers() {
 
                 ${actionBtn ? `<div style="display:flex; gap:5px; margin-top:12px;">${actionBtn}</div>` : ""}
 
+                ${validationRow}
+
                 <div style="display:flex; gap:5px; margin-top:10px;">
-                    <button onclick="editReservation('${safePseudo}', '${safeSietch}', '${res.type}', '${res.dispo}', ${res.lat}, ${res.lng})"
+                    <button onclick="editReservation('${safePseudo}','${safeSietch}','${res.type}','${res.dispo}',${res.lat},${res.lng})"
                             style="flex:1; background:#8b6e3b; color:#fff; border:none; padding:5px; cursor:pointer; border-radius:3px;">
                         Éditer
                     </button>
@@ -511,6 +573,173 @@ function renderGhostMarkers() {
          .bindPopup(popupContent);
     });
 }
+
+window.validateReservation = function(id, pseudo, sietch) {
+    showCustomConfirm(
+        "VALIDER LA POSITION",
+        `Confirmez-vous avoir vérifié et validé l'emplacement de <strong style="color:#f3c44f;">${pseudo}</strong> ?`,
+        () => {
+            fetch('migration_api.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'validate', id })
+            }).then(r => r.json()).then(data => {
+                if (data.status === 'error') { showCustomConfirm("ERREUR", data.message, null); return; }
+                map.closePopup();
+                loadReservations();
+                showDiscordModal(
+                    `✅ **${pseudo}** — ta position sur **${sietch}** a été validée !\nTu peux préparer ton déménagement. 🏜️`
+                );
+            });
+        }
+    );
+};
+
+// === REFUS ===
+let _refuseId = null, _refusePseudo = null, _refuseSietch = null;
+let refusePendingImages = [];
+
+window.refuseReservation = function(id, pseudo, sietch) {
+    _refuseId = id; _refusePseudo = pseudo; _refuseSietch = sietch;
+    refusePendingImages = [];
+    document.getElementById('refuse-note').value = '';
+    renderRefuseImagePreviews();
+    document.getElementById('refuse-modal').style.display = 'flex';
+    map.closePopup();
+};
+
+window.closeRefuseModal = function() {
+    document.getElementById('refuse-modal').style.display = 'none';
+};
+
+window.submitRefusal = function() {
+    const note = document.getElementById('refuse-note').value.trim();
+    if (!note) { showCustomConfirm("CHAMP REQUIS", "Veuillez indiquer la raison du refus.", null); return; }
+    const id = _refuseId, pseudo = _refusePseudo, sietch = _refuseSietch;
+    fetch('migration_api.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'refuse', id, refuseNote: note, refuseImages: refusePendingImages })
+    }).then(r => r.json()).then(data => {
+        if (data.status === 'error') { showCustomConfirm("ERREUR", data.message, null); return; }
+        closeRefuseModal();
+        loadReservations();
+        showDiscordModal(
+            `❌ **${pseudo}** — ta position sur **${sietch}** n'a pas pu être validée.\n📋 **Raison :** ${note}\n\nMerci de repositionner ton marqueur sur la carte de migration.`
+        );
+    });
+};
+
+// === IMAGES REFUS ===
+function renderRefuseImagePreviews() {
+    const c = document.getElementById('refuse-img-previews');
+    if (!c) return;
+    c.innerHTML = refusePendingImages.map((src, i) => `
+        <div class="img-preview-item">
+            <img src="${src}" alt="aperçu">
+            <button class="img-preview-remove" onclick="removeRefuseImage(${i})">✕</button>
+        </div>`).join('');
+}
+
+window.removeRefuseImage = function(i) {
+    refusePendingImages.splice(i, 1);
+    renderRefuseImagePreviews();
+};
+
+function compressAndQueue(dataUrl) {
+    if (refusePendingImages.length >= 2) return;
+    const img = new Image();
+    img.onload = function() {
+        const MAX = 1200; let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+            if (w >= h) { h = Math.round(h * MAX / w); w = MAX; }
+            else        { w = Math.round(w * MAX / h); h = MAX; }
+        }
+        const cv = document.createElement('canvas');
+        cv.width = w; cv.height = h;
+        cv.getContext('2d').drawImage(img, 0, 0, w, h);
+        refusePendingImages.push(cv.toDataURL('image/jpeg', 0.82));
+        renderRefuseImagePreviews();
+    };
+    img.src = dataUrl;
+}
+
+function initRefuseDropZone() {
+    const zone  = document.getElementById('refuse-img-dropzone');
+    const input = document.getElementById('refuse-img-input');
+    if (!zone) return;
+    zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+    zone.addEventListener('drop', e => {
+        e.preventDefault(); zone.classList.remove('drag-over');
+        [...e.dataTransfer.files].filter(f => f.type.startsWith('image/')).slice(0, 2 - refusePendingImages.length)
+            .forEach(f => { const r = new FileReader(); r.onload = ev => compressAndQueue(ev.target.result); r.readAsDataURL(f); });
+    });
+    zone.addEventListener('click', () => input && input.click());
+    if (input) {
+        input.addEventListener('change', () => {
+            [...input.files].slice(0, 2 - refusePendingImages.length)
+                .forEach(f => { const r = new FileReader(); r.onload = ev => compressAndQueue(ev.target.result); r.readAsDataURL(f); });
+            input.value = '';
+        });
+    }
+    document.addEventListener('paste', e => {
+        if (document.getElementById('refuse-modal').style.display !== 'flex') return;
+        if (refusePendingImages.length >= 2) return;
+        const items = e.clipboardData?.items;
+        if (!items) return;
+        for (const item of items) {
+            if (item.type.startsWith('image/')) {
+                const r = new FileReader();
+                r.onload = ev => compressAndQueue(ev.target.result);
+                r.readAsDataURL(item.getAsFile());
+                break;
+            }
+        }
+    });
+}
+
+// === DISCORD ===
+function showDiscordModal(msg) {
+    document.getElementById('discord-msg-text').value = msg;
+    document.getElementById('discord-modal').style.display = 'flex';
+}
+
+window.copyDiscordMsg = function() {
+    const ta   = document.getElementById('discord-msg-text');
+    const btn  = document.getElementById('discord-copy-btn');
+    const text = ta.value;
+
+    function onCopied() {
+        btn.innerHTML = '✅ OK';
+        setTimeout(() => {
+            document.getElementById('discord-modal').style.display = 'none';
+        }, 900);
+    }
+
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(onCopied).catch(() => {
+            ta.removeAttribute('readonly');
+            ta.select();
+            document.execCommand('copy');
+            ta.setAttribute('readonly', '');
+            onCopied();
+        });
+    } else {
+        ta.removeAttribute('readonly');
+        ta.select();
+        document.execCommand('copy');
+        ta.setAttribute('readonly', '');
+        onCopied();
+    }
+};
+
+// === LIGHTBOX ===
+window.openLightbox = function(src) {
+    const lb = document.getElementById('img-lightbox');
+    document.getElementById('img-lightbox-img').src = src;
+    lb.style.display = 'flex';
+};
 
 window.activateGhost = function(pseudo, sietch, lat, lng) {
     showCustomPrompt(

@@ -47,10 +47,12 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 - Plusieurs filières de métiers (Combat, Artisanat, etc.)
 - Simulez et testez vos combinaisons de talents avant de les appliquer en jeu
 
-### Demandes de Craft
+### Commandes & Services (`skills.html`)
 - Formulaire de soumission avec description détaillée
 - Ajout de jusqu'à 4 images par demande
 - Suivi et gestion des requêtes côté administration
+- **Message Discord automatique** après soumission : lien direct vers l'onglet Commandes (`?tab=requetes`), copie en un clic avec fermeture automatique
+- Confirmation de suppression dans une modale stylisée (thème sombre, cohérent avec le site)
 
 ### Plan de Migration (`migration.html`)
 - Chaque joueur place son marqueur sur la carte et choisit son sietch de destination parmi **8 sietchs** : 5 premiers choix (Rajifiri, Fajr, Al Rab, Umbu, Tharwa) et 3 seconds choix (Kathib, Makab, Saajid)
@@ -64,6 +66,7 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
   - Tout edit d'un marqueur le remet en attente de validation
 - **Marqueurs refusés** affichés en orange pour que le joueur repositionne sans ambiguïté
 - Message Discord copié en un clic (fermeture automatique de la fenêtre après copie)
+- **Capture d'écran joueur** : avant validation, l'officier peut ajouter une photo de l'emplacement vérifié (glisser-déposer, coller Ctrl+V ou sélecteur de fichier) ; un message Discord est généré automatiquement pour inviter le joueur à vérifier sa position
 
 ### Planificateur d'Événements Landsraad
 - Sélection de quêtes parmi 25 missions réparties en 5 catégories

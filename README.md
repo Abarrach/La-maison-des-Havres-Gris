@@ -60,6 +60,9 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 - Gestion de la disponibilité : présent seul, présent avec fief libre à offrir, ou absent
 - Système d'entraide : lier un helper à un joueur absent (sous-fief)
 - Filtre par sietch, listes « Besoin d'un fief » et « Fief libre » en temps réel
+- **Limite : 1 marqueur par joueur par sietch** — un joueur peut placer sur plusieurs sietches différents mais pas deux fois sur le même
+- **Pseudo pré-rempli** depuis la session connectée ; champ verrouillé pour les joueurs, éditable pour les admins (placement pour un tiers)
+- **Offre de fief** : en un clic depuis le popup, sans ressaisir son pseudo
 - **Validation par un officier** : chaque marqueur démarre en attente (pointillés pâles) jusqu'à validation
   - ✔ **Valider** → marqueur passe en solide ; message Discord pré-rempli généré automatiquement
   - ✖ **Refuser** → note de refus obligatoire + jusqu'à 2 photos explicatives ; message Discord généré
@@ -86,6 +89,8 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 - Deux niveaux d'accès : **Joueur** et **Administrateur**
 - Gestion des utilisateurs (création, suppression, changement de rôle) via le panneau admin
 - L'administrateur principal (`Abarrach`) ne peut pas être rétrogradé
+- **Toutes les pages sont protégées** par `auth-guard.js` — tout accès direct sans session active redirige vers `login.html`
+- La déconnexion efface la session localStorage et redirige vers la page de connexion
 
 ---
 
@@ -153,6 +158,17 @@ chmod 664 *.json last_wipe.txt
 > Le fichier `bases.json` doit être déployé manuellement depuis la copie locale après chaque migration de données (ajout des champs `sietch` / `instance`). PHP doit pouvoir écrire dessus — si une erreur `write_error` apparaît, vérifier les permissions : `chmod 664 bases.json`.
 
 Accéder ensuite à `index.html` via le navigateur.
+
+---
+
+## Responsive Mobile
+
+Le site est adapté pour une consultation sur téléphone :
+- Header fixe sur la carte (reste visible même après interaction avec Leaflet)
+- Menu principal : cartes qui s'empilent en 2 colonnes (tablette) puis 1 colonne (mobile)
+- Panneaux de la carte repositionnés et redimensionnés selon la largeur d'écran
+- Tooltip sietch (Œil du Mentat) confiné dans les limites de l'écran
+- Planificateur et colonnes de skills ajustés pour petits écrans
 
 ---
 

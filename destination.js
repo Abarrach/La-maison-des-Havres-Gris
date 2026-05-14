@@ -1,3 +1,5 @@
+const currentUser = localStorage.getItem("user") || "";
+
 const SIETCHS = [
   'Sietch Rajifiri', 'Sietch Fajr', 'Sietch Al Rab', 'Sietch Umbu'
 ];
@@ -29,7 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('modal-title-text').innerText = "Placer une base projetée";
         document.getElementById('res-pseudo').value    = '';
         document.getElementById('res-sietch').value    = currentSietch || SIETCHS[0];
-        document.getElementById('res-placedby').value  = '';
+        document.getElementById('res-placedby').value  = currentUser;
         document.getElementById('res-note').value      = '';
         renderImagePreviews();
         document.getElementById('reservation-modal').style.display = 'flex';

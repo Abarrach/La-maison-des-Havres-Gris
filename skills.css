@@ -277,3 +277,18 @@ body { overflow: hidden; background: radial-gradient(circle at center, #2b1d0e 0
 
 /* === COMPTEUR NOTES === */
 #notes-counter { transition: color 0.3s; font-family: monospace; }
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+  .view-switcher { margin-top: 55px; margin-bottom: 8px; }
+  .switch-btn { padding: 8px 14px; font-size: 12px; margin: 0 3px; }
+  .skill-column { flex: 0 0 285px; }
+  .skill-header { font-size: 15px; padding: 10px; }
+}
+
+@media (max-width: 480px) {
+  .view-switcher { margin-top: 52px; margin-bottom: 5px; }
+  .switch-btn { padding: 7px 10px; font-size: 11px; margin: 0 2px; letter-spacing: 0; }
+  .skills-board { padding: 8px 10px 15px 10px; gap: 10px; }
+  .skill-column { flex: 0 0 260px; }
+}

@@ -390,16 +390,35 @@ input:-webkit-autofill:active {
     transition: background-color 5000s ease-in-out 0s;
 }
 
-/* === RESPONSIVE === */
+/* === RESPONSIVE — Tablette (≤ 768px) === */
+@media (max-width: 768px) {
+  #loginBox { width: min(320px, 90vw); padding: 30px 20px; }
+  .header-controls { gap: 6px; }
+  .disconnect { padding: 5px 10px; font-size: 11px; }
+  .admin-panel { width: min(300px, calc(100vw - 40px)); }
+  .menu-card { width: min(400px, calc(50vw - 30px)); }
+  .cards-wrapper { gap: 20px; }
+}
+
+/* === RESPONSIVE — Mobile (≤ 600px) === */
 @media (max-width: 600px) {
   #user-info { display: none; }
-  .title { font-size: 14px; }
-  #map-switcher { top: 55px; width: 90%; justify-content: center; }
+  header { height: 45px; }
+  .title { font-size: 13px; letter-spacing: 1px; }
+  .header-controls { right: 10px; gap: 5px; }
+  .disconnect { padding: 4px 8px; font-size: 10px; letter-spacing: 0; }
+  #loginBox { width: 90vw; padding: 25px 15px; }
+  #map-switcher { top: 52px; width: 90%; justify-content: center; }
   .map-switch-btn { font-size: 10px; padding: 4px 8px; }
-  .admin-panel { top: 110px; width: 200px; right: 10px; }
-  #player-panel { top: 110px; left: 10px; }
+  .admin-panel { top: 105px; width: calc(100vw - 30px); right: 10px; max-width: 300px; }
+  #player-panel { top: 105px; left: 10px; width: min(200px, calc(50vw - 20px)); }
   #storm-timer { top: 95px; right: 10px; font-size: 11px; padding: 5px 10px; }
   #intro-screen img { width: 90%; }
+  .toggle-players { bottom: 15px; left: 15px; width: 44px; height: 44px; }
+  .menu-card { width: min(380px, 90vw); }
+  .cards-wrapper { gap: 15px; padding: 0 15px; }
+  .card-image { height: 160px; }
+  .card-title { font-size: 15px; }
 }
 
 /* === PAGE MENU PRINCIPAL === */

@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="style.css">
     <style>
         /* Styles spécifiques au Menu - Version Côte à côte */
+        html { overflow: auto; }
         body {
             display: flex;
             flex-direction: column;
@@ -14,7 +15,8 @@
             align-items: center;
             min-height: 100vh;
             margin: 0;
-            background-color: #1e130c; /* Fond sombre */
+            overflow-y: auto;
+            background-color: #1e130c;
             font-family: sans-serif;
         }
 
@@ -32,7 +34,7 @@
         .cards-container {
             display: flex;
             gap: 22px;
-            flex-wrap: nowrap;
+            flex-wrap: wrap;
             justify-content: center;
             width: 100%;
             max-width: 1500px;
@@ -49,7 +51,6 @@
             text-decoration: none;
             border: 1px solid #3d2b16;
             position: relative;
-            flex-shrink: 0;
         }
 
         .card:hover {
@@ -130,16 +131,27 @@
             transform: translateY(-3px); /* Le bouton monte légèrement */
         }
 
-        /* === RESPONSIVE (Optionnel pour mobile) === */
-        @media(max-width: 1400px) {
-            .cards-container {
-                flex-wrap: wrap; /* Sur petits écrans, on autorise le passage à la ligne pour l'ergonomie */
-                justify-content: center;
-            }
+        /* === RESPONSIVE — Tablette === */
+        @media(max-width: 640px) {
+            body { justify-content: flex-start; padding-top: 30px; }
+            h1 { font-size: 1.4em; margin-bottom: 25px; }
+            .cards-container { gap: 14px; padding: 15px; }
+            .card { width: min(260px, calc(50vw - 20px)); }
+            .card-image { height: 120px; }
+        }
+
+        /* === RESPONSIVE — Mobile === */
+        @media(max-width: 400px) {
+            body { justify-content: flex-start; padding-top: 20px; }
+            h1 { font-size: 1.2em; margin-bottom: 18px; }
+            .cards-container { gap: 12px; padding: 10px; }
+            .card { width: calc(100vw - 40px); }
+            .logout-btn { margin-top: 25px; padding: 12px 25px; font-size: 0.9em; }
         }
     </style>
 </head>
 <body>
+<script src="auth-guard.js"></script>
 
     <h1>Choisissez votre destination</h1>
 
@@ -202,7 +214,14 @@
 
     </div>
 
-    <a href="index.html" class="logout-btn">Déconnexion</a>
+    <button class="logout-btn" onclick="logout()">Déconnexion</button>
 
+<script>
+function logout() {
+    localStorage.removeItem("user");
+    localStorage.removeItem("role");
+    window.location.href = "login.html";
+}
+</script>
 </body>
 </html>

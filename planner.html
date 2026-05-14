@@ -182,9 +182,24 @@
         .modal-btn-cancel:hover { background: #444; color: #fff; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* === RESPONSIVE === */
+        @media (max-width: 768px) {
+            h1 { font-size: 1.3em; letter-spacing: 1px; }
+            .btn-menu-abs { padding: 8px 12px; font-size: 0.75em; right: 10px; }
+            .planner-col { min-width: calc(100vw - 40px); }
+            .group-card { min-width: calc(100vw - 40px); }
+        }
+        @media (max-width: 480px) {
+            header { height: 60px; padding: 0 5px; }
+            h1 { font-size: 1em; max-width: calc(100% - 100px); text-align: center; }
+            .btn-menu-abs { right: 5px; padding: 6px 10px; font-size: 0.7em; }
+            .planner-container { padding: 0 10px 80px 10px; gap: 12px; }
+        }
     </style>
 </head>
 <body>
+<script src="auth-guard.js"></script>
 
     <header>
         <h1>PLANIFICATEUR LANDSRAAD</h1>

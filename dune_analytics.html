@@ -212,6 +212,7 @@
 </style>
 </head>
 <body>
+<script src="auth-guard.js"></script>
 
 <header>
     <div class="logo">
@@ -1008,9 +1009,11 @@
 
         // Positionnement : à gauche de la ligne, sinon à droite si pas de place
         const rect = el.getBoundingClientRect();
-        const W = 460, H = 280;
+        const W = Math.min(460, window.innerWidth - 20), H = 280;
         let left = rect.left - W - 20;
         if (left < 10) left = rect.right + 20;
+        if (left + W > window.innerWidth - 10) left = window.innerWidth - W - 10;
+        if (left < 10) left = 10;
         let top = rect.top + rect.height / 2 - H / 2;
         if (top < 10) top = 10;
         if (top + H > window.innerHeight - 10) top = window.innerHeight - H - 10;
@@ -1077,7 +1080,7 @@
 <div id="sietch-tooltip"
      onmouseenter="clearTimeout(sietchTooltipTimer)"
      onmouseleave="hideSietchTooltip(150)"
-     style="display:none; position:fixed; z-index:1000; width:460px;
+     style="display:none; position:fixed; z-index:1000; width:min(460px, calc(100vw - 20px));
             background:rgba(8,5,2,0.97); border:1px solid var(--or-sombre);
             border-radius:6px; padding:14px 16px;
             box-shadow:0 12px 40px rgba(0,0,0,0.85), 0 0 20px rgba(212,162,59,0.08);

@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Havres Gris - Analytique Serveurs</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Segoe+UI&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+<style>
+    :root {
+        --or-vif: #f3c44f;
+        --or-base: #d4a23b;
+        --or-sombre: #8b6e3b;
+        --brun-bordure: #3b2a16;
+        --brun-fond: rgba(20, 12, 4, 0.88);
+        --texte-beige: #f5deb3;
+        --bg-page: #0a0603; 
+        --grid-line: rgba(245, 222, 179, 0.05);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { 
+        font-family: 'Segoe UI', 'Inter', sans-serif; 
+        background-color: var(--bg-page); 
+        background-image: radial-gradient(circle at top right, #1a1008 0%, transparent 50%);
+        color: var(--texte-beige); 
+        min-height: 100vh; 
+        font-size: 14px; 
+    }
+    
+    header {
+        background: rgba(10, 6, 3, 0.9);
+        backdrop-filter: blur(10px);
+        height: 70px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 32px;
+        border-bottom: 1px solid var(--brun-bordure);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+    }
+    .btn-menu {
+        background: linear-gradient(180deg, #443311 0%, #221100 100%);
+        border: 1px solid var(--or-base); color: var(--or-vif);
+        padding: 10px 20px; text-decoration: none;
+        font-size: 0.8em; font-weight: bold; border-radius: 4px;
+        transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 1px;
+        font-family: 'Segoe UI', sans-serif;
+    }
+    .btn-menu:hover { background: var(--or-base); color: #000; border-color: #fff; box-shadow: 0 0 10px #fff, 0 0 30px var(--or-vif); }
+    
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-title { 
+        color: var(--or-vif); 
+        font-family: 'Cinzel', serif; 
+        font-size: 24px; 
+        font-weight: bold;
+        letter-spacing: 2px; 
+        text-transform: uppercase;
+        text-shadow: 0 2px 10px rgba(243, 196, 79, 0.3);
+    }
+    .logo-sub { 
+        color: var(--texte-beige); 
+        font-size: 12px; 
+        text-transform: uppercase; 
+        letter-spacing: 1px; 
+        margin-left: 8px; 
+        border-left: 1px solid var(--brun-bordure); 
+        padding-left: 12px; 
+        opacity: 0.8;
+    }
+    
+    main { padding: 30px 32px; max-width: 1600px; margin: 0 auto; }
+    
+    /* Loading Zone */
+    #loading { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; gap: 16px; }
+    .spinner { width: 50px; height: 50px; border: 3px solid var(--brun-bordure); border-top-color: var(--or-vif); border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg) } }
+    
+    /* Import Zone (Fallback manuel) */
+    #import-zone { display: none; align-items: center; justify-content: center; min-height: calc(100vh - 100px); animation: fadeIn 0.5s ease-out; }
+    .drop-area { 
+        background: var(--brun-fond); border: 1px dashed var(--or-sombre); border-radius: 6px; 
+        padding: 60px 80px; text-align: center; cursor: pointer; max-width: 560px; width: 100%; 
+        transition: all 0.3s ease; box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+    }
+    .drop-area:hover, .drop-area.drag { 
+        border-color: var(--or-vif); transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(0,0,0,0.8), 0 0 15px rgba(212,162,59,0.1);
+    }
+    .drop-title { font-family: 'Cinzel', serif; font-size: 24px; color: var(--or-vif); margin-bottom: 15px; letter-spacing: 1px; }
+    .drop-sub { color: var(--texte-beige); font-size: 13px; margin-bottom: 24px; opacity: 0.8; }
+    #file-input { display: none; }
+    
+    /* Boutons */
+    .nouveau-bouton {
+        background: linear-gradient(to bottom, #d4a23b, #8b6e3b); color: #1a1007; font-family: 'Segoe UI', sans-serif;
+        font-weight: bold; text-transform: uppercase; font-size: 12px; padding: 8px 16px; border: 1px solid #f3c44f;
+        border-radius: 4px; cursor: pointer; box-shadow: 0 0 10px rgba(212, 162, 59, 0.3); transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
+    }
+    .nouveau-bouton:hover { transform: scale(1.05); filter: brightness(1.1); box-shadow: 0 0 20px rgba(212, 162, 59, 0.6); }
+    
+    .btn-reset-light {
+        background: transparent; color: var(--texte-beige); border: 1px solid var(--brun-bordure);
+        padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 12px;
+        text-transform: uppercase; transition: all 0.2s;
+    }
+    .btn-reset-light:hover { background: rgba(255,255,255,0.05); border-color: var(--or-sombre); }
+
+    /* Dashboard */
+    #dashboard { display: none; animation: fadeIn 0.5s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    
+    /* Grilles */
+    .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; margin-bottom: 30px; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px; }
+    .grid-full { grid-column: 1 / -1; }
+    @media(max-width: 1100px) { .grid2 { grid-template-columns: 1fr; } }
+    
+    /* Cartes */
+    .nouveau-composant {
+        background: var(--brun-fond); border: 1px solid var(--brun-bordure); border-radius: 6px;
+        padding: 20px; color: var(--texte-beige); box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        transition: all 0.3s ease; position: relative;
+    }
+    .nouveau-composant:hover {
+        border-color: var(--or-base); transform: translateY(-2px); 
+        box-shadow: 0 15px 40px rgba(0,0,0,0.8), 0 0 15px rgba(212,162,59,0.1);
+    }
+    
+    /* Titres */
+    .nouveau-composant-titre {
+        font-family: 'Cinzel', serif; font-size: 16px; font-weight: bold; color: var(--or-vif);
+        text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid #5c4025;
+        padding-bottom: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;
+    }
+
+    /* KPIs */
+    .stat-card { padding: 20px; }
+    .stat-label { 
+        font-family: 'Cinzel', serif; font-size: 13px; font-weight: bold; color: var(--or-base);
+        text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #5c4025;
+        padding-bottom: 8px; margin-bottom: 12px;
+    }
+    .stat-value { font-size: 32px; font-weight: bold; color: var(--texte-beige); font-family: 'Cinzel', serif; }
+    .stat-sub { font-size: 12px; color: var(--texte-beige); opacity: 0.6; margin-top: 4px; }
+    
+    /* Barre de filtres */
+    #filter-bar { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; margin-bottom: 24px; padding: 15px 20px; }
+    .f-label { font-family: 'Cinzel', serif; font-size: 12px; font-weight: bold; color: var(--or-base); letter-spacing: 1px; }
+    .f-sep { width: 1px; height: 24px; background: #5c4025; flex-shrink: 0; }
+    
+    /* Menus déroulants */
+    select.f-select { 
+        background-color: #120a05; color: var(--texte-beige); border: 1px solid var(--brun-bordure); 
+        padding: 8px 30px 8px 12px; border-radius: 4px; font-family: 'Segoe UI', sans-serif; 
+        font-size: 13px; outline: none; cursor: pointer; transition: border-color 0.2s;
+        appearance: none;
+        background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23d4a23b%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+        background-repeat: no-repeat; background-position: right .7em top 50%; background-size: .65em auto;
+    }
+    select.f-select:hover, select.f-select:focus { border-color: var(--or-vif); }
+    select.f-select option { background-color: #120a05; color: var(--texte-beige); padding: 8px; }
+    
+    /* Barre de Drill-down */
+    #drill-bar { 
+        display: none; background: rgba(212, 162, 59, 0.05); border: 1px solid rgba(212, 162, 59, 0.2); 
+        border-radius: 6px; padding: 12px 20px; margin-bottom: 24px; align-items: center; gap: 12px; flex-wrap: wrap; 
+    }
+    .drill-chip { 
+        background: rgba(212, 162, 59, 0.15); color: var(--or-vif); padding: 6px 14px; border-radius: 4px; 
+        font-size: 13px; font-weight: bold; border: 1px solid rgba(212, 162, 59, 0.4); display: flex; align-items: center; gap: 8px; 
+    }
+    .drill-chip-exclude { color: #e74c3c; background: rgba(231, 76, 60, 0.1); border-color: rgba(231, 76, 60, 0.3); }
+    
+    /* Boutons de Zoom Temporel */
+    .zoom-controls { position: absolute; top: 10px; left: 60px; z-index: 50; display: flex; gap: 6px; }
+    .zoom-btn { 
+        background: rgba(0,0,0,0.6); color: var(--texte-beige); border: 1px solid var(--brun-bordure); 
+        padding: 5px 10px; border-radius: 4px; font-size: 11px; font-weight: 500; cursor: pointer; 
+        transition: all 0.2s; font-family: 'Segoe UI', sans-serif; 
+    }
+    .zoom-btn:hover:not(.disabled) { background: rgba(212, 162, 59, 0.2); border-color: var(--or-base); color: var(--or-vif); }
+    .zoom-btn.active { background: rgba(212, 162, 59, 0.4); border-color: var(--or-vif); color: var(--or-vif); font-weight: bold; }
+    .zoom-btn.disabled { opacity: 0.25; cursor: not-allowed; background: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.05); color: rgba(255,255,255,0.4); }
+
+    .chart-wrap { position: relative; width: 100%; height: 350px; }
+    .chart-wrap.tall { height: 450px; }
+    
+    .migration-table th { padding: 12px; font-family: 'Cinzel', serif; color: var(--or-vif); border-bottom: 1px solid var(--or-base); text-align: left; }
+    .migration-table td { padding: 12px; border-bottom: 1px solid rgba(245, 222, 179, 0.1); }
+
+    /* Rangeslider — zones non-sélectionnées quasi-opaques */
+    .rangeslider-mask-min, .rangeslider-mask-max {
+        fill: rgba(4, 2, 0, 0.91) !important;
+    }
+    /* Zone sélectionnée : tint doré subtil + bordure visible */
+    .rangeslider-slidebox {
+        fill: rgba(212, 162, 59, 0.08) !important;
+        stroke: rgba(212, 162, 59, 0.55) !important;
+        stroke-width: 1 !important;
+    }
+    /* Poignées dorées */
+    .rangeslider-grabber-min rect, .rangeslider-grabber-max rect {
+        fill: var(--or-base) !important;
+        stroke: var(--or-vif) !important;
+        stroke-width: 1 !important;
+    }
+</style>
+</head>
+<body>
+
+<header>
+    <div class="logo">
+        <div class="logo-title">HAVRES GRIS</div>
+        <span class="logo-sub">Télémétrie des Mondes</span>
+    </div>
+    <a href="menu.html" class="btn-menu">Retour Menu</a>
+</header>
+
+<main>
+    <div id="loading">
+        <div class="spinner"></div>
+        <p style="font-family: 'Cinzel', serif; font-size: 20px; color: #f3c44f; letter-spacing: 2px;" id="loading-text">LECTURE DES ARCHIVES...</p>
+    </div>
+
+    <div id="import-zone">
+        <div class="drop-area" id="drop-area" onclick="document.getElementById('file-input').click()">
+            <div class="drop-title">ARCHIVES INTROUVABLES</div>
+            <p class="drop-sub" id="import-reason">Impossible de charger <strong>dune_counts.csv</strong> sur le serveur.<br>Veuillez fournir le registre manuellement.</p>
+            <button class="nouveau-bouton">Parcourir les registres</button>
+            <input type="file" id="file-input" accept=".csv" onchange="if(this.files[0]) handleManualFile(this.files[0])">
+        </div>
+    </div>
+
+    <div id="dashboard">
+        <div id="filter-bar" class="nouveau-composant">
+            <span class="f-label">Monde Cible</span>
+            <select id="server-filter" class="f-select" style="min-width: 250px;" onchange="applyGlobalFilters()">
+                <option value="all">Galaxie entière (Tous les mondes)</option>
+            </select>
+            <div class="f-sep"></div>
+            <span class="f-label">Période d'Analyse (Top 15 & Stats)</span>
+            <select id="time-filter" class="f-select" onchange="applyGlobalFilters()">
+                <option value="all" selected>Archives Complètes</option>
+                <option value="72">Dernières 72 Heures</option>
+                <option value="24">Dernières 24 Heures</option>
+                <option value="12">Dernières 12 Heures</option>
+            </select>
+            <div style="margin-left: auto; color: var(--or-sombre); font-size: 12px;" id="data-range-txt"></div>
+        </div>
+
+        <div id="drill-bar">
+            <span style="font-family: 'Cinzel', serif; font-size:13px; font-weight:bold; color: var(--or-vif); letter-spacing: 1px;">Isolement Actif :</span>
+            <div id="drill-chips-container" style="display: flex; gap: 8px; flex-wrap: wrap;"></div>
+            <button class="nouveau-bouton" onclick="resetDrillDown()" style="margin-left: auto;">Rétablir la vue</button>
+        </div>
+
+        <div class="stat-row">
+            <div class="nouveau-composant stat-card">
+                <div class="stat-label">Monde le plus peuplé</div>
+                <div class="stat-value" id="kpi-top-server">-</div>
+                <div class="stat-sub" id="kpi-top-server-sub">Pop. totale moyenne</div>
+            </div>
+            <div class="nouveau-composant stat-card">
+                <div class="stat-label">Pic d'Affluence (Monde)</div>
+                <div class="stat-value" id="kpi-peak-players">0</div>
+                <div class="stat-sub" id="kpi-peak-time">-</div>
+            </div>
+            <div class="nouveau-composant stat-card">
+                <div class="stat-label">Sietch Dominant</div>
+                <div class="stat-value" id="kpi-top-sietch" style="font-size: 26px;">-</div>
+                <div class="stat-sub" id="kpi-top-sietch-sub">Joueurs en moyenne</div>
+            </div>
+            <div class="nouveau-composant stat-card">
+                <div class="stat-label">Volume de données</div>
+                <div class="stat-value" id="kpi-total-rows">0</div>
+                <div class="stat-sub">Relevés analysés</div>
+            </div>
+        </div>
+
+        <div class="grid2">
+            <div class="nouveau-composant grid-full">
+                <div class="nouveau-composant-titre">
+                    <span>Fluctuations de la Population Mondiale</span>
+                    <span style="font-size: 11px; color: var(--texte-beige); opacity: 0.6; text-transform: none; font-family: 'Segoe UI', sans-serif; letter-spacing: normal;">Population totale (Somme des Sietches)</span>
+                </div>
+                <div class="chart-wrap" style="height: 450px; position: relative;">
+                    <div id="zoom-main" class="zoom-controls"></div>
+                    <div id="chart-timeline" style="width:100%; height:100%;"></div>
+                </div>
+            </div>
+
+            <div class="nouveau-composant grid-full">
+                <div class="nouveau-composant-titre">
+                    <span id="heatmap-title">Matrice d'Activité (Heures de pointe)</span>
+                </div>
+                <div class="chart-wrap tall" id="chart-heatmap"></div>
+            </div>
+
+            <div class="nouveau-composant">
+                <div class="nouveau-composant-titre">
+                    <span>Top 15 Mondes (Population Totale)</span>
+                </div>
+                <div style="font-size: 11px; color: var(--texte-beige); opacity:0.6; margin-top:-10px; margin-bottom: 10px;">Clic = Isoler / Ctrl+Clic = Exclure</div>
+                <div class="chart-wrap tall" id="chart-servers"></div>
+            </div>
+
+            <div class="nouveau-composant">
+                <div class="nouveau-composant-titre">
+                    <span>Top 15 Sietches (Taille Moyenne)</span>
+                </div>
+                <div style="font-size: 11px; color: var(--texte-beige); opacity:0.6; margin-top:-10px; margin-bottom: 10px;">Clic = Isoler / Ctrl+Clic = Exclure</div>
+                <div class="chart-wrap tall" id="chart-sietches"></div>
+            </div>
+
+            <div class="nouveau-composant grid-full" style="margin-top: 10px;">
+                <div class="nouveau-composant-titre">
+                    <span>Bureau d'Étude des Migrations</span>
+                    <span style="font-size: 11px; color: var(--texte-beige); opacity: 0.6; text-transform: none; font-family: 'Segoe UI', sans-serif; letter-spacing: normal;">Comparez la population globale de plusieurs mondes</span>
+                </div>
+                
+                <div style="display: flex; gap: 15px; margin-bottom: 20px; align-items: center; flex-wrap: wrap;">
+                    <select id="migration-select" class="f-select" style="min-width: 250px;">
+                        </select>
+                    <button class="nouveau-bouton" onclick="addMigrationServer()">Ajouter au comparateur</button>
+                    <button class="btn-reset-light" onclick="clearMigrationServers()" style="margin-left: auto;">Vider</button>
+                </div>
+                
+                <div id="migration-chips" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;">
+                    </div>
+
+                <div class="grid2" style="margin-bottom: 0;">
+                    <div class="chart-wrap" style="height: 450px; position: relative;">
+                        <div id="zoom-migr" class="zoom-controls"></div>
+                        <div id="chart-migration-timeline" style="width:100%; height:100%;"></div>
+                    </div>
+                    
+                    <div style="overflow-x: auto;">
+                        <div style="font-size: 11px; color: var(--or-vif); margin-bottom: 10px; font-style: italic;">
+                            ⮟ Cliquez sur une ligne de serveur pour dérouler la répartition de sa population par Sietch.
+                        </div>
+                        <table class="migration-table" style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                            <thead>
+                                <tr>
+                                    <th>Monde</th>
+                                    <th>Pop. Mondiale Moyenne</th>
+                                    <th>Pic d'Affluence</th>
+                                    <th>Sietch Dominant</th>
+                                </tr>
+                            </thead>
+                            <tbody id="migration-table-body">
+                                <tr><td colspan="4" style="text-align:center; opacity:0.5; padding: 20px;">Ajoutez des mondes pour générer la comparaison.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+    let rawData = [];
+    let filteredData = [];
+    let currentDrillDowns = [];
+    let migrationServers = [];
+    let sietchTooltipTimer = null;
+
+    // Palette Havres Gris
+    const cTheme = {
+        primary: '#f3c44f',       
+        primaryGlow: 'rgba(243, 196, 79, 0.2)',
+        secondary: '#d4a23b',     
+        secondaryMuted: 'rgba(212, 162, 59, 0.1)',
+        accent: '#8b6e3b',        
+        bg: 'transparent',
+        grid: 'rgba(245, 222, 179, 0.05)',
+        text: '#f5deb3',
+        exclude: '#e74c3c',
+        hoverBg: 'rgba(20, 12, 4, 0.95)'
+    };
+    
+    const migrationPalette = ['#f3c44f', '#0288d1', '#e74c3c', '#2ecc71', '#9b59b6', '#e67e22', '#1abc9c', '#3498db'];
+
+    const pLayout = {
+        paper_bgcolor: 'transparent', plot_bgcolor: 'transparent', 
+        font: { color: cTheme.text, family: 'Segoe UI' },
+        xaxis: { gridcolor: cTheme.grid, zerolinecolor: cTheme.grid, tickfont: {size: 11} },
+        yaxis: { gridcolor: cTheme.grid, zerolinecolor: cTheme.grid, tickfont: {size: 11}, tickformat: 'd' }, 
+        hoverlabel: {
+            bgcolor: cTheme.hoverBg,
+            font: { color: cTheme.text, family: 'Segoe UI' },
+            bordercolor: cTheme.secondary
+        }
+    };
+
+    const steamDbXaxis = { 
+        type: 'date', 
+        gridcolor: cTheme.grid, 
+        zerolinecolor: cTheme.grid,
+        tickfont: {size: 11},
+        rangeslider: {
+            visible: true,
+            bgcolor: 'rgba(30, 18, 6, 0.9)',
+            bordercolor: 'rgba(212, 162, 59, 0.45)',
+            borderwidth: 1,
+            thickness: 0.06
+        }
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const csvUrl = 'dune_counts.csv'; 
+        Papa.parse(csvUrl, {
+            download: true, header: false, delimiter: ";", skipEmptyLines: true,
+            complete: function(res) { processRawData(res.data); },
+            error: function(err) { showManualImportZone(err.message); }
+        });
+    });
+
+    function showManualImportZone(errorMsg) {
+        document.getElementById('loading').style.display = 'none';
+        const importZone = document.getElementById('import-zone');
+        importZone.style.display = 'flex';
+        if(errorMsg && errorMsg.includes("404")) {
+            document.getElementById('import-reason').innerHTML = "Le fichier <strong>dune_counts.csv</strong> est introuvable sur le serveur.<br>Veuillez le fournir manuellement.";
+        }
+    }
+
+    const dropArea = document.getElementById('drop-area');
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev => dropArea.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); }));
+    ['dragenter', 'dragover'].forEach(ev => dropArea.addEventListener(ev, () => dropArea.classList.add('drag')));
+    ['dragleave', 'drop'].forEach(ev => dropArea.addEventListener(ev, () => dropArea.classList.remove('drag')));
+    dropArea.addEventListener('drop', e => { if (e.dataTransfer.files.length) handleManualFile(e.dataTransfer.files[0]); });
+
+    function handleManualFile(file) {
+        document.getElementById('import-zone').style.display = 'none';
+        document.getElementById('loading').style.display = 'flex';
+        document.getElementById('loading-text').innerText = "ANALYSE DE L'ARCHIVE FOURNIE...";
+        Papa.parse(file, {
+            header: false, delimiter: ";", skipEmptyLines: true,
+            complete: res => processRawData(res.data),
+            error: err => { alert("Erreur critique de décodage: " + err.message); showManualImportZone(); }
+        });
+    }
+
+    function processRawData(data) {
+        rawData = [];
+        let startIdx = (data.length > 0 && String(data[0][0]).toLowerCase().includes('time')) ? 1 : 0;
+        for (let i = startIdx; i < data.length; i++) {
+            const row = data[i];
+            if (row.length >= 4 && row[1]) {
+                let d = new Date(row[0]);
+                if (!isNaN(d)) {
+                    rawData.push({ timestamp: d, serveur: String(row[1]).trim(), sietch: String(row[2]).trim().replace('Sietch ', ''), joueurs: parseInt(row[3], 10) || 0 });
+                }
+            }
+        }
+
+        if (!rawData.length) { alert("Archive vide ou format corrompu."); showManualImportZone(); return; }
+        rawData.sort((a, b) => a.timestamp - b.timestamp);
+
+        const uniqueServers = [...new Set(rawData.map(d => d.serveur))].sort();
+        const srvSelect = document.getElementById('server-filter');
+        while (srvSelect.options.length > 1) { srvSelect.remove(1); }
+        uniqueServers.forEach(srv => srvSelect.add(new Option(srv, srv)));
+
+        const migSelect = document.getElementById('migration-select');
+        migSelect.innerHTML = '<option value="" disabled selected>Sélectionnez un monde à évaluer...</option>';
+        uniqueServers.forEach(srv => migSelect.add(new Option(srv, srv)));
+
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+        applyGlobalFilters();
+    }
+
+    function applyGlobalFilters() {
+        const tFilter = document.getElementById('time-filter').value;
+        const sFilter = document.getElementById('server-filter').value;
+        filteredData = rawData;
+        
+        if (tFilter !== 'all') {
+            const cutoff = new Date(rawData[rawData.length - 1].timestamp.getTime() - (parseInt(tFilter) * 3600000));
+            filteredData = filteredData.filter(d => d.timestamp >= cutoff);
+        }
+        
+        if (sFilter !== 'all') {
+            filteredData = filteredData.filter(d => d.serveur === sFilter);
+            currentDrillDowns = currentDrillDowns.filter(d => d.field !== 'serveur');
+        }
+
+        if (filteredData.length) {
+            const opt = { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' };
+            document.getElementById('data-range-txt').innerText = `[ PÉRIODE: ${filteredData[0].timestamp.toLocaleDateString('fr-FR', opt)} > ${filteredData[filteredData.length-1].timestamp.toLocaleDateString('fr-FR', opt)} ]`;
+        }
+        
+        // --- MISE À JOUR DU TITRE DE LA HEATMAP ---
+        const heatmapTitle = document.getElementById('heatmap-title');
+        let selectedServer = document.getElementById('server-filter').value;
+        
+        if(selectedServer === 'all' && currentDrillDowns.length > 0) {
+           let srvDrill = currentDrillDowns.find(d => d.field === 'serveur' && d.type === 'include');
+           if(srvDrill) selectedServer = srvDrill.value;
+        }
+
+        if (selectedServer !== 'all') {
+             heatmapTitle.innerText = `Matrice d'Activité (${selectedServer})`;
+        } else {
+             heatmapTitle.innerText = `Matrice d'Activité (Heures de pointe)`;
+        }
+        
+        renderDrillChips();
+        updateDashboard();
+        updateMigrationView();
+    }
+
+    function handleChartClick(field, value, isExclude) {
+        const existingIdx = currentDrillDowns.findIndex(d => d.field === field && d.value === value);
+        if (existingIdx > -1) {
+            if ((currentDrillDowns[existingIdx].type === 'exclude') === isExclude) {
+                currentDrillDowns.splice(existingIdx, 1);
+            } else {
+                currentDrillDowns[existingIdx].type = isExclude ? 'exclude' : 'include';
+            }
+        } else {
+            currentDrillDowns.push({ field: field, type: isExclude ? 'exclude' : 'include', value: value });
+        }
+        
+        // Update du titre Heatmap basé sur le clic
+        const heatmapTitle = document.getElementById('heatmap-title');
+        let srvDrill = currentDrillDowns.find(d => d.field === 'serveur' && d.type === 'include');
+        let globalSrv = document.getElementById('server-filter').value;
+        
+        if(srvDrill) {
+             heatmapTitle.innerText = `Matrice d'Activité (${srvDrill.value})`;
+        } else if (globalSrv !== 'all') {
+             heatmapTitle.innerText = `Matrice d'Activité (${globalSrv})`;
+        } else {
+             heatmapTitle.innerText = `Matrice d'Activité (Heures de pointe)`;
+        }
+
+        renderDrillChips();
+        updateDashboard();
+    }
+
+    function removeDrillDown(index) { 
+        currentDrillDowns.splice(index, 1); 
+        
+        // Update du titre Heatmap 
+        const heatmapTitle = document.getElementById('heatmap-title');
+        let srvDrill = currentDrillDowns.find(d => d.field === 'serveur' && d.type === 'include');
+        let globalSrv = document.getElementById('server-filter').value;
+        
+        if(srvDrill) {
+             heatmapTitle.innerText = `Matrice d'Activité (${srvDrill.value})`;
+        } else if (globalSrv !== 'all') {
+             heatmapTitle.innerText = `Matrice d'Activité (${globalSrv})`;
+        } else {
+             heatmapTitle.innerText = `Matrice d'Activité (Heures de pointe)`;
+        }
+
+        renderDrillChips(); 
+        updateDashboard(); 
+    }
+    
+    function resetDrillDown() { 
+        currentDrillDowns = []; 
+        
+        const heatmapTitle = document.getElementById('heatmap-title');
+        let globalSrv = document.getElementById('server-filter').value;
+        if (globalSrv !== 'all') {
+             heatmapTitle.innerText = `Matrice d'Activité (${globalSrv})`;
+        } else {
+             heatmapTitle.innerText = `Matrice d'Activité (Heures de pointe)`;
+        }
+
+        renderDrillChips(); 
+        updateDashboard(); 
+    }
+
+    function renderDrillChips() {
+        const container = document.getElementById('drill-chips-container');
+        const bar = document.getElementById('drill-bar');
+        if (currentDrillDowns.length === 0) { bar.style.display = 'none'; return; }
+        
+        bar.style.display = 'flex';
+        container.innerHTML = '';
+        currentDrillDowns.forEach((drill, idx) => {
+            const isExcl = drill.type === 'exclude';
+            const icon = isExcl ? '✕ SANS' : '✓ AVEC';
+            const cls = isExcl ? 'drill-chip drill-chip-exclude' : 'drill-chip';
+            const chip = document.createElement('div');
+            chip.className = cls;
+            chip.innerHTML = `<span>${icon} <strong>${drill.value}</strong></span><span style="cursor:pointer; opacity:0.7; padding-left:4px;" onclick="removeDrillDown(${idx})">✖</span>`;
+            container.appendChild(chip);
+        });
+    }
+
+    function getActiveData() {
+        let active = [...filteredData];
+        currentDrillDowns.forEach(drill => {
+            if (drill.type === 'include') active = active.filter(d => d[drill.field] === drill.value);
+            else if (drill.type === 'exclude') active = active.filter(d => d[drill.field] !== drill.value);
+        });
+        return active;
+    }
+
+    function getColorArray(items, field, defaultColor, highlightColor) {
+        const activeIncludes = currentDrillDowns.filter(d => d.field === field && d.type === 'include').map(d => d.value);
+        const activeExcludes = currentDrillDowns.filter(d => d.field === field && d.type === 'exclude').map(d => d.value);
+        return items.map(item => {
+            if (activeExcludes.includes(item)) return cTheme.exclude; 
+            if (activeIncludes.length > 0) return activeIncludes.includes(item) ? highlightColor : 'rgba(245, 222, 179, 0.05)';
+            return defaultColor;
+        });
+    }
+
+    function renderZoomButtons(containerId, chartId, minTs, maxTs) {
+        let container = document.getElementById(containerId);
+        if(!container) return;
+        
+        let spanH = (maxTs - minTs) / 3600000;
+        
+        let buttons = [
+            { id: '12h', hours: 12, label: '12h' },
+            { id: '24h', hours: 24, label: '24h' },
+            { id: '3d', hours: 72, label: '3j' },
+            { id: '1w', hours: 168, label: '1s' },
+            { id: '1m', hours: 720, label: '1m' },
+            { id: '3m', hours: 2160, label: '3m' },
+            { id: '6m', hours: 4320, label: '6m' },
+            { id: '1y', hours: 8760, label: '1y' },
+            { id: 'max', hours: 'max', label: 'Max' }
+        ];
+
+        container.innerHTML = '';
+        buttons.forEach(b => {
+            let btn = document.createElement('button');
+            btn.className = 'zoom-btn';
+            btn.innerText = b.label;
+            
+            if (b.id !== '12h' && b.id !== 'max' && b.hours > spanH) {
+                btn.classList.add('disabled');
+                btn.disabled = true;
+            } else {
+                btn.onclick = () => applyZoom(chartId, b.hours, btn, maxTs);
+            }
+            container.appendChild(btn);
+        });
+        
+        let maxBtn = container.querySelector('button:last-child');
+        if (maxBtn) maxBtn.classList.add('active');
+    }
+
+    function applyZoom(chartId, hours, btnEl, maxTsValue) {
+        let parent = btnEl.parentNode;
+        parent.querySelectorAll('.zoom-btn').forEach(b => b.classList.remove('active'));
+        btnEl.classList.add('active');
+
+        if (hours === 'max') {
+            Plotly.relayout(chartId, {'xaxis.autorange': true});
+        } else {
+            let maxDate = new Date(maxTsValue);
+            let minDate = new Date(maxDate.getTime() - (hours * 3600000));
+            
+            let minStr = minDate.getFullYear() + '-' + String(minDate.getMonth()+1).padStart(2,'0') + '-' + String(minDate.getDate()).padStart(2,'0') + ' ' + String(minDate.getHours()).padStart(2,'0') + ':' + String(minDate.getMinutes()).padStart(2,'0') + ':00';
+            let maxStr = maxDate.getFullYear() + '-' + String(maxDate.getMonth()+1).padStart(2,'0') + '-' + String(maxDate.getDate()).padStart(2,'0') + ' ' + String(maxDate.getHours()).padStart(2,'0') + ':' + String(maxDate.getMinutes()).padStart(2,'0') + ':00';
+
+            Plotly.relayout(chartId, {'xaxis.range': [minStr, maxStr]});
+        }
+    }
+
+    function getCleanRuns(data) {
+        const runs = new Map();
+        data.forEach(d => {
+            const timeKey = Math.floor(d.timestamp.getTime() / 300000) * 300000; 
+            const runKey = `${timeKey}_${d.serveur}`;
+            if (!runs.has(runKey)) {
+                runs.set(runKey, { ts: new Date(timeKey), srv: d.serveur, sietches: new Map() });
+            }
+            const currentVal = runs.get(runKey).sietches.get(d.sietch) || 0;
+            runs.get(runKey).sietches.set(d.sietch, Math.max(currentVal, d.joueurs));
+        });
+        
+        const results = [];
+        runs.forEach(run => {
+            let totalPlayers = 0;
+            run.sietches.forEach(val => totalPlayers += val);
+            results.push({ ts: run.ts, srv: run.srv, total: totalPlayers });
+        });
+        return results;
+    }
+
+    function updateDashboard() {
+        const activeData = getActiveData();
+        
+        let baseForServers = [...filteredData];
+        currentDrillDowns.filter(d => d.field !== 'serveur').forEach(drill => {
+            baseForServers = baseForServers.filter(d => drill.type==='include' ? d[drill.field]===drill.value : d[drill.field]!==drill.value);
+        });
+
+        let baseForSietches = [...filteredData];
+        currentDrillDowns.filter(d => d.field !== 'sietch').forEach(drill => {
+            baseForSietches = baseForSietches.filter(d => drill.type==='include' ? d[drill.field]===drill.value : d[drill.field]!==drill.value);
+        });
+
+        if (!activeData.length) return;
+
+        // --- MAJ KPIs (Avec nettoyage robuste) ---
+        const activeTotals = getCleanRuns(activeData);
+        document.getElementById('kpi-total-rows').innerText = activeData.length.toLocaleString('fr-FR');
+        
+        const srvAggActive = new Map();
+        activeTotals.forEach(d => {
+            if (!srvAggActive.has(d.srv)) srvAggActive.set(d.srv, { sum: 0, count: 0 });
+            srvAggActive.get(d.srv).sum += d.total;
+            srvAggActive.get(d.srv).count += 1;
+        });
+        const activeServerAvgs = Array.from(srvAggActive, ([name, a]) => ({ name, avg: a.sum / a.count })).sort((a, b) => b.avg - a.avg);
+        
+        if (activeServerAvgs.length) {
+            document.getElementById('kpi-top-server').innerText = activeServerAvgs[0].name;
+            document.getElementById('kpi-top-server-sub').innerText = `${activeServerAvgs[0].avg.toFixed(1)} pop. moyenne`;
+        } else {
+             document.getElementById('kpi-top-server').innerText = "-";
+             document.getElementById('kpi-top-server-sub').innerText = "Aucun monde trouvé";
+        }
+
+        const sietchAggActive = new Map();
+        activeData.forEach(d => {
+            const key = d.sietch; 
+            if (!sietchAggActive.has(key)) sietchAggActive.set(key, { sum: 0, count: 0 });
+            sietchAggActive.get(key).sum += d.joueurs;
+            sietchAggActive.get(key).count += 1;
+        });
+        const activeSietchAvgs = Array.from(sietchAggActive, ([name, a]) => ({ name, avg: a.sum / a.count })).sort((a, b) => b.avg - a.avg);
+
+        if (activeSietchAvgs.length) {
+            document.getElementById('kpi-top-sietch').innerText = activeSietchAvgs[0].name;
+            document.getElementById('kpi-top-sietch-sub').innerText = `${activeSietchAvgs[0].avg.toFixed(1)} joueurs en moyenne`;
+        } else {
+             document.getElementById('kpi-top-sietch').innerText = "-";
+             document.getElementById('kpi-top-sietch-sub').innerText = "Aucun sietch trouvé";
+        }
+        
+        let peak = activeTotals.reduce((max, obj) => (obj.total > max.total ? obj : max), {total: 0, ts: null, srv: ''});
+        document.getElementById('kpi-peak-players').innerText = peak.total.toLocaleString('fr-FR');
+        document.getElementById('kpi-peak-time').innerText = peak.ts ? `${peak.srv} • ${peak.ts.toLocaleDateString('fr-FR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}` : '-';
+
+        // --- GRAPHE 1: SERVEURS ---
+        const srvAggContext = new Map();
+        getCleanRuns(baseForServers).forEach(d => {
+            if (!srvAggContext.has(d.srv)) srvAggContext.set(d.srv, { sum: 0, count: 0 });
+            srvAggContext.get(d.srv).sum += d.total;
+            srvAggContext.get(d.srv).count += 1;
+        });
+        const contextServerAvgs = Array.from(srvAggContext, ([name, a]) => ({ name, avg: a.sum / a.count })).sort((a, b) => b.avg - a.avg).slice(0, 15).reverse();
+        
+        const srvNames = contextServerAvgs.map(d => d.name);
+        const srvColors = getColorArray(srvNames, 'serveur', cTheme.secondary, cTheme.primary);
+
+        Plotly.newPlot('chart-servers', [{
+            type: 'bar', orientation: 'h', y: srvNames, x: contextServerAvgs.map(d => d.avg),
+            marker: { color: srvColors, line: {width: 0} }, hovertemplate: '<b>%{y}</b><br>Moyenne: %{x:.0f} joueurs<extra></extra>' 
+        }], { ...pLayout, margin: {l: 160, r: 20, t: 10, b: 40}, hovermode: 'closest' }, {displayModeBar: false});
+
+        document.getElementById('chart-servers').on('plotly_click', function(data){
+            if(document.getElementById('server-filter').value !== 'all') return;
+            handleChartClick('serveur', data.points[0].y, data.event.ctrlKey || data.event.metaKey);
+        });
+
+        // --- GRAPHE 2: SIETCHES ---
+        const sietchAggContext = new Map();
+        baseForSietches.forEach(d => {
+            const key = d.serveur + ' - ' + d.sietch; 
+            if (!sietchAggContext.has(key)) sietchAggContext.set(key, { sum: 0, count: 0, rawName: d.sietch });
+            sietchAggContext.get(key).sum += d.joueurs;
+            sietchAggContext.get(key).count += 1;
+        });
+        const contextSietchAvgs = Array.from(sietchAggContext, ([name, a]) => ({ key: name, rawName: a.rawName, avg: a.sum / a.count })).sort((a, b) => b.avg - a.avg).slice(0, 15).reverse();
+        
+        const sietchRawNames = contextSietchAvgs.map(d => d.rawName);
+        const sietchColors = getColorArray(sietchRawNames, 'sietch', cTheme.accent, cTheme.primary);
+
+        Plotly.newPlot('chart-sietches', [{
+            type: 'bar', orientation: 'h', y: contextSietchAvgs.map(d => d.key.length > 25 ? d.key.substring(0,22)+'...' : d.key), x: contextSietchAvgs.map(d => d.avg),
+            customdata: sietchRawNames, marker: { color: sietchColors, line: {width: 0} }, hovertemplate: '<b>%{customdata}</b><br>Moyenne: %{x:.0f} joueurs<extra></extra>'
+        }], { ...pLayout, margin: {l: 180, r: 20, t: 10, b: 40}, hovermode: 'closest' }, {displayModeBar: false});
+
+        document.getElementById('chart-sietches').on('plotly_click', function(data){
+            handleChartClick('sietch', data.points[0].customdata, data.event.ctrlKey || data.event.metaKey);
+        });
+
+        // --- GRAPHE 3: LIGNE TEMPORELLE TYPE STEAMDB ---
+        const timeSeriesMap = new Map();
+        activeTotals.forEach(d => {
+            const tsStr = `${d.ts.getFullYear()}-${String(d.ts.getMonth()+1).padStart(2,'0')}-${String(d.ts.getDate()).padStart(2,'0')} ${String(d.ts.getHours()).padStart(2,'0')}:00:00`;
+            if (!timeSeriesMap.has(tsStr)) timeSeriesMap.set(tsStr, { ts: d.ts.getTime(), sum: 0, count: 0 });
+            timeSeriesMap.get(tsStr).sum += d.total;
+            timeSeriesMap.get(tsStr).count += 1;
+        });
+
+        const timeSeries = Array.from(timeSeriesMap, ([date, a]) => ({ date, ts: a.ts, avg: a.sum / a.count })).sort((a,b) => a.ts - b.ts);
+        
+        // --- MISE À JOUR DU TITRE DE LA COURBE ---
+        let selectedServer = document.getElementById('server-filter').value;
+        if(selectedServer === 'all' && currentDrillDowns.length > 0) {
+           let srvDrill = currentDrillDowns.find(d => d.field === 'serveur' && d.type === 'include');
+           if(srvDrill) selectedServer = srvDrill.value;
+        }
+        
+        let legendName = 'Pop. Mondiale Moyenne';
+        if (selectedServer !== 'all') {
+            legendName = `Pop. ${selectedServer} Moyenne`;
+        }
+
+        const steamDbLayoutMain = {
+            ...pLayout, margin: {l: 50, r: 20, t: 40, b: 10}, hovermode: 'x unified', xaxis: steamDbXaxis,
+            yaxis: { beginAtZero: true, gridcolor: cTheme.grid, zerolinecolor: cTheme.grid, tickfont: {size: 11}, tickformat: 'd' }
+        };
+
+        Plotly.newPlot('chart-timeline', [{
+            type: 'scatter', mode: 'lines', x: timeSeries.map(d => d.date), y: timeSeries.map(d => d.avg), name: legendName,
+            line: { color: cTheme.primary, shape: 'spline', width: 2 }, fill: 'tozeroy', fillcolor: 'rgba(243, 196, 79, 0.05)', hovertemplate: '<b>%{data.name}</b> : %{y:.0f}<extra></extra>' 
+        }], steamDbLayoutMain, {displayModeBar: false});
+
+        if (timeSeries.length > 0) {
+            renderZoomButtons('zoom-main', 'chart-timeline', timeSeries[0].ts, timeSeries[timeSeries.length-1].ts);
+        }
+
+        // --- GRAPHE 4: HEATMAP ---
+        const heatMapData = Array(7).fill().map(() => Array(24).fill(null));
+        const heatMapCount = Array(7).fill().map(() => Array(24).fill(0));
+        activeTotals.forEach(d => {
+            let day = d.ts.getDay() - 1; if(day === -1) day = 6; 
+            const hour = d.ts.getHours();
+            if(heatMapData[day][hour] === null) heatMapData[day][hour] = 0;
+            heatMapData[day][hour] += d.total; heatMapCount[day][hour] += 1;
+        });
+
+        for(let d=0; d<7; d++) {
+            for(let h=0; h<24; h++) {
+                heatMapData[d][h] = heatMapCount[d][h] > 0 ? heatMapData[d][h] / heatMapCount[d][h] : null;
+            }
+        }
+        const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+        const hours = Array.from({length: 24}, (_, i) => `${i}h`);
+
+        Plotly.newPlot('chart-heatmap', [{
+            type: 'heatmap', z: heatMapData.reverse(), x: hours, y: [...days].reverse(),
+            colorscale: [['0.0', 'rgba(20, 12, 4, 0)'], ['0.3', '#8b6e3b'], ['0.7', '#d4a23b'], ['1.0', '#f3c44f']],
+            hoverongaps: false, xgap: 1, ygap: 1, hovertemplate: '%{y} à %{x}<br>Moyenne: %{z:.0f} joueurs<extra></extra>'
+        }], { ...pLayout, margin: {l: 80, r: 20, t: 20, b: 40}, xaxis: { type: 'category', gridcolor: 'transparent', zerolinecolor: 'transparent', tickangle: 0 }, yaxis: { type: 'category', gridcolor: 'transparent', zerolinecolor: 'transparent' } }, {displayModeBar: false});
+    }
+
+    // ==========================================
+    // LOGIQUE DU COMPARATEUR DE MIGRATION
+    // ==========================================
+
+    function addMigrationServer() {
+        const srv = document.getElementById('migration-select').value;
+        if (srv && !migrationServers.includes(srv)) {
+            migrationServers.push(srv); renderMigrationChips(); updateMigrationView();
+        }
+    }
+    function removeMigrationServer(srv) { migrationServers = migrationServers.filter(s => s !== srv); renderMigrationChips(); updateMigrationView(); }
+    function clearMigrationServers() { migrationServers = []; renderMigrationChips(); updateMigrationView(); }
+
+    function renderMigrationChips() {
+        const container = document.getElementById('migration-chips');
+        container.innerHTML = '';
+        migrationServers.forEach(srv => {
+            const chip = document.createElement('div'); chip.className = 'drill-chip'; 
+            chip.innerHTML = `<span>${srv}</span><span style="cursor:pointer; opacity:0.7; padding-left:4px;" onclick="removeMigrationServer('${srv}')">✖</span>`;
+            container.appendChild(chip);
+        });
+    }
+
+    function updateMigrationView() {
+        const tbody = document.getElementById('migration-table-body');
+        
+        if (migrationServers.length === 0) {
+            Plotly.purge('chart-migration-timeline');
+            document.getElementById('zoom-migr').innerHTML = '';
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; opacity:0.5; padding: 20px;">Ajoutez des mondes pour générer la comparaison.</td></tr>';
+            return;
+        }
+
+        // On utilise TOUJOURS rawData (toute la base) et non filteredData pour que le comparateur soit indépendant des filtres du haut.
+        // On n'applique que le filtre de l'horizon temporel si on veut que le tableau de migration soit raccord avec "Dernières 24h" par exemple.
+        let migrationData = rawData;
+        const tFilter = document.getElementById('time-filter').value;
+        
+        if (tFilter !== 'all') {
+            const cutoff = new Date(rawData[rawData.length - 1].timestamp.getTime() - (parseInt(tFilter) * 3600000));
+            migrationData = migrationData.filter(d => d.timestamp >= cutoff);
+        }
+        
+        migrationData = migrationData.filter(d => migrationServers.includes(d.serveur));
+
+        const traces = [];
+        tbody.innerHTML = '';
+
+        let minGlobalTs = Infinity;
+        let maxGlobalTs = 0;
+
+        migrationServers.forEach((srv, index) => {
+            const srvData = migrationData.filter(d => d.serveur === srv);
+            if(srvData.length === 0) return;
+
+            const srvTotals = getCleanRuns(srvData);
+
+            const tsMap = new Map();
+            srvTotals.forEach(d => {
+                let t = d.ts.getTime();
+                if (t < minGlobalTs) minGlobalTs = t;
+                if (t > maxGlobalTs) maxGlobalTs = t;
+
+                const tStr = `${d.ts.getFullYear()}-${String(d.ts.getMonth()+1).padStart(2,'0')}-${String(d.ts.getDate()).padStart(2,'0')} ${String(d.ts.getHours()).padStart(2,'0')}:00:00`;
+                if(!tsMap.has(tStr)) tsMap.set(tStr, {sum:0, count:0});
+                tsMap.get(tStr).sum += d.total; tsMap.get(tStr).count += 1;
+            });
+
+            const timeSeries = Array.from(tsMap, ([date, a]) => ({ date, avg: a.sum / a.count })).sort((a,b) => a.date.localeCompare(b.date));
+            const rowColor = migrationPalette[index % migrationPalette.length];
+
+            traces.push({
+                type: 'scatter', mode: 'lines', x: timeSeries.map(d => d.date), y: timeSeries.map(d => d.avg),
+                name: srv, line: { shape: 'spline', width: 2, color: rowColor }, hovertemplate: '<b>%{data.name}</b> : %{y:.0f} joueurs<extra></extra>'
+            });
+
+            const totals = srvTotals.map(d => d.total);
+            const avg = totals.reduce((a,b)=>a+b,0) / (totals.length || 1);
+            const peak = Math.max(...totals, 0);
+
+            const sietchMap = new Map();
+            srvData.forEach(d => {
+                if(!sietchMap.has(d.sietch)) sietchMap.set(d.sietch, {sum:0, count:0});
+                sietchMap.get(d.sietch).sum += d.joueurs; sietchMap.get(d.sietch).count += 1;
+            });
+
+            const sietches = Array.from(sietchMap, ([name, a]) => ({ name, avg: a.sum / a.count })).sort((a,b) => b.avg - a.avg);
+            const topSietch = sietches.length > 0 ? `${sietches[0].name} (${sietches[0].avg.toFixed(1)} moy.)` : '-';
+            
+            let sietchDetailsHtml = '<div style="padding: 15px 20px; background: rgba(0,0,0,0.3); border-radius: 4px; margin: 10px 0;">';
+            sietchDetailsHtml += `<div style="font-family:'Cinzel', serif; color:var(--or-base); margin-bottom:6px; font-size:12px; font-weight:bold;">Répartition par Sietch sur ${srv} (Moyenne d'affluence)</div>`;
+            sietchDetailsHtml += `<div style="font-size:11px; color:var(--texte-beige); opacity:0.6; margin-bottom:12px; font-style:italic;">→ Survolez un sietch pour afficher son évolution temporelle</div>`;
+            const maxSietchPop = sietches.length > 0 ? sietches[0].avg : 1;
+            const srvJson = JSON.stringify(srv);
+            sietches.forEach(s => {
+                const pct = maxSietchPop > 0 ? (s.avg / maxSietchPop) * 100 : 0;
+                const sietchJson = JSON.stringify(s.name);
+                sietchDetailsHtml += `
+                    <div style="display: flex; align-items: center; margin-bottom: 5px; font-size: 11px; cursor: default; border-radius: 3px; padding: 3px 5px; transition: background 0.15s;"
+                         class="sietch-detail-row"
+                         onmouseenter='showSietchTooltip(${srvJson}, ${sietchJson}, this)'
+                         onmouseleave='hideSietchTooltip(300)'>
+                        <div style="width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.9;">${s.name}</div>
+                        <div style="flex-grow: 1; height: 8px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden; margin: 0 10px;"><div style="width: ${pct}%; height: 100%; background: ${rowColor};"></div></div>
+                        <div style="width: 30px; text-align: right; font-family: 'Fira Code', monospace; color: var(--or-vif);">${s.avg.toFixed(1)}</div>
+                    </div>
+                `;
+            });
+            sietchDetailsHtml += '</div>';
+
+            tbody.innerHTML += `
+                <tr style="cursor: pointer; transition: background 0.2s;" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'table-row' : 'none'" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
+                    <td style="font-weight: bold; color: ${rowColor};"><span style="display:inline-block; width:12px; font-size:10px; opacity:0.6;">▼</span> ${srv}</td>
+                    <td>${avg.toFixed(1)}</td><td style="font-family: 'Fira Code', monospace; color: var(--or-vif);">${peak}</td><td style="opacity: 0.8;">${topSietch}</td>
+                </tr>
+                <tr style="display: none;"><td colspan="4" style="padding: 0; border: none;">${sietchDetailsHtml}</td></tr>
+            `;
+        });
+
+        const steamDbLayoutMigr = {
+            ...pLayout, margin: {l: 50, r: 20, t: 40, b: 10}, hovermode: 'x unified', xaxis: steamDbXaxis,
+            yaxis: { beginAtZero: true, gridcolor: cTheme.grid, zerolinecolor: cTheme.grid, tickfont: {size: 11}, tickformat: 'd' },
+            legend: { orientation: 'h', y: -0.2, font: {color: cTheme.text} }
+        };
+
+        Plotly.newPlot('chart-migration-timeline', traces, steamDbLayoutMigr, {displayModeBar: false});
+
+        if (maxGlobalTs > 0) {
+             renderZoomButtons('zoom-migr', 'chart-migration-timeline', minGlobalTs, maxGlobalTs);
+        }
+    }
+
+    // ==========================================
+    // TOOLTIP FLOTTANT — ÉVOLUTION D'UN SIETCH
+    // ==========================================
+
+    function showSietchTooltip(srv, sietch, el) {
+        clearTimeout(sietchTooltipTimer);
+
+        document.querySelectorAll('.sietch-detail-row').forEach(r => r.style.background = 'transparent');
+        el.style.background = 'rgba(243,196,79,0.12)';
+
+        const srvIdx = migrationServers.indexOf(srv);
+        const srvColor = migrationPalette[srvIdx >= 0 ? srvIdx % migrationPalette.length : 0];
+
+        const tooltip = document.getElementById('sietch-tooltip');
+        document.getElementById('sietch-tooltip-title').innerHTML =
+            `<span style="color:${srvColor}">${srv}</span><span style="opacity:0.4; margin:0 8px;">›</span>${sietch}`;
+
+        // Positionnement : à gauche de la ligne, sinon à droite si pas de place
+        const rect = el.getBoundingClientRect();
+        const W = 460, H = 280;
+        let left = rect.left - W - 20;
+        if (left < 10) left = rect.right + 20;
+        let top = rect.top + rect.height / 2 - H / 2;
+        if (top < 10) top = 10;
+        if (top + H > window.innerHeight - 10) top = window.innerHeight - H - 10;
+
+        tooltip.style.left = left + 'px';
+        tooltip.style.top = top + 'px';
+        tooltip.style.display = 'block';
+
+        // Données
+        let migData = rawData;
+        const tFilter = document.getElementById('time-filter').value;
+        if (tFilter !== 'all') {
+            const cutoff = new Date(rawData[rawData.length - 1].timestamp.getTime() - (parseInt(tFilter) * 3600000));
+            migData = migData.filter(d => d.timestamp >= cutoff);
+        }
+        const sietchData = migData.filter(d => d.serveur === srv && d.sietch === sietch);
+        if (!sietchData.length) return;
+
+        const tsMap = new Map();
+        sietchData.forEach(d => {
+            const tStr = `${d.timestamp.getFullYear()}-${String(d.timestamp.getMonth()+1).padStart(2,'0')}-${String(d.timestamp.getDate()).padStart(2,'0')} ${String(d.timestamp.getHours()).padStart(2,'0')}:00:00`;
+            if (!tsMap.has(tStr)) tsMap.set(tStr, { sum: 0, count: 0 });
+            tsMap.get(tStr).sum += d.joueurs;
+            tsMap.get(tStr).count += 1;
+        });
+        const timeSeries = Array.from(tsMap, ([date, a]) => ({ date, avg: a.sum / a.count })).sort((a, b) => a.date.localeCompare(b.date));
+
+        // Lire la plage visible actuelle du graphe migration directement
+        const migrEl = document.getElementById('chart-migration-timeline');
+        let migrRange = null;
+        if (migrEl && migrEl._fullLayout && migrEl._fullLayout.xaxis) {
+            const xa = migrEl._fullLayout.xaxis;
+            if (!xa.autorange && xa.range && xa.range.length === 2) migrRange = [...xa.range];
+        }
+        const tooltipXaxis = {
+            type: 'date', gridcolor: cTheme.grid, zerolinecolor: cTheme.grid, tickfont: { size: 10 },
+            ...(migrRange ? { range: migrRange } : {})
+        };
+
+        Plotly.newPlot('chart-sietch-tooltip', [{
+            type: 'scatter', mode: 'lines',
+            x: timeSeries.map(d => d.date), y: timeSeries.map(d => d.avg),
+            name: sietch,
+            line: { color: srvColor, shape: 'spline', width: 2 },
+            fill: 'tozeroy', fillcolor: srvColor + '18',
+            hovertemplate: '%{y:.0f} joueurs<extra></extra>'
+        }], {
+            ...pLayout,
+            margin: { l: 42, r: 12, t: 10, b: 28 },
+            hovermode: 'x unified',
+            xaxis: tooltipXaxis,
+            yaxis: { gridcolor: cTheme.grid, zerolinecolor: cTheme.grid, tickfont: { size: 10 }, tickformat: 'd' }
+        }, { displayModeBar: false });
+    }
+
+    function hideSietchTooltip(delay) {
+        sietchTooltipTimer = setTimeout(() => {
+            document.getElementById('sietch-tooltip').style.display = 'none';
+            document.querySelectorAll('.sietch-detail-row').forEach(r => r.style.background = 'transparent');
+        }, delay || 200);
+    }
+</script>
+
+<div id="sietch-tooltip"
+     onmouseenter="clearTimeout(sietchTooltipTimer)"
+     onmouseleave="hideSietchTooltip(150)"
+     style="display:none; position:fixed; z-index:1000; width:460px;
+            background:rgba(8,5,2,0.97); border:1px solid var(--or-sombre);
+            border-radius:6px; padding:14px 16px;
+            box-shadow:0 12px 40px rgba(0,0,0,0.85), 0 0 20px rgba(212,162,59,0.08);
+            animation: fadeIn 0.15s ease-out; pointer-events:all;">
+    <div style="font-family:'Cinzel',serif; font-size:13px; color:var(--or-vif); font-weight:bold;
+                margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid #5c4025;
+                letter-spacing:1px; text-transform:uppercase;">
+        <span id="sietch-tooltip-title"></span>
+    </div>
+    <div id="chart-sietch-tooltip" style="width:100%; height:220px;"></div>
+</div>
+</body>
+</html>

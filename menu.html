@@ -31,12 +31,11 @@
 
         .cards-container {
             display: flex;
-            gap: 25px; /* Écart réduit pour le côte à côte */
-            /* On force le côte à côte sur desktop */
-            flex-wrap: nowrap; 
+            gap: 22px;
+            flex-wrap: nowrap;
             justify-content: center;
             width: 100%;
-            max-width: 1300px; /* Largeur max adaptée pour 4 cartes */
+            max-width: 1500px;
             padding: 20px;
         }
 
@@ -44,14 +43,13 @@
             background-color: #0d0705;
             border-radius: 6px;
             overflow: hidden;
-            /* Largeur réduite pour faire tenir les 4 sur une ligne */
-            width: 280px; 
+            width: 260px;
             box-shadow: 0 15px 40px rgba(0,0,0,0.7);
             transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s;
             text-decoration: none;
             border: 1px solid #3d2b16;
             position: relative;
-            flex-shrink: 0; /* Empêche les cartes de rétrécir */
+            flex-shrink: 0;
         }
 
         .card:hover {
@@ -133,7 +131,7 @@
         }
 
         /* === RESPONSIVE (Optionnel pour mobile) === */
-        @media(max-width: 1200px) {
+        @media(max-width: 1400px) {
             .cards-container {
                 flex-wrap: wrap; /* Sur petits écrans, on autorise le passage à la ligne pour l'ergonomie */
                 justify-content: center;
@@ -188,6 +186,17 @@
                     Chroniques
                 </div>
                 <div class="card-desc">Quinze mille ans d'histoire de l'univers de Dune (A. Odoardi).</div>
+            </div>
+        </a>
+
+        <a href="dune_analytics.html" class="card">
+            <img src="analytics.jpg" onerror="this.src='intro.jpg'" alt="Télémétrie" class="card-image">
+            <div class="card-content">
+                <div class="card-title">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
+                    Œil du Mentat
+                </div>
+                <div class="card-desc">Télémétrie des mondes — population, sietches dominants et fluctuations temporelles.</div>
             </div>
         </a>
 

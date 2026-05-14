@@ -14,7 +14,7 @@ Interface centralisée pour la cartographie, la planification et la coordination
 
 ## Aperçu
 
-DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havres Gris*. Il permet de gérer les territoires, planifier les événements Landsraad et soumettre des demandes de craft, le tout dans une interface immersive à l'univers Dune.
+DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havres Gris*. Il permet de gérer les territoires, planifier les événements Landsraad, soumettre des demandes de craft et analyser la télémétrie des serveurs, le tout dans une interface immersive à l'univers Dune.
 
 ---
 
@@ -78,6 +78,17 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 - Timeline de l'univers Dune sur 15 000 ans
 - Référence historique et narrative pour les joueurs
 
+### Œil du Mentat — Télémétrie des Mondes (`dune_analytics.html`)
+- Chargement automatique du fichier `dune_counts.csv` (ou import manuel par glisser-déposer)
+- **KPIs globaux** : monde le plus peuplé, pic d'affluence, sietch dominant, volume de données analysées
+- **Fluctuations de population mondiale** : courbe temporelle type SteamDB avec rangeslider et boutons de zoom (12h → Max)
+- **Matrice d'activité** : heatmap jours × heures révélant les pics d'affluence hebdomadaires
+- **Top 15 Mondes / Top 15 Sietches** : barres horizontales interactives — clic = isoler, Ctrl+clic = exclure
+- **Barre de drill-down** : filtres actifs affichés sous forme de chips, réinitialisables
+- **Bureau d'Étude des Migrations** : comparateur multi-serveurs avec graphe d'évolution superposé, tableau de synthèse dépliable par sietch
+  - Survol d'un sietch dans le tableau → **tooltip flottant** avec courbe d'évolution temporelle synchronisée sur la fenêtre sélectionnée dans le graphe
+  - Rangeslider amélioré : zones non-sélectionnées assombries (effet ghost), poignées dorées
+
 ---
 
 ## Authentification et Rôles
@@ -94,6 +105,7 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 | Couche | Technologies |
 |--------|-------------|
 | Frontend | HTML5, CSS3, JavaScript (ES6+), Leaflet.js |
+| Analytics | Plotly.js 2.x (graphes interactifs), PapaParse (lecture CSV) |
 | Backend | PHP 7+, API REST, stockage JSON |
 | Style | CSS personnalisé, Tailwind CSS (actualités) |
 | Médias | Images haute résolution, icônes PNG |
@@ -112,6 +124,7 @@ DuneMap/
 ├── migration.html       # Coordinateur de migration vers Icarus
 ├── news.html            # Actualités du jeu
 ├── dune_chronologie.html # Chronologie de l'univers
+├── dune_analytics.html  # Œil du Mentat — télémétrie des mondes
 ├── login.html / register.html
 │
 ├── script.js            # Logique cartographique
@@ -124,6 +137,7 @@ DuneMap/
 ├── api.php              # Données de groupe
 ├── migration_api.php    # Réservations de migration (validation, refus, entraide)
 │
+├── dune_counts.csv      # Données de télémétrie (timestamp;serveur;sietch;joueurs) — non versionné
 ├── bases.json           # Bases des territoires (champs : user, x, y, type, map, note, sietch, instance)
 ├── requetes.json        # Demandes de craft
 ├── landsraad_data.json  # Quêtes disponibles

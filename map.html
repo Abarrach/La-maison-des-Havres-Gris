@@ -10,6 +10,11 @@
   <script src="script.js" defer></script>
   
   <style>
+    /* === HEADER FIXE (mobile : la carte Leaflet ne doit pas faire disparaître le header) === */
+    header { position: fixed !important; }
+    #map-switcher { position: fixed !important; }
+    #storm-timer { position: fixed !important; }
+
     /* === MODALE === */
     #custom-modal-overlay {
         display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -149,7 +154,8 @@
     #dd-legend {
       position: absolute;
       bottom: 80px;
-      left: 15px;
+      right: 60px;
+      left: auto;
       z-index: 1500;
       background: rgba(20, 12, 4, 0.92);
       border: 1px solid #5c4025;
@@ -198,13 +204,13 @@
 </head>
 
 <body class="fade-in">
+<script src="auth-guard.js"></script>
   
   <header>
     <div id="user-info">Chargement...</div>
     <div class="title">Maison des Havres Gris</div>
     <div class="header-controls">
         <a href="menu.html" class="disconnect">Menu</a>
-        <button class="disconnect" onclick="logout()">Déconnexion</button>
     </div>
   </header>
 

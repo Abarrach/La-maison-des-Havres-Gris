@@ -111,26 +111,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         unset($item);
     }
     else {
+        $editingId = isset($input['editingId']) ? $input['editingId'] : null;
+        unset($input['editingId']);
+
+        // Trouver l'entrée existante (par id si édition, sinon par pseudo+sietch)
         $oldItem = null;
-        foreach($data as $item) {
-            if (strcasecmp($item['pseudo'], $input['pseudo']) === 0) $oldItem = $item;
+        foreach ($data as $item) {
+            if ($editingId && isset($item['id']) && $item['id'] === $editingId) {
+                $oldItem = $item;
+                break;
+            } elseif (!$editingId && strcasecmp($item['pseudo'], $input['pseudo']) === 0 && $item['sietch'] === $input['sietch']) {
+                $oldItem = $item;
+            }
         }
 
+        // Bloquer les doublons pseudo+sietch pour les nouveaux marqueurs
+        if (!$editingId && $oldItem) {
+            echo json_encode(["status" => "error", "message" => "Vous avez déjà un marqueur sur " . $input['sietch'] . "."]);
+            exit;
+        }
+
+        // Préserver les liens de couverture
         if ($oldItem) {
-            // On préserve uniquement les liens de couverture (pas validated/refused : tout edit repart en attente)
             if (isset($oldItem['coveredBy'])) $input['coveredBy'] = $oldItem['coveredBy'];
             if (isset($oldItem['covering']))  $input['covering']  = $oldItem['covering'];
         }
-
-        foreach($data as $item) {
+        foreach ($data as $item) {
             if (isset($item['coveredBy']) && strcasecmp($item['coveredBy'], $input['pseudo']) === 0) {
                 $input['covering'] = $item['pseudo'];
             }
         }
 
-        $data = array_filter($data, function($item) use ($input) { return strcasecmp($item['pseudo'], $input['pseudo']) !== 0; });
+        // Supprimer l'ancienne entrée (par id si édition, sinon par pseudo+sietch)
+        if ($editingId) {
+            $data = array_filter($data, function($item) use ($editingId) {
+                return !(isset($item['id']) && $item['id'] === $editingId);
+            });
+        }
 
-        $input['id'] = isset($oldItem['id']) ? $oldItem['id'] : uniqid();
+        $input['id'] = ($oldItem && isset($oldItem['id'])) ? $oldItem['id'] : uniqid();
         $data[] = $input;
         $data = array_values($data);
     }

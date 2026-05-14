@@ -1,7 +1,13 @@
 let questsData = [];
 let participants = [];
 let syncInterval = null;
-let lastActionTime = 0; // Marqueur de temps
+let lastActionTime = 0;
+const currentUser = localStorage.getItem("user") || "";
+
+document.addEventListener("DOMContentLoaded", () => {
+    const nameField = document.getElementById('playerName');
+    if (nameField && currentUser) nameField.value = currentUser;
+});
 
 // ==========================================
 // 1. INITIALISATION
@@ -175,7 +181,7 @@ function addPlayer() {
     clearResults(); // On force le reset des groupes
     
     // Reset formulaire
-    document.getElementById('playerName').value = ''; 
+    document.getElementById('playerName').value = currentUser;
     document.querySelectorAll('input[name="questCheck"]').forEach(cb => cb.checked = false);
     document.getElementById('selectedCount').innerText = "0/5";
 }

@@ -1,3 +1,6 @@
+const currentUser = localStorage.getItem("user") || "";
+const isAdmin = localStorage.getItem("role") === "admin";
+
 const SIETCHS_PREMIER = [
   'Sietch Rajifiri', 'Sietch Fajr', 'Sietch Al Rab', 'Sietch Umbu', 'Sietch Tharwa'
 ];
@@ -8,6 +11,7 @@ const SIETCHS = [...SIETCHS_PREMIER, ...SIETCHS_SECOND];
 
 let map;
 let currentCoords = null;
+let editingId = null;
 let reservations = [];
 let markersLayer = L.layerGroup();
 let ghostLayer   = L.layerGroup();
@@ -30,11 +34,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
     map.on('click', function(e) {
         currentCoords = e.latlng;
+        editingId = null;
         document.getElementById('modal-title-text').innerText = "Placer un marqueur";
+        document.getElementById('res-pseudo').value = currentUser;
         document.getElementById('res-sietch').value = currentSietch || SIETCHS[0];
         document.getElementById('reservation-modal').style.display = 'flex';
         document.getElementById('res-pseudo').focus();
     });
+
+    if (!isAdmin) {
+        const pseudoInput = document.getElementById('res-pseudo');
+        if (pseudoInput) {
+            pseudoInput.readOnly = true;
+            pseudoInput.style.opacity = '0.7';
+            pseudoInput.style.cursor = 'not-allowed';
+        }
+    }
 
     loadReservations();
     loadGhostProjections();
@@ -153,14 +168,16 @@ function renderSietchFilterButtons() {
 function closeModal() {
     document.getElementById('reservation-modal').style.display = 'none';
     currentCoords = null;
-    document.getElementById('res-pseudo').value = '';
+    editingId = null;
+    document.getElementById('res-pseudo').value = currentUser;
     document.getElementById('res-sietch').value = currentSietch || SIETCHS[0];
     document.getElementById('res-type').value = 'souhait';
     document.getElementById('res-dispo').value = 'dispo_seul';
 }
 
-window.editReservation = function(pseudo, sietch, type, dispo, lat, lng) {
+window.editReservation = function(id, pseudo, sietch, type, dispo, lat, lng) {
     currentCoords = { lat: lat, lng: lng };
+    editingId = id;
     document.getElementById('modal-title-text').innerText = "Modifier ce marqueur";
     document.getElementById('res-pseudo').value = pseudo;
     document.getElementById('res-sietch').value = sietch || SIETCHS[0];
@@ -182,6 +199,7 @@ function saveReservation() {
     }
 
     const data = { pseudo, lat: currentCoords.lat, lng: currentCoords.lng, type, dispo, sietch };
+    if (editingId) data.editingId = editingId;
 
     fetch('migration_api.php', {
         method: 'POST',
@@ -214,27 +232,26 @@ window.deleteReservation = function(id) {
 
 // === Offrir un fief ===
 window.offerFief = function(helpeePseudo) {
-    showCustomPrompt(
+    const helper = currentUser;
+    if (!helper) return;
+
+    const helperData = reservations.find(r => r.pseudo.toLowerCase() === helper.toLowerCase());
+
+    if (helperData) {
+        if (helperData.dispo !== 'dispo_aide') {
+            showCustomConfirm("ACTION REFUSÉE", "Votre base indique que vous n'avez pas de fief libre !<br><br>Modifiez d'abord votre marqueur en choisissant : <strong style='color:#5bc0de;'>Présent ET j'ai de la place</strong>.", null);
+            return;
+        }
+        if (helperData.covering) {
+            showCustomConfirm("ACTION REFUSÉE", `Vous couvrez déjà <strong>${helperData.covering}</strong> !`, null);
+            return;
+        }
+    }
+
+    showCustomConfirm(
         "OFFRIR UN FIEF",
-        `Vous allez offrir un fief à <strong style="color:#f3c44f;">${helpeePseudo}</strong>.<br>Entrez VOTRE pseudo ci-dessous :`,
-        "Ex: Paul",
-        (helper) => {
-            if (!helper) return;
-            helper = helper.trim();
-
-            let helperData = reservations.find(r => r.pseudo.toLowerCase() === helper.toLowerCase());
-
-            if (helperData) {
-                if (helperData.dispo !== 'dispo_aide') {
-                    showCustomConfirm("ACTION REFUSÉE", "Votre base indique que vous n'avez pas de fief libre !<br><br>Modifiez d'abord votre marqueur en choisissant : <strong style='color:#5bc0de;'>Présent ET j'ai de la place</strong>.", null);
-                    return;
-                }
-                if (helperData.covering) {
-                    showCustomConfirm("ACTION REFUSÉE", `Vous couvrez déjà <strong>${helperData.covering}</strong> !`, null);
-                    return;
-                }
-            }
-
+        `Confirmez-vous offrir votre fief à <strong style="color:#f3c44f;">${helpeePseudo}</strong> ?`,
+        () => {
             fetch('migration_api.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -495,7 +512,7 @@ function renderMarkers() {
                 ${validationRow}
 
                 <div style="display:flex; gap:5px; margin-top:10px;">
-                    <button onclick="editReservation('${safePseudo}','${safeSietch}','${res.type}','${res.dispo}',${res.lat},${res.lng})"
+                    <button onclick="editReservation('${res.id}','${safePseudo}','${safeSietch}','${res.type}','${res.dispo}',${res.lat},${res.lng})"
                             style="flex:1; background:#8b6e3b; color:#fff; border:none; padding:5px; cursor:pointer; border-radius:3px;">
                         Éditer
                     </button>

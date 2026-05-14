@@ -150,6 +150,30 @@
       border-color: #f3c44f;
     }
 
+    /* === GRILLE DD === */
+    .dd-grid-label {
+      color: rgba(255, 255, 255, 0.55);
+      font-size: 11px;
+      font-weight: bold;
+      text-shadow: 1px 1px 3px rgba(0,0,0,0.95), -1px -1px 3px rgba(0,0,0,0.95);
+      pointer-events: none !important;
+      white-space: nowrap;
+      line-height: 1;
+    }
+
+    /* === TOOLTIP ZONES DD === */
+    .dd-zone-tooltip {
+      background: rgba(20, 12, 4, 0.88);
+      border: 1px solid #5c4025;
+      color: #f5deb3;
+      font-size: 12px;
+      font-weight: bold;
+      padding: 4px 8px;
+      border-radius: 4px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+    }
+    .dd-zone-tooltip::before { display: none; }
+
     /* === LÉGENDE DD PVP/PVE === */
     #dd-legend {
       position: absolute;
@@ -229,6 +253,7 @@
   <div id="dd-legend">
     <div class="legend-item"><span class="legend-dot" style="background:#cc2222"></span> PVP</div>
     <div class="legend-item"><span class="legend-dot" style="background:#2255cc"></span> PVE</div>
+    <div id="dd-overlay-status" style="font-size:0.75rem;color:#aaa;margin-top:4px;"></div>
   </div>
 
   <div id="storm-timer">

@@ -31,6 +31,80 @@ let markers = [];
 let selectedCoords = null;
 let timerInterval = null;
 
+// === DEEP DESERT — OVERLAY DYNAMIQUE ===
+// Bounds officielles gaming.tools pour la Deep Desert (source : BoVuGAsD.js) :
+//   min:{x:-1270000,y:-1270000}  max:{x:1168400,y:1168400}  transformType:"flipVertical"
+// Le monde n'est PAS centré en (0,0) — décalage de -50 800 en x et y.
+// Total : 2 438 400 × 2 438 400 = 9 × 271 000 (9 colonnes/lignes exactes).
+const DD_WORLD_MIN_X = -1270000;
+const DD_WORLD_MAX_X =  1168400;
+const DD_WORLD_MIN_Y = -1270000;
+const DD_WORLD_MAX_Y =  1168400;
+const DD_WORLD_W = DD_WORLD_MAX_X - DD_WORLD_MIN_X; // 2438400
+const DD_WORLD_H = DD_WORLD_MAX_Y - DD_WORLD_MIN_Y; // 2438400
+const DD_IMG_W   = 6144;
+const DD_IMG_H   = 6120;
+
+// Référence seed acteurs : seed 12 = semaine du 13 mai 2026 (API acteurs)
+const DD_REF_SEED = 12;
+const DD_REF_DATE = new Date('2026-05-13T03:00:00Z');
+
+function gameToLeaflet(gx, gy) {
+  // transformType:"flipVertical" → lat = MAX_Y - gy (Y inversé pour l'affichage)
+  const lng = (gx - DD_WORLD_MIN_X) / DD_WORLD_W * DD_IMG_W;
+  const lat = (DD_WORLD_MAX_Y - gy) / DD_WORLD_H * DD_IMG_H;
+  return L.latLng(lat, lng);
+}
+
+function estimateDDSeed() {
+  const ms = Date.now() - DD_REF_DATE.getTime();
+  const weeks = Math.floor(ms / (7 * 24 * 3600 * 1000));
+  return Math.max(1, DD_REF_SEED + weeks);
+}
+
+// Filtre les acteurs bruts → { zones, resources }
+function processActors(seed, actors) {
+  const zones = [], resources = [];
+  for (const a of actors) {
+    if (a.type === 'BP_SecurityZone_C') {
+      zones.push({
+        zoneType: a.metadata?.Type ?? 'Unknown',
+        bounds:   a.metadata?.Bounds ?? [],
+        cx: a.x, cy: a.y
+      });
+    } else if (a.map_marker_id === 'spicefieldlarge') {
+      resources.push({ markerId: a.map_marker_id, x: a.x, y: a.y });
+    }
+  }
+  return { seed, zones, resources };
+}
+
+// Fetch direct depuis le navigateur (fallback si le proxy PHP est indisponible)
+async function fetchActorsDirect() {
+  const est = estimateDDSeed();
+  // seed=0 = données semaine courante (toujours frais), puis seeds numérotés en fallback
+  for (const seed of [0, est, est - 1, est + 1]) {
+    if (seed !== 0 && seed < 1) continue;
+    try {
+      const r = await fetch(
+        `https://dune-api-v2.gaming.tools/actors?world=deepdesert_1&seed=${seed}`
+      );
+      if (!r.ok) continue;
+      const actors = await r.json();
+      if (Array.isArray(actors) && actors.length > 100) {
+        // seed=0 = semaine courante → on utilise le seed estimé pour l'affichage
+        const displaySeed = seed === 0 ? est : seed;
+        return processActors(displaySeed, actors);
+      }
+    } catch { /* CORS ou réseau, on essaie le suivant */ }
+  }
+  return null;
+}
+
+let ddZoneLayer    = null;
+let ddGridLayer    = null;
+let ddOverlayShown = false;
+
 const iconSet = {
   guilde: L.icon({ iconUrl: 'icons/guilde.png', iconSize: [48, 48], iconAnchor: [24, 48], popupAnchor: [0, -48] }),
   landsraad: L.icon({ iconUrl: 'icons/landsraad.png', iconSize: [48, 48], iconAnchor: [24, 48], popupAnchor: [0, -48] }),
@@ -215,6 +289,47 @@ function setupMapSwitcher() {
   });
 }
 
+// ── Grille A1-I9 pour la Deep Desert ─────────────────────────────────────────
+function createDDGrid() {
+  const ROWS  = ['A','B','C','D','E','F','G','H','I']; // 0=A bas, 8=I haut
+  const cellW = 6144 / 9;   // ≈ 682.7
+  const cellH = 6120 / 9;   // = 680
+  const group = L.layerGroup();
+
+  // Lignes horizontales
+  for (let r = 0; r <= 9; r++) {
+    L.polyline([[r * cellH, 0], [r * cellH, 6144]], {
+      color: 'rgba(255,255,255,0.18)', weight: 1, interactive: false
+    }).addTo(group);
+  }
+  // Lignes verticales
+  for (let c = 0; c <= 9; c++) {
+    L.polyline([[0, c * cellW], [6120, c * cellW]], {
+      color: 'rgba(255,255,255,0.18)', weight: 1, interactive: false
+    }).addTo(group);
+  }
+  // Étiquettes — coin supérieur-gauche (à l'écran) de chaque cellule
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      // lat bas = bas écran ; coin bas-gauche de chaque cellule (comme dune.gaming.tools)
+      const labelLat = r * cellH + cellH * 0.1;
+      const labelLng = c * cellW + cellW * 0.03;
+      L.marker([labelLat, labelLng], {
+        icon: L.divIcon({
+          className: 'dd-grid-label',
+          html: `${ROWS[r]}${c + 1}`,
+          iconSize:   [30, 14],
+          iconAnchor: [0, 14],
+        }),
+        interactive: false,
+        keyboard:    false,
+        zIndexOffset: -1000,
+      }).addTo(group);
+    }
+  }
+  return group;
+}
+
 async function loadMapLayer(mapId) {
   const config = mapConfig[mapId];
   const timerDiv = document.getElementById("storm-timer");
@@ -227,14 +342,32 @@ async function loadMapLayer(mapId) {
 
   if (currentLayer) map.removeLayer(currentLayer);
 
+  // Retirer l'overlay DD et la grille si on quitte la Deep Desert
+  if (mapId !== 'deep_desert') {
+    if (ddZoneLayer)  { map.removeLayer(ddZoneLayer);  ddZoneLayer = null; }
+    if (ddGridLayer)  { map.removeLayer(ddGridLayer);  ddGridLayer = null; }
+    ddOverlayShown = false;
+  }
+
   if (config.image) {
-      currentLayer = L.imageOverlay(config.image, config.bounds, { zIndex: 1 }).addTo(map);
+      // Cache-buster : on utilise le seed DD courant (mis à jour chaque mardi par dd_map_update.php)
+      const ddSeed  = window._ddCurrentSeed || estimateDDSeed();
+      const imgUrl  = mapId === 'deep_desert'
+          ? config.image.replace(/\?.*$/, '') + '?v=' + ddSeed
+          : config.image;
+      currentLayer = L.imageOverlay(imgUrl, config.bounds, { zIndex: 1 }).addTo(map);
       map.fitBounds(config.bounds);
   }
 
   markers.forEach(m => map.removeLayer(m.marker));
   markers = [];
   await fetchAndDisplayBases();
+
+  // Grille A1-I9 et overlay zones PVP/PVE en Deep Desert
+  if (mapId === 'deep_desert') {
+    ddGridLayer = createDDGrid().addTo(map);
+    if (!ddOverlayShown) loadDDOverlay();
+  }
 }
 
 function updateSietchUI(mapId) {
@@ -242,6 +375,115 @@ function updateSietchUI(mapId) {
   const ddLegend = document.getElementById('dd-legend');
   if (sietchContainer) sietchContainer.style.display = (mapId === 'hagga') ? 'flex' : 'none';
   if (ddLegend) ddLegend.style.display = (mapId === 'deep_desert') ? 'flex' : 'none';
+}
+
+// Icons épice — icônes officielles du jeu (CDN gaming.tools, accessibles depuis les navigateurs)
+const CDN_ICONS = 'https://cdn-hosted.gaming.tools/dune/images/map-icons';
+const SPICE_ICONS = {
+  spicefieldlarge: L.icon({
+    iconUrl:      `${CDN_ICONS}/spicefieldlarge.webp`,
+    iconSize:     [44, 44],
+    iconAnchor:   [22, 22],
+    popupAnchor:  [0, -22]
+  }),
+  spicefieldmedium: L.icon({
+    iconUrl:      `${CDN_ICONS}/spicefieldmedium.webp`,
+    iconSize:     [28, 28],
+    iconAnchor:   [14, 14],
+    popupAnchor:  [0, -14]
+  }),
+  spicefieldsmall: L.icon({
+    iconUrl:      `${CDN_ICONS}/spicefieldsmall.webp`,
+    iconSize:     [18, 18],
+    iconAnchor:   [9, 9],
+    popupAnchor:  [0, -9]
+  }),
+};
+
+// Rendu commun zones + épices à partir des données traitées
+function renderDDData(data) {
+  if (ddZoneLayer) map.removeLayer(ddZoneLayer);
+  ddZoneLayer = L.layerGroup();
+
+  const ZONE_STYLES = {
+    NullSec:  { color: '#cc2222', fillColor: '#cc2222', fillOpacity: 0.18, weight: 1.5, opacity: 0.7 },
+    Security: { color: '#2255cc', fillColor: '#2255cc', fillOpacity: 0.12, weight: 1,   opacity: 0.5 },
+  };
+  const ZONE_LABELS  = { NullSec: '⚔ PVP (NullSec)', Security: '🛡 PVE (Security)' };
+  const SPICE_LABELS = {
+    spicefieldlarge:  '🌀 Grand champ d\'épice',
+    spicefieldmedium: '🟠 Champ d\'épice moyen',
+    spicefieldsmall:  '🟡 Petit champ d\'épice',
+  };
+
+  let zoneCount = 0;
+  for (const zone of data.zones) {
+    if (!zone.bounds || zone.bounds.length < 2) continue;
+    const pts  = zone.bounds.map(b => gameToLeaflet(b.x, b.y));
+    const lats = pts.map(p => p.lat);
+    const lngs = pts.map(p => p.lng);
+    const sw   = L.latLng(Math.min(...lats), Math.min(...lngs));
+    const ne   = L.latLng(Math.max(...lats), Math.max(...lngs));
+    L.rectangle([sw, ne], ZONE_STYLES[zone.zoneType] || ZONE_STYLES.Security)
+      .bindTooltip(ZONE_LABELS[zone.zoneType] || zone.zoneType, { sticky: true, className: 'dd-zone-tooltip' })
+      .addTo(ddZoneLayer);
+    zoneCount++;
+  }
+
+  let spiceCount = 0;
+  for (const r of data.resources) {
+    const icon = SPICE_ICONS[r.markerId];
+    if (!icon) continue;
+    L.marker(gameToLeaflet(r.x, r.y), { icon, zIndexOffset: 10 })
+      .bindTooltip(SPICE_LABELS[r.markerId] || r.markerId, { sticky: true, className: 'dd-zone-tooltip' })
+      .addTo(ddZoneLayer);
+    spiceCount++;
+  }
+
+  ddZoneLayer.addTo(map);
+  ddOverlayShown = true;
+  return { zoneCount, spiceCount };
+}
+
+async function loadDDOverlay() {
+  const statusEl = document.getElementById('dd-overlay-status');
+  if (statusEl) statusEl.textContent = '⏳ Chargement des zones…';
+
+  let data = null;
+  let fromCache = false;
+
+  // ── 1. Proxy PHP (fetch server-side, cache 4h, pas de CORS) ─────────────
+  try {
+    const r = await fetch('dd_proxy.php');
+    if (r.ok) {
+      const json = await r.json();
+      if (!json.error && json.zones) { data = json; fromCache = true; }
+    }
+  } catch { /* proxy indisponible */ }
+
+  // ── 2. Fallback : fetch direct navigateur (si proxy PHP hors ligne) ───────
+  if (!data) {
+    if (statusEl) statusEl.textContent = '⏳ Connexion directe à l\'API…';
+    data = await fetchActorsDirect();
+  }
+
+  if (!data) {
+    if (statusEl) statusEl.textContent = '⚠ Zones non disponibles';
+    console.warn('[DD overlay] Impossible de récupérer les données.');
+    return;
+  }
+
+  window._ddCurrentSeed = data.seed;
+  const { zoneCount, spiceCount } = renderDDData(data);
+  if (statusEl) {
+    const src        = fromCache ? '📦 proxy' : '🌐 direct';
+    const currentEst = estimateDDSeed();
+    const stale      = data.seed > 0 && data.seed < currentEst;
+    const staleTxt   = stale ? ' ⚠ données semaine précédente' : '';
+    statusEl.textContent = `${stale ? '⚠' : '✅'} Seed #${data.seed}${staleTxt} — ${zoneCount} zones · ${spiceCount} champs (${src})`;
+    if (stale) statusEl.style.color = '#e8a000';
+    else       statusEl.style.color = '';
+  }
 }
 
 function reloadBases() {

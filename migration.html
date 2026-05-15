@@ -13,7 +13,7 @@
     #map { width: 100vw; height: 100vh; background: #0e0804; }
 
     .header-migration {
-        position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+        position: fixed; top: 60px; left: 50%; transform: translateX(-50%);
         background: rgba(20, 12, 4, 0.9); border: 2px solid #cda434;
         padding: 10px 20px; border-radius: 8px; z-index: 1000;
         text-align: center; box-shadow: 0 0 15px rgba(0,0,0,0.8);
@@ -155,29 +155,20 @@
     }
   </style>
 </head>
-<body>
+<body class="fade-in">
 <script src="auth-guard.js"></script>
 
-<!-- Widget compte (coin haut droit) -->
-<div style="position:fixed;top:12px;right:16px;z-index:2000;">
-  <a href="account.html" class="user-account-widget" id="ua-widget">
-    <div class="ua-avatar" id="ua-avatar">?</div>
-    <span class="ua-pseudo" id="ua-pseudo">…</span>
-  </a>
-</div>
-<script>(function(){var u=localStorage.getItem("user")||"?";document.getElementById("ua-pseudo").textContent=u;var av=document.getElementById("ua-avatar");var img=localStorage.getItem("avatar");if(img){av.style.background="transparent";av.innerHTML='<img src="'+img+'" style="width:42px;height:42px;margin:-1px;object-fit:cover;border-radius:50%;">';}else{av.textContent=u.charAt(0).toUpperCase();var h=0;for(var i=0;i<u.length;i++)h=((h<<5)-h)+u.charCodeAt(i);av.style.background="hsl("+(Math.abs(h)%360)+",55%,32%)";}})();</script>
-
-<!-- Bouton retour menu (coin haut gauche) -->
-<a href="menu.html" style="
-    position:fixed; top:12px; left:16px; z-index:2000;
-    display:inline-flex; align-items:center; gap:6px;
-    background:rgba(10,7,2,0.75); border:1px solid rgba(180,140,50,0.6);
-    color:#cda434; font-family:'Segoe UI',sans-serif; font-size:0.72rem;
-    font-weight:600; letter-spacing:2px; text-transform:uppercase;
-    text-decoration:none; padding:0.45rem 1rem; border-radius:2px;
-    backdrop-filter:blur(4px); transition:background 0.2s,border-color 0.2s,color 0.2s;">
-    ◄ Menu
-</a>
+  <header>
+    <div class="title">Plan de Migration</div>
+    <div class="header-controls">
+      <a href="account.html" class="user-account-widget" id="ua-widget">
+        <div class="ua-avatar" id="ua-avatar">?</div>
+        <span class="ua-pseudo" id="ua-pseudo">…</span>
+      </a>
+      <a href="menu.html" class="disconnect">Menu</a>
+    </div>
+  </header>
+  <script>(function(){var u=localStorage.getItem("user")||"?";document.getElementById("ua-pseudo").textContent=u;var av=document.getElementById("ua-avatar");var img=localStorage.getItem("avatar");if(img){av.style.background="transparent";av.innerHTML='<img src="'+img+'" style="width:42px;height:42px;margin:-1px;object-fit:cover;border-radius:50%;">';}else{av.textContent=u.charAt(0).toUpperCase();var h=0;for(var i=0;i<u.length;i++)h=((h<<5)-h)+u.charCodeAt(i);av.style.background="hsl("+(Math.abs(h)%360)+",55%,32%)";}})();</script>
 
   <div class="header-migration">
       <h1>Plan de Migration</h1>

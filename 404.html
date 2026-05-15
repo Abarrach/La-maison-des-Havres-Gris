@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 — Page introuvable · DuneMap</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Segoe UI', sans-serif;
+            background: #0d0705;
+        }
+
+        /* === Image plein écran === */
+        .bg {
+            position: fixed;
+            inset: 0;
+            background: url('images/404_bg.jpg') center center / contain no-repeat;
+        }
+
+        /* Texte accessible masqué visuellement (déjà dans l'image) */
+        .sr-only {
+            position: absolute;
+            width: 1px; height: 1px;
+            overflow: hidden;
+            clip: rect(0,0,0,0);
+            white-space: nowrap;
+        }
+
+        /*
+         * Bouton transparent superposé sur le bouton "RETOUR À L'EAU" de l'image.
+         * Coordonnées exprimées en % de la taille de l'image source (1344×896).
+         * Ajuste left/top/width/height si l'image est différente.
+         */
+        .btn-overlay {
+            position: fixed;
+            left: 50%;
+            bottom: 8%;
+            transform: translateX(-50%);
+            min-width: 180px;
+            padding: 0.55rem 1.4rem;
+
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+
+            background: rgba(10, 7, 2, 0.55);
+            border: 1px solid rgba(180, 140, 50, 0.75);
+            color: #d4a93b;
+            font-family: 'Segoe UI', sans-serif;
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            text-decoration: none;
+            border-radius: 2px;
+            cursor: pointer;
+            backdrop-filter: blur(4px);
+            transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.2s;
+        }
+        .btn-overlay:hover {
+            background: rgba(180, 140, 50, 0.2);
+            border-color: #cda434;
+            color: #f3c44f;
+            transform: translateX(calc(-50% + 3px));
+        }
+        .btn-overlay:focus-visible {
+            outline: 2px solid #cda434;
+            outline-offset: 2px;
+        }
+
+        @media (max-width: 600px) {
+            .btn-overlay {
+                left:   5%;
+                bottom: 6%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg" role="img" aria-label="Scène désertique d'Arrakis — un fremen s'effondre dans le sable face à un ver des sables"></div>
+
+    <!-- Texte masqué pour l'accessibilité (déjà visible dans l'image) -->
+    <h1 class="sr-only">404 — Perdu dans le désert</h1>
+    <p  class="sr-only">
+        Même les meilleurs fremen peuvent se perdre parfois.
+        Cette page s'est peut-être fait avaler par un ver des sables.
+    </p>
+
+    <!-- Bouton transparent superposé sur le bouton de l'image -->
+    <a href="menu.html" class="btn-overlay" aria-label="Retour à l'eau — revenir au portail DuneMap">
+        ◆ Retour à l'eau
+    </a>
+</body>
+</html>

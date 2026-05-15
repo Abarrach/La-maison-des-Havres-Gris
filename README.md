@@ -20,6 +20,11 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 
 ## Fonctionnalités
 
+### Menu Principal (`menu.html`)
+- Grille **2 rangées × 3 tuiles** (CSS Grid), responsive : 2 colonnes sur tablette, 1 sur mobile
+- 6 destinations : Cartographie, Métiers, Missions, Migration, Chroniques, Œil du Mentat
+- Widget compte joueur et déconnexion accessibles depuis le menu
+
 ### Carte Interactive
 - Visualisation des deux zones de jeu : **Bassin de Hagga** et **Désert Profond**
 - Placement de bases avec marqueurs typés (Guilde, Landsraad, Joueur, Ressource)
@@ -32,6 +37,8 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 - Liste fixe de **20 sietchs** (serveur Galacia)
 - Sélecteur de sietch au-dessus de la carte pour filtrer la vue
 - **Boutons rapides** apparaissant uniquement pour les sietchs qui ont au moins une base
+- Bouton **Tous** en tête de barre : affiche toutes les bases d'un coup avec le total des joueurs
+- Chaque bouton sietch affiche un **badge compteur** avec le nombre de bases dans ce sietch
 - Chaque base est taguée avec son sietch ; cliquer un joueur dans la liste bascule automatiquement sur son sietch
 - Un joueur a **une seule base principale** sur Hagga (avec son sietch)
 
@@ -62,6 +69,7 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 - **Message Discord automatique** après soumission : lien direct vers l'onglet Commandes (`?tab=requetes`), copie en un clic avec fermeture automatique
 - Confirmation de suppression dans une modale stylisée (thème sombre, cohérent avec le site)
 - **Suppression protégée** : seul l'auteur peut supprimer sa propre demande (vérification côté serveur) ; les demandes marquées « Terminé » sont verrouillées en historique permanent
+- Correction : guard contre un `id` undefined sur les anciennes entrées (évite l'erreur `missing_data`)
 
 ### Plan de Migration (`migration.html`)
 - Chaque joueur place son marqueur sur la carte et choisit son sietch de destination parmi **8 sietchs** : 5 premiers choix (Rajifiri, Fajr, Al Rab, Umbu, Tharwa) et 3 seconds choix (Kathib, Makab, Saajid)
@@ -79,6 +87,8 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 - **Marqueurs refusés** affichés en orange pour que le joueur repositionne sans ambiguïté
 - Message Discord copié en un clic (fermeture automatique de la fenêtre après copie)
 - **Capture d'écran joueur** : avant validation, l'officier peut ajouter une photo de l'emplacement vérifié (glisser-déposer, coller Ctrl+V ou sélecteur de fichier) ; un message Discord est généré automatiquement pour inviter le joueur à vérifier sa position
+- Accessible depuis le menu principal (tuile dédiée avec image `migration.png`)
+- Header standard avec widget compte joueur et bouton retour **Menu**
 
 ### Planificateur d'Événements Landsraad
 - Sélection de quêtes parmi 25 missions réparties en 5 catégories

@@ -518,6 +518,25 @@ function renderSietchQuickBtns(sietchsWithBases, countsBySietch = {}) {
   const container = document.getElementById('sietch-quick-btns');
   if (!container) return;
   container.innerHTML = '';
+  // Bouton "Tous"
+  const total = Object.values(countsBySietch).reduce((a, b) => a + b, 0);
+  const allBtn = document.createElement('button');
+  allBtn.className = 'sietch-quick-btn' + (!currentSietch ? ' active' : '');
+  allBtn.innerHTML = `Tous <span style="
+    display:inline-flex;align-items:center;justify-content:center;
+    min-width:18px;height:18px;padding:0 4px;
+    background:rgba(0,0,0,0.45);border-radius:9px;
+    font-size:10px;font-weight:700;margin-left:4px;
+    color:inherit;line-height:1;">${total}</span>`;
+  allBtn.title = 'Afficher tous les sietchs';
+  allBtn.onclick = () => {
+    currentSietch = null;
+    const sel = document.getElementById('sietch-select');
+    if (sel) sel.value = '';
+    reloadBases();
+  };
+  container.appendChild(allBtn);
+
   sietchsWithBases.forEach(sietch => {
     const btn = document.createElement('button');
     btn.className = 'sietch-quick-btn' + (sietch === currentSietch ? ' active' : '');

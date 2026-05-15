@@ -32,12 +32,11 @@
         }
 
         .cards-container {
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(3, 260px);
             gap: 22px;
-            flex-wrap: wrap;
             justify-content: center;
             width: 100%;
-            max-width: 1500px;
             padding: 20px;
         }
 
@@ -131,21 +130,18 @@
             transform: translateY(-3px); /* Le bouton monte légèrement */
         }
 
-        /* === RESPONSIVE — Tablette === */
-        @media(max-width: 640px) {
-            body { justify-content: flex-start; padding-top: 30px; }
-            h1 { font-size: 1.4em; margin-bottom: 25px; }
-            .cards-container { gap: 14px; padding: 15px; }
-            .card { width: min(260px, calc(50vw - 20px)); }
-            .card-image { height: 120px; }
+        /* === RESPONSIVE — Tablette (2 colonnes) === */
+        @media(max-width: 880px) {
+            .cards-container { grid-template-columns: repeat(2, 260px); }
         }
 
-        /* === RESPONSIVE — Mobile === */
-        @media(max-width: 400px) {
+        /* === RESPONSIVE — Mobile (1 colonne) === */
+        @media(max-width: 580px) {
             body { justify-content: flex-start; padding-top: 20px; }
             h1 { font-size: 1.2em; margin-bottom: 18px; }
-            .cards-container { gap: 12px; padding: 10px; }
-            .card { width: calc(100vw - 40px); }
+            .cards-container { grid-template-columns: 1fr; gap: 12px; padding: 10px; }
+            .card { width: min(260px, calc(100vw - 40px)); margin: 0 auto; }
+            .card-image { height: 120px; }
             .logout-btn { margin-top: 25px; padding: 12px 25px; font-size: 0.9em; }
         }
     </style>
@@ -195,6 +191,17 @@
                     Missions
                 </div>
                 <div class="card-desc">Planificateur de soirées Landsraad et gestion des groupes.</div>
+            </div>
+        </a>
+
+        <a href="migration.html" class="card">
+            <img src="migration.png" onerror="this.src='intro.jpg'" alt="Migration" class="card-image">
+            <div class="card-content">
+                <div class="card-title">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M21 3L3 10.53v.98l6.84 2.65L12.48 21h.98L21 3z"/></svg>
+                    Migration
+                </div>
+                <div class="card-desc">Coordinateur de déplacement de guilde vers Icarus — réservation et validation des sietchs.</div>
             </div>
         </a>
 

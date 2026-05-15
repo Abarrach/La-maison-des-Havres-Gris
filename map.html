@@ -231,12 +231,16 @@
 <script src="auth-guard.js"></script>
   
   <header>
-    <div id="user-info">Chargement...</div>
     <div class="title">Maison des Havres Gris</div>
     <div class="header-controls">
-        <a href="menu.html" class="disconnect">Menu</a>
+      <a href="account.html" class="user-account-widget" id="ua-widget">
+        <div class="ua-avatar" id="ua-avatar">?</div>
+        <span class="ua-pseudo" id="ua-pseudo">…</span>
+      </a>
+      <a href="menu.html" class="disconnect">Menu</a>
     </div>
   </header>
+  <script>(function(){var u=localStorage.getItem("user")||"?";document.getElementById("ua-pseudo").textContent=u;var av=document.getElementById("ua-avatar");var img=localStorage.getItem("avatar");if(img){av.style.background="transparent";av.innerHTML='<img src="'+img+'" style="width:42px;height:42px;margin:-1px;object-fit:cover;border-radius:50%;">';}else{av.textContent=u.charAt(0).toUpperCase();var h=0;for(var i=0;i<u.length;i++)h=((h<<5)-h)+u.charCodeAt(i);av.style.background="hsl("+(Math.abs(h)%360)+",55%,32%)";}})();</script>
 
   <div id="map-switcher">
     <button class="map-switch-btn active" data-map="hagga">Bassin de Hagga</button>

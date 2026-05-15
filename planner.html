@@ -196,6 +196,11 @@
             .btn-menu-abs { right: 5px; padding: 6px 10px; font-size: 0.7em; }
             .planner-container { padding: 0 10px 80px 10px; gap: 12px; }
         }
+    .user-account-widget{display:flex;align-items:center;gap:8px;text-decoration:none;color:#cda434;padding:4px 10px 4px 4px;border:1px solid transparent;border-radius:20px;transition:border-color .2s,background .2s}
+    .user-account-widget:hover{border-color:#cda434;background:rgba(205,164,52,.08)}
+    .ua-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1em;font-weight:700;color:#fff;flex-shrink:0;text-transform:uppercase;overflow:hidden}
+    .ua-pseudo{font-size:.85em;font-weight:700;letter-spacing:.5px;white-space:nowrap}
+    @media(max-width:480px){.ua-pseudo{display:none}}
     </style>
 </head>
 <body>
@@ -203,8 +208,15 @@
 
     <header>
         <h1>PLANIFICATEUR LANDSRAAD</h1>
-        <a href="../menu.html" class="btn-menu-abs">RETOUR MENU</a>
+        <div style="position:absolute;right:30px;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:10px;">
+          <a href="account.html" class="user-account-widget" id="ua-widget">
+            <div class="ua-avatar" id="ua-avatar">?</div>
+            <span class="ua-pseudo" id="ua-pseudo">…</span>
+          </a>
+          <a href="../menu.html" class="btn-menu-abs" style="position:static;transform:none;">RETOUR MENU</a>
+        </div>
     </header>
+    <script>(function(){var u=localStorage.getItem("user")||"?";document.getElementById("ua-pseudo").textContent=u;var av=document.getElementById("ua-avatar");var img=localStorage.getItem("avatar");if(img){av.style.background="transparent";av.innerHTML='<img src="'+img+'" style="width:42px;height:42px;margin:-1px;object-fit:cover;border-radius:50%;">';}else{av.textContent=u.charAt(0).toUpperCase();var h=0;for(var i=0;i<u.length;i++)h=((h<<5)-h)+u.charCodeAt(i);av.style.background="hsl("+(Math.abs(h)%360)+",55%,32%)";}})();</script>
 
     <div class="planner-container">
         

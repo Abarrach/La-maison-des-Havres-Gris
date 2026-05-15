@@ -703,6 +703,7 @@ window.closeDeleteModal = function() {
 async function confirmDelete() {
     const id = _pendingDeleteId;
     closeDeleteModal();
+    if (!id) { alert("Erreur : identifiant de demande manquant (ancienne entrée sans ID)."); return; }
     try{const r=await fetch("save.php",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"deleteRequete",id,user:currentUserReq})});const d=await r.json();if(d.ok)loadRequests();else alert("Erreur : "+d.error);}catch{alert("Erreur réseau.");}
 }
 

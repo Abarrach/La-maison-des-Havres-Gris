@@ -752,6 +752,13 @@ function createAdminPanel() {
     <button id="addBaseBtn">Ajouter Base</button>
     <div style="margin:10px 0; border-top:1px solid #5c4025;"></div>
     <button id="manageUsersBtn">👥 Gérer Utilisateurs</button>
+    <div style="margin:10px 0; border-top:1px solid #5c4025;"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+      <span style="font-size:12px;color:#d3b46f;">📊 Analytiques membres</span>
+      <button id="analyticsToggleBtn" style="
+        padding:4px 12px;border-radius:12px;border:1px solid #5c4025;cursor:pointer;
+        font-size:11px;font-weight:700;transition:all 0.2s;" onclick="toggleAnalyticsAccess()">…</button>
+    </div>
     <p id="coordDisplay" style="margin-top:10px;font-size:11px;color:#d3b46f;text-align:center;">Cliquez sur la carte...</p>
   `;
   document.body.appendChild(p);
@@ -776,6 +783,16 @@ function createAdminPanel() {
     }
   };
   document.getElementById("manageUsersBtn").onclick = openUserManager;
+
+  // Charger l'état actuel du toggle analytiques
+  (async () => {
+    try {
+      const r = await fetch('save.php', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ action: 'getSettings' }) });
+      const s = await r.json();
+      updateAnalyticsBtn(s.analytics_public);
+    } catch(e) {}
+  })();
 }
 
 // === USER MANAGER ===
@@ -832,6 +849,37 @@ window.deleteUser = async (t) => {
       const j = await res.json();
       if(j.ok) { closeUserManager(); openUserManager(); loadMapLayer(currentMapId); } else alert(j.error);
   });
+};
+
+// === TOGGLE ACCÈS ANALYTIQUES ===
+function updateAnalyticsBtn(isPublic) {
+  const btn = document.getElementById('analyticsToggleBtn');
+  if (!btn) return;
+  if (isPublic) {
+    btn.textContent = '✅ Ouvert';
+    btn.style.background = 'rgba(65,211,122,0.15)';
+    btn.style.borderColor = '#41d37a';
+    btn.style.color = '#41d37a';
+  } else {
+    btn.textContent = '🔒 Restreint';
+    btn.style.background = 'rgba(168,59,59,0.15)';
+    btn.style.borderColor = '#a83b3b';
+    btn.style.color = '#ff8888';
+  }
+}
+
+window.toggleAnalyticsAccess = async () => {
+  const btn = document.getElementById('analyticsToggleBtn');
+  if (!btn) return;
+  const currentlyOpen = btn.textContent.includes('Ouvert');
+  const newValue = !currentlyOpen;
+  try {
+    const res = await fetch('save.php', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'updateSetting', adminUser: currentUser, key:'analytics_public', value: newValue }) });
+    const j = await res.json();
+    if (j.ok) updateAnalyticsBtn(newValue);
+    else alert('Erreur : ' + j.error);
+  } catch(e) { alert('Erreur réseau.'); }
 };
 
 // === LISTE JOUEURS ===

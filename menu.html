@@ -216,14 +216,14 @@
             </div>
         </a>
 
-        <a href="dune_analytics.html" class="card">
+        <a href="dune_analytics.html" class="card" id="card-analytics">
             <img src="analytics.jpg" onerror="this.src='intro.jpg'" alt="Télémétrie" class="card-image">
             <div class="card-content">
                 <div class="card-title">
                     <svg class="icon" viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
                     Œil du Mentat
                 </div>
-                <div class="card-desc">Télémétrie des mondes — population, sietches dominants et fluctuations temporelles.</div>
+                <div class="card-desc" id="analytics-desc">Télémétrie des mondes — population, sietches dominants et fluctuations temporelles.</div>
             </div>
         </a>
 
@@ -237,6 +237,25 @@ function logout() {
     localStorage.removeItem("role");
     window.location.href = "login.html";
 }
+
+// Masque/grise la tuile analytiques si non accessible pour cet utilisateur
+(async function() {
+    const role = localStorage.getItem('role');
+    if (role === 'admin') return;
+    try {
+        const r = await fetch('save.php', { method:'POST', headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({ action: 'getSettings' }) });
+        const s = await r.json();
+        if (!s.analytics_public) {
+            const card = document.getElementById('card-analytics');
+            card.style.opacity = '0.35';
+            card.style.filter = 'grayscale(1)';
+            card.style.cursor = 'not-allowed';
+            card.style.pointerEvents = 'none';
+            document.getElementById('analytics-desc').textContent = 'Accès restreint — réservé aux administrateurs.';
+        }
+    } catch(e) {}
+})();
 </script>
 </body>
 </html>

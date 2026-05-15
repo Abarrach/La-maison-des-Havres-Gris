@@ -298,6 +298,38 @@ switch ($action) {
         echo json_encode(['ok' => true]);
         exit;
 
+    case 'getSettings':
+        $settingsFile = __DIR__ . '/settings.json';
+        if (!file_exists($settingsFile)) writeJson($settingsFile, ['analytics_public' => false]);
+        echo json_encode(readJson($settingsFile));
+        exit;
+
+    case 'updateSetting':
+        $adminUser = trim($data['adminUser'] ?? '');
+        $key       = trim($data['key']       ?? '');
+        $value     = $data['value'] ?? null;
+        if ($adminUser === '' || $key === '' || $value === null) jerr("missing_data");
+
+        // Vérification côté serveur : l'appelant doit être admin
+        $usersFile = __DIR__ . '/users_SECURE_9x.json';
+        $users = readJson($usersFile);
+        $callerRole = null;
+        foreach ($users as $u) {
+            if ($u['user'] === $adminUser) { $callerRole = $u['role']; break; }
+        }
+        if ($callerRole !== 'admin') jerr("not_authorized", 403);
+
+        // Clés autorisées
+        $allowedKeys = ['analytics_public'];
+        if (!in_array($key, $allowedKeys)) jerr("unknown_key");
+
+        $settingsFile = __DIR__ . '/settings.json';
+        $settings = readJson($settingsFile);
+        $settings[$key] = (bool)$value;
+        if (!writeJson($settingsFile, $settings)) jerr("write_error", 500);
+        echo json_encode(['ok' => true]);
+        exit;
+
     default: jerr("unknown_action");
 }
 ?>

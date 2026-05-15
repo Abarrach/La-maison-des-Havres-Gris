@@ -101,6 +101,10 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 - Référence historique et narrative pour les joueurs
 
 ### Télémétrie des Mondes (`dune_analytics.html`)
+- **Accès restreint par défaut** : visible uniquement par les administrateurs
+- L'admin peut ouvrir l'accès aux membres via le toggle **📊 Analytiques membres** dans le panneau ⚙️ de la carte (🔒 Restreint / ✅ Ouvert) — vérifié côté serveur
+- La tuile est masquée sur le menu pour les membres non autorisés
+- Le flag est persisté dans `settings.json` (doit être en `664` sur le serveur)
 - Chargement automatique du fichier `dune_counts.csv` (ou import manuel par glisser-déposer)
 - KPIs : monde le plus peuplé, pic d'affluence, sietch dominant, volume de données
 - **Courbe de population mondiale** avec rangeslider et boutons de zoom (12h → Max)
@@ -210,6 +214,9 @@ chmod 775 avatars/ uploads/
 
 > [!IMPORTANT]
 > Le dossier `avatars/` doit exister et être accessible en écriture par PHP (`chmod 775`, propriétaire `www-data`) pour permettre l'upload d'avatars personnalisés.
+
+> [!IMPORTANT]
+> `settings.json` doit être en `664` pour que PHP puisse y écrire (toggle accès analytiques). Si l'erreur `write_error` apparaît lors du basculement du toggle, corriger avec `chmod 664 settings.json`.
 
 Accéder ensuite à `index.html` via le navigateur.
 

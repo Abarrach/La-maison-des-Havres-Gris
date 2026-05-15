@@ -340,7 +340,7 @@ async function loadMapLayer(mapId) {
 
   updateSietchUI(mapId);
 
-  if (currentLayer) map.removeLayer(currentLayer);
+  if (currentLayer) { map.removeLayer(currentLayer); currentLayer = null; }
 
   // Retirer l'overlay DD et la grille si on quitte la Deep Desert
   if (mapId !== 'deep_desert') {
@@ -365,6 +365,7 @@ async function loadMapLayer(mapId) {
 
   // Grille A1-I9 et overlay zones PVP/PVE en Deep Desert
   if (mapId === 'deep_desert') {
+    if (ddGridLayer) { map.removeLayer(ddGridLayer); ddGridLayer = null; }
     ddGridLayer = createDDGrid().addTo(map);
     if (!ddOverlayShown) loadDDOverlay();
   }
@@ -434,8 +435,13 @@ function renderDDData(data) {
   for (const r of data.resources) {
     const icon = SPICE_ICONS[r.markerId];
     if (!icon) continue;
-    L.marker(gameToLeaflet(r.x, r.y), { icon, zIndexOffset: 10 })
-      .bindTooltip(SPICE_LABELS[r.markerId] || r.markerId, { sticky: true, className: 'dd-zone-tooltip' })
+    const pos  = gameToLeaflet(r.x, r.y);
+    const rowI = Math.min(8, Math.floor(pos.lat / (DD_IMG_H / 9)));
+    const col  = Math.min(9, Math.floor(pos.lng / (DD_IMG_W / 9)) + 1);
+    const cell = 'ABCDEFGHI'[rowI] + col;
+    const label = (SPICE_LABELS[r.markerId] || r.markerId) + ` — cellule ${cell}`;
+    L.marker(pos, { icon, zIndexOffset: 10 })
+      .bindTooltip(label, { sticky: true, className: 'dd-zone-tooltip' })
       .addTo(ddZoneLayer);
     spiceCount++;
   }
@@ -508,14 +514,21 @@ function createInstanceIcon(type, instance) {
   });
 }
 
-function renderSietchQuickBtns(sietchsWithBases) {
+function renderSietchQuickBtns(sietchsWithBases, countsBySietch = {}) {
   const container = document.getElementById('sietch-quick-btns');
   if (!container) return;
   container.innerHTML = '';
   sietchsWithBases.forEach(sietch => {
     const btn = document.createElement('button');
     btn.className = 'sietch-quick-btn' + (sietch === currentSietch ? ' active' : '');
-    btn.textContent = sietch.replace('Sietch ', '');
+    const label = sietch.replace('Sietch ', '');
+    const count = countsBySietch[sietch] || 0;
+    btn.innerHTML = `${label} <span style="
+      display:inline-flex;align-items:center;justify-content:center;
+      min-width:18px;height:18px;padding:0 4px;
+      background:rgba(0,0,0,0.45);border-radius:9px;
+      font-size:10px;font-weight:700;margin-left:4px;
+      color:inherit;line-height:1;">${count}</span>`;
     btn.title = sietch;
     btn.onclick = () => {
       currentSietch = (currentSietch === sietch) ? null : sietch;
@@ -536,10 +549,11 @@ async function fetchAndDisplayBases() {
 
       if (currentMapId === 'hagga') {
         // Boutons rapides : sietchs qui ont au moins une base
-        const sietchsWithBases = [...new Set(
-          allBases.filter(b => (b.map || 'hagga') === 'hagga' && b.sietch).map(b => b.sietch)
-        )].sort();
-        renderSietchQuickBtns(sietchsWithBases);
+        const haggaBases = allBases.filter(b => (b.map || 'hagga') === 'hagga' && b.sietch);
+        const sietchsWithBases = [...new Set(haggaBases.map(b => b.sietch))].sort();
+        const countsBySietch = {};
+        haggaBases.forEach(b => { countsBySietch[b.sietch] = (countsBySietch[b.sietch] || 0) + 1; });
+        renderSietchQuickBtns(sietchsWithBases, countsBySietch);
 
         // Filtre par sietch sélectionné
         if (currentSietch) {

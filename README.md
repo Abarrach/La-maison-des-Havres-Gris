@@ -42,6 +42,14 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 - Légende visible sur la carte du Désert Profond
 - Un joueur peut avoir une base dans chaque instance (max 2)
 
+#### Désert Profond — Carte dynamique et champs d'épice
+- **`dd_map_update.php`** recompose `deep_desert.jpg` chaque semaine en assemblant les 64 tuiles (8×8) téléchargées depuis le CDN de gaming.tools
+- Le tileset tourne sur un cycle de 12 semaines basé sur un seed hebdomadaire (seed de référence = 12 au 13 mai 2026)
+- **`dd_proxy.php`** interroge l'API acteurs de gaming.tools (seed=0 = semaine courante) pour récupérer les positions des champs d'épice en temps réel
+- Les marqueurs de champs d'épice sont projetés sur la carte via `gameToLeaflet()` (coordonnées monde gaming.tools → pixels Leaflet)
+- Chaque tooltip de champ indique la **cellule de la grille** (ex. F5) pour faciliter la localisation
+- La carte est versionnée côté client (`?v=<seed>`) pour invalider le cache navigateur automatiquement à chaque rotation de tileset
+
 ### Simulateur de Talents
 - Arbre de compétences interactif avec allocation de points
 - Plusieurs filières de métiers (Combat, Artisanat, etc.)
@@ -132,6 +140,7 @@ DuneMap/
 ├── index.html            # Écran d'introduction
 ├── menu.html             # Hub de navigation principal
 ├── map.html              # Carte des territoires
+├── 404.html              # Page d'erreur 404 thématisée Dune
 ├── account.html          # Page compte joueur (avatar, Discord, stats, historique)
 ├── skills.html           # Simulateur de talents + demandes de craft
 ├── planner.html          # Planificateur Landsraad
@@ -141,27 +150,32 @@ DuneMap/
 ├── news.html             # Actualités du jeu
 ├── login.html / register.html
 │
-├── script.js             # Logique cartographique
-├── skills.js             # Simulateur de talents + commandes
+├── script.js             # Logique cartographique (Leaflet, marqueurs, Désert Profond)
+├── skills.js             # Simulateur de talents + commandes de craft
 ├── planner.js            # Planificateur d'événements
 ├── migration.js          # Logique de migration (validation, refus, Discord)
+├── auth-guard.js         # Protection des pages (redirection login si non connecté)
 │
 ├── save.php              # API principale (bases, utilisateurs, craft, commandes)
 ├── auth.php              # Authentification
 ├── api.php               # Données de groupe
 ├── account_api.php       # API compte joueur (avatar, profil, stats, historique)
 ├── migration_api.php     # Réservations de migration (validation, refus, entraide)
+├── dd_map_update.php     # Composition de deep_desert.jpg depuis les tuiles CDN gaming.tools
+├── dd_proxy.php          # Proxy serveur vers l'API acteurs de gaming.tools (champs d'épice)
 │
 ├── bases.json            # Bases des territoires
 ├── requetes.json         # Demandes de craft
 ├── profiles_data.json    # Profils joueurs (avatar, Discord)
 ├── landsraad_data.json   # Quêtes disponibles
 ├── metiers.json          # Définitions des talents
+├── last_wipe.txt         # Horodatage du dernier wipe hebdomadaire du Désert Profond
 │
 ├── avatars/              # Avatars presets + uploads joueurs (préfixe u_pseudo_)
 ├── uploads/              # Images des demandes de craft
+├── images/               # Ressources statiques (404_bg.jpg, etc.)
 ├── map.jpg               # Carte Bassin de Hagga
-├── deep_desert.jpg       # Carte Désert Profond
+├── deep_desert.jpg       # Carte Désert Profond (regénérée chaque semaine)
 └── icons/                # Icônes de marqueurs
 ```
 

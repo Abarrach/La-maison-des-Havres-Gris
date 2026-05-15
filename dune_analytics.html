@@ -209,6 +209,11 @@
         stroke: var(--or-vif) !important;
         stroke-width: 1 !important;
     }
+    .user-account-widget{display:flex;align-items:center;gap:8px;text-decoration:none;color:#cda434;padding:4px 10px 4px 4px;border:1px solid transparent;border-radius:20px;transition:border-color .2s,background .2s}
+    .user-account-widget:hover{border-color:#cda434;background:rgba(205,164,52,.08)}
+    .ua-avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1em;font-weight:700;color:#fff;flex-shrink:0;text-transform:uppercase;overflow:hidden}
+    .ua-pseudo{font-size:.85em;font-weight:700;letter-spacing:.5px;white-space:nowrap}
+    @media(max-width:480px){.ua-pseudo{display:none}}
 </style>
 </head>
 <body>
@@ -219,8 +224,15 @@
         <div class="logo-title">HAVRES GRIS</div>
         <span class="logo-sub">Télémétrie des Mondes</span>
     </div>
-    <a href="menu.html" class="btn-menu">Retour Menu</a>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <a href="account.html" class="user-account-widget" id="ua-widget">
+        <div class="ua-avatar" id="ua-avatar">?</div>
+        <span class="ua-pseudo" id="ua-pseudo">…</span>
+      </a>
+      <a href="menu.html" class="btn-menu">Retour Menu</a>
+    </div>
 </header>
+<script>(function(){var u=localStorage.getItem("user")||"?";document.getElementById("ua-pseudo").textContent=u;var av=document.getElementById("ua-avatar");var img=localStorage.getItem("avatar");if(img){av.style.background="transparent";av.innerHTML='<img src="'+img+'" style="width:42px;height:42px;margin:-1px;object-fit:cover;border-radius:50%;">';}else{av.textContent=u.charAt(0).toUpperCase();var h=0;for(var i=0;i<u.length;i++)h=((h<<5)-h)+u.charCodeAt(i);av.style.background="hsl("+(Math.abs(h)%360)+",55%,32%)";}})();</script>
 
 <main>
     <div id="loading">
@@ -371,6 +383,7 @@
     let currentDrillDowns = [];
     let migrationServers = [];
     let sietchTooltipTimer = null;
+    let _relayoutTimer = null;
 
     // Palette Havres Gris
     const cTheme = {
@@ -696,25 +709,24 @@
         return results;
     }
 
-    function updateDashboard() {
-        const activeData = getActiveData();
-        
-        let baseForServers = [...filteredData];
+    // Graphes réactifs à la fenêtre temporelle (heatmap, top 15, KPIs)
+    function renderSecondaryCharts(activeBase, filteredBase) {
+        if (!activeBase.length) return;
+
+        let baseForServers = [...filteredBase];
         currentDrillDowns.filter(d => d.field !== 'serveur').forEach(drill => {
             baseForServers = baseForServers.filter(d => drill.type==='include' ? d[drill.field]===drill.value : d[drill.field]!==drill.value);
         });
 
-        let baseForSietches = [...filteredData];
+        let baseForSietches = [...filteredBase];
         currentDrillDowns.filter(d => d.field !== 'sietch').forEach(drill => {
             baseForSietches = baseForSietches.filter(d => drill.type==='include' ? d[drill.field]===drill.value : d[drill.field]!==drill.value);
         });
 
-        if (!activeData.length) return;
+        // --- KPIs ---
+        const activeTotals = getCleanRuns(activeBase);
+        document.getElementById('kpi-total-rows').innerText = activeBase.length.toLocaleString('fr-FR');
 
-        // --- MAJ KPIs (Avec nettoyage robuste) ---
-        const activeTotals = getCleanRuns(activeData);
-        document.getElementById('kpi-total-rows').innerText = activeData.length.toLocaleString('fr-FR');
-        
         const srvAggActive = new Map();
         activeTotals.forEach(d => {
             if (!srvAggActive.has(d.srv)) srvAggActive.set(d.srv, { sum: 0, count: 0 });
@@ -722,21 +734,20 @@
             srvAggActive.get(d.srv).count += 1;
         });
         const activeServerAvgs = Array.from(srvAggActive, ([name, a]) => ({ name, avg: a.sum / a.count })).sort((a, b) => b.avg - a.avg);
-        
+
         if (activeServerAvgs.length) {
             document.getElementById('kpi-top-server').innerText = activeServerAvgs[0].name;
             document.getElementById('kpi-top-server-sub').innerText = `${activeServerAvgs[0].avg.toFixed(1)} pop. moyenne`;
         } else {
-             document.getElementById('kpi-top-server').innerText = "-";
-             document.getElementById('kpi-top-server-sub').innerText = "Aucun monde trouvé";
+            document.getElementById('kpi-top-server').innerText = "-";
+            document.getElementById('kpi-top-server-sub').innerText = "Aucun monde trouvé";
         }
 
         const sietchAggActive = new Map();
-        activeData.forEach(d => {
-            const key = d.sietch; 
-            if (!sietchAggActive.has(key)) sietchAggActive.set(key, { sum: 0, count: 0 });
-            sietchAggActive.get(key).sum += d.joueurs;
-            sietchAggActive.get(key).count += 1;
+        activeBase.forEach(d => {
+            if (!sietchAggActive.has(d.sietch)) sietchAggActive.set(d.sietch, { sum: 0, count: 0 });
+            sietchAggActive.get(d.sietch).sum += d.joueurs;
+            sietchAggActive.get(d.sietch).count += 1;
         });
         const activeSietchAvgs = Array.from(sietchAggActive, ([name, a]) => ({ name, avg: a.sum / a.count })).sort((a, b) => b.avg - a.avg);
 
@@ -744,15 +755,15 @@
             document.getElementById('kpi-top-sietch').innerText = activeSietchAvgs[0].name;
             document.getElementById('kpi-top-sietch-sub').innerText = `${activeSietchAvgs[0].avg.toFixed(1)} joueurs en moyenne`;
         } else {
-             document.getElementById('kpi-top-sietch').innerText = "-";
-             document.getElementById('kpi-top-sietch-sub').innerText = "Aucun sietch trouvé";
+            document.getElementById('kpi-top-sietch').innerText = "-";
+            document.getElementById('kpi-top-sietch-sub').innerText = "Aucun sietch trouvé";
         }
-        
+
         let peak = activeTotals.reduce((max, obj) => (obj.total > max.total ? obj : max), {total: 0, ts: null, srv: ''});
         document.getElementById('kpi-peak-players').innerText = peak.total.toLocaleString('fr-FR');
         document.getElementById('kpi-peak-time').innerText = peak.ts ? `${peak.srv} • ${peak.ts.toLocaleDateString('fr-FR', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'})}` : '-';
 
-        // --- GRAPHE 1: SERVEURS ---
+        // --- TOP 15 SERVEURS ---
         const srvAggContext = new Map();
         getCleanRuns(baseForServers).forEach(d => {
             if (!srvAggContext.has(d.srv)) srvAggContext.set(d.srv, { sum: 0, count: 0 });
@@ -760,13 +771,13 @@
             srvAggContext.get(d.srv).count += 1;
         });
         const contextServerAvgs = Array.from(srvAggContext, ([name, a]) => ({ name, avg: a.sum / a.count })).sort((a, b) => b.avg - a.avg).slice(0, 15).reverse();
-        
+
         const srvNames = contextServerAvgs.map(d => d.name);
         const srvColors = getColorArray(srvNames, 'serveur', cTheme.secondary, cTheme.primary);
 
         Plotly.newPlot('chart-servers', [{
             type: 'bar', orientation: 'h', y: srvNames, x: contextServerAvgs.map(d => d.avg),
-            marker: { color: srvColors, line: {width: 0} }, hovertemplate: '<b>%{y}</b><br>Moyenne: %{x:.0f} joueurs<extra></extra>' 
+            marker: { color: srvColors, line: {width: 0} }, hovertemplate: '<b>%{y}</b><br>Moyenne: %{x:.0f} joueurs<extra></extra>'
         }], { ...pLayout, margin: {l: 160, r: 20, t: 10, b: 40}, hovermode: 'closest' }, {displayModeBar: false});
 
         document.getElementById('chart-servers').on('plotly_click', function(data){
@@ -774,16 +785,16 @@
             handleChartClick('serveur', data.points[0].y, data.event.ctrlKey || data.event.metaKey);
         });
 
-        // --- GRAPHE 2: SIETCHES ---
+        // --- TOP 15 SIETCHES ---
         const sietchAggContext = new Map();
         baseForSietches.forEach(d => {
-            const key = d.serveur + ' - ' + d.sietch; 
+            const key = d.serveur + ' - ' + d.sietch;
             if (!sietchAggContext.has(key)) sietchAggContext.set(key, { sum: 0, count: 0, rawName: d.sietch });
             sietchAggContext.get(key).sum += d.joueurs;
             sietchAggContext.get(key).count += 1;
         });
         const contextSietchAvgs = Array.from(sietchAggContext, ([name, a]) => ({ key: name, rawName: a.rawName, avg: a.sum / a.count })).sort((a, b) => b.avg - a.avg).slice(0, 15).reverse();
-        
+
         const sietchRawNames = contextSietchAvgs.map(d => d.rawName);
         const sietchColors = getColorArray(sietchRawNames, 'sietch', cTheme.accent, cTheme.primary);
 
@@ -796,7 +807,36 @@
             handleChartClick('sietch', data.points[0].customdata, data.event.ctrlKey || data.event.metaKey);
         });
 
-        // --- GRAPHE 3: LIGNE TEMPORELLE TYPE STEAMDB ---
+        // --- HEATMAP ---
+        const heatMapData = Array(7).fill().map(() => Array(24).fill(null));
+        const heatMapCount = Array(7).fill().map(() => Array(24).fill(0));
+        activeTotals.forEach(d => {
+            let day = d.ts.getDay() - 1; if(day === -1) day = 6;
+            const hour = d.ts.getHours();
+            if(heatMapData[day][hour] === null) heatMapData[day][hour] = 0;
+            heatMapData[day][hour] += d.total; heatMapCount[day][hour] += 1;
+        });
+        for(let d=0; d<7; d++) for(let h=0; h<24; h++)
+            heatMapData[d][h] = heatMapCount[d][h] > 0 ? heatMapData[d][h] / heatMapCount[d][h] : null;
+
+        const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+        const hours = Array.from({length: 24}, (_, i) => `${i}h`);
+        Plotly.newPlot('chart-heatmap', [{
+            type: 'heatmap', z: heatMapData.reverse(), x: hours, y: [...days].reverse(),
+            colorscale: [['0.0', 'rgba(20, 12, 4, 0)'], ['0.3', '#8b6e3b'], ['0.7', '#d4a23b'], ['1.0', '#f3c44f']],
+            hoverongaps: false, xgap: 1, ygap: 1, hovertemplate: '%{y} à %{x}<br>Moyenne: %{z:.0f} joueurs<extra></extra>'
+        }], { ...pLayout, margin: {l: 80, r: 20, t: 20, b: 40}, xaxis: { type: 'category', gridcolor: 'transparent', zerolinecolor: 'transparent', tickangle: 0 }, yaxis: { type: 'category', gridcolor: 'transparent', zerolinecolor: 'transparent' } }, {displayModeBar: false});
+    }
+
+    function updateDashboard() {
+        const activeData = getActiveData();
+        if (!activeData.length) return;
+
+        // Graphes secondaires initialisés sur la période complète
+        renderSecondaryCharts(activeData, filteredData);
+
+        // --- COURBE TEMPORELLE (référence, ne change pas avec le zoom) ---
+        const activeTotals = getCleanRuns(activeData);
         const timeSeriesMap = new Map();
         activeTotals.forEach(d => {
             const tsStr = `${d.ts.getFullYear()}-${String(d.ts.getMonth()+1).padStart(2,'0')}-${String(d.ts.getDate()).padStart(2,'0')} ${String(d.ts.getHours()).padStart(2,'0')}:00:00`;
@@ -804,20 +844,14 @@
             timeSeriesMap.get(tsStr).sum += d.total;
             timeSeriesMap.get(tsStr).count += 1;
         });
-
         const timeSeries = Array.from(timeSeriesMap, ([date, a]) => ({ date, ts: a.ts, avg: a.sum / a.count })).sort((a,b) => a.ts - b.ts);
-        
-        // --- MISE À JOUR DU TITRE DE LA COURBE ---
+
         let selectedServer = document.getElementById('server-filter').value;
         if(selectedServer === 'all' && currentDrillDowns.length > 0) {
-           let srvDrill = currentDrillDowns.find(d => d.field === 'serveur' && d.type === 'include');
-           if(srvDrill) selectedServer = srvDrill.value;
+            let srvDrill = currentDrillDowns.find(d => d.field === 'serveur' && d.type === 'include');
+            if(srvDrill) selectedServer = srvDrill.value;
         }
-        
-        let legendName = 'Pop. Mondiale Moyenne';
-        if (selectedServer !== 'all') {
-            legendName = `Pop. ${selectedServer} Moyenne`;
-        }
+        let legendName = selectedServer !== 'all' ? `Pop. ${selectedServer} Moyenne` : 'Pop. Mondiale Moyenne';
 
         const steamDbLayoutMain = {
             ...pLayout, margin: {l: 50, r: 20, t: 40, b: 10}, hovermode: 'x unified', xaxis: steamDbXaxis,
@@ -826,36 +860,42 @@
 
         Plotly.newPlot('chart-timeline', [{
             type: 'scatter', mode: 'lines', x: timeSeries.map(d => d.date), y: timeSeries.map(d => d.avg), name: legendName,
-            line: { color: cTheme.primary, shape: 'spline', width: 2 }, fill: 'tozeroy', fillcolor: 'rgba(243, 196, 79, 0.05)', hovertemplate: '<b>%{data.name}</b> : %{y:.0f}<extra></extra>' 
+            line: { color: cTheme.primary, shape: 'spline', width: 2 }, fill: 'tozeroy', fillcolor: 'rgba(243, 196, 79, 0.05)', hovertemplate: '<b>%{data.name}</b> : %{y:.0f}<extra></extra>'
         }], steamDbLayoutMain, {displayModeBar: false});
 
         if (timeSeries.length > 0) {
             renderZoomButtons('zoom-main', 'chart-timeline', timeSeries[0].ts, timeSeries[timeSeries.length-1].ts);
         }
 
-        // --- GRAPHE 4: HEATMAP ---
-        const heatMapData = Array(7).fill().map(() => Array(24).fill(null));
-        const heatMapCount = Array(7).fill().map(() => Array(24).fill(0));
-        activeTotals.forEach(d => {
-            let day = d.ts.getDay() - 1; if(day === -1) day = 6; 
-            const hour = d.ts.getHours();
-            if(heatMapData[day][hour] === null) heatMapData[day][hour] = 0;
-            heatMapData[day][hour] += d.total; heatMapCount[day][hour] += 1;
-        });
+        // --- LISTENER : met à jour les graphes secondaires selon la fenêtre visible ---
+        document.getElementById('chart-timeline').on('plotly_relayout', function(eventData) {
+            let xmin, xmax;
 
-        for(let d=0; d<7; d++) {
-            for(let h=0; h<24; h++) {
-                heatMapData[d][h] = heatMapCount[d][h] > 0 ? heatMapData[d][h] / heatMapCount[d][h] : null;
+            if (eventData['xaxis.autorange'] === true) {
+                clearTimeout(_relayoutTimer);
+                _relayoutTimer = setTimeout(() => renderSecondaryCharts(getActiveData(), filteredData), 300);
+                return;
             }
-        }
-        const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
-        const hours = Array.from({length: 24}, (_, i) => `${i}h`);
 
-        Plotly.newPlot('chart-heatmap', [{
-            type: 'heatmap', z: heatMapData.reverse(), x: hours, y: [...days].reverse(),
-            colorscale: [['0.0', 'rgba(20, 12, 4, 0)'], ['0.3', '#8b6e3b'], ['0.7', '#d4a23b'], ['1.0', '#f3c44f']],
-            hoverongaps: false, xgap: 1, ygap: 1, hovertemplate: '%{y} à %{x}<br>Moyenne: %{z:.0f} joueurs<extra></extra>'
-        }], { ...pLayout, margin: {l: 80, r: 20, t: 20, b: 40}, xaxis: { type: 'category', gridcolor: 'transparent', zerolinecolor: 'transparent', tickangle: 0 }, yaxis: { type: 'category', gridcolor: 'transparent', zerolinecolor: 'transparent' } }, {displayModeBar: false});
+            if (eventData['xaxis.range[0]'] !== undefined) {
+                xmin = new Date(eventData['xaxis.range[0]']);
+                xmax = new Date(eventData['xaxis.range[1]']);
+            } else if (Array.isArray(eventData['xaxis.range'])) {
+                xmin = new Date(eventData['xaxis.range'][0]);
+                xmax = new Date(eventData['xaxis.range'][1]);
+            } else {
+                return;
+            }
+
+            if (!xmin || isNaN(xmin.getTime()) || !xmax || isNaN(xmax.getTime())) return;
+
+            clearTimeout(_relayoutTimer);
+            _relayoutTimer = setTimeout(() => {
+                const wa = getActiveData().filter(d => d.timestamp >= xmin && d.timestamp <= xmax);
+                const wf = filteredData.filter(d => d.timestamp >= xmin && d.timestamp <= xmax);
+                if (wa.length) renderSecondaryCharts(wa, wf);
+            }, 300);
+        });
     }
 
     // ==========================================

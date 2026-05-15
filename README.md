@@ -53,6 +53,7 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 - Suivi et gestion des requêtes côté administration
 - **Message Discord automatique** après soumission : lien direct vers l'onglet Commandes (`?tab=requetes`), copie en un clic avec fermeture automatique
 - Confirmation de suppression dans une modale stylisée (thème sombre, cohérent avec le site)
+- **Suppression protégée** : seul l'auteur peut supprimer sa propre demande (vérification côté serveur) ; les demandes marquées « Terminé » sont verrouillées en historique permanent
 
 ### Plan de Migration (`migration.html`)
 - Chaque joueur place son marqueur sur la carte et choisit son sietch de destination parmi **8 sietchs** : 5 premiers choix (Rajifiri, Fajr, Al Rab, Umbu, Tharwa) et 3 seconds choix (Kathib, Makab, Saajid)
@@ -80,6 +81,25 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 ### Chronologie de Dune
 - Timeline de l'univers Dune sur 15 000 ans
 - Référence historique et narrative pour les joueurs
+
+### Télémétrie des Mondes (`dune_analytics.html`)
+- Chargement automatique du fichier `dune_counts.csv` (ou import manuel par glisser-déposer)
+- KPIs : monde le plus peuplé, pic d'affluence, sietch dominant, volume de données
+- **Courbe de population mondiale** avec rangeslider et boutons de zoom (12h → Max)
+- **Matrice d'activité** (heatmap heures de pointe par jour), **Top 15 Mondes** et **Top 15 Sietches** se mettent à jour automatiquement selon la fenêtre temporelle visible sur la courbe (rangeslider inclus)
+- Filtres globaux : monde cible, période d'analyse ; drill-down clic/Ctrl+Clic sur les barres
+- **Comparateur de migrations** : ajoutez plusieurs mondes pour comparer leurs courbes ; tableau de synthèse avec répartition par sietch et tooltip d'évolution au survol
+
+---
+
+### Mon Compte (`account.html`)
+- **Widget compte joueur** présent dans toutes les pages : cercle avatar + pseudo, clic → page compte
+- Avatar personnalisable : grille de presets + upload personnel (redimensionné 200×200 px côté serveur via PHP GD, crop centré automatique)
+- Les avatars uploadés sont privés : chaque joueur ne voit que les siens dans le sélecteur
+- Discord : saisie et sauvegarde du pseudo Discord
+- Changement de mot de passe sécurisé
+- **Stats** : bases placées, destinations signalées, rang
+- **Historique commandes** : tuiles dépliantes « Commandes passées » (avec statut : en attente / en cours / terminé) et « Services rendus » (demandes fulfillées par le joueur)
 
 ---
 
@@ -109,34 +129,40 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 
 ```
 DuneMap/
-├── index.html           # Écran d'introduction
-├── menu.html            # Hub de navigation principal
-├── map.html             # Carte des territoires
-├── skills.html          # Simulateur de talents + demandes de craft
-├── planner.html         # Planificateur Landsraad
-├── migration.html       # Coordinateur de migration vers Icarus
-├── news.html            # Actualités du jeu
+├── index.html            # Écran d'introduction
+├── menu.html             # Hub de navigation principal
+├── map.html              # Carte des territoires
+├── account.html          # Page compte joueur (avatar, Discord, stats, historique)
+├── skills.html           # Simulateur de talents + demandes de craft
+├── planner.html          # Planificateur Landsraad
+├── migration.html        # Coordinateur de migration vers Icarus
+├── dune_analytics.html   # Télémétrie des mondes (stats population)
 ├── dune_chronologie.html # Chronologie de l'univers
+├── news.html             # Actualités du jeu
 ├── login.html / register.html
 │
-├── script.js            # Logique cartographique
-├── skills.js            # Simulateur de talents
-├── planner.js           # Planificateur d'événements
-├── migration.js         # Logique de migration (validation, refus, Discord)
+├── script.js             # Logique cartographique
+├── skills.js             # Simulateur de talents + commandes
+├── planner.js            # Planificateur d'événements
+├── migration.js          # Logique de migration (validation, refus, Discord)
 │
-├── save.php             # API principale (bases, utilisateurs, craft)
-├── auth.php             # Authentification
-├── api.php              # Données de groupe
-├── migration_api.php    # Réservations de migration (validation, refus, entraide)
+├── save.php              # API principale (bases, utilisateurs, craft, commandes)
+├── auth.php              # Authentification
+├── api.php               # Données de groupe
+├── account_api.php       # API compte joueur (avatar, profil, stats, historique)
+├── migration_api.php     # Réservations de migration (validation, refus, entraide)
 │
-├── bases.json           # Bases des territoires (champs : user, x, y, type, map, note, sietch, instance)
-├── requetes.json        # Demandes de craft
-├── landsraad_data.json  # Quêtes disponibles
-├── metiers.json         # Définitions des talents
+├── bases.json            # Bases des territoires
+├── requetes.json         # Demandes de craft
+├── profiles_data.json    # Profils joueurs (avatar, Discord)
+├── landsraad_data.json   # Quêtes disponibles
+├── metiers.json          # Définitions des talents
 │
-├── map.jpg              # Carte Bassin de Hagga
-├── deep_desert.jpg      # Carte Désert Profond
-└── icons/               # Icônes de marqueurs
+├── avatars/              # Avatars presets + uploads joueurs (préfixe u_pseudo_)
+├── uploads/              # Images des demandes de craft
+├── map.jpg               # Carte Bassin de Hagga
+├── deep_desert.jpg       # Carte Désert Profond
+└── icons/                # Icônes de marqueurs
 ```
 
 ---
@@ -152,10 +178,14 @@ git clone <url-du-repo>
 # Placer dans le répertoire web du serveur
 # et s'assurer que PHP peut écrire dans :
 chmod 664 *.json last_wipe.txt
+chmod 775 avatars/ uploads/
 ```
 
 > [!IMPORTANT]
-> Le fichier `bases.json` doit être déployé manuellement depuis la copie locale après chaque migration de données (ajout des champs `sietch` / `instance`). PHP doit pouvoir écrire dessus — si une erreur `write_error` apparaît, vérifier les permissions : `chmod 664 bases.json`.
+> Le fichier `bases.json` doit être déployé manuellement depuis la copie locale après chaque migration de données. PHP doit pouvoir écrire dessus — si une erreur `write_error` apparaît, vérifier les permissions : `chmod 664 bases.json`.
+
+> [!IMPORTANT]
+> Le dossier `avatars/` doit exister et être accessible en écriture par PHP (`chmod 775`, propriétaire `www-data`) pour permettre l'upload d'avatars personnalisés.
 
 Accéder ensuite à `index.html` via le navigateur.
 

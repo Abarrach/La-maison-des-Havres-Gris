@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mon Compte — Havres Gris</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    html, body { overflow-y: auto; background: #1e130c; font-family: sans-serif; margin: 0; }
+
+    header {
+      position: sticky; top: 0; z-index: 100;
+      background: #1e130c; border-bottom: 2px solid #3d2b16;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px; height: 56px;
+    }
+    .header-title { color: #cda434; font-size: 1em; text-transform: uppercase; letter-spacing: 2px; }
+
+    .page-content { max-width: 700px; margin: 40px auto; padding: 0 20px 60px; }
+
+    /* === AVATAR HERO === */
+    .avatar-hero { display: flex; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 36px; }
+
+    .avatar-big-wrap { position: relative; cursor: pointer; }
+    .avatar-big {
+      width: 90px; height: 90px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.6em; font-weight: bold; color: #fff;
+      border: 3px solid #cda434;
+      box-shadow: 0 0 20px rgba(205,164,52,0.3);
+      text-transform: uppercase;
+      overflow: hidden;
+      transition: box-shadow 0.3s, border-color 0.3s;
+    }
+    .avatar-big img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+    .avatar-big-wrap:hover .avatar-big { border-color: #fff; box-shadow: 0 0 30px rgba(205,164,52,0.6); }
+    .avatar-edit-hint {
+      position: absolute; bottom: 2px; right: 2px;
+      width: 24px; height: 24px; border-radius: 50%;
+      background: #cda434; display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.6);
+    }
+    .avatar-edit-hint svg { width: 13px; height: 13px; fill: #1e130c; }
+
+    .avatar-username { color: #cda434; font-size: 1.4em; font-weight: bold; letter-spacing: 2px; text-transform: uppercase; }
+    .avatar-role { color: #888; font-size: 0.85em; letter-spacing: 1px; }
+
+    /* === STATS === */
+    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 36px; }
+    .stat-card {
+      background: #0d0705; border: 1px solid #3d2b16; border-radius: 6px;
+      padding: 18px 12px; text-align: center; transition: border-color 0.3s;
+    }
+    .stat-card:hover { border-color: #cda434; }
+    .stat-value { color: #cda434; font-size: 2em; font-weight: bold; }
+    .stat-label { color: #888; font-size: 0.78em; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+
+    /* === SECTIONS === */
+    .section {
+      background: #0d0705; border: 1px solid #3d2b16; border-radius: 6px;
+      padding: 24px; margin-bottom: 20px;
+    }
+    .section-title {
+      color: #cda434; font-size: 0.9em; text-transform: uppercase; letter-spacing: 2px;
+      margin: 0 0 18px 0; padding-bottom: 10px; border-bottom: 1px solid #3d2b16;
+    }
+
+    /* === FORM === */
+    .form-row { margin-bottom: 14px; }
+    .form-row label { display: block; color: #aaa; font-size: 0.82em; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+    .form-row input {
+      width: 100%; box-sizing: border-box;
+      background: #1a0f05; border: 1px solid #3d2b16; border-radius: 4px;
+      color: #fff; padding: 10px 12px; font-size: 0.95em; transition: border-color 0.2s;
+    }
+    .form-row input:focus { outline: none; border-color: #cda434; }
+
+    .btn-save {
+      background: linear-gradient(180deg, #2a1a0b 0%, #1a0f05 100%);
+      color: #cda434; border: 1px solid #7c5e2a;
+      padding: 10px 28px; text-transform: uppercase; font-weight: bold;
+      cursor: pointer; border-radius: 2px; letter-spacing: 1px; font-size: 0.9em;
+      transition: all 0.2s;
+    }
+    .btn-save:hover { border-color: #cda434; box-shadow: 0 0 12px rgba(205,164,52,0.3); color: #fff; }
+
+    .msg-ok  { color: #4caf50; font-size: 0.85em; margin-top: 10px; display: none; }
+    .msg-err { color: #e57373; font-size: 0.85em; margin-top: 10px; display: none; }
+
+    /* ============================
+       MODAL AVATAR PICKER
+    ============================= */
+    #avatar-modal {
+      display: none; position: fixed; inset: 0; z-index: 500;
+      background: rgba(0,0,0,0.8); align-items: center; justify-content: center;
+      padding: 20px; box-sizing: border-box;
+    }
+    #avatar-modal.open { display: flex; }
+
+    .av-modal-box {
+      background: #1a0f05; border: 1px solid #cda434; border-radius: 8px;
+      width: 100%; max-width: 560px; max-height: 85vh;
+      display: flex; flex-direction: column; overflow: hidden;
+      box-shadow: 0 0 40px rgba(205,164,52,0.2);
+    }
+    .av-modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px; border-bottom: 1px solid #3d2b16; flex-shrink: 0;
+    }
+    .av-modal-header h3 { color: #cda434; margin: 0; font-size: 1em; text-transform: uppercase; letter-spacing: 2px; }
+    .av-modal-close {
+      background: none; border: none; color: #888; font-size: 1.4em;
+      cursor: pointer; line-height: 1; padding: 0 4px;
+    }
+    .av-modal-close:hover { color: #cda434; }
+
+    /* Tabs */
+    .av-tabs { display: flex; border-bottom: 1px solid #3d2b16; flex-shrink: 0; }
+    .av-tab {
+      flex: 1; padding: 12px; background: none; border: none;
+      color: #888; font-size: 0.85em; text-transform: uppercase; letter-spacing: 1px;
+      cursor: pointer; transition: color 0.2s, background 0.2s;
+    }
+    .av-tab.active { color: #cda434; background: rgba(205,164,52,0.08); border-bottom: 2px solid #cda434; }
+    .av-tab:hover:not(.active) { color: #ccc; }
+
+    /* Tab panels */
+    .av-panel { display: none; overflow-y: auto; padding: 16px; flex: 1; }
+    .av-panel.active { display: block; }
+
+    /* Grille avatars */
+    .av-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+      gap: 10px;
+    }
+    .av-item {
+      border-radius: 50%; width: 72px; height: 72px; overflow: hidden;
+      cursor: pointer; border: 3px solid transparent;
+      transition: border-color 0.2s, transform 0.2s;
+      background: #0d0705;
+    }
+    .av-item:hover { border-color: #7c5e2a; transform: scale(1.05); }
+    .av-item.selected { border-color: #cda434; box-shadow: 0 0 12px rgba(205,164,52,0.5); }
+    .av-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    .av-empty { color: #666; font-size: 0.85em; text-align: center; padding: 30px 0; line-height: 1.7; }
+    .av-empty code { color: #cda434; }
+
+    /* Upload panel */
+    .av-upload-area {
+      border: 2px dashed #3d2b16; border-radius: 8px;
+      padding: 30px 20px; text-align: center; cursor: pointer;
+      transition: border-color 0.2s, background 0.2s; margin-bottom: 16px;
+    }
+    .av-upload-area:hover, .av-upload-area.drag { border-color: #cda434; background: rgba(205,164,52,0.06); }
+    .av-upload-area p { color: #888; font-size: 0.88em; margin: 8px 0 0; }
+    .av-upload-area strong { color: #cda434; }
+    #av-file-input { display: none; }
+
+    .av-preview-wrap { display: none; flex-direction: column; align-items: center; gap: 14px; margin-bottom: 16px; }
+    .av-preview-wrap.visible { display: flex; }
+    .av-preview-img {
+      width: 100px; height: 100px; border-radius: 50%; object-fit: cover;
+      border: 3px solid #cda434; box-shadow: 0 0 16px rgba(205,164,52,0.3);
+    }
+
+    .av-modal-footer {
+      padding: 14px 20px; border-top: 1px solid #3d2b16;
+      display: flex; gap: 10px; justify-content: flex-end; flex-shrink: 0;
+    }
+    .btn-ghost {
+      background: none; border: 1px solid #3d2b16; color: #888;
+      padding: 8px 20px; border-radius: 2px; cursor: pointer; font-size: 0.85em;
+      text-transform: uppercase; letter-spacing: 1px; transition: all 0.2s;
+    }
+    .btn-ghost:hover { border-color: #888; color: #ccc; }
+    .btn-ghost.danger:hover { border-color: #e57373; color: #e57373; }
+
+    /* === STATS COMMANDES === */
+    .stats-orders { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 10px; }
+    .stat-card-btn {
+      background: #0d0705; border: 1px solid #3d2b16; border-radius: 6px;
+      padding: 18px 12px 12px; text-align: center; cursor: pointer;
+      transition: border-color 0.3s, background 0.2s; position: relative;
+      user-select: none;
+    }
+    .stat-card-btn:hover { border-color: #cda434; background: rgba(205,164,52,0.04); }
+    .stat-card-btn.open { border-color: #cda434; }
+    .stat-chevron {
+      font-size: 0.65em; color: #5a4a2a; margin-top: 6px; display: block;
+      transition: transform 0.25s;
+    }
+    .stat-card-btn.open .stat-chevron { transform: rotate(180deg); color: #cda434; }
+
+    /* Panneau dépliable */
+    .order-panel {
+      display: none; background: #0d0705; border: 1px solid #3d2b16;
+      border-top: none; border-radius: 0 0 6px 6px;
+      margin-bottom: 20px; overflow: hidden;
+    }
+    .order-panel.open { display: block; }
+    .order-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 14px; border-bottom: 1px solid #1e1208;
+      transition: background 0.15s;
+    }
+    .order-item:last-child { border-bottom: none; }
+    .order-item:hover { background: rgba(205,164,52,0.04); }
+    .order-badge {
+      flex-shrink: 0; font-size: 0.7em; padding: 2px 8px; border-radius: 10px;
+      font-weight: bold; text-transform: uppercase; letter-spacing: .5px; margin-top: 2px;
+    }
+    .badge-pending  { background: #2a1e00; color: #cda434; border: 1px solid #7c5e2a; }
+    .badge-progress { background: #0a1a2a; color: #3b82f6; border: 1px solid #1e4080; }
+    .badge-done     { background: #0a1e0a; color: #41d37a; border: 1px solid #1e5e2a; }
+    .order-body { flex: 1; min-width: 0; }
+    .order-type  { color: #cda434; font-size: 0.88em; font-weight: bold; }
+    .order-notes { color: #888; font-size: 0.78em; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .order-meta  { color: #5a4a2a; font-size: 0.72em; margin-top: 3px; }
+    .order-empty { color: #555; font-size: 0.82em; text-align: center; padding: 20px; }
+
+    @media(max-width: 500px) {
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .stat-card:last-child { grid-column: span 2; }
+      .av-grid { grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); }
+      .av-item { width: 60px; height: 60px; }
+    }
+  </style>
+</head>
+<body>
+<script src="auth-guard.js"></script>
+
+<header>
+  <div class="header-title">Mon Compte</div>
+  <div class="header-controls">
+    <a href="menu.html" class="disconnect">Menu Principal</a>
+  </div>
+</header>
+
+<div class="page-content">
+
+  <!-- Avatar hero -->
+  <div class="avatar-hero">
+    <div class="avatar-big-wrap" onclick="openAvatarModal()" title="Changer d'avatar">
+      <div class="avatar-big" id="avatar-big">?</div>
+      <div class="avatar-edit-hint">
+        <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+      </div>
+    </div>
+    <div class="avatar-username" id="avatar-username">…</div>
+    <div class="avatar-role" id="avatar-role">Chargement…</div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-value" id="stat-bases">—</div>
+      <div class="stat-label">Bases placées</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="stat-dest">—</div>
+      <div class="stat-label">Destinations signalées</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="stat-role">—</div>
+      <div class="stat-label">Rang</div>
+    </div>
+  </div>
+
+  <!-- Stats commandes & services -->
+  <div class="stats-orders">
+    <div class="stat-card-btn" id="btn-demanded" onclick="togglePanel('demanded')">
+      <div class="stat-value" id="stat-demanded">—</div>
+      <div class="stat-label">Commandes passées</div>
+      <span class="stat-chevron">▼</span>
+    </div>
+    <div class="stat-card-btn" id="btn-fulfilled" onclick="togglePanel('fulfilled')">
+      <div class="stat-value" id="stat-fulfilled">—</div>
+      <div class="stat-label">Services rendus</div>
+      <span class="stat-chevron">▼</span>
+    </div>
+  </div>
+
+  <div class="order-panel" id="panel-demanded">
+    <div id="list-demanded"><div class="order-empty">Chargement…</div></div>
+  </div>
+  <div class="order-panel" id="panel-fulfilled" style="margin-top:-10px;">
+    <div id="list-fulfilled"><div class="order-empty">Chargement…</div></div>
+  </div>
+
+  <!-- Discord -->
+  <div class="section">
+    <div class="section-title">Profil Discord</div>
+    <div class="form-row">
+      <label>Pseudo Discord</label>
+      <input type="text" id="discord-input" placeholder="Ex: paul_atreides" maxlength="64">
+    </div>
+    <button class="btn-save" onclick="saveDiscord()">Enregistrer</button>
+    <div class="msg-ok" id="discord-ok">Discord mis à jour ✓</div>
+    <div class="msg-err" id="discord-err"></div>
+  </div>
+
+  <!-- Mot de passe -->
+  <div class="section">
+    <div class="section-title">Changer le mot de passe</div>
+    <div class="form-row">
+      <label>Mot de passe actuel</label>
+      <input type="password" id="pwd-current" placeholder="••••••••">
+    </div>
+    <div class="form-row">
+      <label>Nouveau mot de passe</label>
+      <input type="password" id="pwd-new" placeholder="6 caractères minimum">
+    </div>
+    <div class="form-row">
+      <label>Confirmer</label>
+      <input type="password" id="pwd-confirm" placeholder="••••••••">
+    </div>
+    <button class="btn-save" onclick="changePassword()">Changer le mot de passe</button>
+    <div class="msg-ok" id="pwd-ok">Mot de passe modifié avec succès ✓</div>
+    <div class="msg-err" id="pwd-err"></div>
+  </div>
+
+</div>
+
+<!-- ====== MODAL AVATAR PICKER ====== -->
+<div id="avatar-modal">
+  <div class="av-modal-box">
+
+    <div class="av-modal-header">
+      <h3>Choisir un avatar</h3>
+      <button class="av-modal-close" onclick="closeAvatarModal()">✕</button>
+    </div>
+
+    <div class="av-tabs">
+      <button class="av-tab active" onclick="switchTab('presets')">Avatars disponibles</button>
+      <button class="av-tab" onclick="switchTab('upload')">Téléverser le mien</button>
+    </div>
+
+    <!-- Presets -->
+    <div class="av-panel active" id="tab-presets">
+      <div class="av-grid" id="av-grid">
+        <div class="av-empty">Chargement…</div>
+      </div>
+    </div>
+
+    <!-- Upload -->
+    <div class="av-panel" id="tab-upload">
+      <div class="av-upload-area" id="av-drop-zone" onclick="document.getElementById('av-file-input').click()">
+        <strong>Cliquer pour choisir une image</strong>
+        <p>ou glisser-déposer ici<br>JPG, PNG, WEBP — 2 Mo max</p>
+      </div>
+      <input type="file" id="av-file-input" accept="image/jpeg,image/png,image/webp,image/gif">
+
+      <div class="av-preview-wrap" id="av-preview-wrap">
+        <img class="av-preview-img" id="av-preview-img" src="" alt="Aperçu">
+        <button class="btn-save" onclick="uploadAvatar()">Utiliser cet avatar</button>
+        <div class="msg-err" id="upload-err" style="display:none;"></div>
+      </div>
+    </div>
+
+    <div class="av-modal-footer">
+      <button class="btn-ghost danger" onclick="removeAvatar()">Supprimer l'avatar</button>
+      <button class="btn-ghost" onclick="closeAvatarModal()">Fermer</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const currentUser = localStorage.getItem("user") || "";
+let currentAvatarPath = "";
+let uploadB64 = null;
+
+// ---- Avatar couleur depuis hash pseudo ----
+function avatarColor(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = ((h << 5) - h) + str.charCodeAt(i);
+  return "hsl(" + (Math.abs(h) % 360) + ",55%,32%)";
+}
+
+function renderAvatar(path) {
+  const big = document.getElementById("avatar-big");
+  if (path) {
+    big.innerHTML = '<img src="' + path + '?v=' + Date.now() + '" alt="avatar">';
+    big.style.background = "transparent";
+  } else {
+    big.innerHTML = "";
+    big.textContent = currentUser.charAt(0).toUpperCase() || "?";
+    big.style.background = avatarColor(currentUser);
+  }
+}
+
+function initPage() {
+  document.getElementById("avatar-username").textContent = currentUser;
+
+  // Avatar depuis localStorage pour affichage immédiat
+  const cached = localStorage.getItem("avatar") || "";
+  renderAvatar(cached);
+  currentAvatarPath = cached;
+}
+
+async function loadStats() {
+  try {
+    const res  = await fetch("account_api.php?action=stats&user=" + encodeURIComponent(currentUser));
+    const data = await res.json();
+    if (data.ok) {
+      document.getElementById("stat-bases").textContent = data.bases;
+      document.getElementById("stat-dest").textContent  = data.destinations;
+      document.getElementById("stat-role").textContent  = data.role;
+      document.getElementById("avatar-role").textContent = data.role;
+    }
+  } catch(e) { document.getElementById("avatar-role").textContent = "—"; }
+}
+
+async function loadProfile() {
+  try {
+    const res  = await fetch("account_api.php?action=getProfile&user=" + encodeURIComponent(currentUser));
+    const data = await res.json();
+    if (data.ok) {
+      document.getElementById("discord-input").value = data.discord || "";
+      if (data.avatar) {
+        currentAvatarPath = data.avatar;
+        localStorage.setItem("avatar", data.avatar);
+        renderAvatar(data.avatar);
+      }
+    }
+  } catch(e) {}
+}
+
+function showMsg(okId, errId, ok, msg) {
+  const okEl = document.getElementById(okId), errEl = document.getElementById(errId);
+  okEl.style.display  = ok  ? "block" : "none";
+  errEl.style.display = !ok ? "block" : "none";
+  if (!ok) errEl.textContent = msg;
+  setTimeout(() => { okEl.style.display = "none"; errEl.style.display = "none"; }, 4000);
+}
+
+async function saveDiscord() {
+  const discord = document.getElementById("discord-input").value.trim();
+  try {
+    const res  = await fetch("account_api.php", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({action:"saveProfile", user:currentUser, discord}) });
+    const data = await res.json();
+    showMsg("discord-ok", "discord-err", data.ok, data.error || "Erreur serveur");
+  } catch(e) { showMsg("discord-ok", "discord-err", false, "Erreur réseau"); }
+}
+
+async function changePassword() {
+  const current = document.getElementById("pwd-current").value;
+  const newPwd  = document.getElementById("pwd-new").value;
+  const confirm = document.getElementById("pwd-confirm").value;
+  if (!current) return showMsg("pwd-ok", "pwd-err", false, "Saisissez votre mot de passe actuel");
+  if (newPwd.length < 6) return showMsg("pwd-ok", "pwd-err", false, "Le nouveau mot de passe doit faire au moins 6 caractères");
+  if (newPwd !== confirm) return showMsg("pwd-ok", "pwd-err", false, "Les mots de passe ne correspondent pas");
+  try {
+    const res  = await fetch("account_api.php", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({action:"changePassword", user:currentUser, currentPassword:current, newPassword:newPwd}) });
+    const data = await res.json();
+    if (data.ok) { document.getElementById("pwd-current").value = document.getElementById("pwd-new").value = document.getElementById("pwd-confirm").value = ""; }
+    showMsg("pwd-ok", "pwd-err", data.ok, data.error || "Erreur serveur");
+  } catch(e) { showMsg("pwd-ok", "pwd-err", false, "Erreur réseau"); }
+}
+
+// ====== MODAL AVATAR ======
+
+function openAvatarModal() {
+  document.getElementById("avatar-modal").classList.add("open");
+  loadAvatarGrid();
+}
+
+function closeAvatarModal() {
+  document.getElementById("avatar-modal").classList.remove("open");
+  uploadB64 = null;
+  document.getElementById("av-preview-wrap").classList.remove("visible");
+  document.getElementById("av-file-input").value = "";
+}
+
+function switchTab(name) {
+  document.querySelectorAll(".av-tab").forEach((t, i) => t.classList.toggle("active", (i === 0) === (name === "presets")));
+  document.getElementById("tab-presets").classList.toggle("active", name === "presets");
+  document.getElementById("tab-upload").classList.toggle("active", name === "upload");
+}
+
+async function loadAvatarGrid() {
+  const grid = document.getElementById("av-grid");
+  grid.innerHTML = '<div class="av-empty">Chargement…</div>';
+  try {
+    const res  = await fetch("account_api.php?action=listAvatars&user=" + encodeURIComponent(currentUser));
+    const data = await res.json();
+    const all  = [...(data.presets || []), ...(data.custom || [])];
+
+    if (!all.length) {
+      grid.innerHTML = '<div class="av-empty">Aucun avatar disponible.<br>Déposez des images dans le dossier <code>avatars/</code> du serveur.</div>';
+      return;
+    }
+
+    grid.innerHTML = "";
+    all.forEach(path => {
+      const div = document.createElement("div");
+      div.className = "av-item" + (path === currentAvatarPath ? " selected" : "");
+      div.innerHTML = '<img src="' + path + '" alt="avatar" loading="lazy">';
+      div.onclick = () => selectPresetAvatar(path, div);
+      grid.appendChild(div);
+    });
+  } catch(e) {
+    grid.innerHTML = '<div class="av-empty">Erreur de chargement.</div>';
+  }
+}
+
+async function selectPresetAvatar(path, el) {
+  document.querySelectorAll(".av-item").forEach(i => i.classList.remove("selected"));
+  el.classList.add("selected");
+
+  try {
+    const res  = await fetch("account_api.php", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({action:"setAvatar", user:currentUser, avatarPath:path}) });
+    const data = await res.json();
+    if (data.ok) {
+      currentAvatarPath = path;
+      localStorage.setItem("avatar", path);
+      renderAvatar(path);
+      setTimeout(closeAvatarModal, 400);
+    }
+  } catch(e) {}
+}
+
+async function removeAvatar() {
+  try {
+    await fetch("account_api.php", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({action:"removeAvatar", user:currentUser}) });
+  } catch(e) {}
+  currentAvatarPath = "";
+  localStorage.removeItem("avatar");
+  renderAvatar("");
+  closeAvatarModal();
+}
+
+// ---- Upload ----
+document.getElementById("av-file-input").addEventListener("change", function() {
+  const file = this.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) {
+    document.getElementById("upload-err").textContent = "Fichier trop lourd (max 2 Mo)";
+    document.getElementById("upload-err").style.display = "block";
+    return;
+  }
+  document.getElementById("upload-err").style.display = "none";
+  const reader = new FileReader();
+  reader.onload = e => {
+    uploadB64 = e.target.result;
+    document.getElementById("av-preview-img").src = uploadB64;
+    document.getElementById("av-preview-wrap").classList.add("visible");
+  };
+  reader.readAsDataURL(file);
+});
+
+// Drag & drop
+const dropZone = document.getElementById("av-drop-zone");
+["dragenter","dragover"].forEach(ev => dropZone.addEventListener(ev, e => { e.preventDefault(); dropZone.classList.add("drag"); }));
+["dragleave","drop"].forEach(ev => dropZone.addEventListener(ev, e => { e.preventDefault(); dropZone.classList.remove("drag"); }));
+dropZone.addEventListener("drop", e => {
+  const file = e.dataTransfer.files[0];
+  if (file) { const dt = new DataTransfer(); dt.items.add(file); document.getElementById("av-file-input").files = dt.files; document.getElementById("av-file-input").dispatchEvent(new Event("change")); }
+});
+
+async function uploadAvatar() {
+  if (!uploadB64) return;
+  try {
+    const res  = await fetch("account_api.php", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({action:"uploadAvatar", user:currentUser, image:uploadB64}) });
+    const data = await res.json();
+    if (data.ok) {
+      currentAvatarPath = data.avatarPath;
+      localStorage.setItem("avatar", data.avatarPath);
+      renderAvatar(data.avatarPath);
+      closeAvatarModal();
+    } else {
+      document.getElementById("upload-err").textContent = data.error || "Erreur serveur";
+      document.getElementById("upload-err").style.display = "block";
+    }
+  } catch(e) {
+    document.getElementById("upload-err").textContent = "Erreur réseau";
+    document.getElementById("upload-err").style.display = "block";
+  }
+}
+
+// Fermer modal en cliquant l'overlay
+document.getElementById("avatar-modal").addEventListener("click", function(e) {
+  if (e.target === this) closeAvatarModal();
+});
+
+// ====== HISTORIQUE COMMANDES & SERVICES ======
+let orderData = null;
+
+async function loadOrderHistory() {
+  try {
+    const res  = await fetch("account_api.php?action=getOrderHistory&user=" + encodeURIComponent(currentUser));
+    const data = await res.json();
+    if (!data.ok) return;
+    orderData = data;
+    document.getElementById("stat-demanded").textContent  = data.demanded.length;
+    document.getElementById("stat-fulfilled").textContent = data.fulfilled.length;
+  } catch(e) {}
+}
+
+function togglePanel(which) {
+  const btn   = document.getElementById("btn-" + which);
+  const panel = document.getElementById("panel-" + which);
+  const isOpen = panel.classList.contains("open");
+
+  // Fermer l'autre panneau si ouvert
+  const other = which === "demanded" ? "fulfilled" : "demanded";
+  document.getElementById("panel-" + other).classList.remove("open");
+  document.getElementById("btn-" + other).classList.remove("open");
+
+  if (isOpen) {
+    panel.classList.remove("open");
+    btn.classList.remove("open");
+  } else {
+    panel.classList.add("open");
+    btn.classList.add("open");
+    renderOrderPanel(which);
+  }
+}
+
+const STATUS_LABELS = { pending: "En attente", progress: "En cours", done: "Terminé" };
+const STATUS_CLASS  = { pending: "badge-pending", progress: "badge-progress", done: "badge-done" };
+
+function renderOrderPanel(which) {
+  const el = document.getElementById("list-" + which);
+  if (!orderData) { el.innerHTML = '<div class="order-empty">Chargement…</div>'; return; }
+
+  const items = which === "demanded" ? orderData.demanded : orderData.fulfilled;
+  if (!items.length) {
+    el.innerHTML = '<div class="order-empty">' + (which === "demanded" ? "Aucune commande passée." : "Aucun service rendu.") + '</div>';
+    return;
+  }
+
+  el.innerHTML = items.map(r => {
+    const statusLabel = STATUS_LABELS[r.status] || r.status;
+    const statusClass = STATUS_CLASS[r.status]  || "badge-pending";
+    const notes = r.notes ? r.notes.substring(0, 80) + (r.notes.length > 80 ? "…" : "") : "";
+    const meta  = which === "demanded"
+      ? (r.crafter ? "🛠️ Pris en charge par : " + r.crafter : "")
+      : ("👤 Demandé par : " + r.player);
+    return `<div class="order-item">
+      <span class="order-badge ${statusClass}">${statusLabel}</span>
+      <div class="order-body">
+        <div class="order-type">${r.type}</div>
+        ${notes ? `<div class="order-notes">📝 ${notes}</div>` : ""}
+        ${meta  ? `<div class="order-meta">${meta}</div>`   : ""}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+initPage();
+loadStats();
+loadProfile();
+loadOrderHistory();
+</script>
+</body>
+</html>

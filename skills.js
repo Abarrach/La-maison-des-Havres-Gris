@@ -661,7 +661,7 @@ function createReqCard(req) {
     </div>`;
 
     let actions=`<div class="req-actions">`;
-    if(req.player===currentUserReq) actions+=`<button class="btn-action" style="background:#a83b3b;color:#fff;padding:6px 10px;" onclick="deleteRequest('${req.id}')" title="Supprimer">🗑️</button>`;
+    if(req.player===currentUserReq&&req.status!=='done') actions+=`<button class="btn-action" style="background:#a83b3b;color:#fff;padding:6px 10px;" onclick="deleteRequest('${req.id}')" title="Supprimer">🗑️</button>`;
     const hasBase=allMapBases.some(b=>b.user===req.player);
     actions+=hasBase?`<a href="map.html?focus=${encodeURIComponent(req.player)}" class="btn-action btn-map">🗺️ Voir Base</a>`:`<span class="btn-action" style="background:#333;color:#777;border:1px solid #444;cursor:help;" title="Pas de base renseignée">🚫 Pas de base</span>`;
     if(req.status!=='done'){
@@ -703,7 +703,7 @@ window.closeDeleteModal = function() {
 async function confirmDelete() {
     const id = _pendingDeleteId;
     closeDeleteModal();
-    try{const r=await fetch("save.php",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"deleteRequete",id})});const d=await r.json();if(d.ok)loadRequests();else alert("Erreur : "+d.error);}catch{alert("Erreur réseau.");}
+    try{const r=await fetch("save.php",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"deleteRequete",id,user:currentUserReq})});const d=await r.json();if(d.ok)loadRequests();else alert("Erreur : "+d.error);}catch{alert("Erreur réseau.");}
 }
 
 // ================================================================

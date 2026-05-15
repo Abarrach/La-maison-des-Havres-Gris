@@ -278,17 +278,22 @@ switch ($action) {
         }
         exit;
 
-    // --- NOUVEAU : Fonction de suppression de requête ---
     case 'deleteRequete':
-        $id = $data['id'] ?? null;
-        if (!$id) jerr("missing_data");
+        $id   = $data['id']   ?? null;
+        $user = trim($data['user'] ?? '');
+        if (!$id || !$user) jerr("missing_data");
 
         $reqFile = __DIR__ . '/requetes.json';
         $reqs = readJson($reqFile);
-        
-        // On filtre pour retirer la demande qui correspond à l'ID envoyé
+
+        // Vérifier que l'auteur correspond et que la demande n'est pas terminée
+        $target = null;
+        foreach ($reqs as $r) { if ($r['id'] === $id) { $target = $r; break; } }
+        if (!$target) jerr("requete_not_found");
+        if ($target['player'] !== $user) jerr("not_authorized");
+        if (($target['status'] ?? '') === 'done') jerr("cannot_delete_done");
+
         $newReqs = array_filter($reqs, fn($r) => $r['id'] !== $id);
-        
         if (!writeJson($reqFile, array_values($newReqs))) jerr("write_error");
         echo json_encode(['ok' => true]);
         exit;

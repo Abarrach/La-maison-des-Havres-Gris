@@ -151,8 +151,15 @@
 </head>
 <body>
 <script src="auth-guard.js"></script>
+<script>(function(){var u=localStorage.getItem("user")||"?";document.getElementById("ua-pseudo").textContent=u;var av=document.getElementById("ua-avatar");var img=localStorage.getItem("avatar");if(img){av.style.background="transparent";av.innerHTML='<img src="'+img+'" style="width:42px;height:42px;margin:-1px;object-fit:cover;border-radius:50%;">';}else{av.textContent=u.charAt(0).toUpperCase();var h=0;for(var i=0;i<u.length;i++)h=((h<<5)-h)+u.charCodeAt(i);av.style.background="hsl("+(Math.abs(h)%360)+",55%,32%)";}})();</script>
 
   <div class="header-migration">
+      <div style="position:absolute;top:10px;right:14px;">
+        <a href="account.html" class="user-account-widget" id="ua-widget">
+          <div class="ua-avatar" id="ua-avatar">?</div>
+          <span class="ua-pseudo" id="ua-pseudo">…</span>
+        </a>
+      </div>
       <h1>Destination Icarus — Bases projetées</h1>
       <p>Repérez les emplacements sur la carte, les joueurs confirment ensuite leur position.</p>
       <div class="sietch-filter-bar" id="sietch-filter-bar">
@@ -213,7 +220,7 @@
           <div id="img-previews"></div>
 
           <label>Votre pseudo (éclaireur) <span style="color:#ff6b6b;">*</span></label>
-          <input type="text" id="res-placedby" placeholder="Ex: Abarrach">
+          <input type="text" id="res-placedby" placeholder="Ex: Abarrach" readonly>
 
           <div class="res-actions">
               <button class="res-btn btn-cancel" onclick="closeModal()">Annuler</button>

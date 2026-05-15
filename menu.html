@@ -223,7 +223,7 @@
                     <svg class="icon" viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
                     Œil du Mentat
                 </div>
-                <div class="card-desc" id="analytics-desc">Télémétrie des mondes — population, sietches dominants et fluctuations temporelles.</div>
+                <div class="card-desc">Télémétrie des mondes — population, sietches dominants et fluctuations temporelles.</div>
             </div>
         </a>
 
@@ -248,11 +248,7 @@ function logout() {
         const s = await r.json();
         if (!s.analytics_public) {
             const card = document.getElementById('card-analytics');
-            card.style.opacity = '0.35';
-            card.style.filter = 'grayscale(1)';
-            card.style.cursor = 'not-allowed';
-            card.style.pointerEvents = 'none';
-            document.getElementById('analytics-desc').textContent = 'Accès restreint — réservé aux administrateurs.';
+            card.style.display = 'none';
         }
     } catch(e) {}
 })();

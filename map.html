@@ -89,7 +89,9 @@
         background: rgba(20, 16, 10, 0.95); border: 1px solid #cda434;
         padding: 15px; border-radius: 6px; width: 250px;
         box-shadow: 0 0 20px rgba(0,0,0,0.9);
-        display: none; 
+        display: none;
+        max-height: calc(100vh - 170px);
+        overflow-y: auto;
     }
     .admin-panel.visible { display: block; animation: fadeIn 0.3s ease; }
 

@@ -4,16 +4,51 @@
 }
 
 /* === Base et Reset === */
-html, body {
+html {
+  height: 100%;
+  background-color: #0a0402;
+  background-image: url('menu_bg.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+body {
   height: 100%;
   margin: 0;
   font-family: 'Segoe UI', sans-serif;
   color: #f5deb3;
-  background: radial-gradient(circle at center, #6b4a25 0%, #3b2a16 80%);
-  background-attachment: fixed;
+  background: transparent;
   overflow: hidden;
   scrollbar-width: thin;
   scrollbar-color: #a67c33 #1a1007;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 3, 1, 0.72);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* === FILIGRANE LOGO GUILDE === */
+body::after {
+  content: '';
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 420px;
+  height: 420px;
+  background-image: url('images/logoguilde.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  opacity: 0.05;
+  pointer-events: none;
+  z-index: -1;
 }
 
 /* === ANIMATION FADE IN === */
@@ -78,23 +113,35 @@ html, body {
   display: flex; flex-direction: column; justify-content: center; align-items: center;
   z-index: 9999;
 }
-#intro-screen img { max-width: 600px; width: 80%; border: 2px solid #a67c33; border-radius: 10px; box-shadow: 0 0 30px rgba(0,0,0,0.8); margin-bottom: 40px; }
+#intro-screen > img { width: 100%; max-width: 1600px; border: none; border-radius: 0; box-shadow: 0 8px 60px rgba(0,0,0,0.9); margin-bottom: 50px; display: block; }
 #intro-content { text-align: center; }
 
 #enterButton {
-  padding: 15px 40px; font-size: 18px; letter-spacing: 1px;
-  background: linear-gradient(to bottom, #d4a23b, #8b6e3b); color: #1a1007;
-  border-radius: 5px; cursor: pointer; border: 1px solid #f3c44f; text-transform: uppercase;
-  box-shadow: 0 0 15px rgba(212, 162, 59, 0.3); transition: all 0.2s; display: inline-block; font-weight: bold;
+  width: min(300px, 35vw);
+  cursor: pointer;
+  display: block;
+  mix-blend-mode: screen;
+  transition: transform 0.3s ease, filter 0.3s ease;
 }
-#enterButton:hover { transform: scale(1.05); box-shadow: 0 0 25px rgba(212, 162, 59, 0.6); filter: brightness(1.1); }
+#enterButton:hover { transform: scale(1.06); filter: brightness(1.4); }
 
 /* === CONNEXION === */
+@keyframes floatIn {
+  from { opacity: 0; transform: translate(-50%, calc(-50% + 20px)); }
+  to   { opacity: 1; transform: translate(-50%, -50%); }
+}
+
 #loginBox {
   position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
   width: 320px; padding: 40px;
-  background: rgba(20, 12, 4, 0.95); border: 2px solid #a67c33; border-radius: 12px;
-  box-shadow: 0 0 50px rgba(0,0,0,0.9); text-align: center; z-index: 100;
+  background: rgba(12, 7, 2, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(166, 124, 51, 0.6);
+  border-radius: 8px;
+  box-shadow: 0 8px 60px rgba(0,0,0,0.8), 0 0 0 1px rgba(166,124,51,0.1);
+  text-align: center; z-index: 100;
+  animation: floatIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 #loginBox h2 { color: #f3c44f; margin: 0 0 30px; text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px solid #5c4025; padding-bottom: 15px; }
 #loginBox input {
@@ -430,7 +477,7 @@ input:-webkit-autofill:active {
   .admin-panel { top: 105px; width: calc(100vw - 30px); right: 10px; max-width: 300px; }
   #player-panel { top: 105px; left: 10px; width: min(200px, calc(50vw - 20px)); }
   #storm-timer { top: 95px; right: 10px; font-size: 11px; padding: 5px 10px; }
-  #intro-screen img { width: 90%; }
+  #intro-screen > img { width: 100%; }
   .toggle-players { bottom: 15px; left: 15px; width: 44px; height: 44px; }
   .menu-card { width: min(380px, 90vw); }
   .cards-wrapper { gap: 15px; padding: 0 15px; }

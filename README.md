@@ -131,7 +131,7 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 - Deux niveaux d'accès : **Joueur** et **Administrateur**
 - Gestion des utilisateurs (création, suppression, changement de rôle) via le panneau admin
 - L'administrateur principal (`Abarrach`) ne peut pas être rétrogradé
-- **Toutes les pages sont protégées** par `auth-guard.js` — tout accès direct sans session active redirige vers `login.html`
+- **Toutes les pages sont protégées** par `auth-guard.js` — tout accès direct sans session active redirige vers `index.html#login`
 - La déconnexion efface la session localStorage et redirige vers la page de connexion
 
 ---
@@ -151,7 +151,7 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 
 ```
 DuneMap/
-├── index.html            # Écran d'introduction
+├── index.html            # Écran d'introduction (bandeau guilde, bouton Entrer, modale login flottante)
 ├── menu.html             # Hub de navigation principal
 ├── map.html              # Carte des territoires
 ├── 404.html              # Page d'erreur 404 thématisée Dune
@@ -162,7 +162,7 @@ DuneMap/
 ├── dune_analytics.html   # Télémétrie des mondes (stats population)
 ├── dune_chronologie.html # Chronologie de l'univers
 ├── news.html             # Actualités du jeu
-├── login.html / register.html
+├── register.html         # Création de compte (design deux colonnes : formulaire + présentation guilde)
 │
 ├── script.js             # Logique cartographique (Leaflet, marqueurs, Désert Profond)
 ├── skills.js             # Simulateur de talents + commandes de craft
@@ -237,6 +237,11 @@ Le site est adapté pour une consultation sur téléphone :
 
 Interface entièrement thématisée autour de l'univers de Dune :
 - Palette désertique (or `#cda434`, sable `#f5deb3`, brun profond `#1a1007`)
+- Fond atmosphérique `menu_bg.png` appliqué globalement via l'élément `html` (non affecté par l'animation `fade-in` du `body`)
+- Filigrane semi-transparent du blason de guilde (`images/logoguilde.png`) sur toutes les pages
+- Écran d'accueil (`index.html`) : bandeau `guilde.png` + bouton `enter_arrakis.png` avec `mix-blend-mode: screen` (supprime le fond noir sans retouche de l'image)
+- Login : modale flottante avec glassmorphism (`backdrop-filter: blur`) et animation `floatIn` ; s'ouvre via URL hash `#login` depuis `register.html` et `auth-guard.js`
+- `register.html` : mise en page deux colonnes (formulaire à gauche, présentation guilde à droite)
 - Animations : fondu, lueur, vibration
 - Design responsive adapté aux différentes tailles d'écran
 

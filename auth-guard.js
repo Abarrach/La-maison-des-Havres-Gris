@@ -1,5 +1,5 @@
 (function () {
     if (!localStorage.getItem("user")) {
-        window.location.replace("login.html");
+        window.location.replace("index.html#login");
     }
 })();

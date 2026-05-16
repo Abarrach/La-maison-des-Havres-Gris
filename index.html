@@ -5,27 +5,131 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Maison des Havres Gris – Accueil</title>
   <link rel="stylesheet" href="style.css">
-  <script>
-    function enterLogin() {
-      const intro = document.getElementById("intro-screen");
-      // On lance l'animation de sortie
-      intro.style.animation = "fadeOut 1s forwards";
-      
-      setTimeout(() => {
-        window.location.href = "login.html";
-      }, 1000);
+  <style>
+    /* === OVERLAY LOGIN === */
+    #login-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      background: rgba(0, 0, 0, 0.45);
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
     }
-  </script>
+    #login-overlay.visible {
+      display: block;
+    }
+    #login-overlay #loginBox {
+      animation: floatIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+  </style>
 </head>
 
-<!-- Ajout de la classe fade-in pour l'apparition progressive -->
 <body class="fade-in">
   <div id="intro-screen">
-    <img src="intro.jpg" alt="La Maison des Havres Gris">
-    
+    <img src="guilde.png" alt="La Maison des Havres Gris">
     <div id="intro-content">
-      <div id="enterButton" onclick="enterLogin()">Entrer sur Arrakis</div>
+      <img src="enter_arrakis.png" id="enterButton" onclick="showLogin()" alt="Entrer sur Arrakis">
     </div>
   </div>
+
+  <!-- Modale login flottante -->
+  <div id="login-overlay">
+    <div id="loginBox">
+      <img src="images/logoguilde.png" alt="Les Havres Gris" style="width:150px;display:block;margin:0 auto 12px;filter:drop-shadow(0 0 16px rgba(205,164,52,0.5));">
+      <h2>Connexion</h2>
+      <input type="text" id="username" placeholder="Nom d'utilisateur" onkeypress="handleKeyPress(event)">
+      <input type="password" id="password" placeholder="Mot de passe" onkeypress="handleKeyPress(event)">
+      <button id="loginBtn" onclick="login()">Se connecter</button>
+      <div id="loginError" class="login-error"></div>
+      <p style="margin-top:20px;">
+        <a href="register.html">Créer un compte</a>
+      </p>
+    </div>
+  </div>
+
+<script>
+  function showLogin() {
+    document.getElementById("login-overlay").classList.add("visible");
+  }
+
+  async function login() {
+    const userField = document.getElementById("username");
+    const passField = document.getElementById("password");
+    const errorBox  = document.getElementById("loginError");
+    const btn       = document.getElementById("loginBtn");
+
+    const userVal = userField.value.trim();
+    const passVal = passField.value.trim();
+
+    errorBox.textContent = "";
+
+    if (!userVal || !passVal) {
+      errorBox.textContent = "Veuillez remplir tous les champs.";
+      shakeBox();
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = "Vérification...";
+
+    try {
+      const response = await fetch('auth.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user: userVal, password: passVal })
+      });
+
+      if (response.status === 404) {
+        throw new Error("Le service d'authentification (auth.php) est introuvable.");
+      }
+
+      const result = await response.json();
+
+      if (result.ok) {
+        localStorage.setItem("user", result.user);
+        localStorage.setItem("role", result.role);
+        window.location.href = "menu.html";
+      } else {
+        errorBox.textContent = result.error || "Identifiants incorrects.";
+        shakeBox();
+        resetBtn();
+      }
+    } catch(e) {
+      console.error(e);
+      errorBox.textContent = "Erreur technique : " + e.message;
+      resetBtn();
+    }
+  }
+
+  function resetBtn() {
+    const btn = document.getElementById("loginBtn");
+    btn.disabled = false;
+    btn.textContent = "Se connecter";
+  }
+
+  function shakeBox() {
+    const box = document.getElementById('loginBox');
+    box.style.animation = "none";
+    box.offsetHeight;
+    box.style.animation = "shake 0.4s ease-in-out";
+    setTimeout(() => box.style.animation = "", 400);
+  }
+
+  function handleKeyPress(e) {
+    if (e.key === "Enter") login();
+  }
+
+  // Fermer l'overlay en cliquant en dehors de la boîte
+  document.getElementById("login-overlay").addEventListener("click", function(e) {
+    if (e.target === this) this.classList.remove("visible");
+  });
+
+  // Ouvre la modale automatiquement si l'URL contient #login
+  if (window.location.hash === '#login') {
+    showLogin();
+    history.replaceState(null, '', window.location.pathname);
+  }
+</script>
 </body>
 </html>

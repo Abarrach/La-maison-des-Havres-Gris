@@ -119,7 +119,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   isAdmin = (role === "admin");
 
   if (!currentUser) {
-    window.location.href = "login.html";
+    window.location.href = "index.html";
     return;
   }
 

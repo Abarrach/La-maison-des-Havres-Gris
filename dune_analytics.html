@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Havres Gris - Analytique Serveurs</title>
+<link rel="stylesheet" href="style.css">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Segoe+UI&family=Inter:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
@@ -20,13 +21,14 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { 
-        font-family: 'Segoe UI', 'Inter', sans-serif; 
-        background-color: var(--bg-page); 
-        background-image: radial-gradient(circle at top right, #1a1008 0%, transparent 50%);
-        color: var(--texte-beige); 
-        min-height: 100vh; 
-        font-size: 14px; 
+    body {
+        font-family: 'Segoe UI', 'Inter', sans-serif;
+        background-color: transparent;
+        background-image: none;
+        color: var(--texte-beige);
+        min-height: 100vh;
+        font-size: 14px;
+        overflow-y: auto;
     }
     
     header {

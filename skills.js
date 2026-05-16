@@ -115,7 +115,7 @@ const URL_KEYS_REV = { c:"COMBAT", s:"SABOTAGE", e:"EXPLORATION", r:"RECOLTE", f
 // INIT
 // ================================================================
 document.addEventListener("DOMContentLoaded", async () => {
-    if (!localStorage.getItem("user")) { window.location.href = "login.html"; return; }
+    if (!localStorage.getItem("user")) { window.location.href = "index.html"; return; }
 
     const container = document.getElementById("skills-container");
     let allSkillsData = [];

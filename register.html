@@ -80,8 +80,8 @@
 
     /* === PANNEAU GAUCHE — FORMULAIRE === */
     .reg-left {
-      width: 42%;
-      padding: 50px 48px;
+      width: 18%;
+      padding: 50px 32px;
       background: rgba(6, 3, 1, 0.88);
       border-right: 1px solid rgba(90,62,20,0.4);
       display: flex;
@@ -193,7 +193,8 @@
     .reg-right {
       flex: 1;
       position: relative;
-      overflow: hidden;
+      display: flex;
+      flex-direction: column;
     }
 
     .reg-right-bg {
@@ -201,7 +202,7 @@
       inset: 0;
       background-image: url('guilde.png');
       background-size: cover;
-      background-position: center top;
+      background-position: left top;
       filter: brightness(0.55) sepia(0.2);
     }
 
@@ -212,13 +213,13 @@
     }
 
     .reg-right-content {
+      flex: 1;
       position: relative;
       z-index: 2;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 100%;
       padding: 40px;
       text-align: center;
     }

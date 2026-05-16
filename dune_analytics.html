@@ -283,15 +283,10 @@
             <select id="server-filter" class="f-select" style="min-width: 250px;" onchange="applyGlobalFilters()">
                 <option value="all">Galaxie entière (Tous les mondes)</option>
             </select>
-            <div class="f-sep"></div>
-            <span class="f-label">Période d'Analyse (Top 15 & Stats)</span>
-            <select id="time-filter" class="f-select" onchange="applyGlobalFilters()">
-                <option value="all" selected>Archives Complètes</option>
-                <option value="72">Dernières 72 Heures</option>
-                <option value="24">Dernières 24 Heures</option>
-                <option value="12">Dernières 12 Heures</option>
-            </select>
             <div style="margin-left: auto; color: var(--or-sombre); font-size: 12px;" id="data-range-txt"></div>
+        </div>
+        <div style="padding: 8px 16px; background: rgba(243,196,79,0.04); border-left: 2px solid var(--or-sombre); border-radius: 0 4px 4px 0; font-size: 11px; color: var(--texte-beige); opacity: 0.6; font-style: italic; line-height: 1.5;">
+            Source : <a href="https://gaming.tools" target="_blank" style="color: inherit; text-decoration: underline; text-underline-offset: 2px;">Gaming Tools</a> — données limitées aux joueurs présents dans <strong style="opacity: 0.85; font-style: normal;">Hagga Basin</strong>. Ces statistiques reflètent une tendance de l'activité globale sur les serveurs, et ne couvrent pas la présence dans le Deep Desert.
         </div>
 
         <div id="drill-bar">
@@ -317,9 +312,9 @@
                 <div class="stat-sub" id="kpi-top-sietch-sub">Joueurs en moyenne</div>
             </div>
             <div class="nouveau-composant stat-card">
-                <div class="stat-label">Volume de données</div>
-                <div class="stat-value" id="kpi-total-rows">0</div>
-                <div class="stat-sub">Relevés analysés</div>
+                <div class="stat-label" id="kpi-trend-label">Tendance (7j)</div>
+                <div class="stat-value" id="kpi-trend" style="font-size:28px;">—</div>
+                <div class="stat-sub" id="kpi-trend-sub">vs semaine précédente</div>
             </div>
         </div>
 
@@ -327,7 +322,7 @@
             <div class="nouveau-composant grid-full">
                 <div class="nouveau-composant-titre">
                     <span>Fluctuations de la Population Mondiale</span>
-                    <span style="font-size: 11px; color: var(--texte-beige); opacity: 0.6; text-transform: none; font-family: 'Segoe UI', sans-serif; letter-spacing: normal;">Population totale (Somme des Sietches)</span>
+                    <span style="font-size: 11px; color: var(--texte-beige); opacity: 0.6; text-transform: none; font-family: 'Segoe UI', sans-serif; letter-spacing: normal;">Moyenne horaire par serveur</span>
                 </div>
                 <div class="chart-wrap" style="height: 450px; position: relative;">
                     <div id="zoom-main" class="zoom-controls"></div>
@@ -360,8 +355,7 @@
 
             <div class="nouveau-composant grid-full" style="margin-top: 10px;">
                 <div class="nouveau-composant-titre">
-                    <span>Bureau d'Étude des Migrations</span>
-                    <span style="font-size: 11px; color: var(--texte-beige); opacity: 0.6; text-transform: none; font-family: 'Segoe UI', sans-serif; letter-spacing: normal;">Comparez la population globale de plusieurs mondes</span>
+                    <span>Comparaison des Serveurs et des Sietches</span>
                 </div>
                 
                 <div style="display: flex; gap: 15px; margin-bottom: 20px; align-items: center; flex-wrap: wrap;">
@@ -388,8 +382,10 @@
                             <thead>
                                 <tr>
                                     <th>Monde</th>
-                                    <th>Pop. Mondiale Moyenne</th>
-                                    <th>Pic d'Affluence</th>
+                                    <th>Pop. Moyenne</th>
+                                    <th>Pic</th>
+                                    <th>Heure de pointe</th>
+                                    <th id="migr-col-trend">Tendance</th>
                                     <th>Sietch Dominant</th>
                                 </tr>
                             </thead>
@@ -412,6 +408,7 @@
     let migrationServers = [];
     let sietchTooltipTimer = null;
     let _relayoutTimer = null;
+    let _migrRelayoutTimer = null;
 
     // Palette Havres Gris
     const cTheme = {
@@ -521,15 +518,9 @@
     }
 
     function applyGlobalFilters() {
-        const tFilter = document.getElementById('time-filter').value;
         const sFilter = document.getElementById('server-filter').value;
         filteredData = rawData;
-        
-        if (tFilter !== 'all') {
-            const cutoff = new Date(rawData[rawData.length - 1].timestamp.getTime() - (parseInt(tFilter) * 3600000));
-            filteredData = filteredData.filter(d => d.timestamp >= cutoff);
-        }
-        
+
         if (sFilter !== 'all') {
             filteredData = filteredData.filter(d => d.serveur === sFilter);
             currentDrillDowns = currentDrillDowns.filter(d => d.field !== 'serveur');
@@ -753,7 +744,44 @@
 
         // --- KPIs ---
         const activeTotals = getCleanRuns(activeBase);
-        document.getElementById('kpi-total-rows').innerText = activeBase.length.toLocaleString('fr-FR');
+
+        // Tendance — période courante vs période précédente identique, basée sur le filtre actif
+        const trendEl     = document.getElementById('kpi-trend');
+        const trendSubEl  = document.getElementById('kpi-trend-sub');
+        const trendLblEl  = document.getElementById('kpi-trend-label');
+        if (trendEl) {
+            // Dérive la fenêtre depuis activeBase : reflète le zoom du graphe ET le filtre dropdown
+            const winRuns = getCleanRuns(activeBase).sort((a,b) => a.ts - b.ts);
+            if (winRuns.length > 1) {
+                const winStart = winRuns[0].ts;
+                const winEnd   = winRuns[winRuns.length - 1].ts;
+                const spanMs   = winEnd.getTime() - winStart.getTime();
+                const spanH    = spanMs / 3600000;
+                const lbl = spanH < 36 ? `${Math.round(spanH)}h` : `${Math.round(spanH / 24)}j`;
+                if (trendLblEl) trendLblEl.textContent = `Tendance (${lbl})`;
+
+                const allRuns  = getCleanRuns(rawData);
+                const prevStart = new Date(winStart.getTime() - spanMs);
+                const recent = allRuns.filter(d => d.ts >= winStart && d.ts <= winEnd);
+                const prev   = allRuns.filter(d => d.ts >= prevStart && d.ts < winStart);
+                const rAvg = recent.length ? recent.reduce((s,d) => s + d.total, 0) / recent.length : 0;
+                const pAvg = prev.length   ? prev.reduce((s,d)   => s + d.total, 0) / prev.length   : 0;
+                if (pAvg > 0 && recent.length > 0) {
+                    const pct  = (rAvg - pAvg) / pAvg * 100;
+                    const sign  = pct > 1 ? '▲' : pct < -1 ? '▼' : '→';
+                    const color = pct > 1 ? 'var(--or-vif)' : pct < -1 ? '#e74c3c' : 'var(--texte-beige)';
+                    trendEl.innerHTML = `<span style="color:${color}">${sign} ${pct > 0 ? '+' : ''}${pct.toFixed(1)}%</span>`;
+                    trendSubEl.textContent = `${rAvg.toFixed(0)} vs ${pAvg.toFixed(0)} moy. (${lbl} préc.)`;
+                } else {
+                    trendEl.textContent = '—';
+                    trendSubEl.textContent = prev.length === 0 ? 'Pas de données sur la période précédente' : 'Stable';
+                }
+            } else {
+                trendEl.textContent = '—';
+                trendSubEl.textContent = 'Données insuffisantes';
+                if (trendLblEl) trendLblEl.textContent = 'Tendance';
+            }
+        }
 
         const srvAggActive = new Map();
         activeTotals.forEach(d => {
@@ -771,8 +799,18 @@
             document.getElementById('kpi-top-server-sub').innerText = "Aucun monde trouvé";
         }
 
+        // Sietch dominant : calculé sur le serveur le plus peuplé (ou le serveur sélectionné)
+        // pour éviter une moyenne diluée par des serveurs quasi-vides
+        const selectedSrvFilter = document.getElementById('server-filter').value;
+        let topSrvForSietch = selectedSrvFilter !== 'all' ? selectedSrvFilter
+            : activeServerAvgs.length > 0 ? activeServerAvgs[0].name : null;
+        if (selectedSrvFilter === 'all' && currentDrillDowns.length > 0) {
+            const sd = currentDrillDowns.find(d => d.field === 'serveur' && d.type === 'include');
+            if (sd) topSrvForSietch = sd.value;
+        }
+        const sietchBase = topSrvForSietch ? activeBase.filter(d => d.serveur === topSrvForSietch) : activeBase;
         const sietchAggActive = new Map();
-        activeBase.forEach(d => {
+        sietchBase.forEach(d => {
             if (!sietchAggActive.has(d.sietch)) sietchAggActive.set(d.sietch, { sum: 0, count: 0 });
             sietchAggActive.get(d.sietch).sum += d.joueurs;
             sietchAggActive.get(d.sietch).count += 1;
@@ -781,7 +819,10 @@
 
         if (activeSietchAvgs.length) {
             document.getElementById('kpi-top-sietch').innerText = activeSietchAvgs[0].name;
-            document.getElementById('kpi-top-sietch-sub').innerText = `${activeSietchAvgs[0].avg.toFixed(1)} joueurs en moyenne`;
+            const sietchCtx = (topSrvForSietch && selectedSrvFilter === 'all')
+                ? `${topSrvForSietch} · ${activeSietchAvgs[0].avg.toFixed(1)} joueurs en moyenne`
+                : `${activeSietchAvgs[0].avg.toFixed(1)} joueurs en moyenne`;
+            document.getElementById('kpi-top-sietch-sub').innerText = sietchCtx;
         } else {
             document.getElementById('kpi-top-sietch').innerText = "-";
             document.getElementById('kpi-top-sietch-sub').innerText = "Aucun sietch trouvé";
@@ -879,17 +920,16 @@
             let srvDrill = currentDrillDowns.find(d => d.field === 'serveur' && d.type === 'include');
             if(srvDrill) selectedServer = srvDrill.value;
         }
-        let legendName = selectedServer !== 'all' ? `Pop. ${selectedServer} Moyenne` : 'Pop. Mondiale Moyenne';
-
-        const steamDbLayoutMain = {
-            ...pLayout, margin: {l: 50, r: 20, t: 40, b: 10}, hovermode: 'x unified', xaxis: steamDbXaxis,
-            yaxis: { beginAtZero: true, gridcolor: cTheme.grid, zerolinecolor: cTheme.grid, tickfont: {size: 11}, tickformat: 'd' }
-        };
+        const legendName = selectedServer !== 'all' ? `Pop. ${selectedServer} — Moyenne` : 'Pop. Mondiale — Moyenne';
 
         Plotly.newPlot('chart-timeline', [{
             type: 'scatter', mode: 'lines', x: timeSeries.map(d => d.date), y: timeSeries.map(d => d.avg), name: legendName,
-            line: { color: cTheme.primary, shape: 'spline', width: 2 }, fill: 'tozeroy', fillcolor: 'rgba(243, 196, 79, 0.05)', hovertemplate: '<b>%{data.name}</b> : %{y:.0f}<extra></extra>'
-        }], steamDbLayoutMain, {displayModeBar: false});
+            line: { color: cTheme.primary, shape: 'spline', width: 2 }, fill: 'tozeroy', fillcolor: 'rgba(243, 196, 79, 0.05)',
+            hovertemplate: '<b>%{data.name}</b> : %{y:.0f}<extra></extra>'
+        }], {
+            ...pLayout, margin: {l: 50, r: 20, t: 40, b: 10}, hovermode: 'x unified', xaxis: steamDbXaxis,
+            yaxis: { beginAtZero: true, gridcolor: cTheme.grid, zerolinecolor: cTheme.grid, tickfont: {size: 11}, tickformat: 'd' }
+        }, {displayModeBar: false});
 
         if (timeSeries.length > 0) {
             renderZoomButtons('zoom-main', 'chart-timeline', timeSeries[0].ts, timeSeries[timeSeries.length-1].ts);
@@ -951,70 +991,129 @@
 
     function updateMigrationView() {
         const tbody = document.getElementById('migration-table-body');
-        
+
         if (migrationServers.length === 0) {
             Plotly.purge('chart-migration-timeline');
             document.getElementById('zoom-migr').innerHTML = '';
-            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; opacity:0.5; padding: 20px;">Ajoutez des mondes pour générer la comparaison.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; opacity:0.5; padding: 20px;">Ajoutez des mondes pour générer la comparaison.</td></tr>';
             return;
         }
 
-        // On utilise TOUJOURS rawData (toute la base) et non filteredData pour que le comparateur soit indépendant des filtres du haut.
-        // On n'applique que le filtre de l'horizon temporel si on veut que le tableau de migration soit raccord avec "Dernières 24h" par exemple.
-        let migrationData = rawData;
-        const tFilter = document.getElementById('time-filter').value;
-        
-        if (tFilter !== 'all') {
-            const cutoff = new Date(rawData[rawData.length - 1].timestamp.getTime() - (parseInt(tFilter) * 3600000));
-            migrationData = migrationData.filter(d => d.timestamp >= cutoff);
-        }
-        
-        migrationData = migrationData.filter(d => migrationServers.includes(d.serveur));
-
+        const migrationData = rawData.filter(d => migrationServers.includes(d.serveur));
         const traces = [];
-        tbody.innerHTML = '';
-
-        let minGlobalTs = Infinity;
-        let maxGlobalTs = 0;
+        let minGlobalTs = Infinity, maxGlobalTs = 0;
 
         migrationServers.forEach((srv, index) => {
             const srvData = migrationData.filter(d => d.serveur === srv);
-            if(srvData.length === 0) return;
+            if (srvData.length === 0) return;
 
             const srvTotals = getCleanRuns(srvData);
-
             const tsMap = new Map();
             srvTotals.forEach(d => {
                 let t = d.ts.getTime();
                 if (t < minGlobalTs) minGlobalTs = t;
                 if (t > maxGlobalTs) maxGlobalTs = t;
-
                 const tStr = `${d.ts.getFullYear()}-${String(d.ts.getMonth()+1).padStart(2,'0')}-${String(d.ts.getDate()).padStart(2,'0')} ${String(d.ts.getHours()).padStart(2,'0')}:00:00`;
-                if(!tsMap.has(tStr)) tsMap.set(tStr, {sum:0, count:0});
+                if (!tsMap.has(tStr)) tsMap.set(tStr, {sum:0, count:0});
                 tsMap.get(tStr).sum += d.total; tsMap.get(tStr).count += 1;
             });
-
-            const timeSeries = Array.from(tsMap, ([date, a]) => ({ date, avg: a.sum / a.count })).sort((a,b) => a.date.localeCompare(b.date));
+            const timeSeries = Array.from(tsMap, ([date, a]) => ({date, avg: a.sum / a.count})).sort((a,b) => a.date.localeCompare(b.date));
             const rowColor = migrationPalette[index % migrationPalette.length];
-
             traces.push({
                 type: 'scatter', mode: 'lines', x: timeSeries.map(d => d.date), y: timeSeries.map(d => d.avg),
-                name: srv, line: { shape: 'spline', width: 2, color: rowColor }, hovertemplate: '<b>%{data.name}</b> : %{y:.0f} joueurs<extra></extra>'
+                name: srv, line: { shape: 'spline', width: 2, color: rowColor },
+                hovertemplate: '<b>%{data.name}</b> : %{y:.0f} joueurs<extra></extra>'
+            });
+        });
+
+        const steamDbLayoutMigr = {
+            ...pLayout, margin: {l: 50, r: 20, t: 40, b: 10}, hovermode: 'x unified', xaxis: steamDbXaxis,
+            yaxis: { beginAtZero: true, gridcolor: cTheme.grid, zerolinecolor: cTheme.grid, tickfont: {size: 11}, tickformat: 'd' },
+            legend: { orientation: 'h', y: -0.2, font: {color: cTheme.text} }
+        };
+
+        Plotly.newPlot('chart-migration-timeline', traces, steamDbLayoutMigr, {displayModeBar: false});
+
+        if (maxGlobalTs > 0) {
+            renderZoomButtons('zoom-migr', 'chart-migration-timeline', minGlobalTs, maxGlobalTs);
+        }
+
+        // Plotly.newPlot efface les listeners à chaque appel — on réattache systématiquement
+        document.getElementById('chart-migration-timeline').on('plotly_relayout', function(ev) {
+            if (!migrationServers.length) return;
+            clearTimeout(_migrRelayoutTimer);
+            _migrRelayoutTimer = setTimeout(() => {
+                if (ev['xaxis.autorange'] === true) { _renderMigrationTable(null, null); return; }
+                const x0 = ev['xaxis.range[0]'] || (ev['xaxis.range'] && ev['xaxis.range'][0]);
+                const x1 = ev['xaxis.range[1]'] || (ev['xaxis.range'] && ev['xaxis.range'][1]);
+                if (x0 && x1) _renderMigrationTable(new Date(x0), new Date(x1));
+            }, 300);
+        });
+
+        _renderMigrationTable(null, null);
+    }
+
+    function _renderMigrationTable(minTs, maxTs) {
+        const tbody = document.getElementById('migration-table-body');
+        const trendTh = document.getElementById('migr-col-trend');
+        tbody.innerHTML = '';
+        let minGlobal = Infinity, maxGlobal = 0;
+
+        migrationServers.forEach((srv, index) => {
+            let srvData = rawData.filter(d => d.serveur === srv);
+            if (minTs && maxTs) srvData = srvData.filter(d => d.timestamp >= minTs && d.timestamp <= maxTs);
+            if (srvData.length === 0) return;
+
+            const srvTotals = getCleanRuns(srvData);
+            const hourMap = new Map();
+            srvTotals.forEach(d => {
+                let t = d.ts.getTime();
+                if (t < minGlobal) minGlobal = t;
+                if (t > maxGlobal) maxGlobal = t;
+                const h = d.ts.getHours();
+                if (!hourMap.has(h)) hourMap.set(h, {sum:0, count:0});
+                hourMap.get(h).sum += d.total; hourMap.get(h).count += 1;
             });
 
+            const rowColor = migrationPalette[index % migrationPalette.length];
             const totals = srvTotals.map(d => d.total);
             const avg = totals.reduce((a,b)=>a+b,0) / (totals.length || 1);
             const peak = Math.max(...totals, 0);
 
+            let peakHourStr = '—';
+            if (hourMap.size > 0) {
+                const peakH = [...hourMap.entries()].sort((a,b) => (b[1].sum/b[1].count) - (a[1].sum/a[1].count))[0][0];
+                peakHourStr = `${String(peakH).padStart(2,'0')}h–${String((peakH+1)%24).padStart(2,'0')}h`;
+            }
+
+            let trendStr = '—';
+            if (srvTotals.length > 1) {
+                const srvSorted = [...srvTotals].sort((a,b) => a.ts - b.ts);
+                const winStart  = srvSorted[0].ts;
+                const winEnd    = srvSorted[srvSorted.length - 1].ts;
+                const spanMs    = winEnd.getTime() - winStart.getTime();
+                const prevStart = new Date(winStart.getTime() - spanMs);
+                const allSrvRuns = getCleanRuns(rawData.filter(d => d.serveur === srv));
+                const r = allSrvRuns.filter(d => d.ts >= winStart && d.ts <= winEnd);
+                const p = allSrvRuns.filter(d => d.ts >= prevStart && d.ts < winStart);
+                const rAvg = r.length ? r.reduce((s,d)=>s+d.total,0)/r.length : 0;
+                const pAvg = p.length ? p.reduce((s,d)=>s+d.total,0)/p.length : 0;
+                if (pAvg > 0 && r.length > 0) {
+                    const pct   = (rAvg - pAvg) / pAvg * 100;
+                    const sign  = pct > 1 ? '▲' : pct < -1 ? '▼' : '→';
+                    const color = pct > 1 ? 'var(--or-vif)' : pct < -1 ? '#e74c3c' : 'var(--texte-beige)';
+                    trendStr = `<span style="color:${color}">${sign} ${pct > 0 ? '+' : ''}${pct.toFixed(0)}%</span>`;
+                }
+            }
+
             const sietchMap = new Map();
             srvData.forEach(d => {
-                if(!sietchMap.has(d.sietch)) sietchMap.set(d.sietch, {sum:0, count:0});
+                if (!sietchMap.has(d.sietch)) sietchMap.set(d.sietch, {sum:0, count:0});
                 sietchMap.get(d.sietch).sum += d.joueurs; sietchMap.get(d.sietch).count += 1;
             });
-
             const sietches = Array.from(sietchMap, ([name, a]) => ({ name, avg: a.sum / a.count })).sort((a,b) => b.avg - a.avg);
             const topSietch = sietches.length > 0 ? `${sietches[0].name} (${sietches[0].avg.toFixed(1)} moy.)` : '-';
-            
+
             let sietchDetailsHtml = '<div style="padding: 15px 20px; background: rgba(0,0,0,0.3); border-radius: 4px; margin: 10px 0;">';
             sietchDetailsHtml += `<div style="font-family:'Cinzel', serif; color:var(--or-base); margin-bottom:6px; font-size:12px; font-weight:bold;">Répartition par Sietch sur ${srv} (Moyenne d'affluence)</div>`;
             sietchDetailsHtml += `<div style="font-size:11px; color:var(--texte-beige); opacity:0.6; margin-bottom:12px; font-style:italic;">→ Survolez un sietch pour afficher son évolution temporelle</div>`;
@@ -1030,7 +1129,7 @@
                          onmouseleave='hideSietchTooltip(300)'>
                         <div style="width: 140px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; opacity: 0.9;">${s.name}</div>
                         <div style="flex-grow: 1; height: 8px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden; margin: 0 10px;"><div style="width: ${pct}%; height: 100%; background: ${rowColor};"></div></div>
-                        <div style="width: 30px; text-align: right; font-family: 'Fira Code', monospace; color: var(--or-vif);">${s.avg.toFixed(1)}</div>
+                        <div style="width: 40px; text-align: right; font-family: 'Fira Code', monospace; color: var(--or-vif);">${s.avg.toFixed(1)}</div>
                     </div>
                 `;
             });
@@ -1039,22 +1138,20 @@
             tbody.innerHTML += `
                 <tr style="cursor: pointer; transition: background 0.2s;" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'table-row' : 'none'" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">
                     <td style="font-weight: bold; color: ${rowColor};"><span style="display:inline-block; width:12px; font-size:10px; opacity:0.6;">▼</span> ${srv}</td>
-                    <td>${avg.toFixed(1)}</td><td style="font-family: 'Fira Code', monospace; color: var(--or-vif);">${peak}</td><td style="opacity: 0.8;">${topSietch}</td>
+                    <td>${avg.toFixed(1)}</td>
+                    <td style="font-family: 'Fira Code', monospace; color: var(--or-vif);">${peak}</td>
+                    <td style="opacity: 0.8;">${peakHourStr}</td>
+                    <td>${trendStr}</td>
+                    <td style="opacity: 0.8;">${topSietch}</td>
                 </tr>
-                <tr style="display: none;"><td colspan="4" style="padding: 0; border: none;">${sietchDetailsHtml}</td></tr>
+                <tr style="display: none;"><td colspan="6" style="padding: 0; border: none;">${sietchDetailsHtml}</td></tr>
             `;
         });
 
-        const steamDbLayoutMigr = {
-            ...pLayout, margin: {l: 50, r: 20, t: 40, b: 10}, hovermode: 'x unified', xaxis: steamDbXaxis,
-            yaxis: { beginAtZero: true, gridcolor: cTheme.grid, zerolinecolor: cTheme.grid, tickfont: {size: 11}, tickformat: 'd' },
-            legend: { orientation: 'h', y: -0.2, font: {color: cTheme.text} }
-        };
-
-        Plotly.newPlot('chart-migration-timeline', traces, steamDbLayoutMigr, {displayModeBar: false});
-
-        if (maxGlobalTs > 0) {
-             renderZoomButtons('zoom-migr', 'chart-migration-timeline', minGlobalTs, maxGlobalTs);
+        if (trendTh && maxGlobal > 0) {
+            const spanH = (maxGlobal - minGlobal) / 3600000;
+            const lbl = spanH < 36 ? `${Math.round(spanH)}h` : `${Math.round(spanH / 24)}j`;
+            trendTh.textContent = `Tendance (${lbl})`;
         }
     }
 
@@ -1090,24 +1187,16 @@
         tooltip.style.top = top + 'px';
         tooltip.style.display = 'block';
 
-        // Données
-        let migData = rawData;
-        const tFilter = document.getElementById('time-filter').value;
-        if (tFilter !== 'all') {
-            const cutoff = new Date(rawData[rawData.length - 1].timestamp.getTime() - (parseInt(tFilter) * 3600000));
-            migData = migData.filter(d => d.timestamp >= cutoff);
-        }
-        const sietchData = migData.filter(d => d.serveur === srv && d.sietch === sietch);
+        const sietchData = rawData.filter(d => d.serveur === srv && d.sietch === sietch);
         if (!sietchData.length) return;
 
         const tsMap = new Map();
         sietchData.forEach(d => {
             const tStr = `${d.timestamp.getFullYear()}-${String(d.timestamp.getMonth()+1).padStart(2,'0')}-${String(d.timestamp.getDate()).padStart(2,'0')} ${String(d.timestamp.getHours()).padStart(2,'0')}:00:00`;
             if (!tsMap.has(tStr)) tsMap.set(tStr, { sum: 0, count: 0 });
-            tsMap.get(tStr).sum += d.joueurs;
-            tsMap.get(tStr).count += 1;
+            tsMap.get(tStr).sum += d.joueurs; tsMap.get(tStr).count += 1;
         });
-        const timeSeries = Array.from(tsMap, ([date, a]) => ({ date, avg: a.sum / a.count })).sort((a, b) => a.date.localeCompare(b.date));
+        const tooltipPts = Array.from(tsMap, ([date, a]) => ({ date, y: a.sum / a.count })).sort((a, b) => a.date.localeCompare(b.date));
 
         // Lire la plage visible actuelle du graphe migration directement
         const migrEl = document.getElementById('chart-migration-timeline');
@@ -1123,7 +1212,7 @@
 
         Plotly.newPlot('chart-sietch-tooltip', [{
             type: 'scatter', mode: 'lines',
-            x: timeSeries.map(d => d.date), y: timeSeries.map(d => d.avg),
+            x: tooltipPts.map(d => d.date), y: tooltipPts.map(d => d.y),
             name: sietch,
             line: { color: srvColor, shape: 'spline', width: 2 },
             fill: 'tozeroy', fillcolor: srvColor + '18',

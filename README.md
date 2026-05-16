@@ -106,11 +106,13 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 - La tuile est masquée sur le menu pour les membres non autorisés
 - Le flag est persisté dans `settings.json` (doit être en `664` sur le serveur)
 - Chargement automatique du fichier `dune_counts.csv` (ou import manuel par glisser-déposer)
-- KPIs : monde le plus peuplé, pic d'affluence, sietch dominant, volume de données
+- **Disclaimer** : bandeau précisant que les données proviennent de Gaming Tools et couvrent uniquement les joueurs présents dans Hagga Basin (hors Deep Desert)
+- KPIs : monde le plus peuplé, pic d'affluence, sietch dominant, **tendance** (évolution sur la fenêtre courante vs la même durée précédente, label dynamique)
 - **Courbe de population mondiale** avec rangeslider et boutons de zoom (12h → Max)
 - **Matrice d'activité** (heatmap heures de pointe par jour), **Top 15 Mondes** et **Top 15 Sietches** se mettent à jour automatiquement selon la fenêtre temporelle visible sur la courbe (rangeslider inclus)
-- Filtres globaux : monde cible, période d'analyse ; drill-down clic/Ctrl+Clic sur les barres
-- **Comparateur de migrations** : ajoutez plusieurs mondes pour comparer leurs courbes ; tableau de synthèse avec répartition par sietch et tooltip d'évolution au survol
+- Filtre global : monde cible ; drill-down clic/Ctrl+Clic sur les barres
+- **Sietch dominant** : calculé sur le serveur le plus peuplé de la fenêtre active (ou le serveur sélectionné), pour éviter une moyenne diluée par des mondes quasi-vides
+- **Comparateur de Serveurs et Sietches** : ajoutez plusieurs mondes pour comparer leurs courbes ; tableau de synthèse avec pop. moyenne, pic, heure de pointe, tendance et sietch dominant par serveur — les stats et tendances se recalculent automatiquement selon la fenêtre de zoom du graphe de comparaison ; répartition par sietch dépliable avec tooltip d'évolution temporelle au survol
 
 ---
 

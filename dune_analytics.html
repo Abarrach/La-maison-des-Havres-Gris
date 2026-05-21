@@ -452,14 +452,62 @@
         }
     };
 
+    // Archive lazy-load — transparente pour l'utilisateur
+    let archiveLoaded = false;
+    let pendingZoomHours = null; // zoom à appliquer après rechargement des charts
+
     document.addEventListener('DOMContentLoaded', function() {
-        const csvUrl = 'dune_counts.csv'; 
-        Papa.parse(csvUrl, {
+        Papa.parse('dune_counts.csv', {
             download: true, header: false, delimiter: ";", skipEmptyLines: true,
             complete: function(res) { processRawData(res.data); },
             error: function(err) { showManualImportZone(err.message); }
         });
     });
+
+    // Charge et fusionne dune_counts_archive.csv dans rawData si pas encore fait
+    function ensureArchiveLoaded() {
+        if (archiveLoaded) return Promise.resolve();
+        return new Promise(resolve => {
+            Papa.parse('dune_counts_archive.csv', {
+                download: true, header: false, delimiter: ";", skipEmptyLines: true,
+                complete: function(res) {
+                    const startIdx = (res.data.length > 0 && String(res.data[0][0]).toLowerCase().includes('time')) ? 1 : 0;
+                    const seen = new Set(rawData.map(d => d.timestamp.getTime() + '|' + d.serveur + '|' + d.sietch));
+                    const archRows = [];
+                    for (let i = startIdx; i < res.data.length; i++) {
+                        const row = res.data[i];
+                        if (row.length < 4 || !row[1]) continue;
+                        const srv = String(row[1]).trim();
+                        const d = new Date(row[0]);
+                        if (isNaN(d)) continue;
+                        const sietch = String(row[2]).trim().replace(/^Sietch\s+/i, '');
+                        if (sietch.toLowerCase().includes('players status')) continue;
+                        const key = d.getTime() + '|' + srv + '|' + sietch;
+                        if (seen.has(key)) continue;
+                        seen.add(key);
+                        archRows.push({ timestamp: d, serveur: srv, sietch, joueurs: parseInt(row[3], 10) || 0 });
+                    }
+                    if (archRows.length > 0) {
+                        rawData = [...archRows, ...rawData];
+                        rawData.sort((a, b) => a.timestamp - b.timestamp);
+                        // Mettre à jour la liste des serveurs dans les selects
+                        const uniqueServers = [...new Set(rawData.map(d => d.serveur))].sort();
+                        const srvSelect = document.getElementById('server-filter');
+                        const migSelect = document.getElementById('migration-select');
+                        while (srvSelect.options.length > 1) srvSelect.remove(1);
+                        migSelect.innerHTML = '<option value="" disabled selected>Sélectionnez un monde à évaluer...</option>';
+                        uniqueServers.forEach(srv => {
+                            srvSelect.add(new Option(srv, srv));
+                            migSelect.add(new Option(srv, srv));
+                        });
+                    }
+                    archiveLoaded = true;
+                    resolve();
+                },
+                error: function() { archiveLoaded = true; resolve(); } // archive absente : pas bloquant
+            });
+        });
+    }
 
     function showManualImportZone(errorMsg) {
         document.getElementById('loading').style.display = 'none';
@@ -487,15 +535,27 @@
         });
     }
 
+    // Serveurs parasites connus (outils tiers capturés par l'API gaming.tools)
+    const SERVEURS_EXCLUS = new Set(['awoo.tools']);
+
     function processRawData(data) {
         rawData = [];
+        const seen = new Set();
         let startIdx = (data.length > 0 && String(data[0][0]).toLowerCase().includes('time')) ? 1 : 0;
         for (let i = startIdx; i < data.length; i++) {
             const row = data[i];
             if (row.length >= 4 && row[1]) {
+                const srv = String(row[1]).trim();
+                if (SERVEURS_EXCLUS.has(srv)) continue;
                 let d = new Date(row[0]);
                 if (!isNaN(d)) {
-                    rawData.push({ timestamp: d, serveur: String(row[1]).trim(), sietch: String(row[2]).trim().replace('Sietch ', ''), joueurs: parseInt(row[3], 10) || 0 });
+                    const sietch = String(row[2]).trim().replace(/^Sietch\s+/i, '');
+                    // Filtrer les lignes UI parasites gaming.tools ("Players Status Sietch Abbir", etc.)
+                    if (sietch.toLowerCase().includes('players status')) continue;
+                    const dedupeKey = d.getTime() + '|' + srv + '|' + sietch;
+                    if (seen.has(dedupeKey)) continue;
+                    seen.add(dedupeKey);
+                    rawData.push({ timestamp: d, serveur: srv, sietch, joueurs: parseInt(row[3], 10) || 0 });
                 }
             }
         }
@@ -677,16 +737,55 @@
             btn.innerText = b.label;
             
             if (b.id !== '12h' && b.id !== 'max' && b.hours > spanH) {
-                btn.classList.add('disabled');
-                btn.disabled = true;
+                if (!archiveLoaded) {
+                    // Archive pas encore chargée : laisser cliquable, le clic la chargera
+                    btn.title = 'Chargera les données archivées';
+                    btn.onclick = () => applyZoom(chartId, b.hours, btn, maxTs);
+                } else {
+                    // Archive chargée et données insuffisantes : désactiver
+                    btn.classList.add('disabled');
+                    btn.disabled = true;
+                }
             } else {
                 btn.onclick = () => applyZoom(chartId, b.hours, btn, maxTs);
             }
             container.appendChild(btn);
         });
         
-        let maxBtn = container.querySelector('button:last-child');
-        if (maxBtn) maxBtn.classList.add('active');
+        if (pendingZoomHours !== null) {
+            // Un zoom était en attente du chargement de l'archive : on l'applique maintenant
+            const h = pendingZoomHours;
+            pendingZoomHours = null;
+            // Chercher le bouton correspondant — seulement s'il est enabled (données suffisantes)
+            let zoomOk = false;
+            container.querySelectorAll('.zoom-btn').forEach((btn, i) => {
+                if (i < buttons.length && buttons[i].hours === h && !btn.disabled) {
+                    btn.classList.add('active');
+                    zoomOk = true;
+                }
+            });
+            if (zoomOk) {
+                setTimeout(() => _doZoom(chartId, h, maxTs), 150);
+            } else {
+                // Données insuffisantes après chargement archive : revenir à Max
+                let maxBtn = container.querySelector('button:last-child');
+                if (maxBtn) maxBtn.classList.add('active');
+            }
+        } else {
+            let maxBtn = container.querySelector('button:last-child');
+            if (maxBtn) maxBtn.classList.add('active');
+        }
+    }
+
+    function _doZoom(chartId, hours, maxTsValue) {
+        if (hours === 'max') {
+            Plotly.relayout(chartId, {'xaxis.autorange': true});
+        } else {
+            let maxDate = new Date(maxTsValue);
+            let minDate = new Date(maxDate.getTime() - (hours * 3600000));
+            let fmt = d => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0') + ':00';
+            Plotly.relayout(chartId, {'xaxis.range': [fmt(minDate), fmt(maxDate)]});
+        }
     }
 
     function applyZoom(chartId, hours, btnEl, maxTsValue) {
@@ -694,17 +793,23 @@
         parent.querySelectorAll('.zoom-btn').forEach(b => b.classList.remove('active'));
         btnEl.classList.add('active');
 
-        if (hours === 'max') {
-            Plotly.relayout(chartId, {'xaxis.autorange': true});
-        } else {
-            let maxDate = new Date(maxTsValue);
-            let minDate = new Date(maxDate.getTime() - (hours * 3600000));
-            
-            let minStr = minDate.getFullYear() + '-' + String(minDate.getMonth()+1).padStart(2,'0') + '-' + String(minDate.getDate()).padStart(2,'0') + ' ' + String(minDate.getHours()).padStart(2,'0') + ':' + String(minDate.getMinutes()).padStart(2,'0') + ':00';
-            let maxStr = maxDate.getFullYear() + '-' + String(maxDate.getMonth()+1).padStart(2,'0') + '-' + String(maxDate.getDate()).padStart(2,'0') + ' ' + String(maxDate.getHours()).padStart(2,'0') + ':' + String(maxDate.getMinutes()).padStart(2,'0') + ':00';
-
-            Plotly.relayout(chartId, {'xaxis.range': [minStr, maxStr]});
+        // Si la période demandée dépasse 30j et que l'archive n'est pas encore chargée,
+        // on la charge de façon transparente avant d'appliquer le zoom.
+        const needsArchive = !archiveLoaded && (hours === 'max' || hours > 720);
+        if (needsArchive) {
+            const origLabel = btnEl.innerText;
+            btnEl.innerText = '⏳';
+            btnEl.disabled = true;
+            pendingZoomHours = hours;
+            ensureArchiveLoaded().then(() => {
+                btnEl.innerText = origLabel;
+                btnEl.disabled = false;
+                applyGlobalFilters(); // rerender charts — renderZoomButtons consommera pendingZoomHours
+            });
+            return;
         }
+
+        _doZoom(chartId, hours, maxTsValue);
     }
 
     function getCleanRuns(data) {

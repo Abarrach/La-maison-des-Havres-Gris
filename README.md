@@ -113,6 +113,125 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 - Filtre global : monde cible ; drill-down clic/Ctrl+Clic sur les barres
 - **Sietch dominant** : calculé sur le serveur le plus peuplé de la fenêtre active (ou le serveur sélectionné), pour éviter une moyenne diluée par des mondes quasi-vides
 - **Comparateur de Serveurs et Sietches** : ajoutez plusieurs mondes pour comparer leurs courbes ; tableau de synthèse avec pop. moyenne, pic, heure de pointe, tendance et sietch dominant par serveur — les stats et tendances se recalculent automatiquement selon la fenêtre de zoom du graphe de comparaison ; répartition par sietch dépliable avec tooltip d'évolution temporelle au survol
+- **Chargement d'archive transparent** : les boutons de zoom > 1 mois (1m, 3m, 6m, 1y) déclenchent automatiquement le chargement de `dune_counts_archive.csv` si non encore chargé — fusion et déduplication en mémoire, sans action manuelle ; si les données archivées restent insuffisantes pour la période demandée, retour automatique à la vue Max
+
+### Collecte de données (`dune_logger_all.py`)
+
+Script Python/Playwright tournant en cron toutes les heures sur le serveur. Scrape [gaming.tools/server-status](https://dune.gaming.tools/server-status) et alimente `dune_counts.csv`.
+
+- **Whitelist des 87 serveurs officiels Hagga Basin** : seuls les serveurs officiels Funcom sont collectés (les serveurs privés apparus post-maj sont ignorés)
+- Extraction DOM via Playwright : clic JS ciblé sur les serveurs officiels uniquement (évite le freeze de 30s causé par les 140+ serveurs privés)
+- Correspondance nom DOM → nom canonique par sous-chaîne (gère les suffixes de région ex. `"Actaeon Europe Paris"` → `"Actaeon"`)
+- Normalisation des espaces avant le regex pour éviter les décalages d'index avec `innerText` brut
+- Filtrage des entrées parasites (`"Players Status"`) issues du DOM de gaming.tools
+- Format CSV : `timestamp;serveur;sietch;joueurs` (séparateur `;`, encodage UTF-8)
+- Cron suggéré : `0 * * * *` (toutes les heures)
+
+### Archivage des données (`dune_archiver.py`)
+
+Script Python d'archivage hebdomadaire. Maintient `dune_counts.csv` dans une fenêtre glissante de 30 jours.
+
+- Lit `dune_counts.csv`, sépare les données récentes (< 30 jours) des anciennes
+- Agrège les anciennes en **moyennes journalières** par `(jour, serveur, sietch)` avec timestamp `T12:00:00Z`
+- Ajoute les lignes agrégées dans `dune_counts_archive.csv` (append, crée le fichier si absent)
+- Réécrit `dune_counts.csv` avec uniquement les données récentes
+- Cron suggéré : `0 3 * * 1` (tous les lundis à 3h)
+
+---
+
+### Constructeur de Base (`base_planner.html`)
+
+> [!WARNING]
+> **Feature en cours de développement.** Sessions 0–2 livrées (pipeline de données + socle 3D + géométries sémantiques). Sessions 3–6 à venir. Pas encore liée depuis `menu.html` (sera ajoutée en session 6).
+
+Outil de planification 3D pour Dune Awakening. Permet aux membres de la guilde de poser virtuellement les pièces de construction du jeu sur une grille de claim avant de bâtir in-game.
+
+#### Choix techniques fondateurs
+- **3D abstraite avec Three.js r170** (via importmap ES module + OrbitControls). Pas de modèles in-game importés ; chaque pièce est représentée par une primitive (pavé, prisme triangulaire, rampe inclinée, marches…). Le rendu 3D est intentionnellement schématique pour rester lisible comme un blueprint.
+- **Double caméra** : orthographique top-down (vue plan, équivalent 2D) ↔ perspective orbit (vue 3D inclinée). Bascule par bouton ou touche `V`. C'est le pari ergonomique central : le plan reste l'outil de travail, la 3D sert à vérifier que ça tient debout.
+- **Modèle de données sémantique** : chaque pièce porte `placement_rules` indiquant `snap_target` (cell / edge / corner), `rotation_mode`, `footprint_shape`, `vertical_offset_pct`, `ignore_groups`. Le moteur de placement dispatche selon ces règles — pas de cas particuliers en dur.
+
+#### Pipeline de données
+
+La donnée est dérivée des exports **FModel** du jeu (extraction des .uasset Unreal Engine) :
+
+```
+J:\Download\Fmodel\...\DT_BuildingData_*.json         (1 par faction, 645 pièces au total)
+J:\Download\Fmodel\...\DT_BuildableGroupData_Building.json   (92 groupes, règles de snap)
+J:\Download\files2\base_pieces_data.json              (catalogue curé Claude — précédent)
+                              ↓
+                  tools/build_enriched_pieces.js      (script Node, ~250 lignes)
+                              ↓
+                  base_pieces_v2.json                 (1 MB, source unique du planner)
+```
+
+Le script `tools/build_enriched_pieces.js` joint les trois sources, **corrige le `group` autoritaire** depuis le DT (à l'audit : 0 correction nécessaire, le curé était fidèle), et ajoute `placement_rules` à chaque pièce. Idempotent : peut être rejoué après chaque ré-extraction FModel post-patch du jeu.
+
+Stats à l'enrichissement : 645/645 matchées, 334 cellules / 302 arêtes / 9 coins, 583 carrés / 43 triangles isocèles / 19 triangles équilatéraux.
+
+#### État au moment de la pause de cette branche
+
+**Sessions livrées :**
+
+| Session | Contenu |
+|---|---|
+| 0 | Pipeline d'enrichissement (`tools/build_enriched_pieces.js`), génération `base_pieces_v2.json` |
+| 1 | Socle Three.js : scène, caméras ortho/perspective, grille de claim 10×10, drag & drop palette → canvas, sélection / suppression, rotation, raycaster, bascule ortho ↔ 3D, HUD coords/zoom |
+| 2 | Géométries sémantiques (prismes triangulaires pour wedges/round-corners, rampes inclinées, escaliers en marches, panneaux verticaux fins pour murs), snap par catégorie (cellule/arête/coin), Y-base correct par catégorie (sol aligné sur top de fondation), hover indicator visuel, ghost rouge si conflit `ignore_groups` |
+| 2.5 | **Correctifs placement vertical** : (1) Auto-stack murs — `findBestPlacementFloor` cherche le premier étage libre à partir du courant, le ghost et le drop utilisent l'étage résolu (plus de superposition, empilement automatique vers le haut) ; (2) Coexistence sol + toit — `sameVerticalSpace` permet de poser un toit (`roofs`) sur une cellule occupée par un sol/fondation (Y différents, pas de conflit réel) ; (3) Bug `placeMeshAt` — utilise désormais `item.z` au lieu de `state.currentFloor`, évitant une mauvaise hauteur lors d'une rotation sur un étage non-courant. |
+| 3 | **Système de claim complet** : Boundary XZ (impossible de construire hors du fief) + limites verticales strictes (etages min/max selon les pieux) + gestion interactive des blocs de claim (clic + dans la viz du panneau droit pour ajouter, × pour retirer avec validation de connectivité BFS) + pieux verticaux cliquables (5 pips : clic pour activer/désactiver) + onglets d'étage générés dynamiquement selon la plage [getMinFloor()..getMaxFloor()] + `ensureFloors()` garantit l'existence de tous les étages de la plage. Règles respectées : 1 bloc principal + 5 extensions horizontales adjacentes max, shape libre (L/T/2×3/ligne), 5 pieux verticaux max appliqués à toute la surface, +7 niveaux/+5 sous-sol par pieu. |
+
+**Sessions à venir :**
+
+| Session | Contenu prévu |
+|---|---|
+| 4 | **Multi-étages lisibles** : opacité par étage (étages inférieurs translucides à 30 %, supérieurs cachés), overlay doré de l'étage N-1 pour caler les murs, badge compteur sur chaque onglet, indicateur HUD de l'étage résolu quand l'auto-stack dépose sur un étage différent du courant |
+| 5 | Rotation intelligente (cycler N→E→S→W, bloquer les symétriques), géométrie courbe `Wall_Round_Corner`, undo/redo (Ctrl+Z/Y, stack 20 ops), sidebar alignée sur les sous-catégories in-game (`DT_DuneBuildableUiSubcategory.json`) |
+| 6 | Toits inclinés, placeables (469 objets) avec règles de contact depuis `DT_PlaceablePlacementGroups.json`, sélection multiple, copier-coller un étage |
+| 7 | Sauvegarde PHP : `base_planner_api.php` (CRUD plans), modale « Mes plans » fonctionnelle, système de partage avec `share_token` public, intégration de la tuile dans `menu.html` |
+
+#### Conventions techniques (à garder en tête pour la suite)
+- 1 cellule = 1 unité monde Three.js (CELL = 1)
+- Axe Y = vers le haut (convention Three.js par défaut)
+- 1 mur plein = 1 unité de hauteur (`WALL_UNIT = 1`)
+- 1 bloc de claim = 10×10 cellules (`BLOCK_CELLS = 10`)
+- **Surface de marche au niveau Z** = `FOUNDATION_DEPTH + Z * WALL_UNIT` (= 0.5 + Z)
+- **Fondation au niveau Z** : pavé épais, TOP à la surface du niveau, BOTTOM 0.5 unité en-dessous
+- **Sol au niveau Z** : slab fin (15 cm), TOP à la surface du niveau (aligné avec une fondation adjacente — réponse au feedback utilisateur)
+- **Toit au niveau Z** : slab fin, TOP à la surface du niveau Z+1
+- **Mur / pilier / escalier / porte** : posés sur la surface, montent de 1 unité (ou 0.5 pour les demis)
+- Représentation des arêtes (`snap_target: 'edge'`) : `{ x, y, axis: 'h' | 'v' }` (forme canonique, pas de duplication entre cellules voisines)
+- Représentation des coins (`snap_target: 'corner'`) : `{ x, y }` aux intersections de grille (entiers)
+
+#### Fichiers de la feature
+
+```
+base_planner.html              # Layout + importmap Three.js + modales (~1600 lignes)
+base_planner.js                # Logique 3D complète (~900 lignes après session 2)
+base_pieces_v2.json            # Catalogue enrichi (645 pièces, 1 MB)
+base_planner_v1.bak.html       # Backup Konva (à supprimer après validation longue)
+base_planner_v1.bak.js         # Backup Konva (idem)
+tools/
+  └── build_enriched_pieces.js # Script Node de génération du JSON v2 (idempotent)
+```
+
+#### Nouveaux fichiers FModel disponibles (récupérés post-session 2)
+
+| Fichier | Utilité pour le planner |
+|---|---|
+| `DT_DuneBuildableUiSubcategory.json` | **Prioritaire session 3** — contient les sous-catégories UI exactes du jeu (Foundations, Walls, Triangle_Walls, Roofs, Ramps, Stairs, Decorative, Railings, Floors, Lighting, Furniture, Banners, Misc, Fabricators…). Permet d'aligner la sidebar du planner sur l'interface in-game. |
+| `DT_PlaceablePlacementGroups.json` | **Prioritaire session 5** — groupes de placement des placeables (Chair, Table, Vases, Carpets, Shelves, WallShelves, SmallDecorations…) avec `m_ValidContactGroups`. Alimente directement la logique de snap des placeables sur les meubles/sols. |
+| `DT_DuneSocketSetupData.json` | Session 3 optionnelle — configurations de sockets (Empty, Angled…). Utile si on veut implémenter les connexions précises entre pièces. |
+| `DT_DuneSocketCostsData.json` | Session future — coûts par type de socket (Foundation_Edge: 100, Sideways/Up/Down: 10). Base d'un futur calculateur de coût de construction. |
+| `DT_BuildableStabilizationGroupData.json` | Info sur les temps de stabilisation (NoGroup/Shelter/Outpost). Pas utilisable en 3D planner, peut alimenter une doc ou tooltip si besoin. |
+| `CDT_BuildableGroupData.json`, `CDT_BuildingData.json`, `CDT_PlaceableData.json` | Formats CDT (compiled data tables UE). À examiner — probablement redondant avec les DT_ déjà intégrés, mais peuvent contenir des données supplémentaires. À analyser lors du prochain passage sur le pipeline. |
+
+#### Reprise dans une nouvelle session — checklist
+1. Relancer le pipeline si FModel a été ré-extrait : `cd tools && node build_enriched_pieces.js`
+2. Vérifier que `base_pieces_v2.json` est bien déployé sur le serveur (1 MB)
+3. Le HTML porte des inline scripts pour les modales (save/plans/share) — fonctionnels visuellement mais l'appel API n'existe pas encore (prévu session 6)
+4. Les `placement_rules.ignore_groups` sont exploitées (matrice de compatibilité opérationnelle), mais `vertical_offset_pct` ne l'est pas encore — affinement possible si besoin
+5. Trois.js et OrbitControls sont chargés via importmap depuis `unpkg.com` — vérifier que le serveur autorise les imports CORS depuis ce CDN si déploiement en production HTTPS
 
 ---
 
@@ -142,8 +261,9 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 
 | Couche | Technologies |
 |--------|-------------|
-| Frontend | HTML5, CSS3, JavaScript (ES6+), Leaflet.js |
+| Frontend | HTML5, CSS3, JavaScript (ES6+ modules), Leaflet.js, Three.js r170 (Base Planner) |
 | Backend | PHP 7+, API REST, stockage JSON |
+| Outillage | Node.js (scripts de génération de données, ex. enrichissement FModel → JSON) |
 | Style | CSS personnalisé, Tailwind CSS (actualités) |
 | Médias | Images haute résolution, icônes PNG |
 
@@ -165,11 +285,13 @@ DuneMap/
 ├── dune_chronologie.html # Chronologie de l'univers
 ├── news.html             # Actualités du jeu
 ├── register.html         # Création de compte (design deux colonnes : formulaire + présentation guilde)
+├── base_planner.html     # Constructeur de Base 3D (Three.js) — en dév (sessions 0-2 livrées, 3-6 à faire)
 │
 ├── script.js             # Logique cartographique (Leaflet, marqueurs, Désert Profond)
 ├── skills.js             # Simulateur de talents + commandes de craft
 ├── planner.js            # Planificateur d'événements
 ├── migration.js          # Logique de migration (validation, refus, Discord)
+├── base_planner.js       # Logique 3D du Constructeur de Base (Three.js, ~900 lignes)
 ├── auth-guard.js         # Protection des pages (redirection login si non connecté)
 │
 ├── save.php              # API principale (bases, utilisateurs, craft, commandes)
@@ -180,12 +302,21 @@ DuneMap/
 ├── dd_map_update.php     # Composition de deep_desert.jpg depuis les tuiles CDN gaming.tools
 ├── dd_proxy.php          # Proxy serveur vers l'API acteurs de gaming.tools (champs d'épice)
 │
+# Collecte & archivage (sur le serveur, hors DuneMap/)
+# /home/dune/dune_logger_all.py   # Scrape gaming.tools toutes les heures → /srv/dune-map/dune_counts.csv
+# /home/dune/dune_archiver.py     # Archive hebdomadaire : fenêtre 30j + moyennes journalières
+│
 ├── bases.json            # Bases des territoires
 ├── requetes.json         # Demandes de craft
 ├── profiles_data.json    # Profils joueurs (avatar, Discord)
 ├── landsraad_data.json   # Quêtes disponibles
 ├── metiers.json          # Définitions des talents
+├── base_pieces_v2.json   # Catalogue enrichi des pièces du Constructeur de Base (645 pièces, 1 MB)
+├── base_placeables_data.json  # Catalogue des placeables Dune Awakening (469 objets)
 ├── last_wipe.txt         # Horodatage du dernier wipe hebdomadaire du Désert Profond
+│
+├── tools/                # Scripts d'outillage (génération de données, Node.js)
+│   └── build_enriched_pieces.js  # Génère base_pieces_v2.json à partir des exports FModel
 │
 ├── avatars/              # Avatars presets + uploads joueurs (préfixe u_pseudo_)
 ├── uploads/              # Images des demandes de craft
@@ -219,6 +350,13 @@ chmod 775 avatars/ uploads/
 
 > [!IMPORTANT]
 > `settings.json` doit être en `664` pour que PHP puisse y écrire (toggle accès analytiques). Si l'erreur `write_error` apparaît lors du basculement du toggle, corriger avec `chmod 664 settings.json`.
+
+> [!IMPORTANT]
+> `dune_counts.csv` et `dune_counts_archive.csv` sont dans `/srv/dune-map/` (propriétaire `dune`, groupe `www-data`, droits `664`). Le logger et l'archiver tournent sous l'utilisateur `dune` ; nginx/php-fpm sous `www-data` peut lire les fichiers. Crons à configurer dans `crontab -e` (utilisateur `dune`) :
+> ```
+> 0 * * * *  /home/dune/.venvs/dune_logger_env/bin/python /home/dune/dune_logger_all.py >> /home/dune/data/dune_logger_cron.log 2>&1
+> 0 3 * * 1  /home/dune/.venvs/dune_logger_env/bin/python /home/dune/dune_archiver.py >> /home/dune/data/archiver.log 2>&1
+> ```
 
 Accéder ensuite à `index.html` via le navigateur.
 

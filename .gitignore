@@ -2,3 +2,6 @@ users_SECURE_9x.json
 requetes.json
 bases.json
 migration_data.json
+
+# État local Claude Code (worktrees, settings personnels)
+.claude/

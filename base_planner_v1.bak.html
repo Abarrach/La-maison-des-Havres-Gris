@@ -1,0 +1,1596 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Constructeur de Base — Havres Gris</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/konva@9/konva.min.js"></script>
+  <style>
+    /* === LAYOUT GLOBAL === */
+    body {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      margin: 0;
+    }
+    header {
+      position: relative;
+      flex-shrink: 0;
+      z-index: 100;
+    }
+
+    .bp-layout {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      min-height: 0;
+    }
+
+    /* === SIDEBAR PALETTE (gauche) === */
+    .bp-sidebar {
+      width: 272px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      background: rgba(12, 7, 3, 0.98);
+      border-right: 1px solid #3d2b16;
+      overflow: hidden;
+    }
+
+    /* Onglets Pièces / Placeables */
+    .bp-tabs {
+      display: flex;
+      flex-shrink: 0;
+      border-bottom: 1px solid #3d2b16;
+    }
+    .bp-tab {
+      flex: 1;
+      padding: 9px 4px;
+      font-size: 10px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      text-align: center;
+      cursor: pointer;
+      color: #5c4025;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .bp-tab:hover { color: #d3b46f; }
+    .bp-tab.active { color: #cda434; border-bottom: 2px solid #cda434; }
+
+    /* Barre de recherche */
+    .bp-search {
+      padding: 7px 8px;
+      flex-shrink: 0;
+      border-bottom: 1px solid #2a1d0e;
+    }
+    .bp-search input {
+      width: 100%;
+      background: #16100a;
+      border: 1px solid #3d2b16;
+      color: #f5deb3;
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .bp-search input:focus { outline: none; border-color: #cda434; }
+    .bp-search input::placeholder { color: #3d2b16; }
+
+    /* Filtres faction */
+    .bp-faction-filters {
+      padding: 6px 8px;
+      flex-shrink: 0;
+      border-bottom: 1px solid #2a1d0e;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .bp-faction-pill {
+      padding: 2px 7px;
+      font-size: 9px;
+      border-radius: 10px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s;
+      white-space: nowrap;
+      font-family: 'Segoe UI', sans-serif;
+      font-weight: bold;
+      opacity: 0.75;
+    }
+    .bp-faction-pill:hover { opacity: 1; filter: brightness(1.2); }
+    .bp-faction-pill.active { opacity: 1; border-color: rgba(255,255,255,0.5); filter: brightness(1.15); }
+
+    /* Filtre catégorie */
+    .bp-category-filter {
+      padding: 5px 8px;
+      flex-shrink: 0;
+      border-bottom: 1px solid #2a1d0e;
+    }
+    .bp-category-filter select {
+      width: 100%;
+      background: #16100a;
+      border: 1px solid #3d2b16;
+      color: #a67c33;
+      padding: 5px 8px;
+      font-size: 11px;
+      border-radius: 4px;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .bp-category-filter select:focus { outline: none; border-color: #cda434; }
+
+    /* Compteur */
+    .bp-piece-count {
+      padding: 4px 10px;
+      font-size: 9px;
+      color: #3d2b16;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      flex-shrink: 0;
+      border-bottom: 1px solid #1a1007;
+    }
+
+    /* Grille de pièces */
+    .bp-piece-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px;
+      align-content: start;
+    }
+
+    .bp-piece-item {
+      background: rgba(26, 16, 7, 0.9);
+      border: 1px solid #2a1d0e;
+      border-radius: 4px;
+      padding: 6px 5px;
+      cursor: grab;
+      transition: border-color 0.15s, background 0.15s, transform 0.1s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      user-select: none;
+    }
+    .bp-piece-item:hover {
+      border-color: #cda434;
+      background: rgba(50, 30, 10, 0.95);
+      transform: translateY(-1px);
+    }
+    .bp-piece-item:active { cursor: grabbing; transform: scale(0.96); }
+
+    .bp-piece-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 3px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 9px;
+      font-weight: bold;
+      color: rgba(255,255,255,0.55);
+      flex-shrink: 0;
+      text-align: center;
+      line-height: 1.1;
+    }
+
+    .bp-piece-label {
+      font-size: 9px;
+      color: #7a5c2e;
+      text-align: center;
+      line-height: 1.2;
+      word-break: break-word;
+      width: 100%;
+    }
+
+    /* === ZONE CANVAS (centre) === */
+    .bp-canvas-zone {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+      background: #080502;
+    }
+
+    /* Mini-toolbar */
+    .bp-toolbar {
+      flex-shrink: 0;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      padding: 0 8px;
+      background: rgba(12, 7, 3, 0.98);
+      border-bottom: 1px solid #3d2b16;
+    }
+
+    .bp-tool-btn {
+      background: rgba(26, 16, 7, 0.9);
+      border: 1px solid #2a1d0e;
+      color: #7a5c2e;
+      width: 30px;
+      height: 26px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .bp-tool-btn:hover { border-color: #cda434; color: #f3c44f; background: rgba(50, 30, 10, 0.9); }
+    .bp-tool-btn.active { background: rgba(80, 50, 10, 0.9); border-color: #cda434; color: #f3c44f; }
+    .bp-tool-btn[title]:hover::after {
+      content: attr(title);
+      position: absolute;
+      top: 38px;
+      background: #14100a;
+      color: #d3b46f;
+      font-size: 10px;
+      padding: 3px 7px;
+      border-radius: 3px;
+      border: 1px solid #3d2b16;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 200;
+    }
+
+    .bp-tool-sep {
+      width: 1px;
+      height: 20px;
+      background: #2a1d0e;
+      margin: 0 3px;
+      flex-shrink: 0;
+    }
+
+    .bp-tool-label {
+      font-size: 9px;
+      color: #3d2b16;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 0 3px;
+    }
+
+    /* Container Konva */
+    #bp-stage-container {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Grille CSS visible tant que Konva n'est pas initialisé */
+    #bp-stage-container::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(30, 18, 8, 0.4) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(30, 18, 8, 0.4) 1px, transparent 1px);
+      background-size: 32px 32px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .bp-canvas-hint {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #2a1d0e;
+      font-size: 12px;
+      text-align: center;
+      pointer-events: none;
+      z-index: 1;
+      gap: 8px;
+    }
+    .bp-canvas-hint svg { opacity: 0.4; }
+    .bp-canvas-hint p { margin: 0; }
+
+    /* HUD flottants */
+    .bp-hud {
+      position: absolute;
+      background: rgba(12, 7, 3, 0.88);
+      border: 1px solid #2a1d0e;
+      border-radius: 3px;
+      padding: 3px 8px;
+      font-size: 10px;
+      color: #3d2b16;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .bp-hud-zoom { bottom: 10px; right: 10px; }
+    .bp-hud-coords { bottom: 10px; left: 10px; }
+
+    /* === PANEL DROIT (propriétés) === */
+    .bp-panel {
+      width: 230px;
+      flex-shrink: 0;
+      background: rgba(12, 7, 3, 0.98);
+      border-left: 1px solid #3d2b16;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .bp-panel-header {
+      padding: 8px 10px;
+      border-bottom: 1px solid #2a1d0e;
+      font-size: 9px;
+      color: #3d2b16;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      flex-shrink: 0;
+    }
+
+    .bp-panel-section {
+      padding: 10px;
+      border-bottom: 1px solid #1a1007;
+      flex-shrink: 0;
+    }
+
+    .bp-panel-section-title {
+      font-size: 9px;
+      color: #3d2b16;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin: 0 0 8px 0;
+    }
+
+    .bp-plan-name-display {
+      font-size: 13px;
+      font-weight: bold;
+      color: #f3c44f;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin-bottom: 5px;
+    }
+
+    .bp-plan-meta {
+      font-size: 10px;
+      color: #5c4025;
+      line-height: 1.6;
+    }
+
+    /* Statistiques claim (panel droit) */
+    .bp-claim-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      margin-top: 6px;
+    }
+    .bp-claim-stat {
+      background: rgba(26, 16, 7, 0.8);
+      border: 1px solid #2a1d0e;
+      border-radius: 3px;
+      padding: 5px 6px;
+      text-align: center;
+    }
+    .bp-claim-stat.full-width { grid-column: 1 / -1; }
+    .bp-claim-stat-label { font-size: 9px; color: #3d2b16; text-transform: uppercase; }
+    .bp-claim-stat-value { font-size: 13px; font-weight: bold; color: #cda434; }
+    .bp-claim-stat-value.warn { color: #f3a23b; }
+    .bp-claim-stat-value.ok   { color: #4caf76; }
+
+    /* Mini-visualiseur de la forme du claim */
+    .bp-claim-viz {
+      margin-top: 8px;
+    }
+    .bp-claim-viz-label {
+      font-size: 9px;
+      color: #3d2b16;
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+    .bp-claim-viz-grid {
+      display: inline-grid;
+      grid-template-columns: repeat(6, 16px);
+      gap: 2px;
+    }
+    .bp-claim-viz-cell {
+      width: 16px;
+      height: 16px;
+      border-radius: 2px;
+      border: 1px solid #1a1007;
+      background: #0e0804;
+      cursor: default;
+    }
+    .bp-claim-viz-cell.main {
+      background: rgba(205, 164, 52, 0.55);
+      border-color: #cda434;
+    }
+    .bp-claim-viz-cell.ext {
+      background: rgba(205, 164, 52, 0.22);
+      border-color: #7a5c2e;
+    }
+    .bp-claim-viz-cell.available {
+      border: 1px dashed #2a1d0e;
+      background: transparent;
+    }
+
+    /* Barre d'extension verticale */
+    .bp-vert-ext-bar {
+      display: flex;
+      gap: 3px;
+      margin-top: 6px;
+      align-items: center;
+    }
+    .bp-vert-ext-bar label {
+      font-size: 9px;
+      color: #3d2b16;
+      text-transform: uppercase;
+      flex: 1;
+    }
+    .bp-vert-pip {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+      border: 1px solid #2a1d0e;
+      background: #0e0804;
+    }
+    .bp-vert-pip.active {
+      background: rgba(205, 164, 52, 0.45);
+      border-color: #cda434;
+    }
+
+    /* === MINI-GRILLE CLAIM (modale save) === */
+    .bp-claim-builder {
+      margin-top: 6px;
+    }
+    .bp-claim-builder-grid {
+      display: inline-grid;
+      grid-template-columns: repeat(6, 28px);
+      gap: 3px;
+      margin-bottom: 8px;
+    }
+    .bp-cb-cell {
+      width: 28px;
+      height: 28px;
+      border-radius: 3px;
+      border: 1px solid #2a1d0e;
+      background: #0e0804;
+      cursor: pointer;
+      transition: all 0.15s;
+      font-size: 8px;
+      color: #2a1d0e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .bp-cb-cell:hover:not(.disabled) { border-color: #5c4025; background: rgba(26,16,7,0.9); }
+    .bp-cb-cell.main {
+      background: rgba(205, 164, 52, 0.55);
+      border-color: #cda434;
+      color: #f3c44f;
+      cursor: default;
+    }
+    .bp-cb-cell.ext {
+      background: rgba(205, 164, 52, 0.25);
+      border-color: #a67c33;
+      color: #d3b46f;
+    }
+    .bp-cb-cell.ext:hover { background: rgba(205, 164, 52, 0.15); border-color: #7a5c2e; }
+    .bp-cb-cell.disabled { cursor: default; }
+    .bp-claim-summary {
+      font-size: 11px;
+      color: #5c4025;
+      line-height: 1.6;
+    }
+    .bp-claim-summary strong { color: #d3b46f; }
+
+    /* Counter +/- générique */
+    .bp-counter-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .bp-counter-btn {
+      width: 28px; height: 28px;
+      background: rgba(26, 16, 7, 0.9);
+      border: 1px solid #2a1d0e;
+      color: #7a5c2e;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .bp-counter-btn:hover { border-color: #cda434; color: #f3c44f; }
+    .bp-counter-val {
+      font-size: 14px;
+      font-weight: bold;
+      color: #cda434;
+      min-width: 28px;
+      text-align: center;
+    }
+    .bp-counter-desc {
+      font-size: 10px;
+      color: #5c4025;
+      flex: 1;
+      line-height: 1.4;
+    }
+
+    /* Underground floor tabs */
+    .bp-floor-tab.underground {
+      color: #3d5c7a;
+      border-color: #1a2d3d;
+      background: rgba(10, 18, 30, 0.8);
+    }
+    .bp-floor-tab.underground:hover { border-color: #3d7aaa; color: #6aaad3; }
+    .bp-floor-tab.underground.active {
+      background: rgba(15, 35, 60, 0.9);
+      border-color: #4488cc;
+      color: #88ccff;
+    }
+    .bp-floor-ground-sep {
+      width: 1px;
+      height: 22px;
+      background: #3d2b16;
+      flex-shrink: 0;
+      margin: 0 2px;
+    }
+
+    /* Aucune sélection */
+    .bp-no-selection {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      text-align: center;
+      color: #2a1d0e;
+      gap: 10px;
+    }
+    .bp-no-selection svg { opacity: 0.3; }
+    .bp-no-selection p { margin: 0; font-size: 11px; font-style: italic; }
+
+    /* Pièce sélectionnée (masqué dans le squelette) */
+    .bp-selected-info {
+      display: none;
+      flex-direction: column;
+      padding: 10px;
+      gap: 10px;
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .bp-selected-icon-big {
+      width: 64px;
+      height: 64px;
+      border-radius: 6px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .bp-selected-name-text {
+      font-size: 12px;
+      font-weight: bold;
+      color: #d3b46f;
+      text-align: center;
+      line-height: 1.3;
+    }
+
+    .bp-dims-grid {
+      background: rgba(26, 16, 7, 0.8);
+      border: 1px solid #2a1d0e;
+      border-radius: 4px;
+      padding: 8px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 4px;
+    }
+    .bp-dim-cell { text-align: center; }
+    .bp-dim-lbl { font-size: 9px; color: #3d2b16; text-transform: uppercase; }
+    .bp-dim-val { font-size: 13px; font-weight: bold; color: #d3b46f; }
+
+    .bp-rotation-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .bp-rotation-row label { font-size: 11px; color: #5c4025; flex: 1; }
+    .bp-rot-btn {
+      width: 28px; height: 28px;
+      background: rgba(26, 16, 7, 0.9);
+      border: 1px solid #2a1d0e;
+      color: #7a5c2e;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+    .bp-rot-btn:hover { border-color: #cda434; color: #f3c44f; }
+    .bp-rot-value {
+      font-size: 12px;
+      color: #cda434;
+      min-width: 36px;
+      text-align: center;
+    }
+
+    .bp-delete-btn {
+      background: rgba(80, 15, 15, 0.6);
+      border: 1px solid #5c1e1e;
+      color: #cc4444;
+      padding: 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      width: 100%;
+      transition: all 0.15s;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .bp-delete-btn:hover { background: rgba(120, 25, 25, 0.7); border-color: #ff4444; color: #ff6b6b; }
+
+    /* === FOOTER ÉTAGES === */
+    .bp-footer {
+      flex-shrink: 0;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 8px;
+      background: rgba(8, 4, 2, 0.99);
+      border-top: 1px solid #2a1d0e;
+      overflow: hidden;
+    }
+
+    .bp-floors-scroll {
+      display: flex;
+      gap: 4px;
+      flex: 1;
+      overflow-x: auto;
+      scrollbar-width: none;
+      align-items: center;
+      min-width: 0;
+    }
+    .bp-floors-scroll::-webkit-scrollbar { display: none; }
+
+    .bp-floor-tab {
+      padding: 5px 12px;
+      border-radius: 4px;
+      border: 1px solid #2a1d0e;
+      background: rgba(26, 16, 7, 0.9);
+      color: #5c4025;
+      font-size: 10px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+      font-family: 'Segoe UI', sans-serif;
+      font-weight: bold;
+    }
+    .bp-floor-tab:hover { border-color: #a67c33; color: #d3b46f; }
+    .bp-floor-tab.active {
+      background: rgba(70, 44, 8, 0.9);
+      border-color: #cda434;
+      color: #f3c44f;
+    }
+
+    .bp-floor-sep {
+      width: 1px;
+      height: 22px;
+      background: #2a1d0e;
+      flex-shrink: 0;
+      margin: 0 2px;
+    }
+
+    .bp-floor-action {
+      width: 28px; height: 28px;
+      background: rgba(26, 16, 7, 0.9);
+      border: 1px solid #2a1d0e;
+      color: #7a5c2e;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .bp-floor-action:hover { border-color: #cda434; color: #f3c44f; }
+
+    .bp-footer-sep {
+      width: 1px;
+      height: 28px;
+      background: #2a1d0e;
+      flex-shrink: 0;
+      margin: 0 4px;
+    }
+
+    .bp-footer-actions {
+      display: flex;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+
+    .bp-action-btn {
+      padding: 6px 11px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      transition: all 0.18s;
+      white-space: nowrap;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .bp-action-btn.primary {
+      background: linear-gradient(to bottom, #d4a23b, #8b6e3b);
+      border: 1px solid #f3c44f;
+      color: #1a1007;
+    }
+    .bp-action-btn.primary:hover { filter: brightness(1.1); box-shadow: 0 0 10px rgba(212,162,59,0.4); }
+    .bp-action-btn.secondary {
+      background: rgba(26, 16, 7, 0.9);
+      border: 1px solid #2a1d0e;
+      color: #7a5c2e;
+    }
+    .bp-action-btn.secondary:hover { border-color: #cda434; color: #d3b46f; }
+    .bp-action-btn.share {
+      background: rgba(14, 50, 24, 0.7);
+      border: 1px solid #1e5c34;
+      color: #4caf76;
+    }
+    .bp-action-btn.share:hover { border-color: #4caf76; background: rgba(20, 70, 36, 0.8); }
+
+    /* === MODALES === */
+    .bp-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.88);
+      backdrop-filter: blur(3px);
+      z-index: 10000;
+      justify-content: center;
+      align-items: center;
+    }
+    .bp-modal-overlay.open { display: flex; }
+
+    .bp-modal-box {
+      background: #110d08;
+      border: 2px solid #cda434;
+      border-radius: 8px;
+      padding: 24px;
+      width: 480px;
+      max-width: 94vw;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 0 40px rgba(0,0,0,0.95), 0 0 16px rgba(205,164,52,0.12);
+    }
+
+    .bp-modal-title {
+      color: #f3c44f;
+      font-size: 13px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin: 0 0 16px 0;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #2a1d0e;
+      text-align: center;
+    }
+
+    .bp-modal-field { margin-bottom: 12px; }
+    .bp-modal-field label {
+      display: block;
+      font-size: 10px;
+      color: #5c4025;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .bp-modal-field input,
+    .bp-modal-field select,
+    .bp-modal-field textarea {
+      width: 100%;
+      background: #16100a;
+      border: 1px solid #2a1d0e;
+      color: #f5deb3;
+      padding: 8px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .bp-modal-field input:focus,
+    .bp-modal-field select:focus,
+    .bp-modal-field textarea:focus { outline: none; border-color: #cda434; }
+
+    .bp-modal-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .bp-modal-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 18px;
+    }
+    .bp-modal-btn {
+      flex: 1;
+      padding: 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.18s;
+      font-family: 'Segoe UI', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .bp-modal-btn.confirm {
+      background: linear-gradient(to bottom, #d4a23b, #8b6e3b);
+      border: 1px solid #f3c44f;
+      color: #1a1007;
+    }
+    .bp-modal-btn.confirm:hover { filter: brightness(1.1); }
+    .bp-modal-btn.cancel {
+      background: rgba(26, 16, 7, 0.9);
+      border: 1px solid #2a1d0e;
+      color: #7a5c2e;
+    }
+    .bp-modal-btn.cancel:hover { border-color: #5c4025; color: #d3b46f; }
+
+    /* Liste plans sauvegardés */
+    .bp-plans-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+    .bp-plan-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(26, 16, 7, 0.8);
+      border: 1px solid #2a1d0e;
+      border-radius: 4px;
+      padding: 8px 10px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+    .bp-plan-row:hover { border-color: #cda434; }
+    .bp-plan-row-info { flex: 1; min-width: 0; }
+    .bp-plan-row-name { font-size: 12px; font-weight: bold; color: #d3b46f; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .bp-plan-row-meta { font-size: 10px; color: #3d2b16; margin-top: 2px; }
+    .bp-plan-row-del {
+      background: none;
+      border: 1px solid #3d1414;
+      color: #6b2222;
+      width: 24px; height: 24px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 12px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
+    .bp-plan-row-del:hover { border-color: #cc3333; color: #ff5555; }
+
+    /* Partage */
+    .bp-share-link {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 8px;
+    }
+    .bp-share-link input {
+      flex: 1;
+      background: #0e0804;
+      border: 1px solid #2a1d0e;
+      color: #a67c33;
+      padding: 8px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: monospace;
+    }
+    .bp-share-link button {
+      padding: 8px 12px;
+      background: rgba(26, 16, 7, 0.9);
+      border: 1px solid #3d2b16;
+      color: #a67c33;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+    .bp-share-link button:hover { border-color: #cda434; color: #f3c44f; }
+
+    /* Toggle public */
+    .bp-toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+    }
+    .bp-toggle-row label { font-size: 12px; color: #a67c33; flex: 1; }
+    .bp-toggle {
+      position: relative;
+      width: 38px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+    .bp-toggle input { opacity: 0; width: 0; height: 0; }
+    .bp-toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: #2a1d0e;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .bp-toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 14px; height: 14px;
+      left: 3px; top: 3px;
+      background: #5c4025;
+      border-radius: 50%;
+      transition: transform 0.2s, background 0.2s;
+    }
+    .bp-toggle input:checked + .bp-toggle-slider { background: rgba(80, 50, 10, 0.8); }
+    .bp-toggle input:checked + .bp-toggle-slider::before { transform: translateX(18px); background: #cda434; }
+  </style>
+</head>
+<body class="fade-in">
+<script src="auth-guard.js"></script>
+
+<header style="position:relative; flex-shrink:0;">
+  <div class="title">Constructeur de Base</div>
+  <div class="header-controls">
+    <a href="account.html" class="user-account-widget" id="ua-widget">
+      <div class="ua-avatar" id="ua-avatar">?</div>
+      <span class="ua-pseudo" id="ua-pseudo">…</span>
+    </a>
+    <a href="menu.html" class="disconnect">Menu</a>
+  </div>
+</header>
+<script>(function(){var u=localStorage.getItem("user")||"?";document.getElementById("ua-pseudo").textContent=u;var av=document.getElementById("ua-avatar");var img=localStorage.getItem("avatar");if(img){av.style.background="transparent";av.innerHTML='<img src="'+img+'" style="width:42px;height:42px;margin:-1px;object-fit:cover;border-radius:50%;">';}else{av.textContent=u.charAt(0).toUpperCase();var h=0;for(var i=0;i<u.length;i++)h=((h<<5)-h)+u.charCodeAt(i);av.style.background="hsl("+(Math.abs(h)%360)+",55%,32%)";}})();</script>
+
+<!-- === LAYOUT PRINCIPAL 3 COLONNES === -->
+<div class="bp-layout">
+
+  <!-- ============================= SIDEBAR PALETTE (gauche) ============================= -->
+  <aside class="bp-sidebar">
+
+    <!-- Onglets Pièces / Placeables -->
+    <div class="bp-tabs">
+      <button class="bp-tab active" id="tab-pieces">Pièces struct.</button>
+      <button class="bp-tab" id="tab-placeables">Placeables</button>
+    </div>
+
+    <!-- Recherche -->
+    <div class="bp-search">
+      <input type="text" id="bp-search-input" placeholder="Rechercher une pièce…">
+    </div>
+
+    <!-- Filtres faction (pills) -->
+    <div class="bp-faction-filters" id="bp-faction-filters">
+      <button class="bp-faction-pill active" data-faction="" style="background:rgba(205,164,52,0.15); color:#cda434;">Toutes</button>
+      <button class="bp-faction-pill" data-faction="choam_shelter" style="background:rgba(58,111,168,0.25); color:#6aabee;">Shelter</button>
+      <button class="bp-faction-pill" data-faction="choam" style="background:rgba(45,90,158,0.25); color:#5588dd;">CHOAM</button>
+      <button class="bp-faction-pill" data-faction="choam_lvl2" style="background:rgba(29,61,122,0.25); color:#4477cc;">CHOAM N2</button>
+      <button class="bp-faction-pill" data-faction="atreides" style="background:rgba(45,107,45,0.25); color:#5cbb5c;">Atréides</button>
+      <button class="bp-faction-pill" data-faction="harkonnen" style="background:rgba(139,26,26,0.25); color:#dd4444;">Harkonnen</button>
+      <button class="bp-faction-pill" data-faction="smugglers" style="background:rgba(122,107,45,0.25); color:#ccaa44;">Contreb.</button>
+      <button class="bp-faction-pill" data-faction="watershippers" style="background:rgba(26,107,122,0.25); color:#44bbcc;">M. d'eau</button>
+      <button class="bp-faction-pill" data-faction="extra" style="background:rgba(92,58,122,0.25); color:#aa66dd;">Mini-sets</button>
+    </div>
+
+    <!-- Filtre catégorie -->
+    <div class="bp-category-filter">
+      <select id="bp-category-select">
+        <option value="">— Toutes les catégories —</option>
+        <option value="foundations">Fondations</option>
+        <option value="walls">Murs</option>
+        <option value="floors">Sols / Toits-plats</option>
+        <option value="roofs">Toits inclinés</option>
+        <option value="doors">Portes &amp; Fenêtres</option>
+        <option value="stairs">Escaliers &amp; Rampes</option>
+        <option value="structures">Structures (piliers, échelles)</option>
+        <option value="railings">Rambardes</option>
+      </select>
+    </div>
+
+    <!-- Compteur -->
+    <div class="bp-piece-count" id="bp-piece-count">645 pièces — 0 affichées</div>
+
+    <!-- Grille de pièces (skeleton : exemples hardcodés) -->
+    <div class="bp-piece-list" id="bp-piece-list">
+
+      <!-- Exemples representatifs de chaque faction -->
+      <div class="bp-piece-item" draggable="true" data-piece-id="Choam_Shelter_Foundation_New">
+        <div class="bp-piece-icon" style="background:rgba(58,111,168,0.3); border:1px solid rgba(58,111,168,0.5);">■</div>
+        <div class="bp-piece-label">Fondations (Shelter)</div>
+      </div>
+
+      <div class="bp-piece-item" draggable="true" data-piece-id="Choam_Shelter_Foundation_Wedge_New">
+        <div class="bp-piece-icon" style="background:rgba(58,111,168,0.3); border:1px solid rgba(58,111,168,0.5);">◤</div>
+        <div class="bp-piece-label">Fondations triangulaires</div>
+      </div>
+
+      <div class="bp-piece-item" draggable="true" data-piece-id="Choam_Shelter_Wall_01_New">
+        <div class="bp-piece-icon" style="background:rgba(58,111,168,0.3); border:1px solid rgba(58,111,168,0.5);">│</div>
+        <div class="bp-piece-label">Mur (Shelter)</div>
+      </div>
+
+      <div class="bp-piece-item" draggable="true" data-piece-id="Choam_Shelter_Wall_Half_New">
+        <div class="bp-piece-icon" style="background:rgba(58,111,168,0.3); border:1px solid rgba(58,111,168,0.5);">╌</div>
+        <div class="bp-piece-label">Muret demi-hauteur</div>
+      </div>
+
+      <div class="bp-piece-item" draggable="true" data-piece-id="Choam_Shelter_Column_New">
+        <div class="bp-piece-icon" style="background:rgba(58,111,168,0.3); border:1px solid rgba(58,111,168,0.5);">◉</div>
+        <div class="bp-piece-label">Colonne centrale</div>
+      </div>
+
+      <div class="bp-piece-item" draggable="true" data-piece-id="Choam_Shelter_Pillar_Bottom_New">
+        <div class="bp-piece-icon" style="background:rgba(58,111,168,0.3); border:1px solid rgba(58,111,168,0.5);">⊙</div>
+        <div class="bp-piece-label">Bas de pilier</div>
+      </div>
+
+      <div class="bp-piece-item" draggable="true" data-piece-id="Choam_Shelter_Foundation_Round_Corner_New">
+        <div class="bp-piece-icon" style="background:rgba(58,111,168,0.3); border:1px solid rgba(58,111,168,0.5);">◜</div>
+        <div class="bp-piece-label">Fondations arrondies</div>
+      </div>
+
+      <div class="bp-piece-item" draggable="true" data-piece-id="Choam_Shelter_Door_Frame_New">
+        <div class="bp-piece-icon" style="background:rgba(58,111,168,0.3); border:1px solid rgba(58,111,168,0.5);">⊓</div>
+        <div class="bp-piece-label">Porte</div>
+      </div>
+
+    </div>
+    <!-- /bp-piece-list -->
+
+  </aside>
+  <!-- /bp-sidebar -->
+
+
+  <!-- ============================= ZONE CANVAS (centre) ============================= -->
+  <section class="bp-canvas-zone">
+
+    <!-- Toolbar -->
+    <div class="bp-toolbar">
+      <!-- Mode sélection / déplacement -->
+      <span class="bp-tool-label">Mode</span>
+      <button class="bp-tool-btn active" id="tool-select" title="Sélectionner (S)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4 0l16 12-7 2-4 8z"/></svg>
+      </button>
+      <button class="bp-tool-btn" id="tool-pan" title="Déplacer la vue (V)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M10 9h4V6h3l-5-5-5 5h3v3zm-1 1H6V7l-5 5 5 5v-3h3v-4zm14 2l-5-5v3h-3v4h3v3l5-5zm-9 3h-4v3H7l5 5 5-5h-3v-3z"/></svg>
+      </button>
+
+      <div class="bp-tool-sep"></div>
+
+      <!-- Undo / Redo -->
+      <span class="bp-tool-label">Hist.</span>
+      <button class="bp-tool-btn" id="tool-undo" title="Annuler (Ctrl+Z)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>
+      </button>
+      <button class="bp-tool-btn" id="tool-redo" title="Rétablir (Ctrl+Y)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/></svg>
+      </button>
+
+      <div class="bp-tool-sep"></div>
+
+      <!-- Zoom -->
+      <span class="bp-tool-label">Zoom</span>
+      <button class="bp-tool-btn" id="tool-zoom-in" title="Zoom + (Molette ↑)">+</button>
+      <button class="bp-tool-btn" id="tool-zoom-out" title="Zoom - (Molette ↓)">−</button>
+      <button class="bp-tool-btn" id="tool-zoom-reset" title="Recentrer (R)" style="font-size:10px; width:36px;">100%</button>
+
+      <div class="bp-tool-sep"></div>
+
+      <!-- Grille -->
+      <button class="bp-tool-btn active" id="tool-grid" title="Afficher/masquer la grille (G)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3v18h18V3H3zm8 16H5v-6h6v6zm0-8H5V5h6v6zm8 8h-6v-6h6v6zm0-8h-6V5h6v6z"/></svg>
+      </button>
+      <button class="bp-tool-btn" id="tool-snap" title="Magnétisme (X)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 13h12v-2H6v2zm3 4h6v-2H9v2zM3 9v2h18V9H3z"/></svg>
+      </button>
+    </div>
+    <!-- /bp-toolbar -->
+
+    <!-- Conteneur Konva -->
+    <div id="bp-stage-container">
+      <!-- Hint visible avant l'init JS -->
+      <div class="bp-canvas-hint" id="bp-canvas-hint">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="#2a1d0e"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3c1.93 0 3.5 1.57 3.5 3.5S13.93 13 12 13s-3.5-1.57-3.5-3.5S10.07 6 12 6zm7 13H5v-.23c0-.62.28-1.2.76-1.58C7.47 15.82 9.64 15 12 15s4.53.82 6.24 2.19c.48.38.76.97.76 1.58V19z"/></svg>
+        <p>Glissez des pièces depuis la palette<br>ou créez un nouveau plan</p>
+      </div>
+
+      <!-- HUD zoom & coords -->
+      <div class="bp-hud bp-hud-zoom" id="bp-hud-zoom">100%</div>
+      <div class="bp-hud bp-hud-coords" id="bp-hud-coords">x:0 y:0</div>
+    </div>
+    <!-- /bp-stage-container -->
+
+  </section>
+  <!-- /bp-canvas-zone -->
+
+
+  <!-- ============================= PANEL DROIT (propriétés) ============================= -->
+  <aside class="bp-panel">
+
+    <!-- En-tête panel -->
+    <div class="bp-panel-header">Propriétés</div>
+
+    <!-- Infos plan courant -->
+    <div class="bp-panel-section">
+      <div class="bp-panel-section-title">Plan actif</div>
+      <div class="bp-plan-name-display" id="bp-plan-name">Nouveau plan</div>
+      <div class="bp-plan-meta" id="bp-plan-meta">
+        Non sauvegardé<br>
+        Propriétaire : <span id="bp-plan-owner">—</span>
+      </div>
+      <!-- Stats claim -->
+      <div class="bp-claim-stats" id="bp-claim-stats">
+        <div class="bp-claim-stat">
+          <div class="bp-claim-stat-label">Blocs</div>
+          <div class="bp-claim-stat-value" id="bp-claim-blocks">1 / 6</div>
+        </div>
+        <div class="bp-claim-stat">
+          <div class="bp-claim-stat-label">Ext. vert.</div>
+          <div class="bp-claim-stat-value" id="bp-vert-ext-count">0 / 5</div>
+        </div>
+        <div class="bp-claim-stat full-width">
+          <div class="bp-claim-stat-label">Hauteur dispo (niveaux)</div>
+          <div class="bp-claim-stat-value ok" id="bp-height-range">RDC → N6</div>
+        </div>
+        <div class="bp-claim-stat full-width">
+          <div class="bp-claim-stat-label">Pièces posées</div>
+          <div class="bp-claim-stat-value" id="bp-item-count">0</div>
+        </div>
+      </div>
+
+      <!-- Mini-visualiseur de la forme du claim (1 ligne × 6 colonnes max) -->
+      <div class="bp-claim-viz" id="bp-claim-viz">
+        <div class="bp-claim-viz-label">Forme du claim</div>
+        <div class="bp-claim-viz-grid" id="bp-claim-viz-grid">
+          <!-- Bloc principal -->
+          <div class="bp-claim-viz-cell main" title="Bloc principal (10×10)"></div>
+          <!-- Extensions vides -->
+          <div class="bp-claim-viz-cell available" title="Emplacement libre"></div>
+          <div class="bp-claim-viz-cell available" title="Emplacement libre"></div>
+          <div class="bp-claim-viz-cell available" title="Emplacement libre"></div>
+          <div class="bp-claim-viz-cell available" title="Emplacement libre"></div>
+          <div class="bp-claim-viz-cell available" title="Emplacement libre"></div>
+        </div>
+      </div>
+
+      <!-- Pieux verticaux (0–5 pips) -->
+      <div class="bp-vert-ext-bar" id="bp-vert-ext-bar">
+        <label>Pieux verticaux</label>
+        <div class="bp-vert-pip" id="vp0" title="Pieu 1"></div>
+        <div class="bp-vert-pip" id="vp1" title="Pieu 2"></div>
+        <div class="bp-vert-pip" id="vp2" title="Pieu 3"></div>
+        <div class="bp-vert-pip" id="vp3" title="Pieu 4"></div>
+        <div class="bp-vert-pip" id="vp4" title="Pieu 5"></div>
+      </div>
+    </div>
+
+    <!-- Zone sélection vide -->
+    <div class="bp-no-selection" id="bp-no-selection">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="#2a1d0e"><path d="M4 0l16 12-7 2-4 8z"/></svg>
+      <p>Cliquez sur une pièce<br>posée sur le canvas<br>pour voir ses propriétés</p>
+    </div>
+
+    <!-- Zone propriétés pièce sélectionnée (masquée par défaut) -->
+    <div class="bp-selected-info" id="bp-selected-info">
+
+      <div class="bp-selected-icon-big" id="bp-sel-icon" style="background:rgba(58,111,168,0.3); border:1px solid rgba(58,111,168,0.5);">
+      </div>
+
+      <div class="bp-selected-name-text" id="bp-sel-name">Fondation Shelter 2×2</div>
+
+      <div class="bp-dims-grid" id="bp-sel-dims">
+        <div class="bp-dim-cell">
+          <div class="bp-dim-lbl">Larg.</div>
+          <div class="bp-dim-val" id="bp-sel-w">2</div>
+        </div>
+        <div class="bp-dim-cell">
+          <div class="bp-dim-lbl">Prof.</div>
+          <div class="bp-dim-val" id="bp-sel-d">2</div>
+        </div>
+        <div class="bp-dim-cell">
+          <div class="bp-dim-lbl">Haut.</div>
+          <div class="bp-dim-val" id="bp-sel-h">1</div>
+        </div>
+      </div>
+
+      <div class="bp-rotation-row">
+        <label>Rotation</label>
+        <button class="bp-rot-btn" id="bp-rot-ccw" title="−90°">↺</button>
+        <span class="bp-rot-value" id="bp-sel-rotation">0°</span>
+        <button class="bp-rot-btn" id="bp-rot-cw" title="+90°">↻</button>
+      </div>
+
+      <button class="bp-delete-btn" id="bp-delete-btn">✕ Supprimer la pièce</button>
+
+    </div>
+    <!-- /bp-selected-info -->
+
+  </aside>
+  <!-- /bp-panel -->
+
+</div>
+<!-- /bp-layout -->
+
+
+<!-- === FOOTER ÉTAGES === -->
+<footer class="bp-footer">
+
+  <!-- Onglets étages (underground en bleu, surface en or) -->
+  <div class="bp-floors-scroll" id="bp-floors-scroll">
+    <button class="bp-floor-tab underground" data-floor="-2" title="Sous-sol 2 (nécessite ext. verticale)">S2</button>
+    <button class="bp-floor-tab underground" data-floor="-1" title="Sous-sol 1 (nécessite ext. verticale)">S1</button>
+    <div class="bp-floor-ground-sep" title="Niveau du sol"></div>
+    <button class="bp-floor-tab active" data-floor="0" title="Rez-de-chaussée (niveau de la console)">RDC</button>
+    <button class="bp-floor-tab" data-floor="1">N1</button>
+    <button class="bp-floor-tab" data-floor="2">N2</button>
+    <button class="bp-floor-tab" data-floor="3">N3</button>
+    <button class="bp-floor-tab" data-floor="4">N4</button>
+    <button class="bp-floor-tab" data-floor="5">N5</button>
+    <button class="bp-floor-tab" data-floor="6">N6</button>
+  </div>
+
+  <!-- Ajouter / Supprimer étage -->
+  <div class="bp-floor-sep"></div>
+  <button class="bp-floor-action" id="bp-floor-add" title="Ajouter un niveau au-dessus">+</button>
+  <button class="bp-floor-action" id="bp-floor-del" title="Supprimer le niveau actif" style="font-size:14px;">−</button>
+
+  <!-- Actions plan -->
+  <div class="bp-footer-sep"></div>
+  <div class="bp-footer-actions">
+    <button class="bp-action-btn primary" id="btn-save-plan">Sauvegarder</button>
+    <button class="bp-action-btn secondary" id="btn-my-plans">Mes plans</button>
+    <button class="bp-action-btn share" id="btn-share-plan">Partager</button>
+  </div>
+
+</footer>
+
+
+<!-- === MODALE : Sauvegarder / Nouveau plan === -->
+<div class="bp-modal-overlay" id="modal-save">
+  <div class="bp-modal-box">
+    <div class="bp-modal-title">Sauvegarder le plan</div>
+
+    <div class="bp-modal-field">
+      <label>Nom du plan</label>
+      <input type="text" id="save-plan-name" placeholder="Ex: Ma base à Tharwa" maxlength="80">
+    </div>
+
+    <!-- Agencement horizontal -->
+    <div class="bp-modal-field">
+      <label>Agencement horizontal — blocs 10×10 (cliquez pour ajouter / retirer une extension)</label>
+      <div class="bp-claim-builder">
+        <!-- Grille 4 lignes × 6 colonnes — le bloc principal est en (ligne 1, col 0) -->
+        <div class="bp-claim-builder-grid" id="save-claim-grid">
+          <!-- Ligne 0 (au-dessus du bloc principal) -->
+          <div class="bp-cb-cell disabled" data-gx="0" data-gy="-1"></div>
+          <div class="bp-cb-cell disabled" data-gx="1" data-gy="-1"></div>
+          <div class="bp-cb-cell disabled" data-gx="2" data-gy="-1"></div>
+          <div class="bp-cb-cell disabled" data-gx="3" data-gy="-1"></div>
+          <div class="bp-cb-cell disabled" data-gx="4" data-gy="-1"></div>
+          <div class="bp-cb-cell disabled" data-gx="5" data-gy="-1"></div>
+          <!-- Ligne 1 (principale) -->
+          <div class="bp-cb-cell main"     data-gx="0" data-gy="0" title="Bloc principal">⚑</div>
+          <div class="bp-cb-cell"          data-gx="1" data-gy="0" title="Cliquez pour revendiquer">+</div>
+          <div class="bp-cb-cell disabled" data-gx="2" data-gy="0"></div>
+          <div class="bp-cb-cell disabled" data-gx="3" data-gy="0"></div>
+          <div class="bp-cb-cell disabled" data-gx="4" data-gy="0"></div>
+          <div class="bp-cb-cell disabled" data-gx="5" data-gy="0"></div>
+          <!-- Ligne 2 (en-dessous du bloc principal) -->
+          <div class="bp-cb-cell disabled" data-gx="0" data-gy="1"></div>
+          <div class="bp-cb-cell disabled" data-gx="1" data-gy="1"></div>
+          <div class="bp-cb-cell disabled" data-gx="2" data-gy="1"></div>
+          <div class="bp-cb-cell disabled" data-gx="3" data-gy="1"></div>
+          <div class="bp-cb-cell disabled" data-gx="4" data-gy="1"></div>
+          <div class="bp-cb-cell disabled" data-gx="5" data-gy="1"></div>
+        </div>
+        <div class="bp-claim-summary" id="save-claim-summary">
+          Bloc principal + <strong id="save-ext-count">0</strong> extension(s) — Surface totale : <strong id="save-total-cells">100</strong> cellules (1 × 10×10)
+        </div>
+      </div>
+    </div>
+
+    <!-- Extensions verticales -->
+    <div class="bp-modal-field">
+      <label>Pieux verticaux posés (0 – 5) — chaque pieu ajoute ~7 niveaux en hauteur et ~5 en sous-sol</label>
+      <div class="bp-counter-row">
+        <button class="bp-counter-btn" id="save-vert-dec">−</button>
+        <span class="bp-counter-val" id="save-vert-val">0</span>
+        <button class="bp-counter-btn" id="save-vert-inc">+</button>
+        <span class="bp-counter-desc" id="save-vert-desc">
+          Hauteur : RDC → N6<br>Pas de sous-sol par défaut
+        </span>
+      </div>
+    </div>
+
+    <div class="bp-modal-actions">
+      <button class="bp-modal-btn cancel" onclick="document.getElementById('modal-save').classList.remove('open')">Annuler</button>
+      <button class="bp-modal-btn confirm" id="save-confirm-btn">Sauvegarder</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- === MODALE : Mes plans === -->
+<div class="bp-modal-overlay" id="modal-plans">
+  <div class="bp-modal-box" style="width:540px;">
+    <div class="bp-modal-title">Mes plans sauvegardés</div>
+
+    <div class="bp-modal-field">
+      <input type="text" placeholder="Rechercher un plan…" style="margin-bottom:0;">
+    </div>
+
+    <!-- Liste placeholder -->
+    <div class="bp-plans-list" id="plans-list">
+      <div class="bp-plan-row">
+        <div class="bp-plan-row-info">
+          <div class="bp-plan-row-name">Ma base à Tharwa</div>
+          <div class="bp-plan-row-meta">Advanced 10×10 — 3 étages — 42 pièces — modifié il y a 2h</div>
+        </div>
+        <button class="bp-plan-row-del" title="Supprimer">✕</button>
+      </div>
+      <div class="bp-plan-row">
+        <div class="bp-plan-row-info">
+          <div class="bp-plan-row-name">Base secondaire Rajifiri</div>
+          <div class="bp-plan-row-meta">Basic 6×6 — 1 étage — 12 pièces — modifié hier</div>
+        </div>
+        <button class="bp-plan-row-del" title="Supprimer">✕</button>
+      </div>
+      <div style="text-align:center; padding:20px; color:#2a1d0e; font-size:11px; font-style:italic;" id="plans-empty" style="display:none;">
+        Aucun plan sauvegardé
+      </div>
+    </div>
+
+    <div class="bp-modal-actions">
+      <button class="bp-modal-btn cancel" onclick="document.getElementById('modal-plans').classList.remove('open')">Fermer</button>
+      <button class="bp-modal-btn confirm" id="new-plan-btn">+ Nouveau plan</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- === MODALE : Partager === -->
+<div class="bp-modal-overlay" id="modal-share">
+  <div class="bp-modal-box" style="width:440px;">
+    <div class="bp-modal-title">Partager ce plan</div>
+
+    <div class="bp-toggle-row">
+      <label>Rendre ce plan public (lecture seule)</label>
+      <label class="bp-toggle">
+        <input type="checkbox" id="share-toggle-public">
+        <span class="bp-toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="bp-modal-field" style="margin-top:10px;">
+      <label>Lien de partage</label>
+      <div class="bp-share-link">
+        <input type="text" id="share-link-input" readonly placeholder="Sauvegardez le plan d'abord pour générer un lien" value="">
+        <button id="share-copy-btn">Copier</button>
+      </div>
+    </div>
+
+    <p style="font-size:10px; color:#3d2b16; margin:10px 0 0; line-height:1.5;">
+      Les visiteurs avec ce lien verront le plan en lecture seule — ils ne pourront pas le modifier.
+    </p>
+
+    <div class="bp-modal-actions">
+      <button class="bp-modal-btn cancel" onclick="document.getElementById('modal-share').classList.remove('open')">Fermer</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- === MODALE : Confirmation suppression plan === -->
+<div class="bp-modal-overlay" id="modal-delete-plan">
+  <div class="bp-modal-box" style="width:360px;">
+    <div class="bp-modal-title" style="color:#ff6b6b; border-color:#5c1e1e;">Supprimer ce plan ?</div>
+    <p style="text-align:center; color:#888; font-size:13px; margin:0 0 20px;">
+      Cette action est irréversible.
+    </p>
+    <div class="bp-modal-actions">
+      <button class="bp-modal-btn cancel" onclick="document.getElementById('modal-delete-plan').classList.remove('open')">Annuler</button>
+      <button class="bp-modal-btn confirm" id="delete-plan-confirm-btn" style="background:linear-gradient(to bottom,#a83b3b,#6b1e1e); border-color:#cc4444; color:#fff;">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- === JS (logique dans base_planner.js — à implémenter) === -->
+<script>
+  // Boutons modales
+  document.getElementById('btn-save-plan').addEventListener('click', function() {
+    document.getElementById('modal-save').classList.add('open');
+  });
+  document.getElementById('btn-my-plans').addEventListener('click', function() {
+    document.getElementById('modal-plans').classList.add('open');
+  });
+  document.getElementById('btn-share-plan').addEventListener('click', function() {
+    document.getElementById('modal-share').classList.add('open');
+  });
+
+  // Fermeture modales au clic overlay
+  document.querySelectorAll('.bp-modal-overlay').forEach(function(overlay) {
+    overlay.addEventListener('click', function(e) {
+      if (e.target === overlay) overlay.classList.remove('open');
+    });
+  });
+
+  // Onglets sidebar
+  document.getElementById('tab-pieces').addEventListener('click', function() {
+    document.getElementById('tab-pieces').classList.add('active');
+    document.getElementById('tab-placeables').classList.remove('active');
+  });
+  document.getElementById('tab-placeables').addEventListener('click', function() {
+    document.getElementById('tab-placeables').classList.add('active');
+    document.getElementById('tab-pieces').classList.remove('active');
+  });
+
+  // Faction pills
+  document.querySelectorAll('.bp-faction-pill').forEach(function(pill) {
+    pill.addEventListener('click', function() {
+      document.querySelectorAll('.bp-faction-pill').forEach(function(p) { p.classList.remove('active'); });
+      pill.classList.add('active');
+    });
+  });
+
+  // Onglets étages
+  document.querySelectorAll('.bp-floor-tab').forEach(function(tab) {
+    tab.addEventListener('click', function() {
+      document.querySelectorAll('.bp-floor-tab').forEach(function(t) { t.classList.remove('active'); });
+      tab.classList.add('active');
+    });
+  });
+
+  // Placeholder propriétaire
+  var owner = localStorage.getItem('user') || '—';
+  document.getElementById('bp-plan-owner').textContent = owner;
+
+  // === MODALE SAVE — Mini-grille claim ===
+  // État : ensemble de blocs revendiqués { "gx,gy": true }
+  var claimBlocks = { '0,0': true };  // bloc principal toujours présent
+
+  function getAdjacentKeys(gx, gy) {
+    return [gx+','+( gy-1), gx+','+(gy+1), (gx-1)+','+gy, (gx+1)+','+gy];
+  }
+
+  function isAdjacent(gx, gy) {
+    return getAdjacentKeys(gx, gy).some(function(k) { return claimBlocks[k]; });
+  }
+
+  function updateClaimGrid() {
+    var cells = document.querySelectorAll('#save-claim-grid .bp-cb-cell');
+    var extCount = Object.keys(claimBlocks).length - 1;
+
+    cells.forEach(function(cell) {
+      var gx = parseInt(cell.dataset.gx);
+      var gy = parseInt(cell.dataset.gy);
+      var key = gx + ',' + gy;
+      var isMain = (key === '0,0');
+      var isClaimed = !!claimBlocks[key];
+      var adj = isAdjacent(gx, gy);
+
+      cell.className = 'bp-cb-cell';
+      if (isMain) {
+        cell.classList.add('main');
+        cell.textContent = '⚑';
+      } else if (isClaimed) {
+        cell.classList.add('ext');
+        cell.textContent = '✓';
+      } else if (adj && extCount < 5) {
+        // case disponible adjacente
+        cell.textContent = '+';
+      } else {
+        cell.classList.add('disabled');
+        cell.textContent = '';
+      }
+    });
+
+    // Résumé
+    var totalCells = Object.keys(claimBlocks).length * 100;
+    document.getElementById('save-ext-count').textContent = extCount;
+    document.getElementById('save-total-cells').textContent = totalCells;
+    var blocLabel = Object.keys(claimBlocks).length === 1
+      ? '1 × 10×10'
+      : Object.keys(claimBlocks).length + ' × 10×10';
+    document.querySelector('#save-claim-summary').innerHTML =
+      'Bloc principal + <strong id="save-ext-count">' + extCount + '</strong> extension(s)'
+      + ' — Surface totale : <strong id="save-total-cells">' + totalCells + '</strong> cellules (' + blocLabel + ')';
+  }
+
+  document.querySelectorAll('#save-claim-grid .bp-cb-cell').forEach(function(cell) {
+    cell.addEventListener('click', function() {
+      var gx = parseInt(cell.dataset.gx);
+      var gy = parseInt(cell.dataset.gy);
+      var key = gx + ',' + gy;
+      if (key === '0,0') return;  // bloc principal non-retirable
+
+      var extCount = Object.keys(claimBlocks).length - 1;
+      if (claimBlocks[key]) {
+        // Retirer seulement si l'extension n'est pas le seul point d'attache d'autres
+        delete claimBlocks[key];
+        // Vérifier que les autres blocs restent connectés (simplifié : recon traversal)
+        var connected = isConnected(claimBlocks);
+        if (!connected) { claimBlocks[key] = true; }  // annuler si déconnecté
+      } else if (isAdjacent(gx, gy) && extCount < 5) {
+        claimBlocks[key] = true;
+      }
+      updateClaimGrid();
+    });
+  });
+
+  // Vérifie connectivité BFS depuis le bloc principal
+  function isConnected(blocks) {
+    var keys = Object.keys(blocks);
+    if (keys.length <= 1) return true;
+    var visited = {};
+    var queue = ['0,0'];
+    visited['0,0'] = true;
+    while (queue.length) {
+      var cur = queue.shift();
+      var parts = cur.split(',');
+      var cx = parseInt(parts[0]), cy = parseInt(parts[1]);
+      getAdjacentKeys(cx, cy).forEach(function(k) {
+        if (blocks[k] && !visited[k]) { visited[k] = true; queue.push(k); }
+      });
+    }
+    return Object.keys(visited).length === keys.length;
+  }
+
+  // === MODALE SAVE — Compteur extensions verticales ===
+  var vertExt = 0;
+  var VERT_HEIGHTS = [
+    { above: 6,  below: 0,  desc: 'Hauteur : RDC → N6<br>Pas de sous-sol par défaut' },
+    { above: 13, below: 5,  desc: 'Hauteur : S5 → N13<br>+7 niveaux, +5 sous-sol' },
+    { above: 20, below: 10, desc: 'Hauteur : S10 → N20' },
+    { above: 27, below: 15, desc: 'Hauteur : S15 → N27' },
+    { above: 34, below: 20, desc: 'Hauteur : S20 → N34' },
+    { above: 41, below: 25, desc: 'Hauteur : S25 → N41 (maximum)' },
+  ];
+
+  function updateVertExt() {
+    document.getElementById('save-vert-val').textContent = vertExt;
+    var info = VERT_HEIGHTS[vertExt];
+    document.getElementById('save-vert-desc').innerHTML = info.desc;
+    document.getElementById('save-vert-dec').disabled = (vertExt === 0);
+    document.getElementById('save-vert-inc').disabled = (vertExt === 5);
+  }
+
+  document.getElementById('save-vert-dec').addEventListener('click', function() {
+    if (vertExt > 0) { vertExt--; updateVertExt(); }
+  });
+  document.getElementById('save-vert-inc').addEventListener('click', function() {
+    if (vertExt < 5) { vertExt++; updateVertExt(); }
+  });
+
+  // Init
+  updateClaimGrid();
+  updateVertExt();
+</script>
+
+<script src="base_planner.js"></script>
+</body>
+</html>

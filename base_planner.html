@@ -47,30 +47,131 @@
       overflow: hidden;
     }
 
-    /* Onglets Pièces / Placeables */
-    .bp-tabs {
-      display: flex;
-      flex-shrink: 0;
-      border-bottom: 1px solid #3d2b16;
-    }
-    .bp-tab {
-      flex: 1;
-      padding: 9px 4px;
+    /* Titre sidebar (remplace les onglets Pièces/Placeables) */
+    .bp-sidebar-title {
+      padding: 9px 10px;
       font-size: 10px;
       font-weight: bold;
       text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #cda434;
+      border-bottom: 1px solid #3d2b16;
+      flex-shrink: 0;
+    }
+
+    /* Barre de variantes cosmétiques (bas de la liste pièces) */
+    .bp-variant-bar {
+      flex-shrink: 0;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.2s ease;
+      border-top: 1px solid #1a1007;
+    }
+    .bp-variant-bar.open { max-height: 60px; overflow: visible; }
+    .bp-variant-bar-inner {
+      padding: 5px 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      align-items: center;
+    }
+    .bp-variant-bar-label {
+      font-size: 9px;
+      color: #3d2b16;
+      text-transform: uppercase;
       letter-spacing: 0.5px;
-      text-align: center;
+      flex-shrink: 0;
+      margin-right: 2px;
+    }
+    .bp-variant-btn {
+      padding: 2px 10px;
+      font-size: 10px;
+      border-radius: 8px;
+      border: 1px solid #2a1d0e;
+      background: rgba(26, 16, 7, 0.8);
+      color: #7a5c2e;
       cursor: pointer;
-      color: #5c4025;
-      background: none;
-      border: none;
-      border-bottom: 2px solid transparent;
-      transition: all 0.2s;
+      transition: all 0.12s;
+      font-family: 'Segoe UI', sans-serif;
+      font-weight: bold;
+    }
+    .bp-variant-btn:hover { border-color: #cda434; color: #d3b46f; }
+    .bp-variant-btn.active {
+      border-color: #f3c44f;
+      background: rgba(205, 164, 52, 0.22);
+      color: #f3c44f;
+    }
+    /* Tooltip instantané (sans délai navigateur) */
+    [data-tooltip] { position: relative; }
+    [data-tooltip]::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: calc(100% + 5px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: #14100a;
+      color: #d3b46f;
+      font-size: 9px;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 3px 7px;
+      border-radius: 3px;
+      border: 1px solid #3d2b16;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 500;
+      opacity: 0;
+      transition: opacity 0s; /* instantané */
+    }
+    [data-tooltip]:hover::after { opacity: 1; }
+
+    /* Grille de swap (panneau droit — type porte/fenêtre + skins) */
+    .bp-swap-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 4px;
+    }
+    .bp-swap-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 5px 4px;
+      border-radius: 4px;
+      border: 1px solid #2a1d0e;
+      background: rgba(26, 16, 7, 0.8);
+      cursor: pointer;
+      transition: all 0.12s;
+      min-width: 46px;
+      max-width: 72px;
       font-family: 'Segoe UI', sans-serif;
     }
-    .bp-tab:hover { color: #d3b46f; }
-    .bp-tab.active { color: #cda434; border-bottom: 2px solid #cda434; }
+    .bp-swap-btn:hover { border-color: #cda434; background: rgba(50, 30, 10, 0.9); }
+    .bp-swap-btn.current {
+      border-color: #f3c44f;
+      background: rgba(205, 164, 52, 0.16);
+      pointer-events: none;
+    }
+    .bp-swap-btn-icon {
+      width: 30px; height: 30px;
+      border-radius: 3px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: bold;
+      color: rgba(255,255,255,0.55);
+    }
+    .bp-swap-btn-label {
+      font-size: 8px; color: #7a5c2e;
+      text-align: center; line-height: 1.2;
+      width: 100%; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap;
+    }
+    .bp-swap-btn:hover .bp-swap-btn-label { color: #d3b46f; }
+    .bp-swap-btn.current .bp-swap-btn-label { color: #f3c44f; font-weight: bold; }
+    .bp-sel-section-title {
+      font-size: 9px; color: #3d2b16;
+      text-transform: uppercase; letter-spacing: 0.8px;
+      margin-bottom: 2px;
+    }
 
     /* Barre de recherche */
     .bp-search {
@@ -316,18 +417,6 @@
       position: relative;
     }
 
-    /* Grille CSS visible tant que Konva n'est pas initialisé */
-    #bp-stage-container::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(30, 18, 8, 0.4) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(30, 18, 8, 0.4) 1px, transparent 1px);
-      background-size: 32px 32px;
-      pointer-events: none;
-      z-index: 0;
-    }
 
     .bp-canvas-hint {
       position: absolute;
@@ -360,6 +449,12 @@
     }
     .bp-hud-zoom { bottom: 10px; right: 10px; }
     .bp-hud-coords { bottom: 10px; left: 10px; }
+    .bp-hud-half {
+      top: 10px; left: 50%; transform: translateX(-50%);
+      color: #f3c44f; border-color: #cda434;
+      font-size: 11px; font-weight: bold; letter-spacing: 1px;
+      pointer-events: none;
+    }
 
     /* === PANEL DROIT (propriétés) === */
     .bp-panel {
@@ -726,6 +821,23 @@
       transition: all 0.15s;
     }
     .bp-rot-btn:hover { border-color: #cda434; color: #f3c44f; }
+    .bp-half-btn {
+      padding: 3px 10px;
+      background: rgba(26, 16, 7, 0.9);
+      border: 1px solid #2a1d0e;
+      color: #7a5c2e;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 11px;
+      font-family: 'Segoe UI', sans-serif;
+      transition: all 0.15s;
+    }
+    .bp-half-btn:hover { border-color: #cda434; color: #f3c44f; }
+    .bp-half-btn.active {
+      border-color: #f3c44f;
+      background: rgba(205, 164, 52, 0.18);
+      color: #f3c44f;
+    }
     .bp-rot-value {
       font-size: 12px;
       color: #cda434;
@@ -1078,11 +1190,8 @@
   <!-- ============================= SIDEBAR PALETTE (gauche) ============================= -->
   <aside class="bp-sidebar">
 
-    <!-- Onglets Pièces / Placeables -->
-    <div class="bp-tabs">
-      <button class="bp-tab active" id="tab-pieces">Pièces struct.</button>
-      <button class="bp-tab" id="tab-placeables">Placeables</button>
-    </div>
+    <!-- Titre palette -->
+    <div class="bp-sidebar-title">Pièces structurelles</div>
 
     <!-- Recherche -->
     <div class="bp-search">
@@ -1108,9 +1217,10 @@
         <option value="">— Toutes les catégories —</option>
         <option value="foundations">Fondations</option>
         <option value="walls">Murs</option>
+        <option value="windows">Fenêtres</option>
         <option value="floors">Sols / Toits-plats</option>
         <option value="roofs">Toits inclinés</option>
-        <option value="doors">Portes &amp; Fenêtres</option>
+        <option value="doors">Portes</option>
         <option value="stairs">Escaliers &amp; Rampes</option>
         <option value="structures">Structures (piliers, échelles)</option>
         <option value="railings">Rambardes</option>
@@ -1166,6 +1276,14 @@
 
     </div>
     <!-- /bp-piece-list -->
+
+    <!-- Barre de variantes cosmétiques (apparaît quand une pièce avec skins est active) -->
+    <div class="bp-variant-bar" id="bp-variant-bar">
+      <div class="bp-variant-bar-inner">
+        <span class="bp-variant-bar-label">Peau :</span>
+        <!-- Boutons injectés par JS -->
+      </div>
+    </div>
 
   </aside>
   <!-- /bp-sidebar -->
@@ -1224,6 +1342,14 @@
       <button class="bp-tool-btn" id="tool-snap" title="Magnétisme (X)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 13h12v-2H6v2zm3 4h6v-2H9v2zM3 9v2h18V9H3z"/></svg>
       </button>
+
+      <div class="bp-tool-sep"></div>
+
+      <!-- Vue solide -->
+      <span class="bp-tool-label">Vue</span>
+      <button class="bp-tool-btn" id="tool-solid" title="Vue solide — masquer le verre (T)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/><path d="M12 6c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z"/></svg>
+      </button>
     </div>
     <!-- /bp-toolbar -->
 
@@ -1238,6 +1364,7 @@
       <!-- HUD zoom & coords -->
       <div class="bp-hud bp-hud-zoom" id="bp-hud-zoom">100%</div>
       <div class="bp-hud bp-hud-coords" id="bp-hud-coords">x:0 y:0</div>
+      <div class="bp-hud bp-hud-half" id="bp-hud-half" style="display:none;">↑ ½ étage</div>
       <!-- HUD auto-stack : étage résolu différent du courant -->
       <div class="bp-hud bp-hud-floor-resolve" id="bp-hud-floor-resolve"></div>
     </div>
@@ -1332,6 +1459,23 @@
         <button class="bp-rot-btn" id="bp-rot-ccw" title="−90°">↺</button>
         <span class="bp-rot-value" id="bp-sel-rotation">0°</span>
         <button class="bp-rot-btn" id="bp-rot-cw" title="+90°">↻</button>
+      </div>
+
+      <div class="bp-rotation-row">
+        <label>Position</label>
+        <button class="bp-half-btn" id="bp-sel-half" title="Décaler de ½ étage vers le haut (Shift pendant la pose) — pour planchers au-dessus de demi-escaliers/rampes/murs">½ étage ↑</button>
+      </div>
+
+      <!-- Swap de type (portes / fenêtres) — injecté par JS -->
+      <div id="bp-sel-swap" style="display:none; background:rgba(16,10,4,0.8); border:1px solid #2a1d0e; border-radius:4px; padding:8px;">
+        <div class="bp-sel-section-title">Changer le type</div>
+        <div class="bp-swap-grid" id="bp-swap-grid"></div>
+      </div>
+
+      <!-- Variantes cosmétiques (skins) — injecté par JS -->
+      <div id="bp-sel-skin" style="display:none; background:rgba(16,10,4,0.8); border:1px solid #2a1d0e; border-radius:4px; padding:8px;">
+        <div class="bp-sel-section-title">Apparence</div>
+        <div class="bp-swap-grid" id="bp-skin-grid"></div>
       </div>
 
       <button class="bp-delete-btn" id="bp-delete-btn">✕ Supprimer la pièce</button>
@@ -1538,16 +1682,6 @@
     overlay.addEventListener('click', function(e) {
       if (e.target === overlay) overlay.classList.remove('open');
     });
-  });
-
-  // Onglets sidebar
-  document.getElementById('tab-pieces').addEventListener('click', function() {
-    document.getElementById('tab-pieces').classList.add('active');
-    document.getElementById('tab-placeables').classList.remove('active');
-  });
-  document.getElementById('tab-placeables').addEventListener('click', function() {
-    document.getElementById('tab-placeables').classList.add('active');
-    document.getElementById('tab-pieces').classList.remove('active');
   });
 
   // Faction pills

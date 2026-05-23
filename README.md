@@ -142,32 +142,48 @@ Script Python d'archivage hebdomadaire. Maintient `dune_counts.csv` dans une fen
 ### Constructeur de Base (`base_planner.html`)
 
 > [!WARNING]
-> **Feature en cours de développement.** Sessions 0–5 livrées (pipeline + socle 3D + géométries + claim complet + multi-étages lisibles + UX avancée : undo/redo, rotation, click-to-place). Sessions 6–7 à venir (toits inclinés, placeables, sauvegarde PHP). Pas encore liée depuis `menu.html` (sera ajoutée en session 7).
+> **Feature en cours de développement.** Sessions 0–6.1 livrées (pipeline datamining v3 + socle 3D + géométries + claim + multi-étages + UX avancée + demi-étages + 9 factions). Sessions 7–8 à venir (toits inclinés, placeables, sauvegarde PHP). Pas encore liée depuis `menu.html` (sera ajoutée en session 8).
 
 Outil de planification 3D pour Dune Awakening. Permet aux membres de la guilde de poser virtuellement les pièces de construction du jeu sur une grille de claim avant de bâtir in-game.
 
 #### Choix techniques fondateurs
-- **3D abstraite avec Three.js r170** (via importmap ES module + OrbitControls). Pas de modèles in-game importés ; chaque pièce est représentée par une primitive (pavé, prisme triangulaire, rampe inclinée, marches…). Le rendu 3D est intentionnellement schématique pour rester lisible comme un blueprint.
+- **3D abstraite avec Three.js r170** (via importmap ES module + OrbitControls). Pas de modèles in-game importés ; chaque pièce est représentée par une primitive (pavé, prisme triangulaire, rampe inclinée, marches, quart de cylindre…). Le rendu 3D est intentionnellement schématique pour rester lisible comme un blueprint.
 - **Double caméra** : orthographique top-down (vue plan, équivalent 2D) ↔ perspective orbit (vue 3D inclinée). Bascule par bouton ou touche `V`. C'est le pari ergonomique central : le plan reste l'outil de travail, la 3D sert à vérifier que ça tient debout.
-- **Modèle de données sémantique** : chaque pièce porte `placement_rules` indiquant `snap_target` (cell / edge / corner), `rotation_mode`, `footprint_shape`, `vertical_offset_pct`, `ignore_groups`. Le moteur de placement dispatche selon ces règles — pas de cas particuliers en dur.
+- **Modèle de données sémantique** : chaque pièce porte `placement_rules` indiquant `snap_target` (cell / edge / corner), `footprint_shape`, `ignore_groups`. Le moteur de placement dispatche selon ces règles — pas de cas particuliers en dur.
 
-#### Pipeline de données
+#### Pipeline de données — v3 (datamining FModel direct)
 
-La donnée est dérivée des exports **FModel** du jeu (extraction des .uasset Unreal Engine) :
+La donnée est désormais entièrement dérivée des **DataTables FModel** du jeu, sans catalogue curé manuel :
 
 ```
-J:\Download\Fmodel\...\DT_BuildingData_*.json         (1 par faction, 645 pièces au total)
-J:\Download\Fmodel\...\DT_BuildableGroupData_Building.json   (92 groupes, règles de snap)
-J:\Download\files2\base_pieces_data.json              (catalogue curé Claude — précédent)
+j:\Download\Fmodel\Output\Exports\DuneSandbox\Content\Dune\Systems\Building\Data\
+  BuildingData\DT_BuildingData_Atreides.json      ┐
+  BuildingData\DT_BuildingData_Harkonnen.json      │  1 fichier par faction
+  BuildingData\DT_BuildingData_Choam.json          │  (9 fichiers au total)
+  BuildingData\DT_BuildingData_Choam_Level2.json   │
+  BuildingData\DT_BuildingData_Choam_Shelter.json  │
+  BuildingData\DT_BuildingData_Smugglers.json      │
+  BuildingData\DT_BuildingData_Watershippers.json  │
+  BuildingData\DT_BuildingData_Blockout.json       │
+  BuildingData\DT_BuildingData_MiniSets.json       ┘
+  BuildableGroupData\DT_BuildableGroupData_Building.json  (92 groupes, shapes, snap)
+  DT_DuneBuildableUiSubcategory.json                      (catégories UI officielles)
                               ↓
-                  tools/build_enriched_pieces.js      (script Node, ~250 lignes)
+               j:\Download\Fmodel\import_building_data.js   (script Node, ~350 lignes)
                               ↓
-                  base_pieces_v2.json                 (1 MB, source unique du planner)
+               base_pieces_v3.json   (643 pièces, ~780 KB, source unique du planner)
 ```
 
-Le script `tools/build_enriched_pieces.js` joint les trois sources, **corrige le `group` autoritaire** depuis le DT (à l'audit : 0 correction nécessaire, le curé était fidèle), et ajoute `placement_rules` à chaque pièce. Idempotent : peut être rejoué après chaque ré-extraction FModel post-patch du jeu.
+**Logique du script `import_building_data.js` :**
+- La faction est dérivée du **nom du fichier** (pas de `m_BuildableFaction.Name` qui a des valeurs inconsistantes comme `Choam2`, `ExtraSets`, `Smuggler`)
+- `m_BuildableBrushCornersShape` → forme de la grille (Square / TriangleIsosceles / TriangleEquilateral) via `BRUSH_SHAPE_MAP`
+- `GROUP_VISUAL_SHAPE_OVERRIDE` : force `dim.shape = 'corner'` pour les groupes visuellement arrondis (`Wall_Round_Corner*`, `Roof_Round_Corner*`, etc.) que le jeu stocke avec footprint `Square`
+- Hauteur inférée du suffixe : `_Half` → 0.5, `_Tall` → 2.0, sinon 1.0 ; largeur : `_Wide` → 2
+- Détection fenêtres : `/window/i.test(rowId)` OU `group.startsWith('Window')` OU **`/fenêtre/i.test(label_fr)`** (capture les pièces comme `Wall_Round_Corner_03` = "Fenêtre arrondie" dont l'ID ne contient pas "Window")
+- Labels depuis `m_DisplayName.LocalizedString` (traduction officielle du jeu)
+- Filtre `faction_id !== 'blockout'` à l'usage (les Blockout restent dans le JSON comme référence)
 
-Stats à l'enrichissement : 645/645 matchées, 334 cellules / 302 arêtes / 9 coins, 583 carrés / 43 triangles isocèles / 19 triangles équilatéraux.
+Stats v3 : **643 pièces**, 9 factions, 525 carrés / 86 coins / 13 coins inversés / 19 triangles équilatéraux.
 
 #### État au moment de la pause de cette branche
 
@@ -177,19 +193,22 @@ Stats à l'enrichissement : 645/645 matchées, 334 cellules / 302 arêtes / 9 co
 |---|---|
 | 0 | Pipeline d'enrichissement (`tools/build_enriched_pieces.js`), génération `base_pieces_v2.json` |
 | 1 | Socle Three.js : scène, caméras ortho/perspective, grille de claim 10×10, drag & drop palette → canvas, sélection / suppression, rotation, raycaster, bascule ortho ↔ 3D, HUD coords/zoom |
-| 2 | Géométries sémantiques (prismes triangulaires pour wedges/round-corners, rampes inclinées, escaliers en marches, panneaux verticaux fins pour murs), snap par catégorie (cellule/arête/coin), Y-base correct par catégorie (sol aligné sur top de fondation), hover indicator visuel, ghost rouge si conflit `ignore_groups` |
+| 2 | Géométries sémantiques (prismes triangulaires pour wedges/round-corners, rampes inclinées, escaliers en marches, panneaux verticaux fins pour murs), snap par catégorie (cellule/arête/coin), Y-base correct par catégorie, hover indicator visuel, ghost rouge si conflit `ignore_groups` |
 | 2.5 | **Correctifs placement vertical** : auto-stack murs (`findBestPlacementFloor` cherche le 1er étage libre), coexistence sol + toit dans `sameVerticalSpace`, fix `placeMeshAt` qui utilisait `state.currentFloor` au lieu de `item.z`. |
 | 3 | **Système de claim complet** : boundary XZ + limites verticales strictes + gestion interactive des blocs (clic + / × avec validation BFS de connectivité) + pieux verticaux cliquables (5 pips) + onglets d'étage dynamiques [`getMinFloor()..getMaxFloor()`] + `ensureFloors()`. Règles : 1 bloc principal + 5 extensions horizontales max, shape libre, 5 pieux verticaux max (+7 niveaux / +5 sous-sol par pieu). |
-| 4 | **Multi-étages lisibles** : opacité par étage (N-1 à 40%, N-2+ à 18%), contours discrets noirs (plus de doré envahissant), badge compteur sur chaque onglet (`updateFloorBadges`), HUD doré `↑ N2` quand l'auto-stack dépose sur un étage différent du courant (`showFloorResolveHud`), `userData.floorZ` sur chaque mesh. |
-| 5 | **UX avancée** : (1) géométrie correcte stairs/ramps en planches indépendantes (creuses dessous, comme dans le jeu) ; (2) géométrie `Wall_Round_Corner` (quart de cylindre creux 8 segments) ; (3) sous-catégories sidebar avec en-têtes FR mappées (70+ groupes : Mur arrondi, Fondation triangulaire, Escaliers coin int., …) ; (4) **undo/redo** stack 50 ops (Ctrl+Z, Ctrl+Y, Ctrl+Shift+Z) couvrant place / remove / rotate via `pushHistory(undo, redo)` ; (5) **rotation intelligente** R key sur pièce sélectionnée ou ghost pendant drag/click-to-place, **Ctrl+molette** ±90° (zoom OrbitControls désactivé pour éviter le conflit) ; (6) **mode click-to-place** : clic dans la sidebar → la pièce devient active (highlight doré + 📍), survol canvas → ghost suit, clic canvas → pose, Escape/clic droit → annule, pose multiple sans re-cliquer la sidebar ; (7) **détection toits par label** : `isPieceRooflike()` couvre `category === 'roofs'`, `group === 'Rooftop'`, ainsi que les labels commençant par "Toit" ou contenant "Plafond" — résout le cas où "Toit plat" et "Plancher" partagent le même `group: Floor` dans le JSON. |
-| 5.1 | **Correctifs visibilité** : (a) géométrie triangulaire (`makeTrianglePrismGeometry`) — fix de la rotation `rotateX(+π/2)` au lieu de `-π/2` qui mappait la profondeur en `-Z` et plaçait la base à `y=h` (les fondations triangulaires apparaissaient flottantes dans la cellule d'à côté) ; (b) plafond physique — un toit posé à Z occupe la même hauteur que le plancher de Z+1, donc visible **depuis Z comme plafond semi-transparent** (65%) et **depuis Z+1 comme plancher solide** ; (c) inversement, un plancher posé à Z+1 est aussi affiché comme plafond translucide quand on est sur Z ; (d) la surbrillance de la pièce active dans la sidebar persiste après une pose ou un drag accidentel (séparation propre dragstart/click). |
+| 4 | **Multi-étages lisibles** : opacité par étage (N-1 à 40%, N-2+ à 18%), contours discrets noirs, badge compteur sur chaque onglet (`updateFloorBadges`), HUD doré `↑ N2` quand l'auto-stack dépose sur un étage différent du courant (`showFloorResolveHud`), `userData.floorZ` sur chaque mesh. |
+| 5 | **UX avancée** : géométrie stairs/ramps creuse, géométrie `Wall_Round_Corner` (quart de cylindre creux 8 segments), sous-catégories sidebar FR (70+ groupes), **undo/redo** stack 50 ops (Ctrl+Z/Y), **rotation** R + Ctrl+molette, **mode click-to-place** (highlight doré + ghost + pose multiple), détection toits par label (`isPieceRooflike`). |
+| 5.1 | **Correctifs visibilité** : fix rotation géométrie triangulaire (`rotateX +π/2`), plafond physique (toit Z visible comme plafond depuis Z, plancher Z+1 idem), surbrillance sidebar stable après drag. |
+| 5.5 | **Système demi-étages** : `state.ghostHalf` + bouton UI — `findBestPlacementFloor` retourne `currentFloor - 1` si ghostHalf actif, `placeMeshAt` ajoute `+0.5 * WALL_UNIT` en Y. Détection de conflit half-aware : edge snaps comparent `it.half !== state.ghostHalf`, cell snaps idem — deux pièces à ±0.5 du même niveau ne se bloquent plus mutuellement. |
+| 6 | **Pipeline datamining v3** : `import_building_data.js` génère `base_pieces_v3.json` directement depuis les DataTables FModel. 9 factions (Atréides, Harkonnen, CHOAM, CHOAM Shelter, CHOAM N2, Contrebandiers, Marchands d'eau, Blockout, Mini-sets) avec onglets faction dans la sidebar. `BRUSH_SHAPE_MAP` mappe les enums jeu → géométrie JS. `GROUP_VISUAL_SHAPE_OVERRIDE` force `shape='corner'` pour les groupes visuellement arrondis (footprint Square dans le jeu, cylindre creux en 3D). Fenêtres arrondies distinctes des murs arrondis : cadre ouvert (`makeRoundCornerWindowGeometry` : allège + traverse + montants) + vitrage bleu (`makeRoundCornerWallGeometry` thin). Format JSON v3 : wrapper `{ pieces: [...] }`, champs `faction_id`, `label_fr/en`, `dimensions.w/d/h/shape`, `placement_rules.footprint_shape`, `menu_order`. |
+| 6.1 | **Correctifs fenêtres & catégories** : (1) `isPieceWindowType` étendu au label_fr (`/fenêtre/i`) — capture `Wall_Round_Corner_03` = "Fenêtre arrondie" dont l'ID ne contient pas "Window" → correctement classé en `category: windows` dans v3 et rendu avec cadre ouvert + vitrage ; (2) `buildVariantIndex` utilise `getDisplayGroup(p)` à la place de `p.group` brut → fenêtres arrondies et murs arrondis ne partagent plus le même groupe de variantes ; (3) vitrage des fenêtres arrondies stocké dans `userData.cornerGlass` (pas `glassPanel`) → **toujours visible** même en solidView (opacité 0.38 normal / 0.18 solidView), épaisseur portée à 60% de l'épaisseur du mur pour être clairement identifiable. Même logique de détection appliquée dans `import_building_data.js` pour la génération du JSON. |
 
 **Sessions à venir :**
 
 | Session | Contenu prévu |
 |---|---|
-| 6 | Toits inclinés (géométries `Roof_Wedge`, `Roof_Corner`, `Roof_Cover`), **placeables** (469 objets) avec règles de contact depuis `DT_PlaceablePlacementGroups.json` — boîtes proportionnelles colorées par catégorie en attendant l'import des meshes FModel `.glb`, sélection multiple (Shift+clic), copier-coller un étage entier. |
-| 7 | Sauvegarde PHP : `base_planner_api.php` (CRUD plans côté serveur), modale « Mes plans » fonctionnelle, système de partage avec `share_token` public (URL `?plan=abc123`), intégration de la tuile dans `menu.html`. |
+| 7 | Toits inclinés (géométries `Roof_Wedge`, `Roof_Corner`, `Roof_Cover`), **placeables** (469 objets) avec règles de contact depuis `DT_PlaceablePlacementGroups.json`, sélection multiple (Shift+clic), copier-coller un étage entier. |
+| 8 | Sauvegarde PHP : `base_planner_api.php` (CRUD plans côté serveur), modale « Mes plans » fonctionnelle, système de partage avec `share_token` public (URL `?plan=abc123`), intégration de la tuile dans `menu.html`. |
 
 #### Conventions techniques (à garder en tête pour la suite)
 - 1 cellule = 1 unité monde Three.js (CELL = 1)
@@ -198,37 +217,42 @@ Stats à l'enrichissement : 645/645 matchées, 334 cellules / 302 arêtes / 9 co
 - 1 bloc de claim = 10×10 cellules (`BLOCK_CELLS = 10`)
 - **Surface de marche au niveau Z** = `FOUNDATION_DEPTH + Z * WALL_UNIT` (= 0.5 + Z)
 - **Fondation au niveau Z** : pavé épais, TOP à la surface du niveau, BOTTOM 0.5 unité en-dessous
-- **Sol au niveau Z** : slab fin (15 cm), TOP à la surface du niveau (aligné avec une fondation adjacente — réponse au feedback utilisateur)
-- **Toit au niveau Z** (catégorie `roofs` OU groupe `Rooftop` OU label "Toit*/Plafond*") : slab fin, TOP à la surface du niveau Z+1 — un toit à Z et un plancher à Z+1 occupent **exactement le même Y**, d'où la logique de visibilité décalée d'un étage dans `updateFloorVisibility`
+- **Sol au niveau Z** : slab fin (15 cm), TOP à la surface du niveau
+- **Toit au niveau Z** (catégorie `roofs` OU groupe `Rooftop` OU label "Toit*/Plafond*") : slab fin, TOP à la surface du niveau Z+1 — un toit à Z et un plancher à Z+1 occupent **exactement le même Y**
 - **Mur / pilier / escalier / porte** : posés sur la surface, montent de 1 unité (ou 0.5 pour les demis)
-- Représentation des arêtes (`snap_target: 'edge'`) : `{ x, y, axis: 'h' | 'v' }` (forme canonique, pas de duplication entre cellules voisines)
+- **Demi-étage** (`dim.h === 0.5`, bouton UI ½) : `findBestPlacementFloor` retourne `currentFloor - 1`, `placeMeshAt` ajoute `+0.5 * WALL_UNIT`. Conflit détecté par comparaison `it.half !== state.ghostHalf`.
+- Représentation des arêtes (`snap_target: 'edge'`) : `{ x, y, axis: 'h' | 'v' }` (forme canonique)
 - Représentation des coins (`snap_target: 'corner'`) : `{ x, y }` aux intersections de grille (entiers)
-- **Classification verticale** (`vertClass(piece)`) → `floor` / `roof` / `stair` / `other` pour le calcul de conflits dans `sameVerticalSpace` ; permet aux toits/Rooftops de coexister avec sols/fondations au même cell+étage sans déclencher l'auto-stack
-- **Historique undo/redo** : `state.history = [{undo, redo}]` + `state.histFront`, push à chaque place/remove/rotate, max 50 entrées (les plus anciennes sont jetées par `shift()`)
-- **OrbitControls** : `enableZoom = false` — tout le zoom (ortho ET persp) passe par `zoomBy(factor)`, ce qui libère Ctrl+molette pour la rotation du ghost sans conflit
+- **`isPieceWindowType(p)`** : vérifie `/window/i.test(p.id)` OU `p.group.startsWith('Window')` OU `/fenêtre/i.test(p.label_fr)` — même logique dans le JS et dans `import_building_data.js`
+- **`getDisplayGroup(p)`** : retourne `'Window_Round_Corner'` / `'Window'` pour les fenêtres, sinon `p.group` — utilisé par `buildVariantIndex` pour séparer les variantes fenêtres des variantes murs
+- **`GROUP_VISUAL_SHAPE_OVERRIDE`** : liste de groupes dont `dim.shape` est forcé à `'corner'` (ex. `Wall_Round_Corner`) indépendamment du footprint jeu (`Square`) — nécessaire pour que la géométrie JS soit correcte
+- **Historique undo/redo** : `state.history = [{undo, redo}]` + `state.histFront`, push à chaque place/remove/rotate, max 50 entrées
+- **OrbitControls** : `enableZoom = false` — tout le zoom passe par `zoomBy(factor)`, ce qui libère Ctrl+molette pour la rotation du ghost
 
 #### Fichiers de la feature
 
 ```
-base_planner.html              # Layout + importmap Three.js + modales + CSS sidebar (~1700 lignes)
-base_planner.js                # Logique 3D complète (~2100 lignes après session 5)
-base_pieces_v2.json            # Catalogue enrichi (645 pièces, 1 MB)
+base_planner.html              # Layout + importmap Three.js + modales + CSS sidebar
+base_planner.js                # Logique 3D complète (~2200 lignes après session 6.1)
+base_pieces_v3.json            # Catalogue dataminé (643 pièces, ~780 KB, source unique)
 base_planner_v1.bak.html       # Backup Konva (à supprimer après validation longue)
 base_planner_v1.bak.js         # Backup Konva (idem)
 tools/
-  └── build_enriched_pieces.js # Script Node de génération du JSON v2 (idempotent)
+  └── build_enriched_pieces.js # Script v2 — conservé mais remplacé par import_building_data.js
+
+j:\Download\Fmodel\
+  └── import_building_data.js  # Script v3 — génère base_pieces_v3.json depuis les DataTables FModel
+                               # À relancer après chaque ré-extraction FModel post-patch du jeu
 ```
 
-#### Nouveaux fichiers FModel disponibles (récupérés post-session 2)
+#### Relancer le pipeline après un patch jeu
 
-| Fichier | Utilité pour le planner |
-|---|---|
-| `DT_DuneBuildableUiSubcategory.json` | **Prioritaire session 3** — contient les sous-catégories UI exactes du jeu (Foundations, Walls, Triangle_Walls, Roofs, Ramps, Stairs, Decorative, Railings, Floors, Lighting, Furniture, Banners, Misc, Fabricators…). Permet d'aligner la sidebar du planner sur l'interface in-game. |
-| `DT_PlaceablePlacementGroups.json` | **Prioritaire session 5** — groupes de placement des placeables (Chair, Table, Vases, Carpets, Shelves, WallShelves, SmallDecorations…) avec `m_ValidContactGroups`. Alimente directement la logique de snap des placeables sur les meubles/sols. |
-| `DT_DuneSocketSetupData.json` | Session 3 optionnelle — configurations de sockets (Empty, Angled…). Utile si on veut implémenter les connexions précises entre pièces. |
-| `DT_DuneSocketCostsData.json` | Session future — coûts par type de socket (Foundation_Edge: 100, Sideways/Up/Down: 10). Base d'un futur calculateur de coût de construction. |
-| `DT_BuildableStabilizationGroupData.json` | Info sur les temps de stabilisation (NoGroup/Shelter/Outpost). Pas utilisable en 3D planner, peut alimenter une doc ou tooltip si besoin. |
-| `CDT_BuildableGroupData.json`, `CDT_BuildingData.json`, `CDT_PlaceableData.json` | Formats CDT (compiled data tables UE). À examiner — probablement redondant avec les DT_ déjà intégrés, mais peuvent contenir des données supplémentaires. À analyser lors du prochain passage sur le pipeline. |
+```bash
+# Depuis j:\Download\Fmodel\
+node import_building_data.js
+# → Écrit directement dans J:\Download\Serveur\Carte Dune OK\DuneMap\base_pieces_v3.json
+# Puis déployer base_pieces_v3.json + base_planner.js via WinSCP → /srv/dune-map/v2/
+```
 
 #### Raccourcis clavier / souris
 
@@ -247,13 +271,12 @@ tools/
 | Drag depuis la sidebar | Mode drag-and-drop classique (toujours fonctionnel) |
 
 #### Reprise dans une nouvelle session — checklist
-1. Relancer le pipeline si FModel a été ré-extrait : `cd tools && node build_enriched_pieces.js`
-2. Vérifier que `base_pieces_v2.json` est bien déployé sur le serveur (1 MB)
-3. Le HTML porte des inline scripts pour les modales (save/plans/share) — fonctionnels visuellement mais l'appel API n'existe pas encore (prévu session 7)
-4. `base_placeables_data.json` est référencé dans le code (`fetch(PLACEABLES_JSON_URL)`) mais **n'existe pas encore** sur le disque — l'onglet Placeables sera implémenté en session 6 après extraction FModel des meshes/datatables placeables
-5. Les `placement_rules.ignore_groups` sont exploitées (matrice de compatibilité opérationnelle), mais `vertical_offset_pct` ne l'est pas encore — affinement possible si besoin
-6. Three.js et OrbitControls sont chargés via importmap depuis `unpkg.com` — vérifier que le serveur autorise les imports CORS depuis ce CDN si déploiement en production HTTPS
-7. Le sandbox Three.js utilise `MeshStandardMaterial.transparent = true` sur les pièces des autres étages — vérifier le rendu si on change la lighting (pas de soucis actuellement avec la lumière ambiante actuelle)
+1. Relancer le pipeline si FModel a été ré-extrait : `cd j:\Download\Fmodel && node import_building_data.js`
+2. Vérifier que `base_pieces_v3.json` (~780 KB) est bien déployé sur le serveur
+3. Le HTML porte des inline scripts pour les modales (save/plans/share) — fonctionnels visuellement mais l'appel API n'existe pas encore (prévu session 8)
+4. `base_placeables_data.json` est référencé dans le code mais **n'existe pas encore** — prévu session 7
+5. Les `placement_rules.ignore_groups` sont exploitées (matrice de compatibilité opérationnelle)
+6. Three.js et OrbitControls sont chargés via importmap depuis `unpkg.com`
 
 ---
 
@@ -313,7 +336,7 @@ DuneMap/
 ├── skills.js             # Simulateur de talents + commandes de craft
 ├── planner.js            # Planificateur d'événements
 ├── migration.js          # Logique de migration (validation, refus, Discord)
-├── base_planner.js       # Logique 3D du Constructeur de Base (Three.js, ~2100 lignes après session 5)
+├── base_planner.js       # Logique 3D du Constructeur de Base (Three.js, ~2200 lignes après session 6.1)
 ├── auth-guard.js         # Protection des pages (redirection login si non connecté)
 │
 ├── save.php              # API principale (bases, utilisateurs, craft, commandes)
@@ -333,7 +356,7 @@ DuneMap/
 ├── profiles_data.json    # Profils joueurs (avatar, Discord)
 ├── landsraad_data.json   # Quêtes disponibles
 ├── metiers.json          # Définitions des talents
-├── base_pieces_v2.json   # Catalogue enrichi des pièces du Constructeur de Base (645 pièces, 1 MB)
+├── base_pieces_v3.json   # Catalogue dataminé des pièces du Constructeur de Base (643 pièces, ~780 KB)
 ├── base_placeables_data.json  # Catalogue des placeables Dune Awakening (469 objets)
 ├── last_wipe.txt         # Horodatage du dernier wipe hebdomadaire du Désert Profond
 │

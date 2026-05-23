@@ -22,8 +22,15 @@ const PILLAR_W          = 0.25;  // section d'un pilier
 const WALL_THICKNESS    = 0.12;  // épaisseur visuelle d'un mur
 const RAILING_HEIGHT    = 0.45;
 
-const PIECES_JSON_URL     = 'base_pieces_v2.json';
-const PLACEABLES_JSON_URL = 'base_placeables_data.json';
+const PIECES_JSON_URL = 'base_pieces_v3.json';
+
+// Groupes "portes" pour le swap de type dans le panneau propriétés
+const DOOR_GROUPS = new Set([
+  'Door_Frame', 'Door_Frame_Wide', 'Door_Frame_Tall',
+  'Door_Frame_Garage', 'PrudenceDoor_Frame', 'Passageway', 'Hatch_Frame',
+]);
+const isWindowGroup = g => typeof g === 'string' && g.startsWith('Window');
+const isDoorGroup   = g => DOOR_GROUPS.has(g);
 
 // Claim limits (règles officielles Dune Awakening)
 const MAX_CLAIM_BLOCKS    = 6;   // 1 bloc principal + 5 extensions horizontales
@@ -59,7 +66,8 @@ const COLOR_HOVER_HL     = 0xf3c44f;  // surbrillance edge/corner cible
 // ============================================================
 const state = {
   pieces:      [],
-  placeables:  [],
+  canonicals:  [],   // une pièce par (faction, group) — pas de doublons cosmétiques
+  variantMap:  new Map(), // pieceId → Piece[] (toutes les variantes du même groupe)
   piecesById:  new Map(),
   plan: {
     id:    null,
@@ -79,7 +87,6 @@ const state = {
   },
   currentFloor:   0,
   selectedItemId: null,
-  activeTab:      'pieces',
   activeFaction:  '',
   activeCategory: '',
   searchQuery:    '',
@@ -93,6 +100,10 @@ const state = {
   ghostRotation:  0,
   // Click-to-place : pièce sélectionnée dans la sidebar, posée par clic sur le canvas
   activePieceId:  null,
+  // Vue solide : masque le verre (fenêtres transparentes)
+  solidView:      false,
+  // Mode demi-étage : la pièce en cours de pose est décalée de +0.5 WALL_UNIT
+  ghostHalf:      false,
 };
 
 // ============================================================
@@ -141,6 +152,13 @@ function cacheDom() {
   dom.deleteBtn    = document.getElementById('bp-delete-btn');
   dom.rotCw        = document.getElementById('bp-rot-cw');
   dom.rotCcw       = document.getElementById('bp-rot-ccw');
+  dom.selSwap      = document.getElementById('bp-sel-swap');
+  dom.swapGrid     = document.getElementById('bp-swap-grid');
+  dom.selSkin      = document.getElementById('bp-sel-skin');
+  dom.skinGrid     = document.getElementById('bp-skin-grid');
+  dom.variantBar   = document.getElementById('bp-variant-bar');
+  dom.selHalf      = document.getElementById('bp-sel-half');
+  dom.hudHalf      = document.getElementById('bp-hud-half');
 }
 function setText(el, v) { if (el) el.textContent = v; }
 
@@ -232,22 +250,53 @@ document.addEventListener('DOMContentLoaded', init);
 // CHARGEMENT CATALOGUE
 // ============================================================
 async function loadCatalog() {
-  const [piecesResp, placeablesResp] = await Promise.all([
-    fetch(PIECES_JSON_URL),
-    fetch(PLACEABLES_JSON_URL),
-  ]);
-  if (!piecesResp.ok)     throw new Error('pieces '     + piecesResp.status);
-  if (!placeablesResp.ok) throw new Error('placeables ' + placeablesResp.status);
-
-  const piecesData     = await piecesResp.json();
-  const placeablesData = await placeablesResp.json();
-
+  const resp = await fetch(PIECES_JSON_URL);
+  if (!resp.ok) throw new Error('pieces ' + resp.status);
+  const piecesData = await resp.json();
   state.pieces = (piecesData.pieces || []).filter(p => p.faction_id !== 'blockout');
-  state.placeables = placeablesData.placeables || [];
+
+  const { canonicals, variantMap } = buildVariantIndex(state.pieces);
+  state.canonicals = canonicals;
+  state.variantMap = variantMap;
 
   state.piecesById = new Map();
-  for (const p of state.pieces)     state.piecesById.set(p.id, p);
-  for (const p of state.placeables) state.piecesById.set(p.id, p);
+  for (const p of state.pieces) state.piecesById.set(p.id, p);
+}
+
+/**
+ * Construit l'index des variantes cosmétiques.
+ * Deux pièces de même (faction_id, group) sont des variantes cosmétiques (même forme,
+ * même snap, skin différent). On expose :
+ *  - canonicals : une pièce par (faction, group), la première par menu_order
+ *  - variantMap : pieceId → Piece[] (toutes les variantes du groupe, triées par menu_order)
+ */
+function buildVariantIndex(pieces) {
+  const byKey = new Map();
+  for (const p of pieces) {
+    // Utiliser getDisplayGroup pour que les fenêtres (Window_Round_Corner)
+    // ne soient pas groupées avec les murs (Wall_Round_Corner) de même groupe JSON
+    const key = (p.faction_id || '') + '\x00' + (getDisplayGroup(p) || p.id);
+    if (!byKey.has(key)) byKey.set(key, []);
+    byKey.get(key).push(p);
+  }
+  for (const arr of byKey.values()) {
+    arr.sort((a, b) => (a.menu_order ?? 9999) - (b.menu_order ?? 9999));
+  }
+  const variantMap = new Map();
+  for (const arr of byKey.values()) {
+    for (const p of arr) variantMap.set(p.id, arr);
+  }
+  // Canoniques : première pièce rencontrée par groupe (ordre JSON = ordre menu naturel)
+  const canonicals = [];
+  const seen = new Set();
+  for (const p of pieces) {
+    const key = (p.faction_id || '') + '\x00' + (getDisplayGroup(p) || p.id);
+    if (!seen.has(key)) {
+      seen.add(key);
+      canonicals.push(byKey.get(key)[0]);
+    }
+  }
+  return { canonicals, variantMap };
 }
 
 // ============================================================
@@ -495,6 +544,224 @@ function makeStairsGeometry(w, h, d, steps = 5) {
 }
 
 /**
+ * Cadre de porte : deux montants + linteau, ouverture libre en bas.
+ * Géométrie centrée sur Y (de -h/2 à +h/2) → compatible avec placeMeshAt edge.
+ * frameW : largeur des montants, fhRatio : fraction de h pour le linteau.
+ */
+function makeDoorFrameGeometry(w, h, frameW = 0.10, fhRatio = 0.12) {
+  const t    = WALL_THICKNESS;
+  const fh   = h * fhRatio;   // hauteur du linteau
+  const opH  = h - fh;        // hauteur de l'ouverture (du sol jusqu'au linteau)
+  const hy   = h / 2;         // offset de centrage vertical
+
+  const pos = [];
+  const idx = [];
+  let vi = 0;
+
+  // Ajoute un pavé x1→x2, y1→y2 (coordonnées absolues, décalées de -hy),
+  // sur toute l'épaisseur du mur (z de -t/2 à +t/2).
+  function box(x1, y1, x2, y2) {
+    const Y1 = y1 - hy, Y2 = y2 - hy;
+    const z1 = -t / 2,  z2 =  t / 2;
+    const b = vi;
+    pos.push(
+      x1,Y1,z1, x2,Y1,z1, x2,Y2,z1, x1,Y2,z1,
+      x1,Y1,z2, x2,Y1,z2, x2,Y2,z2, x1,Y2,z2,
+    );
+    idx.push(
+      b,b+2,b+1, b,b+3,b+2,       // avant
+      b+4,b+5,b+6, b+4,b+6,b+7,  // arrière
+      b,b+1,b+5, b,b+5,b+4,       // bas
+      b+3,b+7,b+6, b+3,b+6,b+2,  // haut
+      b,b+4,b+7, b,b+7,b+3,       // gauche
+      b+1,b+2,b+6, b+1,b+6,b+5,  // droite
+    );
+    vi += 8;
+  }
+
+  const hw = w / 2;
+  box(-hw,        0,  -hw + frameW, opH);  // montant gauche
+  box(hw - frameW, 0,   hw,         opH);  // montant droit
+  box(-hw,       opH,   hw,          h);   // linteau
+
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+
+/**
+ * Cadre de fenêtre : allège (bas) + traverse (haut) + montants latéraux.
+ * Ouverture centrale vide → vitrage ajouté séparément dans buildMeshForPiece.
+ * Géométrie centrée sur Y (de -h/2 à +h/2).
+ */
+function makeWindowGeometry(w, h, frameW = 0.09) {
+  const t       = WALL_THICKNESS;
+  const sillH   = h * 0.28;              // allège basse
+  const topH    = h * 0.18;              // traverse haute
+  const openH   = h - sillH - topH;      // hauteur de l'ouverture vitrée
+  const hy      = h / 2;
+
+  const pos = [];
+  const idx = [];
+  let vi = 0;
+
+  function box(x1, y1, x2, y2) {
+    const Y1 = y1 - hy, Y2 = y2 - hy;
+    const z1 = -t / 2,  z2 =  t / 2;
+    const b = vi;
+    pos.push(
+      x1,Y1,z1, x2,Y1,z1, x2,Y2,z1, x1,Y2,z1,
+      x1,Y1,z2, x2,Y1,z2, x2,Y2,z2, x1,Y2,z2,
+    );
+    idx.push(
+      b,b+2,b+1, b,b+3,b+2,
+      b+4,b+5,b+6, b+4,b+6,b+7,
+      b,b+1,b+5, b,b+5,b+4,
+      b+3,b+7,b+6, b+3,b+6,b+2,
+      b,b+4,b+7, b,b+7,b+3,
+      b+1,b+2,b+6, b+1,b+6,b+5,
+    );
+    vi += 8;
+  }
+
+  const hw = w / 2;
+  box(-hw, 0,             hw,  sillH);           // allège
+  box(-hw, sillH + openH, hw,  h);                // traverse haute
+  box(-hw, sillH, -hw + frameW, sillH + openH);  // montant gauche
+  box(hw - frameW, sillH,  hw, sillH + openH);   // montant droit
+
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+
+/**
+ * Quart de disque SOLIDE (fondation arrondie en coin) — pie-slice de CELL×CELL × depth.
+ * Origine à (0, -depth/2, 0), arc dans le quadrant +X,+Z (angle 0→PI/2).
+ */
+function makeRoundFoundationGeometry(outerR = CELL, depth = FOUNDATION_DEPTH, segments = 8) {
+  const halfD = depth / 2;
+  const N = segments;
+  const pos = [], idx = [];
+
+  // Niveau bas : center (0) + arc[0..N] (1..N+1)
+  pos.push(0, -halfD, 0);
+  for (let i = 0; i <= N; i++) {
+    const a = (Math.PI / 2) * (i / N);
+    pos.push(outerR * Math.cos(a), -halfD, outerR * Math.sin(a));
+  }
+  // Niveau haut : center (N+2) + arc[0..N] (N+3..2N+3)
+  pos.push(0, halfD, 0);
+  for (let i = 0; i <= N; i++) {
+    const a = (Math.PI / 2) * (i / N);
+    pos.push(outerR * Math.cos(a), halfD, outerR * Math.sin(a));
+  }
+
+  const bC = 0, tC = N + 2;
+  const bA = i => 1 + i;
+  const tA = i => N + 3 + i;
+
+  // Face basse (normal -Y) : CCW depuis le bas
+  for (let i = 0; i < N; i++) idx.push(bC, bA(i), bA(i + 1));
+  // Face haute (normal +Y) : CCW depuis le haut
+  for (let i = 0; i < N; i++) idx.push(tC, tA(i + 1), tA(i));
+  // Paroi externe arrondie (normal radial outward)
+  for (let i = 0; i < N; i++) {
+    idx.push(bA(i), tA(i), tA(i+1),  bA(i), tA(i+1), bA(i+1));
+  }
+  // Face radiale angle=0 (plan z=0, normal -Z)
+  idx.push(bC, bA(0), tA(0),  bC, tA(0), tC);
+  // Face radiale angle=PI/2 (plan x=0, normal -X)
+  idx.push(bC, tC, tA(N),  bC, tA(N), bA(N));
+
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+  g.setIndex(idx);
+  // toNonIndexed() duplique les sommets pour que chaque triangle ait les siens.
+  // computeVertexNormals() calcule alors une normale par face (flat shading géométrique)
+  // sans interpolation entre la face haute et la paroi courbe → pas de dégradé.
+  const flat = g.toNonIndexed();
+  flat.computeVertexNormals();
+  return flat;
+}
+
+/**
+ * Quart de cylindre CREUX façon FENÊTRE — arc de 0 à PI/2 dans le plan XZ.
+ * Génère un cadre ouvert : allège en bas, traverse en haut, montants aux deux extrémités.
+ * Le vide central (ouverture vitrée) n'a PAS de géométrie — le vitrage est ajouté séparément.
+ */
+function makeRoundCornerWindowGeometry(outerR = CELL, h = WALL_UNIT, thickness = WALL_THICKNESS, segments = 8) {
+  const innerR = outerR - thickness;
+  const sillH  = h * 0.25;   // hauteur de l'allège
+  const topH   = h * 0.21;   // hauteur de la traverse
+  const y1     = sillH;
+  const y2     = h - topH;
+
+  const positions = [];
+  const indices   = [];
+
+  /** Ajoute une bande de quart-cylindre entre yBot et yTop. */
+  function addBand(yBot, yTop) {
+    const base = positions.length / 3;
+    for (let i = 0; i <= segments; i++) {
+      const a = (Math.PI / 2) * (i / segments);
+      const c = Math.cos(a), s = Math.sin(a);
+      positions.push(
+        outerR * c, yBot, outerR * s,   // 4i+0  outer-bot
+        outerR * c, yTop, outerR * s,   // 4i+1  outer-top
+        innerR * c, yBot, innerR * s,   // 4i+2  inner-bot
+        innerR * c, yTop, innerR * s,   // 4i+3  inner-top
+      );
+    }
+    for (let i = 0; i < segments; i++) {
+      const a = base + i * 4, b = base + (i + 1) * 4;
+      indices.push(a,   a+1, b+1,  a,   b+1, b);     // face extérieure
+      indices.push(a+2, b+2, b+3,  a+2, b+3, a+3);   // face intérieure
+      indices.push(a+1, a+3, b+3,  a+1, b+3, b+1);   // dessus
+      indices.push(a,   b,   b+2,  a,   b+2, a+2);   // dessous
+    }
+    // Capuchon angle=0 (normal -Z)
+    indices.push(base, base+3, base+1,  base, base+2, base+3);
+    // Capuchon angle=PI/2 (normal -X)
+    const e = base + segments * 4;
+    indices.push(e, e+1, e+3,  e, e+3, e+2);
+  }
+
+  addBand(0,  y1);   // allège (sill)
+  addBand(y2, h);    // traverse (top bar)
+
+  // ── Montant angle=0 (plan z=0, normal -Z) ──
+  const jb = positions.length / 3;
+  positions.push(
+    outerR, y1, 0,   // jb+0 outer-bot
+    outerR, y2, 0,   // jb+1 outer-top
+    innerR, y1, 0,   // jb+2 inner-bot
+    innerR, y2, 0,   // jb+3 inner-top
+  );
+  indices.push(jb, jb+3, jb+1,  jb, jb+2, jb+3);
+
+  // ── Montant angle=PI/2 (plan x=0, normal -X) ──
+  const jp = positions.length / 3;
+  positions.push(
+    0, y1, outerR,   // jp+0 outer-bot
+    0, y2, outerR,   // jp+1 outer-top
+    0, y1, innerR,   // jp+2 inner-bot
+    0, y2, innerR,   // jp+3 inner-top
+  );
+  indices.push(jp, jp+1, jp+3,  jp, jp+3, jp+2);
+
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(new Float32Array(positions), 3));
+  g.setIndex(indices);
+  g.computeVertexNormals();
+  return g;
+}
+
+/**
  * Quart de cylindre creux (murs arrondis) — arc de 0 à PI/2 dans le plan XZ.
  * L'origine est au centre de l'arc (coin intérieur de la cellule).
  * segments = résolution angulaire (8 suffit).
@@ -552,6 +819,31 @@ function createGeometryForPiece(piece) {
   const group = piece.group || '';
   const isHalf = (dim.h === 0.5);
 
+  // --- Porte : cadre avec ouverture basse ---
+  if (cat === 'doors' && isDoorGroup(group) && rules.snap_target === 'edge') {
+    const h = (dim.h && dim.h > 0 ? dim.h : 1) * WALL_UNIT;
+    // Porte large (w ≥ 1.5 cellule) → montants plus fins pour ne pas obstruer l'ouverture
+    const frameW = w >= 1.5 * CELL ? 0.12 : 0.10;
+    return makeDoorFrameGeometry(w, h, frameW);
+  }
+
+  // --- Fondation arrondie en coin : disque-quart solide ---
+  if (cat === 'foundations' && dim.shape === 'corner') {
+    return makeRoundFoundationGeometry(CELL, FOUNDATION_DEPTH);
+  }
+
+  // --- Fenêtre arrondie en coin : cadre ouvert (allège + traverse + montants) ---
+  if (isPieceWindowType(piece) && rules.snap_target === 'edge' && dim.shape === 'corner') {
+    const h = (dim.h && dim.h > 0 ? dim.h : 1) * WALL_UNIT;
+    return makeRoundCornerWindowGeometry(CELL, h, WALL_THICKNESS);
+  }
+
+  // --- Fenêtre plate : cadre rectangulaire avec allège et traverse ---
+  if (isPieceWindowType(piece) && rules.snap_target === 'edge') {
+    const h = (dim.h && dim.h > 0 ? dim.h : 1) * WALL_UNIT;
+    return makeWindowGeometry(w, h);
+  }
+
   // --- Murs arrondis en coin (Wall_Round_Corner*) — quart de cylindre ---
   if (rules.snap_target === 'edge' && dim.shape === 'corner') {
     const h = (dim.h && dim.h > 0 ? dim.h : 1) * WALL_UNIT;
@@ -586,7 +878,12 @@ function createGeometryForPiece(piece) {
     return makeRampGeometry(w, h, d);
   }
 
-  // --- Triangulaires (wedges, round corners de sols/fondations/toits) ---
+  // --- Sol / Toit arrondi en coin : quart de disque plat (même forme que fondation arrondie) ---
+  if ((cat === 'floors' || cat === 'roofs') && dim.shape === 'corner') {
+    return makeRoundFoundationGeometry(CELL, FLOOR_THICKNESS);
+  }
+
+  // --- Triangulaires (wedges, round corners de fondations) ---
   if (rules.footprint_shape === 'triangle_isosceles' || rules.footprint_shape === 'triangle_equilateral') {
     let h;
     if (cat === 'foundations') h = FOUNDATION_DEPTH;
@@ -621,24 +918,63 @@ function placeMeshAt(mesh, item, piece) {
   const rules = piece.placement_rules || {};
   const w     = (dim.w || 1) * CELL;
   const d     = (dim.d || 1) * CELL;
-  const yBase = getFloorYBase(item.z ?? state.currentFloor) + getCategoryYOffset(piece);
+  // item.half = true → décalage de +½ étage (Shift pendant la pose : monte d'un demi-niveau
+  // au-dessus du SOL COURANT, pour placer un plancher au sommet de demi-escaliers/rampes/murs).
+  // L'item reste enregistré dans l'étage courant (item.z inchangé), pas dans l'étage au-dessus.
+  const yBase = getFloorYBase(item.z ?? state.currentFloor) + getCategoryYOffset(piece)
+              + (item.half ? 0.5 * WALL_UNIT : 0);
   const cat   = piece.category;
 
-  // ---- Snap edge — mur arrondi (arc centré sur le coin de l'arête) ----
+  // ---- Fondation arrondie en coin (snap_target='cell', shape='corner') ----
+  // Géométrie : disque-quart, origine à (0,0,0) = coin bas de la cellule.
+  // Rotation autour du centre de la cellule (item.x+CELL/2, item.y+CELL/2).
+  if (cat === 'foundations' && dim.shape === 'corner') {
+    const userRad = THREE.MathUtils.degToRad(item.rotation || 0);
+    const cx = item.x + CELL / 2, cz = item.y + CELL / 2;
+    const dx0 = -CELL / 2, dz0 = -CELL / 2;
+    mesh.position.x = cx + dx0 * Math.cos(userRad) + dz0 * Math.sin(userRad);
+    mesh.position.z = cz - dx0 * Math.sin(userRad) + dz0 * Math.cos(userRad);
+    mesh.position.y = yBase + FOUNDATION_DEPTH / 2;
+    mesh.rotation.y = userRad;
+    return;
+  }
+
+  // ---- Sol / Toit arrondi en coin (même logique, épaisseur FLOOR_THICKNESS) ----
+  if ((cat === 'floors' || cat === 'roofs') && dim.shape === 'corner') {
+    const userRad = THREE.MathUtils.degToRad(item.rotation || 0);
+    const cx = item.x + CELL / 2, cz = item.y + CELL / 2;
+    const dx0 = -CELL / 2, dz0 = -CELL / 2;
+    mesh.position.x = cx + dx0 * Math.cos(userRad) + dz0 * Math.sin(userRad);
+    mesh.position.z = cz - dx0 * Math.sin(userRad) + dz0 * Math.cos(userRad);
+    mesh.position.y = yBase + FLOOR_THICKNESS / 2;
+    mesh.rotation.y = userRad;
+    return;
+  }
+
+  // ---- Snap edge — mur/fenêtre arrondi(e) : rotation autour du centre de cellule ----
   if (rules.snap_target === 'edge' && dim.shape === 'corner') {
-    const h = (dim.h && dim.h > 0 ? dim.h : 1) * WALL_UNIT;
-    // L'arc commence à (outerR, 0, 0) et finit à (0, 0, outerR).
-    // On positionne le centre de l'arc (0,0,0) sur le coin gauche/bas de l'arête.
+    // L'arc occupe une cellule CELL×CELL ; son centre géométrique sert de pivot de rotation.
+    // Origin de l'arc en frame de base (sans rotation user) = coin (item.x, item.y),
+    // soit un décalage (-CELL/2, -CELL/2) depuis le centre de la cellule.
+    const baseRotY = (item.axis === 'h') ? 0 : -Math.PI / 2;
+    const userRad  = THREE.MathUtils.degToRad(item.rotation || 0);
+    // Centre de la cellule occupée par l'arc — dépend de l'axe :
+    //   axis='h' : arc dans le quadrant +X,+Z depuis (item.x, item.y) → centre à (+CELL/2, +CELL/2)
+    //   axis='v' : arc dans le quadrant -X,+Z depuis (item.x, item.y) → centre à (-CELL/2, +CELL/2)
+    let cx, cz, dx0, dz0;
     if (item.axis === 'h') {
-      mesh.position.x = item.x;       // coin gauche de l'arête horizontale
-      mesh.position.z = item.y;
-      mesh.rotation.y = 0;
+      cx = item.x + CELL / 2;  cz = item.y + CELL / 2;
+      dx0 = -CELL / 2;  dz0 = -CELL / 2;
     } else {
-      mesh.position.x = item.x;
-      mesh.position.z = item.y;       // coin bas de l'arête verticale
-      mesh.rotation.y = -Math.PI / 2; // fait pointer l'arc vers l'intérieur de la cellule
+      cx = item.x - CELL / 2;  cz = item.y + CELL / 2;
+      dx0 =  CELL / 2;  dz0 = -CELL / 2;
     }
-    mesh.position.y = yBase; // origine bas, pas de +h/2 (arc non centré Y)
+    // Rotation Three.js Y positive : +X → -Z, formule (x,z)→(x·cosα+z·sinα, -x·sinα+z·cosα)
+    mesh.position.x = cx + dx0 * Math.cos(userRad) + dz0 * Math.sin(userRad);
+    mesh.position.z = cz - dx0 * Math.sin(userRad) + dz0 * Math.cos(userRad);
+    mesh.position.y = yBase; // arc non centré en Y (origine au bas)
+    mesh.rotation.y = baseRotY + userRad;
+    return; // rotation déjà appliquée — ne pas retomber dans le bloc générique ci-dessous
   }
   // ---- Snap edge — mur droit ----
   else if (rules.snap_target === 'edge') {
@@ -767,6 +1103,49 @@ function buildMeshForPiece(piece, item) {
 
   placeMeshAt(mesh, item, piece);
 
+  const _dimW  = piece.dimensions || {};
+  const _rules = piece.placement_rules || {};
+
+  // Vitrage arc pour fenêtre arrondie en coin — toujours visible, opacité réduite en solidView
+  if (isPieceWindowType(piece) && _rules.snap_target === 'edge' && _dimW.shape === 'corner') {
+    const h      = (_dimW.h && _dimW.h > 0 ? _dimW.h : 1) * WALL_UNIT;
+    const sillH  = h * 0.25;
+    const topH   = h * 0.21;
+    const openH  = h - sillH - topH;   // hauteur exacte de l'ouverture
+    // Vitrage centré dans l'épaisseur du mur (20%→80%), bien visible
+    const gGlass = makeRoundCornerWallGeometry(CELL - WALL_THICKNESS * 0.2, openH, WALL_THICKNESS * 0.60, 8);
+    const mGlass = new THREE.MeshStandardMaterial({
+      color: 0x88ddff, transparent: true, opacity: state.solidView ? 0.18 : 0.38,
+      roughness: 0.05, metalness: 0.25, depthWrite: false,
+    });
+    const glass = new THREE.Mesh(gGlass, mGlass);
+    glass.position.y = sillH;   // posé juste au-dessus de l'allège
+    // Stocké dans cornerGlass (pas glassPanel) : toujours visible, opacité seule change
+    mesh.add(glass);
+    mesh.userData.cornerGlass = glass;
+  }
+
+  // Vitrage semi-transparent pour les fenêtres plates (pas pour les arrondies)
+  if (isPieceWindowType(piece)
+      && _rules.snap_target === 'edge'
+      && _dimW.shape !== 'corner') {   // fenêtre arrondie → pas de verre rectangulaire
+    const h      = (_dimW.h && _dimW.h > 0 ? _dimW.h : 1) * WALL_UNIT;
+    const ww     = (_dimW.w || 1) * CELL;
+    const sillH  = h * 0.28;
+    const openH  = h * 0.54;
+    const frameW = 0.09;
+    const gGlass = new THREE.BoxGeometry(ww - frameW * 2, openH, WALL_THICKNESS * 0.22);
+    const mGlass = new THREE.MeshStandardMaterial({
+      color: 0x88ddff, transparent: true, opacity: 0.28,
+      roughness: 0.05, metalness: 0.25, depthWrite: false,
+    });
+    const glass = new THREE.Mesh(gGlass, mGlass);
+    glass.position.y = sillH + openH / 2 - h / 2; // centré dans l'ouverture (espace local)
+    glass.visible = !state.solidView;               // respecte le mode vue solide
+    mesh.add(glass);
+    mesh.userData.glassPanel = glass;
+  }
+
   mesh.userData.itemId    = item.id;
   mesh.userData.pieceId   = piece.id;
   mesh.userData.piece     = piece;
@@ -779,6 +1158,7 @@ function buildMeshForPiece(piece, item) {
 // VISIBILITÉ PAR ÉTAGE — opacité, overlay doré N-1
 // ============================================================
 function updateFloorVisibility() {
+  if (state.solidView) return;   // vue solide gère elle-même l'opacité
   const cur   = state.currentFloor;
   const selId = state.selectedItemId;
   for (const [itemId, mesh] of placedMeshes) {
@@ -852,7 +1232,8 @@ function updateFloorVisibility() {
     // Cas spécial : un plancher (ou fondation) à z = cur+1 occupe physiquement la même
     // hauteur que le plafond de cur (y ≈ WALL_UNIT au-dessus du sol courant). On l'affiche
     // donc comme plafond semi-transparent pour qu'on voie le "plafond plancher" depuis cur.
-    const isFloorLike = piece?.category === 'floors' || piece?.category === 'foundations';
+    // Fondations : toujours opaques comme les murs (pas de transparence plafond)
+    const isFloorLike = piece?.category === 'floors';
     if (z === cur + 1 && isFloorLike) {
       // Plancher d'un étage au-dessus = plafond visuel du courant.
       // Pièce d'un autre étage → contours sombres discrets (pas de doré).
@@ -1036,6 +1417,8 @@ function isPlacementAllowedOnFloor(piece, snap, floorZ) {
 
     if (snap.kind === 'edge' && otherSnap === 'edge') {
       if (it.x === snap.x && it.y === snap.y && it.axis === snap.axis) {
+        // Demi-étage vs étage entier sur la même arête : heights différentes → compatible
+        if ((it.half || false) !== (state.ghostHalf || false)) continue;
         if (!ignore.has(other.group) && !(other.placement_rules?.ignore_groups || []).includes(piece.group)) {
           return false;
         }
@@ -1044,6 +1427,8 @@ function isPlacementAllowedOnFloor(piece, snap, floorZ) {
       if (it.x === snap.x && it.y === snap.y) {
         // Toit/Rooftop vs plancher/fondation : hauteurs différentes, pas de conflit
         if (!sameVerticalSpace(piece, other)) continue;
+        // Demi-étage vs étage entier : décalage Y de 0.5 → pas de chevauchement
+        if ((it.half || false) !== (state.ghostHalf || false)) continue;
         if (!ignore.has(other.group) && !(other.placement_rules?.ignore_groups || []).includes(piece.group)) {
           return false;
         }
@@ -1073,6 +1458,14 @@ function findBestPlacementFloor(piece, snap) {
   const rules = piece.placement_rules || {};
   if (rules.snap_target === 'corner') return state.currentFloor;
   if (!isWithinClaim(snap)) return state.currentFloor; // hors claim → ghost rouge immédiat
+  // Mode demi-étage (Shift) : on vise l'étage du dessous + offset +0.5.
+  // Visuellement la pièce descend d'un demi-niveau par rapport à l'étage courant.
+  // Si on est déjà au minimum, on reste sur l'étage courant (ascenseur sans sous-sol).
+  if (state.ghostHalf) {
+    return state.currentFloor > getMinFloor()
+      ? state.currentFloor - 1   // stocké en-dessous, affiché à -0.5 + 0.5 = même hauteur - 0.5
+      : state.currentFloor;      // plancher bas : monte à +0.5 dans le même étage
+  }
   const maxZ = getMaxFloor();
   for (let z = state.currentFloor; z <= maxZ; z++) {
     if (isPlacementAllowedOnFloor(piece, snap, z)) return z;
@@ -1101,6 +1494,7 @@ function placePieceFromSnap(pieceId, snap, floorZ, rotation = 0) {
     axis: snap.axis,
     z: targetZ,
     rotation: rotation % 360,
+    half: state.ghostHalf || false,   // demi-étage : décalage Y de +0.5 WALL_UNIT
   };
   floor.items.push(item);
 
@@ -1120,16 +1514,30 @@ function placePieceFromSnap(pieceId, snap, floorZ, rotation = 0) {
   return itemId;
 }
 
+/** Dispose complet d'un mesh (edges + vitrage + géométrie). */
+function disposeMesh(mesh) {
+  if (!mesh) return;
+  if (mesh.userData.edges) {
+    mesh.userData.edges.geometry.dispose();
+    mesh.userData.edges.material.dispose();
+  }
+  if (mesh.userData.glassPanel) {
+    mesh.userData.glassPanel.geometry.dispose();
+    mesh.userData.glassPanel.material.dispose();
+  }
+  if (mesh.userData.cornerGlass) {
+    mesh.userData.cornerGlass.geometry.dispose();
+    mesh.userData.cornerGlass.material.dispose();
+  }
+  mesh.geometry.dispose();
+  mesh.material.dispose();
+}
+
 /** Supprime un item du plan ET de la scène (pas d'historique). */
 function _removeItemCore(itemId) {
   const mesh = placedMeshes.get(itemId);
   if (mesh) {
-    if (mesh.userData.edges) {
-      mesh.userData.edges.geometry.dispose();
-      mesh.userData.edges.material.dispose();
-    }
-    mesh.geometry.dispose();
-    mesh.material.dispose();
+    disposeMesh(mesh);
     scene.remove(mesh);
     placedMeshes.delete(itemId);
   }
@@ -1140,6 +1548,31 @@ function _removeItemCore(itemId) {
   updatePieceCount();
   updateFloorVisibility();
   updateFloorBadges();
+}
+
+/** Remplace le type de pièce d'un item posé (même position / rotation), avec undo/redo. */
+function swapItemPiece(itemId, newPieceId) {
+  const item = getItemById(itemId);
+  if (!item || item.piece_id === newPieceId) return;
+  const oldPieceId = item.piece_id;
+
+  const doSwap = (pid) => {
+    item.piece_id = pid;
+    const piece = state.piecesById.get(pid);
+    if (!piece) return;
+    const cur = placedMeshes.get(itemId);
+    if (cur) { disposeMesh(cur); scene.remove(cur); }
+    const nMesh = buildMeshForPiece(piece, item);
+    scene.add(nMesh);
+    placedMeshes.set(itemId, nMesh);
+    // Re-sélectionne pour rafraîchir le panneau propriétés
+    if (state.selectedItemId === itemId) { state.selectedItemId = null; select(nMesh); }
+    updateFloorVisibility();
+    updateFloorBadges();
+  };
+
+  doSwap(newPieceId);
+  pushHistory(() => doSwap(oldPieceId), () => doSwap(newPieceId));
 }
 
 /** Supprime un item avec enregistrement dans l'historique undo/redo. */
@@ -1166,12 +1599,7 @@ function removeItem(itemId) {
  *  à chaque dragover pour reconstruire le ghost, la rotation doit persister). */
 function clearGhost() {
   if (ghostMesh) {
-    if (ghostMesh.userData.edges) {
-      ghostMesh.userData.edges.geometry.dispose();
-      ghostMesh.userData.edges.material.dispose();
-    }
-    ghostMesh.geometry.dispose();
-    ghostMesh.material.dispose();
+    disposeMesh(ghostMesh);
     scene.remove(ghostMesh);
     ghostMesh = null;
   }
@@ -1199,17 +1627,29 @@ function endDrag() {
 
 /** Active (ou désactive si null) une pièce pour la pose au clic. */
 function setActivePiece(pieceId) {
-  // Si on désactive ou on change, on remet la rotation à zéro et on nettoie le ghost
   if (pieceId !== state.activePieceId) {
     state.ghostRotation = 0;
+    state.ghostHalf     = false;   // remet le demi-étage à zéro quand on change de pièce
+    updateHalfHud();
     lastGhostState = null;
     clearGhost();
   }
   state.activePieceId = pieceId;
-  // Met à jour le surlignage dans la sidebar
+  // Surligne le canonical dans la sidebar (même si c'est un variant qui est actif)
+  const canonicalId = pieceId
+    ? (state.variantMap.get(pieceId)?.[0]?.id ?? pieceId)
+    : null;
   document.querySelectorAll('.bp-piece-item').forEach(el => {
-    el.classList.toggle('active', el.dataset.pieceId === pieceId);
+    el.classList.toggle('active', el.dataset.pieceId === canonicalId);
   });
+  // Barre de variantes cosmétiques
+  if (pieceId) {
+    const variants = state.variantMap.get(pieceId);
+    if (variants && variants.length > 1) showVariantBar(variants, pieceId);
+    else hideVariantBar();
+  } else {
+    hideVariantBar();
+  }
 }
 
 /** Affiche le ghost pour une pièce à la position écran donnée. Renvoie true si OK. */
@@ -1252,6 +1692,7 @@ function showGhost(piece, snap, resolvedFloor, allowed) {
     axis: snap.axis,
     z: resolvedFloor,
     rotation: state.ghostRotation,  // rotation fantôme courante (touche R)
+    half: state.ghostHalf,          // demi-étage fantôme courant (touche H)
   };
   const mesh = buildMeshForPiece(piece, tmpItem);
   const color = allowed ? COLOR_GHOST_OK : COLOR_GHOST_BAD;
@@ -1352,6 +1793,11 @@ function updateSelectedPanel(mesh) {
   setText(dom.selD, d.d || 0);
   setText(dom.selH, d.h || 0);
   setText(dom.selRot, (item.rotation || 0) + '°');
+  // Bouton demi-étage
+  if (dom.selHalf) {
+    dom.selHalf.classList.toggle('active', !!item.half);
+    dom.selHalf.onclick = () => toggleSelectedHalf();
+  }
   if (dom.selIcon) {
     dom.selIcon.style.background = facCss(piece.faction_id, 0.3);
     dom.selIcon.style.border     = '1px solid ' + facCss(piece.faction_id, 0.6);
@@ -1360,7 +1806,92 @@ function updateSelectedPanel(mesh) {
   if (dom.deleteBtn) dom.deleteBtn.onclick = () => removeItem(item.id);
   if (dom.rotCw)     dom.rotCw.onclick  = () => rotateSelected(+90);
   if (dom.rotCcw)    dom.rotCcw.onclick = () => rotateSelected(-90);
+
+  // === Swap de type — portes & fenêtres ===
+  const pGroup = piece.group || '';
+  const snap   = (piece.placement_rules || {}).snap_target;
+  // Swap de type : portes uniquement (les fenêtres ont group='Wall', pas de swap inter-type)
+  const isPieceWindow = isPieceWindowType(piece);
+  if (isDoorGroup(pGroup) && !isPieceWindow && dom.selSwap && dom.swapGrid) {
+    const swapList = state.canonicals.filter(c =>
+      c.faction_id === piece.faction_id &&
+      c.category   === piece.category &&
+      (c.placement_rules || {}).snap_target === snap &&
+      isDoorGroup(c.group)
+    );
+    if (swapList.length > 1) {
+      dom.swapGrid.innerHTML = '';
+      for (const c of swapList) {
+        const isCurrent = c.group === pGroup;
+        const btn = document.createElement('button');
+        btn.className = 'bp-swap-btn' + (isCurrent ? ' current' : '');
+        const colorBg = facCss(c.faction_id, 0.30);
+        const colorBd = facCss(c.faction_id, 0.55);
+        btn.innerHTML =
+          `<div class="bp-swap-btn-icon" style="background:${colorBg};border:1px solid ${colorBd};">`
+          + fmtDimsLabel(c.dimensions || {}) + '</div>'
+          + `<div class="bp-swap-btn-label">${fmtGroupLabel(c.group)}</div>`;
+        if (!isCurrent) btn.addEventListener('click', () => swapItemPiece(item.id, c.id));
+        dom.swapGrid.appendChild(btn);
+      }
+      dom.selSwap.style.display = '';
+    } else {
+      dom.selSwap.style.display = 'none';
+    }
+  } else if (dom.selSwap) {
+    dom.selSwap.style.display = 'none';
+  }
+
+  // === Variantes cosmétiques (skins) ===
+  const variants = state.variantMap.get(piece.id) || [];
+  if (variants.length > 1 && dom.selSkin && dom.skinGrid) {
+    dom.skinGrid.innerHTML = '';
+    variants.forEach((v, i) => {
+      const isCur = v.id === piece.id;
+      const btn = document.createElement('button');
+      btn.className = 'bp-swap-btn' + (isCur ? ' current' : '');
+      const colorBg = facCss(v.faction_id, 0.30);
+      const colorBd = facCss(v.faction_id, 0.55);
+      btn.innerHTML =
+        `<div class="bp-swap-btn-icon" style="background:${colorBg};border:1px solid ${colorBd};">`
+        + String(i + 1) + '</div>'
+        + `<div class="bp-swap-btn-label">${v.label_fr || v.label_en || ''}</div>`;
+      if (!isCur) btn.addEventListener('click', () => swapItemPiece(item.id, v.id));
+      dom.skinGrid.appendChild(btn);
+    });
+    dom.selSkin.style.display = '';
+  } else if (dom.selSkin) {
+    dom.selSkin.style.display = 'none';
+  }
 }
+/** Bascule le décalage demi-étage (half) de la pièce sélectionnée. */
+function toggleSelectedHalf() {
+  const itemId = state.selectedItemId;
+  if (!itemId) return;
+  const item = getItemById(itemId);
+  const mesh = placedMeshes.get(itemId);
+  if (!item || !mesh) return;
+  const piece = mesh.userData.piece;
+
+  const prevHalf = !!item.half;
+  const nextHalf = !prevHalf;
+
+  const applyHalf = (h) => {
+    item.half = h;
+    mesh.rotation.set(0, 0, 0);
+    placeMeshAt(mesh, item, piece);
+    // Met à jour le bouton dans le panneau
+    const btn = document.getElementById('bp-sel-half');
+    if (btn) btn.classList.toggle('active', h);
+  };
+
+  applyHalf(nextHalf);
+  pushHistory(
+    () => applyHalf(prevHalf),
+    () => applyHalf(nextHalf),
+  );
+}
+
 function rotateSelected(delta) {
   const itemId = state.selectedItemId;
   if (!itemId) return;
@@ -1390,6 +1921,38 @@ function rotateSelected(delta) {
 // SIDEBAR
 // ============================================================
 
+/**
+ * Détecte si une pièce est une fenêtre, quelle que soit sa catégorie JSON.
+ * - La plupart des fenêtres ont "window" dans l'ID (category='walls', group='Wall'…)
+ * - Exception connue : Watershippers_Window_Wide → category='doors', group='Window_Wide'
+ *   → capturé par le test sur le group.
+ */
+function isPieceWindowType(p) {
+  return /window/i.test(p.id)
+    || ((p.group || '').startsWith('Window'))
+    || /fen[eê]tre/i.test(p.label_fr || '');
+}
+
+/**
+ * Groupe d'affichage "virtuel" d'une pièce.
+ * Les fenêtres sont reclassées dans Window/Window_Round_Corner
+ * quel que soit leur group JSON réel.
+ */
+function getDisplayGroup(p) {
+  if (isPieceWindowType(p)) {
+    return (p.dimensions || {}).shape === 'corner' ? 'Window_Round_Corner' : 'Window';
+  }
+  return p.group || '';
+}
+
+/**
+ * Catégorie effective pour le filtrage sidebar.
+ * Les fenêtres (toutes) apparaissent dans la catégorie virtuelle 'windows'.
+ */
+function getEffectiveCategory(p) {
+  return isPieceWindowType(p) ? 'windows' : p.category;
+}
+
 /** Formate un nom de groupe (ex: "Wall_Round_Corner" → "Mur arrondi") en français. */
 function fmtGroupLabel(group) {
   const MAP = {
@@ -1397,6 +1960,7 @@ function fmtGroupLabel(group) {
     Wall: 'Mur', Wall_Half: 'Demi-mur', Wall_Protuding: 'Mur saillant',
     Wall_Round_Corner: 'Mur arrondi', Wall_Round_Corner_Half: 'Demi-mur arrondi',
     Wall_Round_Corner_Sideless: 'Mur arrondi ouvert',
+    Window: 'Fenêtre', Window_Round_Corner: 'Fenêtre arrondie',
     Wall_Triangle_Bottom_Left: 'Mur △ bas-gauche', Wall_Triangle_Bottom_Right: 'Mur △ bas-droit',
     Wall_Triangle_Bottom_Half_Left: 'Demi △ bas-gauche', Wall_Triangle_Bottom_Half_Right: 'Demi △ bas-droit',
     Wall_Triangle_Top_Left: 'Mur △ haut-gauche', Wall_Triangle_Top_Right: 'Mur △ haut-droit',
@@ -1462,52 +2026,58 @@ function createPieceEl(p) {
   });
   el.addEventListener('dragend', () => endDrag());
 
-  // Click-to-place : single-click active la pièce, re-click désactive
+  // Click-to-place : active le canonical (+ barre variantes) ; re-clic sur même groupe → désactive
   el.addEventListener('click', (ev) => {
     ev.stopPropagation();
-    setActivePiece(state.activePieceId === p.id ? null : p.id);
+    // Si une pièce du même groupe est déjà active → désactiver
+    const curVariants = state.activePieceId
+      ? (state.variantMap.get(state.activePieceId) || []) : [];
+    const sameGroup = curVariants.some(v => v.id === p.id);
+    setActivePiece(sameGroup ? null : p.id);
   });
   return el;
 }
 
 function renderSidebar() {
-  const source = state.activeTab === 'pieces' ? state.pieces : state.placeables;
   const q = state.searchQuery.toLowerCase();
-  const filtered = source.filter(p => {
-    if (state.activeTab === 'pieces') {
-      if (state.activeFaction  && p.faction_id !== state.activeFaction)  return false;
-      if (state.activeCategory && p.category   !== state.activeCategory) return false;
-    }
-    if (q) {
-      const label = (p.label_fr || '').toLowerCase();
-      const id    = (p.id || '').toLowerCase();
-      if (!label.includes(q) && !id.includes(q)) return false;
-    }
-    return true;
-  });
-  const toShow = filtered.slice(0, 200);
+  // Recherche active → toutes les pièces (y compris variantes)
+  // Pas de recherche → canoniques uniquement (un seul mur, une seule fenêtre, etc.)
+  let source;
+  if (q) {
+    source = state.pieces.filter(p => {
+      if (state.activeFaction  && p.faction_id !== state.activeFaction)         return false;
+      if (state.activeCategory && getEffectiveCategory(p) !== state.activeCategory) return false;
+      return (p.label_fr || '').toLowerCase().includes(q)
+          || (p.id || '').toLowerCase().includes(q);
+    });
+  } else {
+    source = state.canonicals.filter(p => {
+      if (state.activeFaction  && p.faction_id !== state.activeFaction)         return false;
+      if (state.activeCategory && getEffectiveCategory(p) !== state.activeCategory) return false;
+      return true;
+    });
+  }
+
+  const toShow = source.slice(0, 300);
   if (!dom.pieceList) return;
   dom.pieceList.innerHTML = '';
 
-  // Sous-catégories (groupes) : uniquement si un filtre catégorie est actif
-  //   ET qu'il y a plus d'un groupe distinct, ET pas de recherche en cours
+  // Sous-catégories : uniquement si filtre catégorie actif, pas de recherche, plusieurs groupes
   const useGroups = state.activeCategory && !q &&
-    new Set(toShow.map(p => p.group)).size > 1;
+    new Set(toShow.map(p => getDisplayGroup(p))).size > 1;
 
   if (useGroups) {
-    // Regroupe par group (ordre de menu_order naturel conservé)
     const byGroup = new Map();
     for (const p of toShow) {
-      if (!byGroup.has(p.group)) byGroup.set(p.group, []);
-      byGroup.get(p.group).push(p);
+      const dg = getDisplayGroup(p);
+      if (!byGroup.has(dg)) byGroup.set(dg, []);
+      byGroup.get(dg).push(p);
     }
     for (const [group, pieces] of byGroup) {
-      // En-tête de sous-catégorie
       const header = document.createElement('div');
       header.className = 'bp-group-header';
       header.textContent = fmtGroupLabel(group);
       dom.pieceList.appendChild(header);
-      // Grille pour ce groupe
       const grid = document.createElement('div');
       grid.className = 'bp-group-grid';
       for (const p of pieces) grid.appendChild(createPieceEl(p));
@@ -1517,10 +2087,14 @@ function renderSidebar() {
     for (const p of toShow) dom.pieceList.appendChild(createPieceEl(p));
   }
 
-  const total = filtered.length, src = source.length;
-  setText(dom.pieceCount, (total === src)
-    ? src + ' pièces'
-    : toShow.length + ' / ' + total + ' affichées (filtrés sur ' + src + ')');
+  if (q) {
+    setText(dom.pieceCount, toShow.length + ' / ' + source.length + ' trouvées');
+  } else if (source.length < state.canonicals.length) {
+    setText(dom.pieceCount, source.length + ' / ' + state.canonicals.length + ' types');
+  } else {
+    setText(dom.pieceCount,
+      state.canonicals.length + ' types · ' + state.pieces.length + ' variantes au total');
+  }
 }
 function fmtDimsLabel(d) {
   if (!d) return '?';
@@ -1538,11 +2112,34 @@ function facCss(id, alpha) {
 }
 
 // ============================================================
+// BARRE DE VARIANTES COSMÉTIQUES (sidebar — bas de liste)
+// ============================================================
+function showVariantBar(variants, activeId) {
+  if (!dom.variantBar) return;
+  const inner = dom.variantBar.querySelector('.bp-variant-bar-inner');
+  if (!inner) return;
+  inner.querySelectorAll('.bp-variant-btn').forEach(b => b.remove());
+  variants.forEach((v, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'bp-variant-btn' + (v.id === activeId ? ' active' : '');
+    btn.textContent = String(i + 1);
+    btn.dataset.tooltip = v.label_fr || v.label_en || v.id;
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setActivePiece(v.id);
+    });
+    inner.appendChild(btn);
+  });
+  dom.variantBar.classList.add('open');
+}
+function hideVariantBar() {
+  if (dom.variantBar) dom.variantBar.classList.remove('open');
+}
+
+// ============================================================
 // FILTRES / TOOLBAR / FLOORS / KEYBOARD / RESIZE
 // ============================================================
 function initFilters() {
-  document.getElementById('tab-pieces')?.addEventListener('click', () => { state.activeTab = 'pieces'; renderSidebar(); });
-  document.getElementById('tab-placeables')?.addEventListener('click', () => { state.activeTab = 'placeables'; renderSidebar(); });
   document.querySelectorAll('.bp-faction-pill').forEach(pill => {
     pill.addEventListener('click', () => { state.activeFaction = pill.dataset.faction || ''; renderSidebar(); });
   });
@@ -1559,6 +2156,52 @@ function initToolbar() {
     e.currentTarget.classList.toggle('active');
     claimGroup.visible = !claimGroup.visible;
   });
+  document.getElementById('tool-solid')?.addEventListener('click', (e) => {
+    toggleSolidView();
+  });
+}
+
+/** Bascule entre vue normale (verre transparent, visibilité par étage)
+ *  et vue solide (tous les étages visibles et opaques, sans verre). */
+function toggleSolidView() {
+  state.solidView = !state.solidView;
+  const btn = document.getElementById('tool-solid');
+  if (btn) btn.classList.toggle('active', state.solidView);
+
+  if (state.solidView) {
+    // ── Mode solide : tout opaque, tout visible, pas de verre ──────────────
+    for (const mesh of placedMeshes.values()) {
+      mesh.visible = true;
+      const mat = mesh.material;
+      if (mat) {
+        mat.transparent = false;
+        mat.opacity     = 1;
+        mat.color.setHex(mesh.userData.baseColor);
+        mat.needsUpdate = true;
+      }
+      const edges = mesh.userData.edges;
+      if (edges) {
+        edges.material.color.setHex(0x000000);
+        edges.material.opacity = 0.45;
+        edges.material.needsUpdate = true;
+      }
+      if (mesh.userData.glassPanel) mesh.userData.glassPanel.visible = false;
+      if (mesh.userData.cornerGlass) {
+        mesh.userData.cornerGlass.material.opacity = 0.18;
+        mesh.userData.cornerGlass.material.needsUpdate = true;
+      }
+    }
+  } else {
+    // ── Mode normal : restaurer le verre et la visibilité par étage ────────
+    for (const mesh of placedMeshes.values()) {
+      if (mesh.userData.glassPanel) mesh.userData.glassPanel.visible = true;
+      if (mesh.userData.cornerGlass) {
+        mesh.userData.cornerGlass.material.opacity = 0.38;
+        mesh.userData.cornerGlass.material.needsUpdate = true;
+      }
+    }
+    updateFloorVisibility();
+  }
 }
 function setCameraMode(mode) {
   if (mode === state.cameraMode) return;
@@ -1601,6 +2244,16 @@ function updateHudZoom() {
   else                              pct = Math.round((20 / perspCam.position.distanceTo(orbitControls.target)) * 100);
   setText(dom.hudZoom, pct + '%');
   setText(dom.zoomReset, pct + '%');
+}
+/** Met à jour le HUD "½" affiché pendant la pose en mode demi-étage. */
+function updateHalfHud() {
+  if (!dom.hudHalf) return;
+  dom.hudHalf.style.display = state.ghostHalf ? 'block' : 'none';
+}
+/** Réinitialise le mode demi-étage fantôme (après fin de pose). */
+function resetGhostHalf() {
+  state.ghostHalf = false;
+  updateHalfHud();
 }
 function initFloorTabs() {
   updateFloorTabs();
@@ -1667,6 +2320,27 @@ function initKeyboard() {
 
     if ((e.key === 'Delete' || e.key === 'Backspace') && state.selectedItemId) removeItem(state.selectedItemId);
     if (e.key === 'v' || e.key === 'V') setCameraMode(state.cameraMode === 'ortho' ? 'persp' : 'ortho');
+    if (e.key === 't' || e.key === 'T') toggleSolidView();
+  });
+
+  // ── Shift maintenu : demi-étage pendant la pose ────────────────────────────
+  // Le ghost descend d'un demi-niveau tant que Shift est enfoncé.
+  // Sur la pièce sélectionnée (Shift seul sans pose active) : rien — utiliser le bouton ½.
+  function refreshGhostHalf(wantHalf) {
+    if (wantHalf === state.ghostHalf) return;
+    state.ghostHalf = wantHalf;
+    updateHalfHud();
+    if (lastGhostState && (state.dragPieceId || state.activePieceId)) {
+      const { piece, snap, resolvedFloor, allowed } = lastGhostState;
+      clearGhost();
+      showGhost(piece, snap, resolvedFloor, allowed);
+    }
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Shift') refreshGhostHalf(true);
+  });
+  document.addEventListener('keyup', (e) => {
+    if (e.key === 'Shift') refreshGhostHalf(false);
   });
 }
 function initResize() {
@@ -1692,6 +2366,8 @@ function initDragDrop() {
   el.addEventListener('dragover', (e) => {
     e.preventDefault();
     if (!state.dragPieceId) return;
+    state.ghostHalf = e.shiftKey;          // Shift tenu → demi-étage
+    updateHalfHud();
     const piece = state.piecesById.get(state.dragPieceId);
     if (!piece) return;
     const world = screenToWorld(e.clientX, e.clientY);
@@ -1709,6 +2385,7 @@ function initDragDrop() {
 
   el.addEventListener('drop', (e) => {
     e.preventDefault();
+    state.ghostHalf = e.shiftKey;          // capture Shift au moment du drop
     if (!state.dragPieceId) { endDrag(); return; }
     const piece = state.piecesById.get(state.dragPieceId);
     if (!piece) { endDrag(); return; }
@@ -1719,10 +2396,11 @@ function initDragDrop() {
     const resolvedFloor = findBestPlacementFloor(piece, snap);
     const dropRot = state.ghostRotation;   // capture avant endDrag()
     if (isPlacementAllowedOnFloor(piece, snap, resolvedFloor)) {
-      // Transmet la rotation fantôme courante à l'item posé
       placePieceFromSnap(state.dragPieceId, snap, resolvedFloor, dropRot);
     }
     endDrag();
+    state.ghostHalf = false;
+    updateHalfHud();
   });
 
   el.addEventListener('dragleave', () => endDrag());
@@ -1730,7 +2408,10 @@ function initDragDrop() {
   el.addEventListener('click', (e) => {
     // Mode click-to-place : pose la pièce, garde le mode actif pour pose multiple
     if (state.activePieceId) {
+      state.ghostHalf = e.shiftKey;        // capture Shift au moment du clic
       tryPlacePieceAt(state.activePieceId, e.clientX, e.clientY);
+      state.ghostHalf = e.shiftKey;        // conserve l'état Shift pour le ghost suivant
+      updateHalfHud();
       // Reactualise le ghost immédiatement (la pose peut avoir libéré la cellule au-dessus, etc.)
       tryShowGhostForPiece(state.activePieceId, e.clientX, e.clientY);
       return;
@@ -1753,6 +2434,11 @@ function initDragDrop() {
     if (state.dragPieceId) return;  // pendant un drag, dragover gère le ghost
     // Mode click-to-place : ghost suit le curseur
     if (state.activePieceId) {
+      // Shift tenu → demi-étage ; sync en temps réel même si la souris bougait déjà
+      if (e.shiftKey !== state.ghostHalf) {
+        state.ghostHalf = e.shiftKey;
+        updateHalfHud();
+      }
       tryShowGhostForPiece(state.activePieceId, e.clientX, e.clientY);
       return;
     }

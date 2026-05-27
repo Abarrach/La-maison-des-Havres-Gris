@@ -1,7 +1,7 @@
 {
   "version": "3.0",
-  "generated_at": "2026-05-23T17:38:15.884Z",
-  "count": 643,
+  "generated_at": "2026-05-23T20:06:43.770Z",
+  "count": 670,
   "pieces": [
     {
       "id": "Atreides_Outpost_Column",
@@ -24149,6 +24149,770 @@
       "icon_path": "/Game/DLC/B1C4/GUI/Textures/Icons/Gameplay/Placeables/T_UI_IconPlayerPBWaterSPassagewayWide_D.T_UI_IconPlayerPBWaterSPassagewayWide_D",
       "mesh_path": "/Game/DLC/B1C4/Player/PlayerBuilt/WaterS/Meshes/SM_Player_PB_WaterS_Passageway_Wide.SM_Player_PB_WaterS_Passageway_Wide",
       "requires_totem": true
+    },
+    {
+      "id": "Fabricator_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "fabricators",
+      "group": "Fabricator",
+      "label_fr": "Fabricateur",
+      "label_en": "Fabricator",
+      "dimensions": {
+        "w": 2,
+        "d": 2,
+        "h": 2,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 2.7,
+        "d": 3.3,
+        "h": 2.8
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 101000000,
+      "icon_path": "/Game/Dune/GUI/Textures/Icons/Gameplay/Placeables/T_UI_IconPlacChoamFabricatorLarge01_D.T_UI_IconPlacChoamFabricatorLarge01_D",
+      "mesh_path": "/Game/Dune/Environment/Props/Choam/FabricatorLarge/Meshes/Source/Static_02/SM_Plac_Choam_Fabricator_Large_01.SM_Plac_Choam_Fabricator_Large_01",
+      "is_machine": true
+    },
+    {
+      "id": "PortableFabricator_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "fabricators",
+      "group": "PortableFabricator",
+      "label_fr": "Fabricateur portable",
+      "label_en": "Portable Fabricator",
+      "dimensions": {
+        "w": 1,
+        "d": 1,
+        "h": 1,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 0.6,
+        "d": 0.6,
+        "h": 1.1
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 0,
+      "icon_path": "/Game/Dune/Systems/Building/Thumbnails/T_SM_Plac_Choam_Fabricator_Large_01_D.T_SM_Plac_Choam_Fabricator_Large_01_D",
+      "mesh_path": "",
+      "is_machine": true
+    },
+    {
+      "id": "SpiceRefinery_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "refineries",
+      "group": "SpiceRefinery",
+      "label_fr": "Raffinerie d'épice",
+      "label_en": "Spice Refinery",
+      "dimensions": {
+        "w": 2,
+        "d": 2,
+        "h": 3,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 2.6,
+        "d": 3,
+        "h": 5.1
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 102030000,
+      "icon_path": "/Game/Dune/Systems/Building/Thumbnails/T_SM_prop_SpiceRefiner_D.T_SM_prop_SpiceRefiner_D",
+      "mesh_path": "/Game/Dune/Environment/Props/Choam/SpiceRefinery/Meshes/SM_Env_Props_Choam_SpiceRefinery.SM_Env_Props_Choam_SpiceRefinery",
+      "is_machine": true
+    },
+    {
+      "id": "MediumOreRefinery_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "refineries",
+      "group": "OreRefinery",
+      "label_fr": "Raffinerie de minerai de taille moyenne",
+      "label_en": "Medium Ore Refinery",
+      "dimensions": {
+        "w": 3,
+        "d": 1,
+        "h": 1,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 6.3,
+        "d": 2.4,
+        "h": 1.9
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 102010001,
+      "icon_path": "/Game/Dune/GUI/Textures/Icons/Gameplay/Placeables/T_UI_IconPlacChoamOreRefinery01_D.T_UI_IconPlacChoamOreRefinery01_D",
+      "mesh_path": "/Game/Dune/Environment/Props/Choam/OreRefinery/Meshes/SM_Env_Prop_Choam_OreRefinery_01.SM_Env_Prop_Choam_OreRefinery_01",
+      "is_machine": true
+    },
+    {
+      "id": "SmallOreRefinery_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "refineries",
+      "group": "OreRefinery",
+      "label_fr": "Petite raffinerie de minerai",
+      "label_en": "Small Ore Refinery",
+      "dimensions": {
+        "w": 2,
+        "d": 1,
+        "h": 1,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 3.8,
+        "d": 1.5,
+        "h": 1.2
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 102010000,
+      "icon_path": "/Game/Dune/GUI/Textures/Icons/Gameplay/Placeables/T_UI_IconPlacChoamOreRefinerySmall_D.T_UI_IconPlacChoamOreRefinerySmall_D",
+      "mesh_path": "/Game/Dune/Environment/Props/Choam/OreRefinery/Meshes/SM_Env_Prop_Choam_OreRefinery_Small.SM_Env_Prop_Choam_OreRefinery_Small",
+      "is_machine": true
+    },
+    {
+      "id": "SmallChemicalRefinery_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "refineries",
+      "group": "ChemicalRefinery",
+      "label_fr": "Petite raffinerie chimique",
+      "label_en": "Small Chemical Refinery",
+      "dimensions": {
+        "w": 2,
+        "d": 2,
+        "h": 1,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 3.4,
+        "d": 3.3,
+        "h": 2
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 102020000,
+      "icon_path": "/Game/Dune/GUI/Textures/Icons/Gameplay/Placeables/T_UI_IconPlacChoamChemicalRefinerySmall_D.T_UI_IconPlacChoamChemicalRefinerySmall_D",
+      "mesh_path": "/Game/Dune/Environment/Props/Choam/ChemicalRefinery/Meshes/SM_Env_Prop_Choam_ChemicalRefinery_Small.SM_Env_Prop_Choam_ChemicalRefinery_Small",
+      "is_machine": true
+    },
+    {
+      "id": "WeaponsFabricator_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "fabricators",
+      "group": "WeaponsFabricator",
+      "label_fr": "Fabricateur d'armes",
+      "label_en": "Weapons Fabricator",
+      "dimensions": {
+        "w": 2,
+        "d": 1,
+        "h": 1,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 3.2,
+        "d": 1.5,
+        "h": 1.5
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 101030000,
+      "icon_path": "/Game/Dune/GUI/Textures/Icons/Gameplay/Placeables/T_UI_IconPlacNeutSpecialtyFabricatorsWeapons_D.T_UI_IconPlacNeutSpecialtyFabricatorsWeapons_D",
+      "mesh_path": "/Game/Dune/Environment/Props/Choam/Fabricator/Meshes/SM_Env_Prop_Choam_Fabricator_Weapons.SM_Env_Prop_Choam_Fabricator_Weapons",
+      "is_machine": true
+    },
+    {
+      "id": "WearablesFabricator_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "fabricators",
+      "group": "WearablesFabricator",
+      "label_fr": "Fabricateur de vêtements",
+      "label_en": "Garment Fabricator",
+      "dimensions": {
+        "w": 2,
+        "d": 2,
+        "h": 2,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 2.6,
+        "d": 3.2,
+        "h": 2.8
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 101010000,
+      "icon_path": "/Game/Dune/GUI/Textures/Icons/Gameplay/Placeables/T_UI_IconPlacNeutSpecialtyFabricatorsWearables_D.T_UI_IconPlacNeutSpecialtyFabricatorsWearables_D",
+      "mesh_path": "/Game/Dune/Environment/Props/Choam/Fabricator/Meshes/SM_Env_Prop_Choam_Fabricator_Wearables.SM_Env_Prop_Choam_Fabricator_Wearables",
+      "is_machine": true
+    },
+    {
+      "id": "VehiclesFabricator_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "fabricators",
+      "group": "VehiclesFabricator",
+      "label_fr": "Fabricateur de véhicules",
+      "label_en": "Vehicles Fabricator",
+      "dimensions": {
+        "w": 2,
+        "d": 2,
+        "h": 2,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 4.3,
+        "d": 3.6,
+        "h": 3.4
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 101040000,
+      "icon_path": "/Game/Dune/GUI/Textures/Icons/Gameplay/Placeables/T_UI_IconPlacFabricatorVehiclesR_D.T_UI_IconPlacFabricatorVehiclesR_D",
+      "mesh_path": "/Game/Dune/Environment/Props/Choam/Fabricator/Meshes/SM_Env_Prop_Choam_Fabricator_Vehicles.SM_Env_Prop_Choam_Fabricator_Vehicles",
+      "is_machine": true
+    },
+    {
+      "id": "SurvivalFabricator_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "fabricators",
+      "group": "SurvivalFabricator",
+      "label_fr": "Fabricateur de survie",
+      "label_en": "Survival Fabricator",
+      "dimensions": {
+        "w": 1,
+        "d": 1,
+        "h": 1,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 1.5,
+        "d": 1.7,
+        "h": 2.4
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 101020000,
+      "icon_path": "/Game/Dune/GUI/Textures/Icons/Gameplay/Placeables/T_UI_IconPlacNeutSpecialtyFabricatorsSurvival_D.T_UI_IconPlacNeutSpecialtyFabricatorsSurvival_D",
+      "mesh_path": "/Game/Dune/Environment/Props/Choam/Fabricator/Meshes/SM_Env_Prop_Choam_Fabricator_Survival.SM_Env_Prop_Choam_Fabricator_Survival",
+      "is_machine": true
+    },
+    {
+      "id": "ConstructionFabricator_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "fabricators",
+      "group": "ConstructionFabricator",
+      "label_fr": "Fabricateur de constructions",
+      "label_en": "Construction Fabricator",
+      "dimensions": {
+        "w": 2,
+        "d": 2,
+        "h": 2,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 2.7,
+        "d": 3.3,
+        "h": 2.8
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 0,
+      "icon_path": "/Game/Dune/Systems/Building/Thumbnails/T_SM_Plac_Choam_Fabricator_Large_01_D.T_SM_Plac_Choam_Fabricator_Large_01_D",
+      "mesh_path": "",
+      "is_machine": true
+    },
+    {
+      "id": "MediumChemicalRefinery_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "refineries",
+      "group": "ChemicalRefinery",
+      "label_fr": "Raffinerie chimique de taille moyenne",
+      "label_en": "Medium Chemical Refinery",
+      "dimensions": {
+        "w": 3,
+        "d": 2,
+        "h": 2,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 6.3,
+        "d": 3.5,
+        "h": 3
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 102020001,
+      "icon_path": "/Game/Dune/GUI/Textures/Icons/Gameplay/Placeables/T_UI_IconPlacChoamChemicalRefineryMedium_D.T_UI_IconPlacChoamChemicalRefineryMedium_D",
+      "mesh_path": "/Game/Dune/Environment/Props/Choam/ChemicalRefinery/Meshes/SM_Env_Prop_Choam_ChemicalRefinery_Medium.SM_Env_Prop_Choam_ChemicalRefinery_Medium",
+      "is_machine": true
+    },
+    {
+      "id": "MediumSpiceRefinery_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "refineries",
+      "group": "SpiceRefinery",
+      "label_fr": "Raffinerie d'épice de taille moyenne",
+      "label_en": "Medium Spice Refinery",
+      "dimensions": {
+        "w": 2,
+        "d": 3,
+        "h": 2,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 3.1,
+        "d": 6.2,
+        "h": 5
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 102030001,
+      "icon_path": "/Game/Dune/GUI/Textures/Icons/Gameplay/Placeables/T_UI_IconPlacChoamSpiceRefineryMediumR_D.T_UI_IconPlacChoamSpiceRefineryMediumR_D",
+      "mesh_path": "/Game/Dune/Environment/Props/Choam/SpiceRefinery/Meshes/SM_Env_Prop_Choam_SpiceRefinery_Medium.SM_Env_Prop_Choam_SpiceRefinery_Medium",
+      "is_machine": true
+    },
+    {
+      "id": "AdvancedWeaponsFabricator_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "fabricators",
+      "group": "WeaponsFabricator",
+      "label_fr": "Fabricateur d'armes élaborées",
+      "label_en": "Advanced Weapons Fabricator",
+      "dimensions": {
+        "w": 2,
+        "d": 2,
+        "h": 1,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 4.7,
+        "d": 2.6,
+        "h": 1.5
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 101030001,
+      "icon_path": "/Game/Dune/GUI/Textures/Icons/Gameplay/Placeables/T_UI_IconPlacEnvPropChoamFabricatorWeaponsAdvanced_D.T_UI_IconPlacEnvPropChoamFabricatorWeaponsAdvanced_D",
+      "mesh_path": "/Game/Dune/Environment/Props/Choam/Fabricator/Meshes/SM_Env_Prop_Choam_Fabricator_Weapons_Advanced.SM_Env_Prop_Choam_Fabricator_Weapons_Advanced",
+      "is_machine": true
+    },
+    {
+      "id": "AdvancedWearablesFabricator_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "fabricators",
+      "group": "WearablesFabricator",
+      "label_fr": "Fabricateur de vêtements élaborés",
+      "label_en": "Advanced Garment Fabricator",
+      "dimensions": {
+        "w": 2,
+        "d": 2,
+        "h": 2,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 2.8,
+        "d": 3.6,
+        "h": 3.2
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 101010001,
+      "icon_path": "/Game/Dune/GUI/Textures/Icons/Gameplay/Placeables/T_UI_IconPlacChoamFabricatorWearablesAdvandced_D.T_UI_IconPlacChoamFabricatorWearablesAdvandced_D",
+      "mesh_path": "/Game/Dune/Environment/Props/Choam/Fabricator/Meshes/SM_Env_Prop_Choam_Fabricator_Wearables_Advandced.SM_Env_Prop_Choam_Fabricator_Wearables_Advandced",
+      "is_machine": true
+    },
+    {
+      "id": "Advanced_VehiclesFabricator_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "fabricators",
+      "group": "VehiclesFabricator",
+      "label_fr": "Fabricateur de véhicules élaborés",
+      "label_en": "Advanced Vehicle Fabricator",
+      "dimensions": {
+        "w": 6,
+        "d": 5,
+        "h": 2,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 13.1,
+        "d": 12.5,
+        "h": 3.4
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 101040001,
+      "icon_path": "/Game/Dune/GUI/Textures/Icons/Gameplay/Placeables/T_UI_IconPlacEnvPropChoamFabricatorVehiclesLarge_D.T_UI_IconPlacEnvPropChoamFabricatorVehiclesLarge_D",
+      "mesh_path": "/Game/Dune/Environment/Props/Choam/Fabricator/Meshes/SM_Env_Prop_Choam_Fabricator_Vehicles_Large.SM_Env_Prop_Choam_Fabricator_Vehicles_Large",
+      "is_machine": true
+    },
+    {
+      "id": "Advanced_SurvivalFabricator_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "fabricators",
+      "group": "SurvivalFabricator",
+      "label_fr": "Fabricateur de survie élaboré",
+      "label_en": "Advanced Survival Fabricator",
+      "dimensions": {
+        "w": 1,
+        "d": 1,
+        "h": 2,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 1.8,
+        "d": 2.4,
+        "h": 3.6
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 101020001,
+      "icon_path": "/Game/Dune/GUI/Textures/Icons/Gameplay/Placeables/T_UI_IconPlacEnvPropChoamFabricatorSurvivalAdvancedBase_D.T_UI_IconPlacEnvPropChoamFabricatorSurvivalAdvancedBase_D",
+      "mesh_path": "/Game/Dune/Environment/Props/Choam/Fabricator/Meshes/SM_Env_Prop_Choam_Fabricator_Survival_Advanced_01_assemble.SM_Env_Prop_Choam_Fabricator_Survival_Advanced_01_assemble",
+      "is_machine": true
+    },
+    {
+      "id": "LargeOreRefinery_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "refineries",
+      "group": "OreRefinery",
+      "label_fr": "Grande raffinerie de minerai",
+      "label_en": "Large Ore Refinery",
+      "dimensions": {
+        "w": 4,
+        "d": 6,
+        "h": 2,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 8.6,
+        "d": 13.5,
+        "h": 4.5
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 102010002,
+      "icon_path": "/Game/Dune/GUI/Textures/Icons/Gameplay/Placeables/T_UI_IconPlacEnvPropChoamOreRefineryLarge_D.T_UI_IconPlacEnvPropChoamOreRefineryLarge_D",
+      "mesh_path": "/Game/Dune/Environment/Props/Choam/OreRefinery/Meshes/SM_Env_Prop_Choam_OreRefinery_Large.SM_Env_Prop_Choam_OreRefinery_Large",
+      "is_machine": true
+    },
+    {
+      "id": "LargeSpiceRefinery_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "refineries",
+      "group": "SpiceRefinery",
+      "label_fr": "Grande raffinerie d'épice",
+      "label_en": "Large Spice Refinery",
+      "dimensions": {
+        "w": 5,
+        "d": 4,
+        "h": 6,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 11,
+        "d": 9,
+        "h": 15
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 102030002,
+      "icon_path": "/Game/Dune/GUI/Textures/Icons/Gameplay/Placeables/T_UI_IconPlacEnvPropChoamSpiceRefineryLarge_D.T_UI_IconPlacEnvPropChoamSpiceRefineryLarge_D",
+      "mesh_path": "/Game/Dune/Environment/Props/Choam/SpiceRefinery/Meshes/SM_Env_Prop_Choam_SpiceRefinery_Large_Full.SM_Env_Prop_Choam_SpiceRefinery_Large_Full",
+      "is_machine": true
+    },
+    {
+      "id": "Sandbike_Vehicle",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "vehicles",
+      "group": "Sandbike",
+      "label_fr": "Moto des sables",
+      "label_en": "Sandbike",
+      "dimensions": {
+        "w": 2,
+        "d": 1,
+        "h": 1,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 2.6,
+        "d": 1,
+        "h": 1.2
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 900000,
+      "icon_path": "",
+      "mesh_path": "",
+      "is_machine": true,
+      "is_vehicle": true
+    },
+    {
+      "id": "Buggy_Vehicle",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "vehicles",
+      "group": "Buggy",
+      "label_fr": "Buggy",
+      "label_en": "Buggy",
+      "dimensions": {
+        "w": 3,
+        "d": 2,
+        "h": 1,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 5.3,
+        "d": 2.7,
+        "h": 2.4
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 900001,
+      "icon_path": "",
+      "mesh_path": "",
+      "is_machine": true,
+      "is_vehicle": true
+    },
+    {
+      "id": "Tank_Vehicle",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "vehicles",
+      "group": "Tank",
+      "label_fr": "Char d'assaut",
+      "label_en": "Tank",
+      "dimensions": {
+        "w": 3,
+        "d": 3,
+        "h": 1,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 6.4,
+        "d": 5.4,
+        "h": 2
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 900002,
+      "icon_path": "",
+      "mesh_path": "",
+      "is_machine": true,
+      "is_vehicle": true
+    },
+    {
+      "id": "Sandcrawler_Vehicle",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "vehicles",
+      "group": "Sandcrawler",
+      "label_fr": "Chenille",
+      "label_en": "Sandcrawler",
+      "dimensions": {
+        "w": 2,
+        "d": 3,
+        "h": 2,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 5,
+        "d": 5.8,
+        "h": 4
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 900003,
+      "icon_path": "",
+      "mesh_path": "",
+      "is_machine": true,
+      "is_vehicle": true
+    },
+    {
+      "id": "TreadWheel_Vehicle",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "vehicles",
+      "group": "TreadWheel",
+      "label_fr": "Roue tout-terrain",
+      "label_en": "TreadWheel",
+      "dimensions": {
+        "w": 2,
+        "d": 1,
+        "h": 1,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 2.6,
+        "d": 0.8,
+        "h": 1.6
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 900004,
+      "icon_path": "",
+      "mesh_path": "",
+      "is_machine": true,
+      "is_vehicle": true
+    },
+    {
+      "id": "LightOrnithopter_Vehicle",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "vehicles",
+      "group": "LightOrnithopter",
+      "label_fr": "Ornithoptère éclaireur",
+      "label_en": "LightOrnithopter",
+      "dimensions": {
+        "w": 3,
+        "d": 1,
+        "h": 2,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 7,
+        "d": 2.4,
+        "h": 2.6
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 900005,
+      "icon_path": "",
+      "mesh_path": "",
+      "is_machine": true,
+      "is_vehicle": true
+    },
+    {
+      "id": "MediumOrnithopter_Vehicle",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "vehicles",
+      "group": "MediumOrnithopter",
+      "label_fr": "Ornithoptère d'assaut",
+      "label_en": "MediumOrnithopter",
+      "dimensions": {
+        "w": 5,
+        "d": 2,
+        "h": 1,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 10.54,
+        "d": 2.76,
+        "h": 2.44
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 900006,
+      "icon_path": "",
+      "mesh_path": "",
+      "is_machine": true,
+      "is_vehicle": true
+    },
+    {
+      "id": "TransportOrnithopter_Vehicle",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "vehicles",
+      "group": "TransportOrnithopter",
+      "label_fr": "Ornithoptère de transport",
+      "label_en": "TransportOrnithopter",
+      "dimensions": {
+        "w": 7,
+        "d": 5,
+        "h": 3,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 16,
+        "d": 12,
+        "h": 5.6
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 900007,
+      "icon_path": "",
+      "mesh_path": "",
+      "is_machine": true,
+      "is_vehicle": true
     }
   ]
 }

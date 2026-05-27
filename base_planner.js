@@ -16,7 +16,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 const CELL              = 1;     // 1 cellule = 1 unité monde
 const BLOCK_CELLS       = 10;    // 10×10 cellules par bloc de claim
 const WALL_UNIT         = 1;     // hauteur d'un mur plein
-const FOUNDATION_DEPTH  = 0.5;   // épaisseur visuelle d'une fondation
+const FOUNDATION_DEPTH  = 1.0;   // épaisseur d'une fondation = 1 unité de mur (cohérent avec le jeu :
+                                  // empiler 2 fondations donne un volume continu sans espace vide entre les 2)
 const FLOOR_THICKNESS   = 0.15;  // épaisseur visuelle d'un sol/toit-plat
 const PILLAR_W          = 0.25;  // section d'un pilier
 const WALL_THICKNESS    = 0.12;  // épaisseur visuelle d'un mur
@@ -35,9 +36,26 @@ const isDoorGroup   = g => DOOR_GROUPS.has(g);
 // Claim limits (règles officielles Dune Awakening)
 const MAX_CLAIM_BLOCKS    = 6;   // 1 bloc principal + 5 extensions horizontales
 const MAX_VERT_EXTENSIONS = 5;   // pieux verticaux (0–5)
-const BASE_MAX_FLOOR      = 6;   // niveaux au-dessus sol sans extension
-const PER_VERT_UP         = 7;   // niveaux supplémentaires en hauteur par pieu
-const PER_VERT_DOWN       = 5;   // niveaux supplémentaires en sous-sol par pieu
+// Valeurs alignées sur le système Advanced Sub-Fief de Dune Awakening :
+// - Base : ~14 niveaux de volume = 6 niveaux au-dessus du sol (RDC..N6) + 7 niveaux
+//   en sous-sol accessibles via creusement (S1..S7). L'utilisateur peut placer son
+//   bâtiment sur le sol (perd ~7-8 niveaux dans le terrain) ou remonter sa console
+//   pour récupérer la hauteur — le planner expose les 14 niveaux théoriques.
+// - Chaque Vertical Staking Unit ajoute +6 niveaux en hauteur et +4 en sous-sol.
+// - Max 5 extensions verticales → S27 → N36 (64 niveaux exploitables).
+const BASE_MAX_FLOOR      = 6;   // niveaux au-dessus du sol sans extension
+const BASE_MIN_FLOOR      = -7;  // niveaux de sous-sol sans extension (creusement)
+const PER_VERT_UP         = 6;   // niveaux supplémentaires en hauteur par pieu vertical
+const PER_VERT_DOWN       = 4;   // niveaux supplémentaires en sous-sol par pieu vertical
+
+// Simulation de stabilité (session 7d) — dataminé + confirmé par la communauté DA :
+// chaque ancre (fondation/pilier au sol) distribue un budget de 9 pas. Chaque saut
+// horizontal ou vertical via mur coûte 1 pas. Saut vertical via fondation empilée
+// ou pilier coûte 0 (transmission gratuite).
+const STABILITY_BUDGET    = 9;
+const STABILITY_COLOR_OK      = 0x4caf76;  // vert — stable avec marge
+const STABILITY_COLOR_WARNING = 0xddaa33;  // jaune — limite (budget 0-1)
+const STABILITY_COLOR_ERROR   = 0xcc3333;  // rouge — instable ou non-atteint
 
 const FACTION_COLORS = {
   choam_shelter: 0x3a6fa8,
@@ -49,7 +67,16 @@ const FACTION_COLORS = {
   watershippers: 0x1a6b7a,
   extra:         0x5c3a7a,
   blockout:      0x444444,
+  placeables:    0xc8a64a,  // machines (raffineries, fabricateurs) : ambré
+  vehicles:      0x4a78b8,  // véhicules : bleu acier (distinct des machines)
 };
+
+/** Couleur 3D d'une pièce — dispatch sur is_vehicle / is_machine sinon faction. */
+function getPieceColor(piece) {
+  if (piece.is_vehicle) return FACTION_COLORS.vehicles;
+  if (piece.is_machine) return FACTION_COLORS.placeables;
+  return FACTION_COLORS[piece.faction_id] ?? 0x666666;
+}
 
 const COLOR_GROUND      = 0x0d0805;
 const COLOR_CLAIM_FLOOR = 0x2a1a08;
@@ -86,9 +113,24 @@ const state = {
     ],
   },
   currentFloor:   0,
-  selectedItemId: null,
+  // Sélection : selectedItemId = pièce "principale" (dernière cliquée, utilisée pour le
+  // panneau de propriétés). selectedItemIds = ensemble complet des sélectionnés
+  // (Shift+clic pour ajouter, Ctrl+clic pour toggle, clic simple pour remplacer).
+  // Garder les 2 en sync est important : selectedItemIds.has(selectedItemId) doit
+  // toujours être vrai si selectedItemId != null.
+  selectedItemId:  null,
+  selectedItemIds: new Set(),
+  // Buffer de copier-coller pour les étages — items du dernier Ctrl+C
+  floorClipboard:  null,
+  // Simulation de stabilité (session 7d)
+  showStability:   false,        // toggle d'affichage (bouton toolbar)
+  stabilityMap:    new Map(),    // itemId → budget restant (null/négatif = instable)
   activeFaction:  '',
   activeCategory: '',
+  // Onglet de mode sidebar : 'structures' (pièces de construction), 'machines'
+  // (raffineries + fabricateurs), 'vehicles'. Filtre la liste sans toucher au
+  // catalogue des pièces.
+  activeTab:      'structures',
   searchQuery:    '',
   dragPieceId:    null,
   cameraMode:     'ortho',
@@ -204,6 +246,7 @@ function restoreItem(item) {
   updateFloorVisibility();
   updateFloorBadges();
   updatePieceCount();
+  recomputeStabilityIfActive();
 }
 
 // ============================================================
@@ -234,6 +277,7 @@ async function init() {
   initFloorTabs();      // génère dynamiquement les onglets selon les extensions
   initVertPips();       // branche les pips de pieux verticaux
   initDragDrop();
+  bpInitPersistence();  // boutons Sauvegarder / Mes plans / Partager + auto-load ?plan=<token>
   initKeyboard();
   initResize();
 
@@ -462,19 +506,87 @@ function raycastPlacedMeshes(clientX, clientY) {
  *  est en (-w/2, ?, -d/2). Rotation utilisateur fera tourner autour du centre.
  */
 function makeTrianglePrismGeometry(w, h, d) {
+  // Triangle ISOCÈLE : base sur le côté -Z (de (-w/2,-d/2) à (+w/2,-d/2)), pointe
+  // au milieu du côté opposé +Z (en (0,+d/2)). 4 triangles à 0/90/180/270 forment
+  // une étoile à 4 branches dont les bases couvrent les 4 côtés du carré (et
+  // laissent un carré central vide où loger un sol carré normal).
+  // Le ExtrudeGeometry crée le shape en XY puis on le rotate pour le mettre en XZ.
   const shape = new THREE.Shape();
-  shape.moveTo(0, 0);
-  shape.lineTo(w, 0);
-  shape.lineTo(0, d);
-  shape.lineTo(0, 0);
+  shape.moveTo(0, 0);          // base gauche
+  shape.lineTo(w, 0);          // base droite
+  shape.lineTo(w / 2, d);      // pointe (milieu du côté opposé)
+  shape.closePath();
   const geom = new THREE.ExtrudeGeometry(shape, { depth: h, bevelEnabled: false });
-  // ExtrudeGeometry crée le shape en XY extrudé vers +Z (vertices : x∈[0,w], y∈[0,d], z∈[0,h]).
-  // Rotation +PI/2 autour de X : (x,y,z) → (x,-z,y). Le shape passe en XZ, profondeur d en +Z,
-  // hauteur h en -Y. Translate +h → bottom à Y=0. Translate -w/2/-d/2 → centré sur XZ.
+  // Rotation +PI/2 autour de X : shape passe de XY à XZ, extrusion +Z devient -Y.
   geom.rotateX(Math.PI / 2);
   geom.translate(0, h, 0);            // bottom à Y=0
   geom.translate(-w / 2, 0, -d / 2);  // centré sur XZ
   return geom;
+}
+
+/** Mur triangulaire : face avant en triangle rectangle (plan XY), extrudée de WALL_THICKNESS sur Z.
+ *  Géométrie centrée XYZ (compatible avec le placement standard des murs edge).
+ *  corner ∈ {'BL','BR','TL','TR'} = position du coin avec l'angle droit (= coin "plein").
+ *  Convention : x ∈ [0,w] horizontal, y ∈ [0,h] vertical (face du mur vue de face en +Z).
+ */
+function makeTriangleWallGeometry(w, h, corner) {
+  const t = WALL_THICKNESS;
+  const shape = new THREE.Shape();
+  switch (corner) {
+    case 'BL':  // (0,0)─(w,0) base, montant gauche, hypoténuse (w,0)→(0,h)
+      shape.moveTo(0, 0); shape.lineTo(w, 0); shape.lineTo(0, h);
+      break;
+    case 'BR':  // (0,0)─(w,0) base, montant droit, hypoténuse (0,0)→(w,h)
+      shape.moveTo(0, 0); shape.lineTo(w, 0); shape.lineTo(w, h);
+      break;
+    case 'TL':  // base haute (0,h)─(w,h), montant gauche, hypoténuse (0,0)→(w,h)
+      shape.moveTo(0, 0); shape.lineTo(w, h); shape.lineTo(0, h);
+      break;
+    case 'TR':  // base haute (0,h)─(w,h), montant droit, hypoténuse (w,0)→(0,h)
+      shape.moveTo(w, 0); shape.lineTo(w, h); shape.lineTo(0, h);
+      break;
+  }
+  shape.closePath();
+  const geom = new THREE.ExtrudeGeometry(shape, { depth: t, bevelEnabled: false });
+  geom.translate(-w / 2, -h / 2, -t / 2);
+  return geom;
+}
+
+/** Détermine le coin "plein" (angle droit) d'un mur triangulaire à partir du nom de groupe.
+ *  Couvre Wall_Triangle_{Top|Bottom}[_Half|_Wide|_Tall]_{Left|Right}.
+ */
+function triangleWallCorner(group) {
+  const isTop   = group.indexOf('_Top') !== -1;
+  const isRight = group.endsWith('_Right');
+  return (isTop ? 'T' : 'B') + (isRight ? 'R' : 'L');
+}
+
+/** True si le groupe est une rampe de toit (wedge montant simple).
+ *  Inclut Roof, Roof_Half, Angled_Wedge_*, Roof_Wedge_*, Roof_Cover_*.
+ *  Les Roof_Cover et Roof_Wedge ont des géométries spécifiques en jeu (couvertures
+ *  à 2 pans, wedges sur footprint triangulaire) mais on les approxime en rampes
+ *  simples pour ne pas tomber sur la slab plate. À raffiner dans une session future. */
+function isRoofRampGroup(group) {
+  return group === 'Roof' || group === 'Roof_Half'
+      || group.startsWith('Angled_Wedge')
+      || group.startsWith('Roof_Wedge')
+      || group.startsWith('Roof_Cover');
+}
+
+/** True si le groupe est un coin de toit pyramidal (sommet à un coin). */
+function isRoofCornerGroup(group) {
+  return group === 'Roof_Corner' || group === 'Roof_Corner_Half';
+}
+
+/** True si le groupe est un coin de toit INTÉRIEUR (creux concave à un coin). */
+function isRoofCornerInwardGroup(group) {
+  return group === 'Roof_Corner_Inward' || group === 'Roof_Corner_Half_Inward';
+}
+
+/** True si le groupe est un toit arrondi (dim.shape === 'corner' + categorie roofs).
+ *  Géré séparément du bloc générique pour pouvoir le distinguer des autres rooflike. */
+function isRoofRoundCornerGroup(group) {
+  return group === 'Roof_Round_Corner' || group === 'Roof_Round_Corner_Half';
 }
 
 /** Rampe : slab incliné fin (FLOOR_THICKNESS d'épaisseur).
@@ -502,6 +614,105 @@ function makeRampGeometry(w, h, d) {
   g.computeVertexNormals();
   g.translate(-w / 2, 0, -d / 2);
   return g;
+}
+
+/**
+ * Toit en coin (pyramide oblique). 5 vertices = 4 coins de base + 1 sommet
+ * unique au-dessus du coin "NE" (+X, +Z). L'arête (0→4) entre le coin SW au
+ * sol et le sommet NE en hauteur est la crête diagonale. Le coin orienté est
+ * imposé canonique (NE) — l'utilisateur tourne la pièce pour orienter ailleurs.
+ * Géométrie centrée XZ, bas à Y=0.
+ *
+ * toNonIndexed() + computeVertexNormals() → arêtes nettes (normales par face),
+ * pour un rendu uniforme façon "blueprint" cohérent avec les autres toits.
+ */
+function makeRoofCornerGeometry(w, d, h) {
+  const positions = new Float32Array([
+    -w/2, 0, -d/2,   // 0 : SW bas
+     w/2, 0, -d/2,   // 1 : SE bas
+     w/2, 0,  d/2,   // 2 : NE bas
+    -w/2, 0,  d/2,   // 3 : NW bas
+     w/2, h,  d/2,   // 4 : sommet, au-dessus de NE
+  ]);
+  const indices = [
+    0, 2, 1,  0, 3, 2,    // face bas (Y=0)
+    1, 4, 2,              // mur Est plat (plan X=+w/2)
+    3, 2, 4,              // mur Nord plat (plan Z=+d/2)
+    0, 1, 4,              // toit incliné côté SE (crête 0→4)
+    0, 4, 3,              // toit incliné côté NW (crête 0→4)
+  ];
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  g.setIndex(indices);
+  const nonIdx = g.toNonIndexed();
+  nonIdx.computeVertexNormals();
+  return nonIdx;
+}
+
+/**
+ * Toit en coin INTÉRIEUR (creux concave). Volume fermé : 4 coins de base à Y=0
+ * + 3 sommets à Y=h aux coins NON creux (SW, SE, NW). Le coin NE descend jusqu'au
+ * sol au coin de base correspondant → pente concave allant du sommet SE-NW vers NE.
+ * 7 vertices, 10 triangles. Géométrie centrée XZ, bas à Y=0.
+ */
+function makeRoofCornerInwardGeometry(w, d, h) {
+  const positions = new Float32Array([
+    -w/2, 0, -d/2,   // 0 : SW bas
+     w/2, 0, -d/2,   // 1 : SE bas
+     w/2, 0,  d/2,   // 2 : NE bas (= aussi le coin creux du dessus)
+    -w/2, 0,  d/2,   // 3 : NW bas
+    -w/2, h, -d/2,   // 4 : SW haut
+     w/2, h, -d/2,   // 5 : SE haut
+    -w/2, h,  d/2,   // 6 : NW haut
+  ]);
+  const indices = [
+    0, 2, 1,  0, 3, 2,    // face bas (Y=0) — quad complet
+    4, 5, 6,              // face supérieure triangulaire (Y=h, 3 coins hauts)
+    0, 1, 5,  0, 5, 4,    // mur Sud (Z=-d/2) — quad complet
+    0, 4, 6,  0, 6, 3,    // mur Ouest (X=-w/2) — quad complet
+    1, 2, 5,              // mur Est triangulaire (plan X=+w/2, coin NE au sol)
+    3, 6, 2,              // mur Nord triangulaire (plan Z=+d/2, coin NE au sol)
+    5, 2, 6,              // pente concave descendant de l'arête 5-6 vers le coin 2
+  ];
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  g.setIndex(indices);
+  const nonIdx = g.toNonIndexed();
+  nonIdx.computeVertexNormals();
+  return nonIdx;
+}
+
+/**
+ * Toit incliné en rampe (wedge plein). Footprint w×d au sol, pente qui monte de
+ * Y=0 (côté -Z) à Y=h (côté +Z). 6 vertices = 4 coins de base + 2 sommets hauts
+ * sur l'arête +Z. Géométrie centrée XZ, bas à Y=0.
+ * Utilisé pour Roof, Roof_Half, Angled_Wedge_Bottom/Top et leurs Half variants —
+ * la différence Bottom/Top du jeu est une question d'orientation, gérée via la
+ * rotation utilisateur.
+ */
+function makeRoofRampGeometry(w, d, h) {
+  const positions = new Float32Array([
+    -w/2, 0, -d/2,   // 0 : avant-gauche bas
+     w/2, 0, -d/2,   // 1 : avant-droit  bas
+     w/2, 0,  d/2,   // 2 : arrière-droit bas
+    -w/2, 0,  d/2,   // 3 : arrière-gauche bas
+     w/2, h,  d/2,   // 4 : arrière-droit haut
+    -w/2, h,  d/2,   // 5 : arrière-gauche haut
+  ]);
+  const indices = [
+    0, 2, 1,  0, 3, 2,    // face bas (Y=0)
+    3, 4, 2,  3, 5, 4,    // face arrière (Z=+d/2, plate verticale)
+    0, 1, 4,  0, 4, 5,    // face supérieure inclinée (le toit visible)
+    0, 5, 3,              // triangle latéral gauche (X=-w/2)
+    1, 2, 4,              // triangle latéral droit (X=+w/2)
+  ];
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  g.setIndex(indices);
+  // toNonIndexed + computeVertexNormals = arêtes nettes (normales par face)
+  const nonIdx = g.toNonIndexed();
+  nonIdx.computeVertexNormals();
+  return nonIdx;
 }
 
 /** Escalier marche par marche (n marches). Origine au coin bas-avant.
@@ -819,6 +1030,18 @@ function createGeometryForPiece(piece) {
   const group = piece.group || '';
   const isHalf = (dim.h === 0.5);
 
+  // --- Machine (raffinerie / fabricateur) : box aux dimensions RÉELLES en mètres ---
+  // dim.w × dim.d × dim.h sont les cellules entières (arrondi sup) utilisées pour le snap
+  // et le blocage. Pour le visuel on utilise la vraie taille (real_size_m), centrée
+  // sur le footprint logique → on voit la machine "à l'aise" dans sa case réservée
+  // et on comprend tout de suite pourquoi la cellule entière est bloquée.
+  if (piece.is_machine) {
+    const rs = piece.real_size_m || { w: CELL * 2.5, d: CELL * 2.5, h: CELL * 2.5 };
+    // 1 cellule monde = 1 unité Three.js = 2.5 m → divise les mètres par 2.5 pour avoir des unités.
+    const vw = rs.w / 2.5, vd = rs.d / 2.5, vh = rs.h / 2.5;
+    return new THREE.BoxGeometry(vw, vh, vd);
+  }
+
   // --- Porte : cadre avec ouverture basse ---
   if (cat === 'doors' && isDoorGroup(group) && rules.snap_target === 'edge') {
     const h = (dim.h && dim.h > 0 ? dim.h : 1) * WALL_UNIT;
@@ -850,6 +1073,12 @@ function createGeometryForPiece(piece) {
     return makeRoundCornerWallGeometry(CELL, h, WALL_THICKNESS);
   }
 
+  // --- Murs triangulaires (face avant découpée en triangle rectangle) ---
+  if (rules.snap_target === 'edge' && group.startsWith('Wall_Triangle_')) {
+    const h = (dim.h && dim.h > 0 ? dim.h : 1) * WALL_UNIT;
+    return makeTriangleWallGeometry(w, h, triangleWallCorner(group));
+  }
+
   // --- Murs droits (snap arête) ---
   if (rules.snap_target === 'edge') {
     const h = (dim.h && dim.h > 0 ? dim.h : 1) * WALL_UNIT;
@@ -878,7 +1107,27 @@ function createGeometryForPiece(piece) {
     return makeRampGeometry(w, h, d);
   }
 
+  // --- Toits inclinés (rampes / coins / coins intérieurs) ---
+  // IMPORTANT : ces branches passent AVANT les checks de shape (dim.shape='corner'
+  // / footprint_shape='triangle_*') car certains roofs ont ces propriétés (ex.
+  // Roof_Wedge_Top_Half : shape=corner + footprint=triangle_isosceles) et seraient
+  // sinon interceptés par les branches génériques de slab plate.
+  if (cat === 'roofs' && isRoofRampGroup(group)) {
+    const h = (dim.h === 0.5 ? 0.5 : 1) * WALL_UNIT;
+    return makeRoofRampGeometry(w, d, h);
+  }
+  if (cat === 'roofs' && isRoofCornerGroup(group)) {
+    const h = (dim.h === 0.5 ? 0.5 : 1) * WALL_UNIT;
+    return makeRoofCornerGeometry(w, d, h);
+  }
+  if (cat === 'roofs' && isRoofCornerInwardGroup(group)) {
+    const h = (dim.h === 0.5 ? 0.5 : 1) * WALL_UNIT;
+    return makeRoofCornerInwardGeometry(w, d, h);
+  }
+
   // --- Sol / Toit arrondi en coin : quart de disque plat (même forme que fondation arrondie) ---
+  // Note: les Roof_Round_Corner restent en slab plate quart-de-disque pour le moment —
+  // à raffiner en arc rond incliné dans une session future.
   if ((cat === 'floors' || cat === 'roofs') && dim.shape === 'corner') {
     return makeRoundFoundationGeometry(CELL, FLOOR_THICKNESS);
   }
@@ -924,6 +1173,20 @@ function placeMeshAt(mesh, item, piece) {
   const yBase = getFloorYBase(item.z ?? state.currentFloor) + getCategoryYOffset(piece)
               + (item.half ? 0.5 * WALL_UNIT : 0);
   const cat   = piece.category;
+  const group = piece.group || '';
+
+  // ---- Machine (snap cellule, footprint w×d cellules, posée sur le sol) ----
+  // Centré sur le footprint logique. La box visuelle (taille réelle en m) est
+  // automatiquement centrée sur cette position grâce à BoxGeometry centré XYZ.
+  if (piece.is_machine) {
+    const rs = piece.real_size_m || { h: dim.h * 2.5 };
+    const realH = rs.h / 2.5;  // mètres → unités Three.js
+    mesh.position.x = item.x + w / 2;
+    mesh.position.z = item.y + d / 2;
+    mesh.position.y = yBase + realH / 2;
+    if (item.rotation) mesh.rotation.y = THREE.MathUtils.degToRad(item.rotation);
+    return;
+  }
 
   // ---- Fondation arrondie en coin (snap_target='cell', shape='corner') ----
   // Géométrie : disque-quart, origine à (0,0,0) = coin bas de la cellule.
@@ -1015,10 +1278,35 @@ function placeMeshAt(mesh, item, piece) {
     mesh.position.z = item.y + d / 2;
     mesh.position.y = yBase;
   }
-  // ---- Triangulaires (géométrie centrée XZ, origine bas) ----
-  else if (rules.footprint_shape === 'triangle_isosceles' || rules.footprint_shape === 'triangle_equilateral') {
+  // ---- Toits inclinés (rampe / coin / coin intérieur) : géométrie origine Y=0 ----
+  // IMPORTANT : passe AVANT la branche triangle car certains roof_wedge ont
+  // footprint=triangle_isosceles et seraient sinon interceptés.
+  // mesh.y = yBase + FLOOR_THICKNESS pour poser la base du wedge AU SOMMET des murs
+  // (yBase est positionné FLOOR_THICKNESS en-dessous pour les rooflike, convention slab plat).
+  else if (cat === 'roofs' && (isRoofRampGroup(group) || isRoofCornerGroup(group) || isRoofCornerInwardGroup(group))) {
     mesh.position.x = item.x + w / 2;
     mesh.position.z = item.y + d / 2;
+    mesh.position.y = yBase + FLOOR_THICKNESS;
+  }
+  // ---- Triangulaires (géométrie centrée XZ, origine bas) ----
+  // Le triangle isocèle a son centre de MASSE à 1/6 de la hauteur depuis la base
+  // (= décalé du centre géométrique du carré). Sans compensation, la rotation
+  // pivote autour du centre du carré, et le triangle "flotte" visuellement vers
+  // une cellule ou une autre selon l'orientation → l'utilisateur croit qu'il
+  // change de cellule. On compense en décalant la position du mesh de d/6 dans
+  // la direction opposée au CM après rotation, pour que le triangle paraisse
+  // toujours centré sur la cellule logique.
+  else if (rules.footprint_shape === 'triangle_isosceles' || rules.footprint_shape === 'triangle_equilateral') {
+    let cx = item.x + w / 2;
+    let cz = item.y + d / 2;
+    const rot = (((item.rotation || 0) % 360) + 360) % 360;
+    const off = d / 6;
+    if      (rot === 0)   cz += off;   // pointe nord → CM sud → décale nord
+    else if (rot === 90)  cx += off;   // pointe ouest → CM est → décale est
+    else if (rot === 180) cz -= off;   // pointe sud → CM nord → décale sud
+    else if (rot === 270) cx -= off;   // pointe est → CM ouest → décale ouest
+    mesh.position.x = cx;
+    mesh.position.z = cz;
     mesh.position.y = yBase;
   }
   // ---- Foundation / Floor / Roof (BoxGeometry centré) ----
@@ -1086,20 +1374,108 @@ function isPieceRooflike(piece) {
   return false;
 }
 
+/**
+ * Crée un sprite-texte (canvas → texture) pour étiqueter une machine/véhicule.
+ * Toujours face à la caméra (Sprite), visible à travers les autres objets
+ * (depthTest=false) pour rester lisible même quand la machine est partiellement
+ * occultée par un mur ou un plafond.
+ */
+function makeMachineLabelSprite(text, accentColor) {
+  // Mesure du texte pour adapter la largeur du canvas
+  const FONT = 'bold 44px "Trebuchet MS", "Segoe UI", sans-serif';
+  const PADDING_X = 28;
+  const HEIGHT_PX = 68;
+  const measureCanvas = document.createElement('canvas');
+  const mctx = measureCanvas.getContext('2d');
+  mctx.font = FONT;
+  const textW = mctx.measureText(text).width;
+  const canvasW = Math.max(192, Math.ceil(textW + PADDING_X * 2));
+
+  const canvas = document.createElement('canvas');
+  canvas.width  = canvasW;
+  canvas.height = HEIGHT_PX;
+  const ctx = canvas.getContext('2d');
+
+  // Fond pastille semi-opaque + bordure colorée accentuée (couleur de la pièce)
+  ctx.fillStyle = 'rgba(8, 5, 2, 0.78)';
+  const r = 10;  // rayon des coins
+  ctx.beginPath();
+  ctx.moveTo(r, 0);
+  ctx.lineTo(canvasW - r, 0);
+  ctx.quadraticCurveTo(canvasW, 0, canvasW, r);
+  ctx.lineTo(canvasW, HEIGHT_PX - r);
+  ctx.quadraticCurveTo(canvasW, HEIGHT_PX, canvasW - r, HEIGHT_PX);
+  ctx.lineTo(r, HEIGHT_PX);
+  ctx.quadraticCurveTo(0, HEIGHT_PX, 0, HEIGHT_PX - r);
+  ctx.lineTo(0, r);
+  ctx.quadraticCurveTo(0, 0, r, 0);
+  ctx.closePath();
+  ctx.fill();
+
+  // Bordure : couleur d'accent (ambré pour machines, bleu acier pour véhicules)
+  const rb = (accentColor >> 16) & 255;
+  const gb = (accentColor >> 8)  & 255;
+  const bb =  accentColor        & 255;
+  ctx.strokeStyle = `rgba(${rb}, ${gb}, ${bb}, 0.85)`;
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // Texte ivoire
+  ctx.fillStyle = '#f5e6c5';
+  ctx.font = FONT;
+  ctx.textAlign    = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, canvasW / 2, HEIGHT_PX / 2 + 2);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.anisotropy = 4;
+  tex.needsUpdate = true;
+
+  const mat = new THREE.SpriteMaterial({
+    map: tex,
+    depthTest:  false,   // toujours visible
+    depthWrite: false,
+    transparent: true,
+  });
+  const sprite = new THREE.Sprite(mat);
+  // Échelle : conserve le ratio canvas, hauteur de référence = 0.35 unité monde
+  // (1 unité = 1 cellule = 2.5 m, donc label ≈ 88 cm de haut au sol)
+  const baseHeight = 0.35;
+  sprite.scale.set(baseHeight * (canvasW / HEIGHT_PX), baseHeight, 1);
+  sprite.renderOrder = 999;  // au-dessus de tout
+  return sprite;
+}
+
 function buildMeshForPiece(piece, item) {
-  const color = FACTION_COLORS[piece.faction_id] ?? 0x666666;
+  const color = getPieceColor(piece);
   const geo   = createGeometryForPiece(piece);
-  const mat   = new THREE.MeshStandardMaterial({ color, roughness: 0.7, metalness: 0.15 });
+  // Machines : matériau semi-transparent pour qu'on voie les pièces structurelles à travers
+  const mat   = piece.is_machine
+    ? new THREE.MeshStandardMaterial({ color, roughness: 0.8, metalness: 0.30, transparent: true, opacity: 0.55 })
+    : new THREE.MeshStandardMaterial({ color, roughness: 0.7, metalness: 0.15 });
   const mesh  = new THREE.Mesh(geo, mat);
   mesh.castShadow = true;
   mesh.receiveShadow = true;
 
-  // Outline noir (edges) pour la lisibilité
+  // Outline noir (edges) pour la lisibilité — plus marqué sur les machines pour visualiser le volume
   const edges = new THREE.EdgesGeometry(geo, 30);
-  const edgesMat = new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.45 });
+  const edgesOpacity = piece.is_machine ? 0.75 : 0.45;
+  const edgesMat = new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: edgesOpacity });
   const edgesLine = new THREE.LineSegments(edges, edgesMat);
   mesh.add(edgesLine);
   mesh.userData.edges = edgesLine;
+
+  // Label texte pour machines/véhicules — flotte juste au-dessus du sommet du cube
+  if (piece.is_machine) {
+    const label = makeMachineLabelSprite(piece.label_fr || piece.label_en || piece.id, color);
+    const rs = piece.real_size_m || { h: 2.5 };
+    const realH = rs.h / 2.5;
+    label.position.set(0, realH / 2 + 0.25, 0);
+    mesh.add(label);
+    mesh.userData.label = label;
+  }
 
   placeMeshAt(mesh, item, piece);
 
@@ -1309,8 +1685,19 @@ function updateFloorBadges() {
 }
 
 /** Affiche un indicateur HUD quand l'auto-stack résout sur un étage différent du courant. */
-function showFloorResolveHud(resolvedFloor) {
+function showFloorResolveHud(resolvedFloor, customMessage) {
   if (!dom.hudFloorResolve) return;
+  if (customMessage) {
+    // Message personnalisé (utilisé par copier-coller d'étage, etc.)
+    dom.hudFloorResolve.textContent = customMessage;
+    dom.hudFloorResolve.classList.add('visible');
+    // Auto-hide après 2.5s pour les messages personnalisés
+    clearTimeout(showFloorResolveHud._timer);
+    showFloorResolveHud._timer = setTimeout(() => {
+      dom.hudFloorResolve.classList.remove('visible');
+    }, 2500);
+    return;
+  }
   if (resolvedFloor !== state.currentFloor) {
     const name = resolvedFloor < 0 ? 'S' + Math.abs(resolvedFloor)
                : resolvedFloor === 0 ? 'RDC' : 'N' + resolvedFloor;
@@ -1372,6 +1759,9 @@ function snapForPiece(worldPos, piece) {
  */
 function vertClass(piece) {
   if (!piece) return 'other';
+  // Machine : repose au-dessus d'un sol (fondation, plancher), donc on doit pouvoir
+  // la poser sur une cellule qui contient déjà l'un de ces deux types.
+  if (piece.is_machine)              return 'machine';
   const cat = piece.category;
   if (cat === 'foundations')         return 'floor';
   // isPieceRooflike couvre roofs + group=Rooftop + label "Toit*"/"Plafond*"
@@ -1387,13 +1777,226 @@ function sameVerticalSpace(pieceA, pieceB) {
   // Compatibilité avec les anciens appels par catégorie (chaîne)
   const vcA = (typeof pieceA === 'string') ? pieceA : vertClass(pieceA);
   const vcB = (typeof pieceB === 'string') ? pieceB : vertClass(pieceB);
-  const isFloor = v => v === 'floor' || v === 'floors' || v === 'foundations';
-  const isRoof  = v => v === 'roof'  || v === 'roofs';
-  const isStair = v => v === 'stair' || v === 'stairs';
+  const isFloor   = v => v === 'floor' || v === 'floors' || v === 'foundations';
+  const isRoof    = v => v === 'roof'  || v === 'roofs';
+  const isStair   = v => v === 'stair' || v === 'stairs';
+  const isMachine = v => v === 'machine';
   if (isFloor(vcA) && isRoof(vcB))                       return false;
   if (isRoof(vcA)  && isFloor(vcB))                      return false;
   if (isStair(vcA) && (isFloor(vcB) || isRoof(vcB)))     return false;
   if ((isFloor(vcA) || isRoof(vcA)) && isStair(vcB))     return false;
+  // Machine repose AU-DESSUS du sol : la cellule peut contenir une fondation/plancher
+  // et la machine simultanément (espaces verticaux différents, machine sur la surface).
+  if (isMachine(vcA) && (isFloor(vcB) || isRoof(vcB)))   return false;
+  if ((isFloor(vcA) || isRoof(vcA)) && isMachine(vcB))   return false;
+  return true;
+}
+
+// ============================================================
+// FOOTPRINT & PLAGE D'ÉTAGES (pour blocage volumétrique machines/véhicules)
+// ============================================================
+
+/**
+ * Ensemble des cellules (entières) occupées par la pièce, à partir du coin
+ * (item.x, item.y), en tenant compte de la rotation (échange w↔d à 90°/270°).
+ * Note: rotation 90°/270° ne pivote PAS autour du centre — elle échange juste
+ * w et d ; le coin (item.x, item.y) reste l'origine du footprint. Le rendu 3D
+ * tourne autour du centre visuel, ce qui peut créer un décalage visuel pour
+ * les pièces non carrées. À régler dans une session future si gênant.
+ * Retourne un Set<string> au format "x,y".
+ */
+function getOccupiedCells(piece, item) {
+  const dim = piece.dimensions || {};
+  let dw = Math.max(1, dim.w || 1);
+  let dd = Math.max(1, dim.d || 1);
+  const rot = ((item.rotation || 0) % 360 + 360) % 360;
+  if (rot === 90 || rot === 270) { const t = dw; dw = dd; dd = t; }
+  const cells = new Set();
+  for (let i = 0; i < dw; i++) {
+    for (let j = 0; j < dd; j++) {
+      cells.add((item.x + i) + ',' + (item.y + j));
+    }
+  }
+  return cells;
+}
+
+/**
+ * Plage d'étages [zMin, zMax] occupée par la pièce.
+ * - Machines/véhicules : [z, z + dim.h - 1] (dim.h = cellules entières = étages bloqués)
+ * - Pièce standard    : [z, z]
+ */
+function getFloorRange(piece, item) {
+  const z = item.z != null ? item.z : 0;
+  if (piece.is_machine) {
+    const h = Math.max(1, (piece.dimensions && piece.dimensions.h) || 1);
+    return [z, z + h - 1];
+  }
+  return [z, z];
+}
+
+/** Cellules adjacentes à une arête (snap.kind === 'edge'). Retourne 2 clés "x,y". */
+function edgeAdjacentCells(snap) {
+  // axis='h' : arête horizontale à y=snap.y, sépare les cellules y=snap.y-1 et y=snap.y
+  // axis='v' : arête verticale à x=snap.x, sépare les cellules x=snap.x-1 et x=snap.x
+  if (snap.axis === 'h') return [snap.x + ',' + (snap.y - 1), snap.x + ',' + snap.y];
+  return [(snap.x - 1) + ',' + snap.y, snap.x + ',' + snap.y];
+}
+
+/** Cellules adjacentes à un coin (snap.kind === 'corner'). Retourne 4 clés "x,y". */
+function cornerAdjacentCells(snap) {
+  return [
+    (snap.x - 1) + ',' + (snap.y - 1),
+    snap.x + ',' + (snap.y - 1),
+    (snap.x - 1) + ',' + snap.y,
+    snap.x + ',' + snap.y,
+  ];
+}
+
+/**
+ * Renvoie l'indice de plancher physique porté par un sol/fondation/toit.
+ * Convention : "plancher Z" = la surface où l'on marche à l'étage Z.
+ *  - foundation/plancher à étage z → porte le plancher_z
+ *  - rooflike (toit plat, plafond) à étage z → porte le plancher_(z+1)
+ *    (le toit-plat de l'étage z EST le sol de l'étage z+1)
+ */
+function carriedFloorIndex(piece, item) {
+  if (isPieceRooflike(piece)) return (item.z || 0) + 1;
+  return item.z || 0;
+}
+
+/**
+ * Vérifie si la pose d'une machine (footprint w×d cellules, hauteur h étages)
+ * entre en conflit avec l'existant. La machine candidate occupe le volume
+ * [item.x..+w] × [item.y..+d] et s'étend verticalement du plancher_floorZ
+ * au plancher_(floorZ+h).
+ *
+ * Conflits :
+ *  - autre machine dont le footprint × plage d'étages se chevauche
+ *  - mur (snap edge) avec arête INTÉRIEURE au footprint
+ *  - pilier coin avec les 4 cellules adjacentes dans le footprint
+ *  - pilier central dans le footprint
+ *  - sol / fondation / toit-plat dont le plancher porté est STRICTEMENT
+ *    à l'intérieur de la plage verticale de la machine (= plancher traverse la machine).
+ *    Un sol au pied (plancher_floorZ) ou un toit-plat au sommet (plancher_floorZ+h) sont autorisés.
+ */
+function isMachinePlacementAllowed(piece, snap, floorZ) {
+  const ghost = {
+    x: snap.x, y: snap.y, z: floorZ,
+    axis: snap.axis, rotation: state.ghostRotation || 0,
+  };
+  const newCells = getOccupiedCells(piece, ghost);
+  const h = Math.max(1, (piece.dimensions && piece.dimensions.h) || 1);
+  const newZmin = floorZ;
+  const newZmax = floorZ + h - 1;
+  if (newZmax > getMaxFloor() || newZmin < getMinFloor()) return false;
+
+  // Test contre tous les étages dans la plage de la machine
+  for (let z = newZmin; z <= newZmax; z++) {
+    const floor = getFloor(z);
+    if (!floor) continue;
+    for (const it of floor.items) {
+      const other = state.piecesById.get(it.piece_id);
+      if (!other) continue;
+      const otherSnap = (other.placement_rules || {}).snap_target;
+
+      const [oZmin, oZmax] = getFloorRange(other, it);
+      if (z < oZmin || z > oZmax) continue;
+
+      // 1) Autre machine : intersection footprints (la plage d'étages se chevauche déjà)
+      if (other.is_machine) {
+        const otherCells = getOccupiedCells(other, it);
+        for (const c of newCells) if (otherCells.has(c)) return false;
+        continue;
+      }
+
+      // 2) Mur : conflit si mur INTÉRIEUR au footprint
+      if (otherSnap === 'edge') {
+        const adj = edgeAdjacentCells(it);
+        if (newCells.has(adj[0]) && newCells.has(adj[1])) return false;
+        continue;
+      }
+
+      // 3) Pilier coin : conflit si entouré par la machine
+      if (otherSnap === 'corner') {
+        const adj = cornerAdjacentCells(it);
+        if (adj.every(c => newCells.has(c))) return false;
+        continue;
+      }
+
+      // 4) Pilier central
+      if (otherSnap === 'cell' && other.is_pillar) {
+        if (newCells.has(it.x + ',' + it.y)) return false;
+        continue;
+      }
+
+      // 5) Sol / fondation / toit-plat : conflit ssi le plancher porté est
+      //    STRICTEMENT à l'intérieur de la plage verticale de la machine.
+      //    - plancher porté < newZmin+1 OU > newZmax+1 : OK (en dehors de la machine)
+      //    - plancher porté ∈ [newZmin+1, newZmax] (= entre les deux planchers extrêmes) : CONFLIT
+      //    Cas valides : sol au pied (plancher_newZmin), toit-plat au sommet (plancher_newZmin+h = plancher_(newZmax+1)).
+      if (otherSnap === 'cell' && (other.category === 'foundations' || other.category === 'floors')) {
+        const floorY = carriedFloorIndex(other, it);
+        if (floorY > newZmin && floorY < newZmin + h) {
+          const otherCells = getOccupiedCells(other, it);
+          for (const c of newCells) if (otherCells.has(c)) return false;
+        }
+        continue;
+      }
+    }
+  }
+  return true;
+}
+
+/**
+ * Vérifie qu'une pièce non-machine ne tombe pas à l'intérieur du volume d'une
+ * machine existante. Géré séparément parce que les machines couvrent plusieurs
+ * cellules et plusieurs étages.
+ *
+ * Règles :
+ *  - Mur / pilier coin / pilier central : conflit si dans le footprint × plage d'étages
+ *  - Sol/fondation/toit-plat : conflit si le plancher porté est STRICTEMENT à l'intérieur
+ *    de la plage verticale de la machine (= traverse). Le sol au pied de la machine ou
+ *    le toit-plat à son sommet sont autorisés.
+ */
+function checkAgainstExistingMachines(piece, snap, floorZ) {
+  // On parcourt tous les étages où une machine pourrait avoir été POSÉE pour
+  // ensuite s'étendre jusqu'à floorZ (machine multi-étages).
+  for (let z = getMinFloor(); z <= floorZ; z++) {
+    const f = getFloor(z);
+    if (!f) continue;
+    for (const it of f.items) {
+      const other = state.piecesById.get(it.piece_id);
+      if (!other || !other.is_machine) continue;
+      const [oZmin, oZmax] = getFloorRange(other, it);
+
+      const otherCells = getOccupiedCells(other, it);
+      const isSolOrToit = (piece.category === 'foundations' || piece.category === 'floors');
+
+      // SOL / FONDATION / TOIT-PLAT : conflit si plancher porté est strictement
+      // à l'intérieur de la plage verticale de la machine [oZmin..oZmin+h]
+      if (snap.kind === 'cell' && isSolOrToit && !piece.is_pillar) {
+        const floorY = carriedFloorIndex(piece, { z: floorZ });
+        const oH = Math.max(1, (other.dimensions && other.dimensions.h) || 1);
+        if (floorY > oZmin && floorY < oZmin + oH) {
+          if (otherCells.has(snap.x + ',' + snap.y)) return false;
+        }
+        continue;
+      }
+
+      // MUR / PILIER : conflit si dans la plage d'étages de la machine
+      if (floorZ < oZmin || floorZ > oZmax) continue;
+
+      if (snap.kind === 'edge') {
+        const adj = edgeAdjacentCells(snap);
+        if (otherCells.has(adj[0]) && otherCells.has(adj[1])) return false;
+      } else if (snap.kind === 'corner') {
+        const adj = cornerAdjacentCells(snap);
+        if (adj.every(c => otherCells.has(c))) return false;
+      } else if (snap.kind === 'cell' && piece.is_pillar) {
+        if (otherCells.has(snap.x + ',' + snap.y)) return false;
+      }
+    }
+  }
   return true;
 }
 
@@ -1404,6 +2007,15 @@ function isPlacementAllowedOnFloor(piece, snap, floorZ) {
   // 2. Limite XZ du claim
   if (!isWithinClaim(snap)) return false;
 
+  // 3. Dispatch volumétrique : machines/véhicules ont un footprint multi-cellule
+  //    et une hauteur multi-étage. Les pièces standards vérifient en plus qu'elles
+  //    ne tombent pas dans une machine existante (refactor introduit pour la
+  //    gestion d'espace machines).
+  if (piece.is_machine) {
+    return isMachinePlacementAllowed(piece, snap, floorZ);
+  }
+  if (!checkAgainstExistingMachines(piece, snap, floorZ)) return false;
+
   const floor = getFloor(floorZ);
   if (!floor) return true;
   const rules  = piece.placement_rules || {};
@@ -1412,6 +2024,8 @@ function isPlacementAllowedOnFloor(piece, snap, floorZ) {
   for (const it of floor.items) {
     const other = state.piecesById.get(it.piece_id);
     if (!other) continue;
+    // Les machines sont traitées par checkAgainstExistingMachines : skip dans la boucle classique
+    if (other.is_machine) continue;
 
     const otherSnap = (other.placement_rules || {}).snap_target;
 
@@ -1429,6 +2043,11 @@ function isPlacementAllowedOnFloor(piece, snap, floorZ) {
         if (!sameVerticalSpace(piece, other)) continue;
         // Demi-étage vs étage entier : décalage Y de 0.5 → pas de chevauchement
         if ((it.half || false) !== (state.ghostHalf || false)) continue;
+        // Note : on n'autorise PAS plusieurs triangles dans la même cellule.
+        // Les triangles isocèles se chevauchent partiellement à des rotations
+        // différentes (un triangle 0° et un 90° couvrent tous les deux le coin
+        // NE-NW par exemple). Le comportement in-game est aussi : 1 pièce par
+        // cellule. La logique "complémentarité" précédente était trop permissive.
         if (!ignore.has(other.group) && !(other.placement_rules?.ignore_groups || []).includes(piece.group)) {
           return false;
         }
@@ -1458,6 +2077,11 @@ function findBestPlacementFloor(piece, snap) {
   const rules = piece.placement_rules || {};
   if (rules.snap_target === 'corner') return state.currentFloor;
   if (!isWithinClaim(snap)) return state.currentFloor; // hors claim → ghost rouge immédiat
+  // Machines / véhicules : PAS d'auto-stack. La pièce reste sur l'étage sélectionné
+  // par l'utilisateur ; si conflit, ghost rouge → l'utilisateur change d'étage à la main.
+  // Évite qu'une raffinerie de 6 étages se pose mystérieusement à N3 parce que le RDC
+  // est occupé.
+  if (piece.is_machine) return state.currentFloor;
   // Mode demi-étage (Shift) : on vise l'étage du dessous + offset +0.5.
   // Visuellement la pièce descend d'un demi-niveau par rapport à l'étage courant.
   // Si on est déjà au minimum, on reste sur l'étage courant (ascenseur sans sous-sol).
@@ -1511,10 +2135,11 @@ function placePieceFromSnap(pieceId, snap, floorZ, rotation = 0) {
     () => _removeItemCore(savedItem.id),
     () => restoreItem(JSON.parse(JSON.stringify(savedItem))),
   );
+  recomputeStabilityIfActive();
   return itemId;
 }
 
-/** Dispose complet d'un mesh (edges + vitrage + géométrie). */
+/** Dispose complet d'un mesh (edges + vitrage + label + géométrie). */
 function disposeMesh(mesh) {
   if (!mesh) return;
   if (mesh.userData.edges) {
@@ -1528,6 +2153,10 @@ function disposeMesh(mesh) {
   if (mesh.userData.cornerGlass) {
     mesh.userData.cornerGlass.geometry.dispose();
     mesh.userData.cornerGlass.material.dispose();
+  }
+  if (mesh.userData.label) {
+    if (mesh.userData.label.material.map) mesh.userData.label.material.map.dispose();
+    mesh.userData.label.material.dispose();
   }
   mesh.geometry.dispose();
   mesh.material.dispose();
@@ -1544,10 +2173,22 @@ function _removeItemCore(itemId) {
   for (const f of state.plan.floors) {
     f.items = f.items.filter(i => i.id !== itemId);
   }
-  if (state.selectedItemId === itemId) deselect();
+  // Désélection cohérente avec la sélection multi : retire du Set ET du scalaire
+  if (state.selectedItemIds && state.selectedItemIds.has(itemId)) {
+    state.selectedItemIds.delete(itemId);
+    if (state.selectedItemId === itemId) {
+      const remaining = Array.from(state.selectedItemIds);
+      state.selectedItemId = remaining.length ? remaining[remaining.length - 1] : null;
+      if (!state.selectedItemId) {
+        if (dom.noSelection)  dom.noSelection.style.display  = 'flex';
+        if (dom.selectedInfo) dom.selectedInfo.style.display = 'none';
+      }
+    }
+  }
   updatePieceCount();
   updateFloorVisibility();
   updateFloorBadges();
+  recomputeStabilityIfActive();
 }
 
 /** Remplace le type de pièce d'un item posé (même position / rotation), avec undo/redo. */
@@ -1679,6 +2320,11 @@ function tryPlacePieceAt(pieceId, clientX, clientY) {
   if (!snap) return null;
   const resolvedFloor = findBestPlacementFloor(piece, snap);
   if (!isPlacementAllowedOnFloor(piece, snap, resolvedFloor)) return null;
+  // Mode stabilité ON : refuse la pose si la pièce serait instable (budget < 0)
+  if (state.showStability && !wouldBeStableAfterPlacing(piece, snap, resolvedFloor)) {
+    showFloorResolveHud(resolvedFloor, 'Pose refusée : stabilité insuffisante');
+    return null;
+  }
   return placePieceFromSnap(pieceId, snap, resolvedFloor, state.ghostRotation);
 }
 
@@ -1758,28 +2404,189 @@ function showHoverHelper(snap, resolvedFloor) {
 }
 
 // ============================================================
-// SÉLECTION
+// SÉLECTION (multi : Set selectedItemIds + scalaire selectedItemId pour le panneau)
 // ============================================================
-function select(mesh) {
-  if (state.selectedItemId === mesh.userData.itemId) return;
-  deselect();
-  state.selectedItemId = mesh.userData.itemId;
-  if (mesh.userData.edges) {
+
+/** Applique l'apparence "sélectionnée" à un mesh (edges dorés). */
+function _markSelectedVisual(mesh) {
+  if (mesh && mesh.userData.edges) {
     mesh.userData.edges.material.color.setHex(COLOR_SELECT);
     mesh.userData.edges.material.opacity = 1;
   }
-  updateSelectedPanel(mesh);
 }
-function deselect() {
-  if (!state.selectedItemId) return;
-  const mesh = placedMeshes.get(state.selectedItemId);
+
+/** Applique l'apparence "non-sélectionnée" à un mesh (edges noirs). */
+function _markUnselectedVisual(mesh) {
   if (mesh && mesh.userData.edges) {
     mesh.userData.edges.material.color.setHex(0x000000);
     mesh.userData.edges.material.opacity = 0.45;
   }
+}
+
+/**
+ * Sélectionne un mesh selon le mode :
+ *  - 'replace' (défaut) : remplace toute la sélection par celui-ci
+ *  - 'add'     (Shift+clic) : ajoute à la sélection existante
+ *  - 'toggle'  (Ctrl+clic)  : ajoute si absent, retire si présent
+ * Le panneau de propriétés suit toujours la pièce "principale" (dernière interaction).
+ */
+function select(mesh, mode = 'replace') {
+  const id = mesh.userData.itemId;
+  if (!id) return;
+
+  if (mode === 'replace') {
+    deselectAll();
+    state.selectedItemIds.add(id);
+    state.selectedItemId = id;
+    _markSelectedVisual(mesh);
+  } else if (mode === 'add') {
+    if (!state.selectedItemIds.has(id)) {
+      state.selectedItemIds.add(id);
+      _markSelectedVisual(mesh);
+    }
+    state.selectedItemId = id;
+  } else if (mode === 'toggle') {
+    if (state.selectedItemIds.has(id)) {
+      state.selectedItemIds.delete(id);
+      _markUnselectedVisual(mesh);
+      // Le scalaire principal devient le dernier id encore sélectionné (ou null)
+      if (state.selectedItemId === id) {
+        const remaining = Array.from(state.selectedItemIds);
+        state.selectedItemId = remaining.length ? remaining[remaining.length - 1] : null;
+      }
+    } else {
+      state.selectedItemIds.add(id);
+      state.selectedItemId = id;
+      _markSelectedVisual(mesh);
+    }
+  }
+  // Met à jour le panneau (sur la pièce "principale" ou vide)
+  if (state.selectedItemId) {
+    const main = placedMeshes.get(state.selectedItemId);
+    if (main) updateSelectedPanel(main);
+  } else {
+    if (dom.noSelection)  dom.noSelection.style.display  = 'flex';
+    if (dom.selectedInfo) dom.selectedInfo.style.display = 'none';
+  }
+}
+
+/** Désélectionne tout, ou un id spécifique si fourni. */
+function deselect(itemId) {
+  if (itemId) {
+    if (state.selectedItemIds.has(itemId)) {
+      const mesh = placedMeshes.get(itemId);
+      _markUnselectedVisual(mesh);
+      state.selectedItemIds.delete(itemId);
+    }
+    if (state.selectedItemId === itemId) {
+      const remaining = Array.from(state.selectedItemIds);
+      state.selectedItemId = remaining.length ? remaining[remaining.length - 1] : null;
+    }
+  } else {
+    deselectAll();
+  }
+}
+
+/** Désélectionne toutes les pièces. */
+function deselectAll() {
+  for (const id of state.selectedItemIds) {
+    _markUnselectedVisual(placedMeshes.get(id));
+  }
+  state.selectedItemIds.clear();
   state.selectedItemId = null;
   if (dom.noSelection)  dom.noSelection.style.display  = 'flex';
   if (dom.selectedInfo) dom.selectedInfo.style.display = 'none';
+}
+
+// ============================================================
+// COPIER-COLLER D'ÉTAGE (Ctrl+C / Ctrl+V)
+// ============================================================
+
+/**
+ * Copie tous les items de l'étage courant dans state.floorClipboard.
+ * Clone profond pour éviter d'avoir des références partagées (sinon une modif
+ * d'un item original modifierait le buffer).
+ */
+function copyCurrentFloor() {
+  const floor = getFloor(state.currentFloor);
+  if (!floor || floor.items.length === 0) {
+    showFloorResolveHud(state.currentFloor, 'Étage vide — rien à copier');
+    return;
+  }
+  state.floorClipboard = {
+    sourceZ: state.currentFloor,
+    items:   floor.items.map(it => JSON.parse(JSON.stringify(it))),
+  };
+  showFloorResolveHud(state.currentFloor, `${state.floorClipboard.items.length} pièces copiées`);
+}
+
+/**
+ * Colle le contenu du clipboard sur l'étage courant. Chaque item reçoit un
+ * nouvel `id` et son `z` est réécrit. Les items dont la pose entre en conflit
+ * sont ignorés (ghost rouge → on ne pose pas).
+ * Toute la pose est groupée dans une seule entrée d'historique pour pouvoir
+ * Ctrl+Z d'un coup.
+ */
+function pasteFloorClipboard() {
+  if (!state.floorClipboard || state.floorClipboard.items.length === 0) {
+    showFloorResolveHud(state.currentFloor, 'Clipboard vide (Ctrl+C d\'abord)');
+    return;
+  }
+  const targetZ = state.currentFloor;
+  const placed  = [];
+  const skipped = [];
+
+  for (const src of state.floorClipboard.items) {
+    const piece = state.piecesById.get(src.piece_id);
+    if (!piece) { skipped.push(src); continue; }
+
+    // Construit un snap compatible avec isPlacementAllowedOnFloor
+    const rules = piece.placement_rules || {};
+    const snap = {
+      kind: rules.snap_target || 'cell',
+      x:    src.x,
+      y:    src.y,
+      axis: src.axis,
+    };
+    if (!isPlacementAllowedOnFloor(piece, snap, targetZ)) {
+      skipped.push(src);
+      continue;
+    }
+    // Crée un nouvel item avec nouvel id, mais conserve x/y/axis/rotation/half
+    const newItem = {
+      id:       'item_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+      piece_id: src.piece_id,
+      snap_kind: snap.kind,
+      x:        src.x,
+      y:        src.y,
+      axis:     src.axis,
+      z:        targetZ,
+      rotation: src.rotation || 0,
+      half:     src.half || false,
+    };
+    const floor = getFloor(targetZ);
+    floor.items.push(newItem);
+    const mesh = buildMeshForPiece(piece, newItem);
+    scene.add(mesh);
+    placedMeshes.set(newItem.id, mesh);
+    placed.push(newItem);
+  }
+
+  // Historique : 1 entrée pour le coller entier (undo restaure tout, redo recolle)
+  if (placed.length > 0) {
+    const placedSnapshot = placed.map(it => JSON.parse(JSON.stringify(it)));
+    pushHistory(
+      () => { for (const it of placedSnapshot) _removeItemCore(it.id); },
+      () => { for (const it of placedSnapshot) restoreItem(JSON.parse(JSON.stringify(it))); },
+    );
+  }
+  updateFloorVisibility();
+  updateFloorBadges();
+  updatePieceCount();
+
+  const msg = `${placed.length} collées` + (skipped.length ? ` (${skipped.length} ignorées : conflit ou pièce inconnue)` : '');
+  showFloorResolveHud(targetZ, msg);
+  recomputeStabilityIfActive();
 }
 function updateSelectedPanel(mesh) {
   const piece = mesh.userData.piece;
@@ -1915,6 +2722,7 @@ function rotateSelected(delta) {
     () => applyRot(prevRot),
     () => applyRot(nextRot),
   );
+  recomputeStabilityIfActive();
 }
 
 // ============================================================
@@ -1934,23 +2742,49 @@ function isPieceWindowType(p) {
 }
 
 /**
+ * Groupes Floor_* qui mélangent des planchers (posés au sol) et des toits plats
+ * (posés en haut des murs) sous le même `group` JSON. Pour ces groupes, on suffixe
+ * `_Roof` les pièces rooflike afin de les séparer dans la barre de variantes
+ * et la sidebar. Les autres groupes Floor_* (ex. Floor_Triangle_Wide_*) ne sont
+ * pas mixtes et n'ont pas besoin de suffixe.
+ */
+const MIXED_FLOOR_GROUPS = new Set([
+  'Floor', 'Floor_Round_Corner', 'Floor_Round_Corner_Inverted', 'Floor_Wedge'
+]);
+
+/**
  * Groupe d'affichage "virtuel" d'une pièce.
- * Les fenêtres sont reclassées dans Window/Window_Round_Corner
- * quel que soit leur group JSON réel.
+ * - Fenêtres : reclassées en Window/Window_Round_Corner quel que soit leur group JSON.
+ * - Floors rooflike dont le group est mixte : suffixe `_Roof` (ex. Floor → Floor_Roof)
+ *   pour les séparer des planchers normaux dans la barre de variantes.
  */
 function getDisplayGroup(p) {
   if (isPieceWindowType(p)) {
     return (p.dimensions || {}).shape === 'corner' ? 'Window_Round_Corner' : 'Window';
+  }
+  if (MIXED_FLOOR_GROUPS.has(p.group) && isPieceRooflike(p)) {
+    return p.group + '_Roof';
+  }
+  // Machines : 1 tuile par pièce dans la sidebar (Small/Medium/Large ont des tailles
+  // différentes — il faut pouvoir choisir directement laquelle on pose).
+  if (p.is_machine) {
+    return p.id;
   }
   return p.group || '';
 }
 
 /**
  * Catégorie effective pour le filtrage sidebar.
- * Les fenêtres (toutes) apparaissent dans la catégorie virtuelle 'windows'.
+ * - Fenêtres → catégorie virtuelle 'windows'.
+ * - Floors rooflike → catégorie virtuelle 'roofs_flat' (toits plats), séparée des
+ *   planchers normaux qui restent en 'floors'. Note : la catégorie *réelle* de la
+ *   pièce reste 'floors' dans le JSON, donc `isPieceRooflike`, `getCategoryYOffset`
+ *   et les `ignore_groups` continuent de fonctionner normalement.
  */
 function getEffectiveCategory(p) {
-  return isPieceWindowType(p) ? 'windows' : p.category;
+  if (isPieceWindowType(p)) return 'windows';
+  if (p.category === 'floors' && isPieceRooflike(p)) return 'roofs_flat';
+  return p.category;
 }
 
 /** Formate un nom de groupe (ex: "Wall_Round_Corner" → "Mur arrondi") en français. */
@@ -1978,6 +2812,9 @@ function fmtGroupLabel(group) {
     Floor: 'Sol', Floor_Wedge: 'Sol triangulaire', Floor_Round_Corner: 'Sol arrondi',
     Floor_Round_Corner_Inverted: 'Sol arrondi inv.', Rooftop: 'Terrasse',
     Floor_Triangle_Wide_Left: 'Sol △ large G', Floor_Triangle_Wide_Right: 'Sol △ large D',
+    Floor_Roof: 'Toit plat', Floor_Wedge_Roof: 'Toit plat triangulaire',
+    Floor_Round_Corner_Roof: 'Toit plat arrondi',
+    Floor_Round_Corner_Inverted_Roof: 'Toit plat arrondi inv.',
     Roof: 'Toit plat', Roof_Half: 'Demi-toit', Roof_Corner: 'Toit coin',
     Roof_Corner_Half: 'Demi-toit coin', Roof_Corner_Inward: 'Toit coin intérieur',
     Roof_Corner_Half_Inward: 'Demi-toit coin int.',
@@ -1998,13 +2835,24 @@ function fmtGroupLabel(group) {
     Ramp_Wide: 'Rampe large', Ramp_Edge_Wide_Left: 'Bord rampe G', Ramp_Edge_Wide_Right: 'Bord rampe D',
     Railing: 'Rambarde', Railing_Round_Corner: 'Rambarde arrondie',
     Railing_Inclined: 'Rambarde inclinée', Railing_Inclined_Half: 'Rambarde incl. ½',
+    // Machines (raffineries / fabricateurs)
+    OreRefinery: 'Raff. minerai', SpiceRefinery: 'Raff. épice', ChemicalRefinery: 'Raff. chimique',
+    Fabricator: 'Fabricateur', PortableFabricator: 'Fab. portable',
+    ConstructionFabricator: 'Fab. construction', SurvivalFabricator: 'Fab. survie',
+    WeaponsFabricator: 'Fab. armes', WearablesFabricator: 'Fab. vêtements',
+    VehiclesFabricator: 'Fab. véhicules',
+    // Véhicules
+    Sandbike: 'Moto des sables', Buggy: 'Buggy', Tank: "Char d'assaut",
+    Sandcrawler: 'Chenille', TreadWheel: 'Roue tout-terrain',
+    LightOrnithopter: 'Ornitho. éclaireur', MediumOrnithopter: "Ornitho. d'assaut",
+    TransportOrnithopter: 'Ornitho. de transport',
   };
   return MAP[group] || group.replace(/_/g, ' ');
 }
 
 function createPieceEl(p) {
-  const colorBg = facCss(p.faction_id, 0.30);
-  const colorBd = facCss(p.faction_id, 0.55);
+  const colorBg = facCss(p, 0.30);
+  const colorBd = facCss(p, 0.55);
   const el = document.createElement('div');
   el.className = 'bp-piece-item';
   if (state.activePieceId === p.id) el.classList.add('active');
@@ -2038,6 +2886,80 @@ function createPieceEl(p) {
   return el;
 }
 
+/**
+ * Test du filtre faction : les placeables (machines, véhicules) sont universels
+ * et apparaissent sur tous les onglets de faction structurelle.
+ */
+function passesFactionFilter(p) {
+  if (!state.activeFaction) return true;
+  if (p.faction_id === 'placeables') return true;
+  return p.faction_id === state.activeFaction;
+}
+
+/**
+ * Onglet de mode auquel appartient une pièce :
+ * - véhicule       → 'vehicles'
+ * - autre machine  → 'machines'
+ * - tout le reste  → 'structures'
+ */
+function pieceTabOf(p) {
+  if (p.is_vehicle) return 'vehicles';
+  if (p.is_machine) return 'machines';
+  return 'structures';
+}
+
+/** Catégories pertinentes par onglet — utilisé pour filtrer les options du <select>. */
+const TAB_CATEGORIES = {
+  structures: new Set(['foundations','walls','windows','floors','roofs_flat','roofs','doors','stairs','structures','railings']),
+  machines:   new Set(['refineries','fabricators']),
+  vehicles:   new Set(['vehicles']),
+};
+
+/**
+ * Active un onglet de mode. Réajuste les widgets dépendants :
+ * - pills faction visibles uniquement sur 'structures' (machines/véhicules sont universels)
+ * - options du select catégorie filtrées au tab
+ * - reset de activeCategory si l'option courante n'est plus pertinente
+ * - reset de activeFaction quand on quitte 'structures' (les pills sont cachés)
+ */
+function setActiveTab(tab) {
+  if (!TAB_CATEGORIES[tab]) return;
+  state.activeTab = tab;
+
+  // Onglets : visuel actif/inactif
+  document.querySelectorAll('.bp-mode-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tab);
+  });
+
+  // Pills faction : pertinents uniquement sur Structures
+  const pillsBox = document.getElementById('bp-faction-filters');
+  if (pillsBox) pillsBox.style.display = (tab === 'structures') ? '' : 'none';
+  if (tab !== 'structures') state.activeFaction = '';
+  // Resynchronise visuellement la pill active si on revient sur structures
+  if (tab === 'structures') {
+    document.querySelectorAll('.bp-faction-pill').forEach(p => {
+      p.classList.toggle('active', (p.dataset.faction || '') === state.activeFaction);
+    });
+  }
+
+  // Select catégorie : ne montrer que les options pertinentes du tab
+  const select = document.getElementById('bp-category-select');
+  if (select) {
+    const allowed = TAB_CATEGORIES[tab];
+    for (const opt of select.options) {
+      // Option vide "— Toutes les catégories —" toujours visible
+      opt.hidden = !!opt.value && !allowed.has(opt.value);
+    }
+    // Reset si la catégorie courante n'est plus dans le tab
+    if (state.activeCategory && !allowed.has(state.activeCategory)) {
+      state.activeCategory = '';
+      select.value = '';
+    }
+  }
+
+  renderSidebar();
+}
+
 function renderSidebar() {
   const q = state.searchQuery.toLowerCase();
   // Recherche active → toutes les pièces (y compris variantes)
@@ -2045,14 +2967,16 @@ function renderSidebar() {
   let source;
   if (q) {
     source = state.pieces.filter(p => {
-      if (state.activeFaction  && p.faction_id !== state.activeFaction)         return false;
+      if (pieceTabOf(p) !== state.activeTab) return false;
+      if (!passesFactionFilter(p)) return false;
       if (state.activeCategory && getEffectiveCategory(p) !== state.activeCategory) return false;
       return (p.label_fr || '').toLowerCase().includes(q)
           || (p.id || '').toLowerCase().includes(q);
     });
   } else {
     source = state.canonicals.filter(p => {
-      if (state.activeFaction  && p.faction_id !== state.activeFaction)         return false;
+      if (pieceTabOf(p) !== state.activeTab) return false;
+      if (!passesFactionFilter(p)) return false;
       if (state.activeCategory && getEffectiveCategory(p) !== state.activeCategory) return false;
       return true;
     });
@@ -2105,8 +3029,10 @@ function fmtDimsLabel(d) {
   if ((d.w || 1) === 1 && (d.d || 1) === 1) return '■';
   return (d.w || 1) + '×' + (d.d || 1);
 }
-function facCss(id, alpha) {
-  const c = FACTION_COLORS[id] ?? 0x666666;
+function facCss(idOrPiece, alpha) {
+  const c = (idOrPiece && typeof idOrPiece === 'object')
+    ? getPieceColor(idOrPiece)
+    : (FACTION_COLORS[idOrPiece] ?? 0x666666);
   const r = (c >> 16) & 255, g = (c >> 8) & 255, b = c & 255;
   return `rgba(${r},${g},${b},${alpha})`;
 }
@@ -2140,11 +3066,21 @@ function hideVariantBar() {
 // FILTRES / TOOLBAR / FLOORS / KEYBOARD / RESIZE
 // ============================================================
 function initFilters() {
+  document.querySelectorAll('.bp-mode-tab').forEach(btn => {
+    btn.addEventListener('click', () => setActiveTab(btn.dataset.tab));
+  });
   document.querySelectorAll('.bp-faction-pill').forEach(pill => {
-    pill.addEventListener('click', () => { state.activeFaction = pill.dataset.faction || ''; renderSidebar(); });
+    pill.addEventListener('click', () => {
+      state.activeFaction = pill.dataset.faction || '';
+      document.querySelectorAll('.bp-faction-pill').forEach(p => p.classList.toggle('active', p === pill));
+      renderSidebar();
+    });
   });
   document.getElementById('bp-category-select')?.addEventListener('change', (e) => { state.activeCategory = e.target.value; renderSidebar(); });
   document.getElementById('bp-search-input')?.addEventListener('input', (e) => { state.searchQuery = e.target.value; renderSidebar(); });
+
+  // Applique l'état initial (tab Structures par défaut) pour synchroniser visibilité des widgets
+  setActiveTab(state.activeTab);
 }
 function initToolbar() {
   document.getElementById('tool-view-ortho')?.addEventListener('click', () => setCameraMode('ortho'));
@@ -2159,6 +3095,7 @@ function initToolbar() {
   document.getElementById('tool-solid')?.addEventListener('click', (e) => {
     toggleSolidView();
   });
+  document.getElementById('tool-stability')?.addEventListener('click', toggleStabilityMode);
 }
 
 /** Bascule entre vue normale (verre transparent, visibilité par étage)
@@ -2293,13 +3230,22 @@ function initKeyboard() {
       e.preventDefault(); redoAction(); return;
     }
 
-    // Escape — annule le mode click-to-place ou désélectionne
-    if (e.key === 'Escape') {
-      if (state.activePieceId) { setActivePiece(null); return; }
-      if (state.selectedItemId) { deselect(); return; }
+    // Ctrl+C — copie tout le contenu de l'étage courant dans floorClipboard
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'c' || e.key === 'C')) {
+      e.preventDefault(); copyCurrentFloor(); return;
+    }
+    // Ctrl+V — colle le clipboard sur l'étage courant
+    if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'v' || e.key === 'V')) {
+      e.preventDefault(); pasteFloorClipboard(); return;
     }
 
-    // R — rotation : fantôme pendant drag/click-to-place, pièce sélectionnée, sinon reset vue
+    // Escape — annule le mode click-to-place ou désélectionne tout
+    if (e.key === 'Escape') {
+      if (state.activePieceId) { setActivePiece(null); return; }
+      if (state.selectedItemIds.size > 0) { deselectAll(); return; }
+    }
+
+    // R — rotation : fantôme pendant drag/click-to-place, pièces sélectionnées, sinon reset vue
     if (e.key === 'r' || e.key === 'R') {
       if (state.dragPieceId || state.activePieceId) {
         // +90° sur la rotation fantôme puis re-render immédiat du ghost
@@ -2313,12 +3259,29 @@ function initKeyboard() {
         }
         return;
       }
-      if (state.selectedItemId) { rotateSelected(+90); return; }
+      // Rotation +90° sur toutes les pièces sélectionnées (chacune autour de son propre centre)
+      if (state.selectedItemIds.size > 0) {
+        for (const id of Array.from(state.selectedItemIds)) {
+          if (state.selectedItemId === id) rotateSelected(+90);
+          else {
+            // Pour les autres : rotation directe sans passer par le scalaire
+            const prev = state.selectedItemId;
+            state.selectedItemId = id;
+            rotateSelected(+90);
+            state.selectedItemId = prev;
+          }
+        }
+        return;
+      }
       resetView(); // fallback : reset caméra si rien de sélectionné
       return;
     }
 
-    if ((e.key === 'Delete' || e.key === 'Backspace') && state.selectedItemId) removeItem(state.selectedItemId);
+    if ((e.key === 'Delete' || e.key === 'Backspace') && state.selectedItemIds.size > 0) {
+      // Suppression multi : on parcourt une copie (removeItem modifie le Set indirectement)
+      for (const id of Array.from(state.selectedItemIds)) removeItem(id);
+      deselectAll();
+    }
     if (e.key === 'v' || e.key === 'V') setCameraMode(state.cameraMode === 'ortho' ? 'persp' : 'ortho');
     if (e.key === 't' || e.key === 'T') toggleSolidView();
   });
@@ -2396,7 +3359,11 @@ function initDragDrop() {
     const resolvedFloor = findBestPlacementFloor(piece, snap);
     const dropRot = state.ghostRotation;   // capture avant endDrag()
     if (isPlacementAllowedOnFloor(piece, snap, resolvedFloor)) {
-      placePieceFromSnap(state.dragPieceId, snap, resolvedFloor, dropRot);
+      if (state.showStability && !wouldBeStableAfterPlacing(piece, snap, resolvedFloor)) {
+        showFloorResolveHud(resolvedFloor, 'Pose refusée : stabilité insuffisante');
+      } else {
+        placePieceFromSnap(state.dragPieceId, snap, resolvedFloor, dropRot);
+      }
     }
     endDrag();
     state.ghostHalf = false;
@@ -2418,8 +3385,14 @@ function initDragDrop() {
     }
     // Sinon : sélection d'une pièce posée
     const hit = raycastPlacedMeshes(e.clientX, e.clientY);
-    if (hit) select(hit);
-    else deselect();
+    if (hit) {
+      // Shift = ajouter à la sélection ; Ctrl/Cmd = toggle ; sinon remplacer
+      const mode = e.shiftKey ? 'add' : (e.ctrlKey || e.metaKey) ? 'toggle' : 'replace';
+      select(hit, mode);
+    } else {
+      // Clic dans le vide sans modificateur : tout désélectionner
+      if (!e.shiftKey && !e.ctrlKey && !e.metaKey) deselectAll();
+    }
   });
 
   // Click droit : annule le mode click-to-place
@@ -2496,8 +3469,8 @@ function updateClaimPanel() {
   setText(dom.claimBlocks, blocks.length + ' / ' + MAX_CLAIM_BLOCKS);
   setText(dom.vertExt,     vertExt + ' / ' + MAX_VERT_EXTENSIONS);
   const maxN = BASE_MAX_FLOOR + vertExt * PER_VERT_UP;
-  const maxS = vertExt * PER_VERT_DOWN;
-  setText(dom.heightRange, (maxS > 0 ? 'S' + maxS + ' → ' : 'RDC → ') + 'N' + maxN);
+  const maxS = -BASE_MIN_FLOOR + vertExt * PER_VERT_DOWN;
+  setText(dom.heightRange, 'S' + maxS + ' → N' + maxN);
   renderClaimViz();
   renderVertPips();
 }
@@ -2524,9 +3497,9 @@ function hideHint() { if (dom.hint) dom.hint.style.display = 'none'; }
 function getMaxFloor() {
   return BASE_MAX_FLOOR + state.plan.claim.vertical_extensions * PER_VERT_UP;
 }
-/** Étage minimum autorisé (sous-sol). Retourne 0 si aucune extension. */
+/** Étage minimum autorisé (sous-sol). Base = -7, étendu par les pieux verticaux. */
 function getMinFloor() {
-  return -(state.plan.claim.vertical_extensions * PER_VERT_DOWN);
+  return BASE_MIN_FLOOR - state.plan.claim.vertical_extensions * PER_VERT_DOWN;
 }
 
 /** Complète state.plan.floors avec les entrées manquantes pour la plage [min..max]. */
@@ -2766,6 +3739,617 @@ function updateFloorTabs() {
 
   updateFloorBadges();
 }
+
+// ============================================================
+// STABILITÉ — simulation (session 7d)
+// ============================================================
+// Modèle dataminé + confirmé par la communauté Dune Awakening :
+//  - Sources de stabilité = fondation / pilier / colonne au sol (z=0)
+//  - Chaque ancre distribue un budget de 9 pas
+//  - Saut horizontal entre 2 pièces adjacentes = 1 pas
+//  - Saut vertical via mur = 1 pas
+//  - Saut vertical via fondation empilée ou pilier = 0 pas (gratuit)
+//  - Pièce non atteinte ou budget < 0 → instable (rouge)
+//  - Budget 0-1 → limite (jaune), budget >= 2 → stable (vert)
+
+/** True si la pièce est une ancre au sol (fondation/pilier au RDC). */
+function isStabilityAnchor(piece, item) {
+  if (item.z !== 0) return false;
+  if (piece.category === 'foundations') return true;
+  if (piece.is_pillar) return true;
+  const rules = piece.placement_rules || {};
+  if (rules.snap_target === 'corner') return true;  // pilier coin
+  return false;
+}
+
+/** Retourne le Set des cellules touchées par un item (cell, edge, corner). */
+function getItemFootprintCells(piece, item) {
+  const rules = piece.placement_rules || {};
+  if (rules.snap_target === 'cell') {
+    return getOccupiedCells(piece, item);
+  } else if (rules.snap_target === 'edge') {
+    return new Set(edgeAdjacentCells({ x: item.x, y: item.y, axis: item.axis }));
+  } else if (rules.snap_target === 'corner') {
+    return new Set(cornerAdjacentCells({ x: item.x, y: item.y }));
+  }
+  return new Set();
+}
+
+/** Coût en pas de stabilité pour aller de `from` à `to`. */
+function stabilityCost(fromNode, toNode) {
+  const fromZ = fromNode.item.z, toZ = toNode.item.z;
+  if (fromZ === toZ) return 1;                    // horizontal
+  if (Math.abs(fromZ - toZ) !== 1) return Infinity; // pas voisins directs
+  // Vertical : le coût dépend de la pièce de support (la plus basse)
+  const lower = fromZ < toZ ? fromNode : toNode;
+  const lp = lower.piece;
+  if (lp.is_pillar) return 0;                     // pilier central → gratuit
+  if (lp.category === 'foundations') return 0;    // empilement fondations → gratuit
+  return 1;                                       // mur / colonne d'angle / autres → 1
+}
+
+/** Recalcule l'état de stabilité de toutes les pièces. Met à jour state.stabilityMap. */
+function computeStability() {
+  // 1. Collecte tous les nodes (item + piece + cellules + z)
+  const nodes = [];
+  for (const f of state.plan.floors) {
+    for (const it of f.items) {
+      const piece = state.piecesById.get(it.piece_id);
+      if (!piece) continue;
+      nodes.push({
+        item:  it,
+        piece,
+        cells: getItemFootprintCells(piece, it),
+      });
+    }
+  }
+
+  // 2. Index par z → Map<"x,y", node[]> pour findNeighbors rapide
+  const indexByZ = new Map();
+  for (const n of nodes) {
+    const z = n.item.z;
+    if (!indexByZ.has(z)) indexByZ.set(z, new Map());
+    const m = indexByZ.get(z);
+    for (const c of n.cells) {
+      if (!m.has(c)) m.set(c, []);
+      m.get(c).push(n);
+    }
+  }
+
+  // 3. Identifie les ancres et initialise leur budget
+  const budget = new Map();
+  for (const n of nodes) {
+    if (isStabilityAnchor(n.piece, n.item)) budget.set(n.item.id, STABILITY_BUDGET);
+  }
+
+  // 4. BFS Dijkstra-inverse : on maximise le budget restant à chaque node
+  const queue = Array.from(budget.keys()).map(id => nodes.find(n => n.item.id === id)).filter(Boolean);
+  let iter = 0;
+  const MAX_ITER = nodes.length * 10 + 100;   // garde-fou anti-boucle infinie
+  while (queue.length > 0 && iter < MAX_ITER) {
+    iter++;
+    const cur = queue.shift();
+    const curBudget = budget.get(cur.item.id);
+    if (curBudget == null || curBudget <= 0) continue;
+    // Voisins : items touchant une cellule occupée ou adjacente, au même z ou z±1
+    const candidates = new Set();
+    for (const c of cur.cells) {
+      const [x, y] = c.split(',').map(Number);
+      // Même cellule, cellules adjacentes (4-dir), même z
+      const sameZIdx = indexByZ.get(cur.item.z);
+      if (sameZIdx) {
+        for (const [dx, dy] of [[0,0],[1,0],[-1,0],[0,1],[0,-1]]) {
+          const k = (x+dx) + ',' + (y+dy);
+          const items = sameZIdx.get(k);
+          if (items) for (const o of items) if (o !== cur) candidates.add(o);
+        }
+      }
+      // Z+1 et Z-1 : même cellule (pour propagation verticale)
+      for (const dz of [-1, 1]) {
+        const idx = indexByZ.get(cur.item.z + dz);
+        if (idx) {
+          const items = idx.get(c);
+          if (items) for (const o of items) if (o !== cur) candidates.add(o);
+        }
+      }
+    }
+    for (const n of candidates) {
+      const cost = stabilityCost(cur, n);
+      if (!isFinite(cost)) continue;
+      const newBudget = curBudget - cost;
+      const existing = budget.get(n.item.id);
+      if (existing == null || newBudget > existing) {
+        budget.set(n.item.id, newBudget);
+        queue.push(n);
+      }
+    }
+  }
+  if (iter >= MAX_ITER) console.warn('[stability] BFS hit max iter limit (' + MAX_ITER + ')');
+
+  state.stabilityMap = budget;
+}
+
+/** Applique les couleurs vert/jaune/rouge selon state.stabilityMap. */
+function applyStabilityVisuals() {
+  for (const [id, mesh] of placedMeshes.entries()) {
+    const piece = mesh.userData.piece;
+    if (!piece || !mesh.material || !mesh.material.color) continue;
+    let color;
+    if (state.showStability) {
+      const b = state.stabilityMap.get(id);
+      if (b == null || b < 0) color = STABILITY_COLOR_ERROR;
+      else if (b < 2)         color = STABILITY_COLOR_WARNING;
+      else                    color = STABILITY_COLOR_OK;
+    } else {
+      color = getPieceColor(piece);  // restaure la couleur normale
+    }
+    mesh.material.color.setHex(color);
+  }
+}
+
+/** Recalcule + applique si le mode stabilité est actif. À appeler après pose/suppression/move. */
+function recomputeStabilityIfActive() {
+  if (!state.showStability) return;
+  computeStability();
+  applyStabilityVisuals();
+}
+
+/** Toggle de l'affichage stabilité. */
+function toggleStabilityMode() {
+  state.showStability = !state.showStability;
+  if (state.showStability) computeStability();
+  applyStabilityVisuals();
+  const btn = document.getElementById('tool-stability');
+  if (btn) btn.classList.toggle('active', state.showStability);
+}
+
+/**
+ * Simule l'ajout d'un nouvel item au plan, calcule sa stabilité, et retourne
+ * true si elle est OK (budget ≥ 0 ou pièce devient elle-même une nouvelle ancre).
+ * Utilisé pour bloquer les poses instables quand le mode stabilité est actif.
+ * Optimisation : pas de recalcul si pas en mode stabilité (la fonction renvoie true).
+ */
+function wouldBeStableAfterPlacing(piece, snap, floorZ) {
+  if (!state.showStability) return true;  // mode off → ne bloque jamais
+
+  // Si la pièce candidate serait une ancre, elle est stable d'office
+  const ghostItem = {
+    id:       '_ghost_stab_',
+    piece_id: piece.id,
+    x:        snap.x,
+    y:        snap.y,
+    axis:     snap.axis,
+    z:        floorZ,
+    rotation: state.ghostRotation || 0,
+    half:     state.ghostHalf || false,
+  };
+  if (isStabilityAnchor(piece, ghostItem)) return true;
+
+  // Insertion temporaire du ghost dans le plan, recalcul, lecture, retrait
+  const floor = getFloor(floorZ);
+  if (!floor) return true;
+  floor.items.push(ghostItem);
+  computeStability();
+  const budget = state.stabilityMap.get('_ghost_stab_');
+  // Retire le ghost et restaure l'état précédent
+  floor.items.pop();
+  // Recalcul propre pour restaurer state.stabilityMap sans le ghost
+  computeStability();
+
+  return budget != null && budget >= 0;
+}
+
+// ============================================================
+// PERSISTANCE PHP — sauvegarde / partage de plans (session 8)
+// ============================================================
+// API endpoint : base_planner_api.php (POST avec champ `action`)
+// Auth : on envoie `owner` = pseudo localStorage à chaque requête, le serveur
+// vérifie l'ownership avant les actions destructives.
+//
+// state.currentPlanId / state.currentPlanName : identifiant et nom du plan actif
+// state.readonly : true si on visite un plan partagé qui ne nous appartient pas
+// state.currentShareToken : token public si le plan est partagé
+
+state.currentPlanId     = null;
+state.currentPlanName   = '';
+state.readonly          = false;
+state.currentShareToken = null;
+state.pendingDeletePlanId = null;
+
+/** Pseudo de l'utilisateur connecté (depuis localStorage, comme le reste du site). */
+function bpCurrentUser() {
+  return localStorage.getItem('user') || '';
+}
+
+/** POST helper vers base_planner_api.php. Retourne une promise. */
+async function bpApiCall(action, params = {}) {
+  const body = Object.assign({ action, owner: bpCurrentUser() }, params);
+  const res  = await fetch('base_planner_api.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return res.json();
+}
+
+/** Sérialise l'état courant en JSON stockable. Ne sauvegarde QUE ce qui est nécessaire
+ *  pour reconstruire le plan : claim + items posés (pas les meshes Three.js).
+ *  La structure réelle est state.plan.{floors, claim} (pas state.{floors, claim}). */
+function bpSerializePlanData() {
+  const srcFloors = (state.plan && state.plan.floors) || [];
+  const floors = srcFloors.map(f => ({
+    z:     f.z,
+    name:  f.name,
+    items: (f.items || []).map(it => ({
+      id:       it.id,
+      piece_id: it.piece_id,
+      x:        it.x,
+      y:        it.y,
+      axis:     it.axis,
+      z:        it.z,
+      rotation: it.rotation || 0,
+      half:     it.half || false,
+    })),
+  }));
+  const itemCount = floors.reduce((s, f) => s + f.items.length, 0);
+  return {
+    version:      1,
+    claim:        (state.plan && state.plan.claim) || null,
+    floors,
+    currentFloor: state.currentFloor,
+    item_count:   itemCount,
+    floor_count:  floors.length,
+  };
+}
+
+/** Applique des données plan au state et reconstruit les meshes. */
+function bpApplyPlanData(data) {
+  if (!data || !Array.isArray(data.floors)) return;
+
+  // Vider la scène des items actuels
+  for (const m of placedMeshes.values()) { scene.remove(m); disposeMesh(m); }
+  placedMeshes.clear();
+  state.selectedItemId = null;
+
+  // Reset state.plan.{claim, floors}
+  if (!state.plan) state.plan = {};
+  if (data.claim) state.plan.claim = data.claim;
+  state.plan.floors = data.floors.map(f => ({
+    z:     f.z,
+    name:  f.name || (f.z < 0 ? 'S' + Math.abs(f.z) : f.z === 0 ? 'RDC' : 'N' + f.z),
+    items: [],
+  }));
+  state.currentFloor = data.currentFloor != null ? data.currentFloor : 0;
+  state.history   = [];
+  state.histFront = -1;
+
+  // Reconstruire les items
+  let skipped = 0;
+  for (const fData of data.floors) {
+    const floor = state.plan.floors.find(f => f.z === fData.z);
+    if (!floor) continue;
+    for (const itData of (fData.items || [])) {
+      const piece = state.piecesById.get(itData.piece_id);
+      if (!piece) { skipped++; continue; }   // pièce inconnue (catalogue mis à jour)
+      floor.items.push(itData);
+      const mesh = buildMeshForPiece(piece, itData);
+      scene.add(mesh);
+      placedMeshes.set(itData.id, mesh);
+    }
+  }
+  if (skipped > 0) console.warn('[plan] ' + skipped + ' pièces ignorées (id introuvable dans le catalogue)');
+
+  // Refresh UI
+  if (typeof rebuildFloorTabs === 'function') rebuildFloorTabs();
+  if (typeof switchFloor === 'function')      switchFloor(state.currentFloor, false);
+  updateFloorVisibility();
+  updateFloorBadges();
+  updatePieceCount();
+  bpRefreshPlanHud();
+  recomputeStabilityIfActive();
+}
+
+/** Affiche le nom du plan actif + état (modifié, readonly, partagé) dans le panneau de droite. */
+function bpRefreshPlanHud() {
+  const nameEl = document.getElementById('plan-name-display') || document.querySelector('.bp-plan-name-display');
+  if (nameEl) {
+    let label = state.currentPlanName || (state.plan && state.plan.name) || 'Nouveau plan';
+    if (state.readonly) label += ' (lecture seule)';
+    nameEl.textContent = label;
+  }
+}
+
+/** Reset complet du state pour démarrer un plan vide. */
+function bpResetPlan() {
+  for (const m of placedMeshes.values()) { scene.remove(m); disposeMesh(m); }
+  placedMeshes.clear();
+  state.selectedItemId      = null;
+  state.currentPlanId       = null;
+  state.currentPlanName     = '';
+  state.currentShareToken   = null;
+  state.readonly            = false;
+  state.history             = [];
+  state.histFront           = -1;
+  if (!state.plan) state.plan = {};
+  state.plan.id   = null;
+  state.plan.name = 'Nouveau plan';
+  // Reset floors au minimum (RDC + 6 niveaux comme à l'init)
+  state.plan.floors = [
+    { z:  0, name: 'RDC', items: [] },
+    { z:  1, name: 'N1',  items: [] },
+    { z:  2, name: 'N2',  items: [] },
+    { z:  3, name: 'N3',  items: [] },
+    { z:  4, name: 'N4',  items: [] },
+    { z:  5, name: 'N5',  items: [] },
+    { z:  6, name: 'N6',  items: [] },
+  ];
+  state.currentFloor = 0;
+  if (typeof rebuildFloorTabs === 'function') rebuildFloorTabs();
+  if (typeof switchFloor === 'function')      switchFloor(0, false);
+  updateFloorVisibility();
+  updateFloorBadges();
+  updatePieceCount();
+  bpRefreshPlanHud();
+}
+
+// ─── Sauvegarde ────────────────────────────────────────────────────────────
+
+function bpOpenSaveModal() {
+  if (state.readonly) {
+    alert('Plan en lecture seule — utilisez "Mes plans" puis "+ Nouveau plan" pour partir de zéro.');
+    return;
+  }
+  const input = document.getElementById('save-plan-name');
+  if (input) input.value = state.currentPlanName || '';
+
+  // Adapte le titre + le bouton selon update vs création.
+  // L'utilisateur voit clairement s'il met à jour un plan existant ou en crée un nouveau.
+  const isUpdate = !!state.currentPlanId;
+  const titleEl  = document.querySelector('#modal-save .bp-modal-title');
+  const confirmBtn = document.getElementById('save-confirm-btn');
+  if (titleEl) titleEl.textContent = isUpdate ? 'Mettre à jour le plan' : 'Sauvegarder le plan';
+  if (confirmBtn) confirmBtn.textContent = isUpdate ? 'Mettre à jour' : 'Sauvegarder';
+
+  document.getElementById('modal-save').classList.add('open');
+}
+
+async function bpSaveCurrentPlan() {
+  const nameInput = document.getElementById('save-plan-name');
+  const name = nameInput ? nameInput.value.trim() : '';
+  if (!name) { alert('Donnez un nom au plan.'); return; }
+  if (!bpCurrentUser()) { alert('Connectez-vous pour sauvegarder.'); return; }
+
+  const data = bpSerializePlanData();
+  const params = { name, description: '', data };
+  if (state.currentPlanId) params.id = state.currentPlanId;
+
+  const res = await bpApiCall('save', params);
+  if (res.status === 'ok') {
+    state.currentPlanId   = res.plan.id;
+    state.currentPlanName = res.plan.name;
+    // Synchronise aussi state.plan.{id,name} pour que l'affichage du panneau (qui lit
+    // state.plan.name via setText(dom.planName, ...)) reflète le nom du plan sauvegardé.
+    if (!state.plan) state.plan = {};
+    state.plan.id   = res.plan.id;
+    state.plan.name = res.plan.name;
+    document.getElementById('modal-save').classList.remove('open');
+    bpRefreshPlanHud();
+    // Tente de relancer la fonction d'update du panneau si elle existe
+    if (typeof updatePlanPanel === 'function') updatePlanPanel();
+  } else {
+    alert('Erreur sauvegarde : ' + (res.message || 'inconnue'));
+  }
+}
+
+// ─── Mes plans (liste + chargement + suppression) ──────────────────────────
+
+async function bpOpenPlansModal() {
+  if (!bpCurrentUser()) { alert('Connectez-vous pour voir vos plans.'); return; }
+  document.getElementById('modal-plans').classList.add('open');
+  const listEl = document.getElementById('plans-list');
+  if (listEl) listEl.innerHTML = '<div style="text-align:center; padding:20px; color:#888;">Chargement…</div>';
+  const res = await bpApiCall('list');
+  if (res.status !== 'ok') { listEl.innerHTML = '<div style="color:#c66;">Erreur : ' + (res.message || '?') + '</div>'; return; }
+  bpRenderPlansList(res.plans || []);
+}
+
+function bpRenderPlansList(plans) {
+  const listEl = document.getElementById('plans-list');
+  if (!listEl) return;
+  if (plans.length === 0) {
+    listEl.innerHTML = '<div style="text-align:center; padding:20px; color:#888; font-style:italic;">Aucun plan sauvegardé</div>';
+    return;
+  }
+  listEl.innerHTML = '';
+  for (const p of plans) {
+    const row = document.createElement('div');
+    row.className = 'bp-plan-row';
+    const date = new Date(p.updated_at * 1000);
+    const dateStr = date.toLocaleDateString('fr-FR') + ' ' + date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const meta = (p.item_count != null ? p.item_count + ' pièces — ' : '') +
+                 (p.floor_count != null ? p.floor_count + ' étages — ' : '') +
+                 'maj ' + dateStr +
+                 (p.is_shared ? ' — partagé' : '');
+    row.innerHTML =
+      '<div class="bp-plan-row-info">' +
+      '  <div class="bp-plan-row-name">' + (p.name || '(sans nom)') + '</div>' +
+      '  <div class="bp-plan-row-meta">' + meta + '</div>' +
+      '</div>' +
+      '<button class="bp-plan-row-del" title="Supprimer">✕</button>';
+    row.querySelector('.bp-plan-row-info').addEventListener('click', () => bpLoadPlanById(p.id));
+    row.querySelector('.bp-plan-row-del').addEventListener('click', (e) => {
+      e.stopPropagation();
+      state.pendingDeletePlanId = p.id;
+      document.getElementById('modal-delete-plan').classList.add('open');
+    });
+    listEl.appendChild(row);
+  }
+}
+
+async function bpLoadPlanById(planId) {
+  const res = await bpApiCall('load', { id: planId });
+  if (res.status !== 'ok') { alert('Chargement impossible : ' + (res.message || '?')); return; }
+  state.currentPlanId       = res.plan.id;
+  state.currentPlanName     = res.plan.name;
+  state.currentShareToken   = res.plan.share_token || null;
+  state.readonly            = !!res.readonly;
+  if (!state.plan) state.plan = {};
+  state.plan.id   = res.plan.id;
+  state.plan.name = res.plan.name;
+  bpApplyPlanData(res.plan.data);
+  document.getElementById('modal-plans').classList.remove('open');
+}
+
+async function bpDeletePlanConfirmed() {
+  if (!state.pendingDeletePlanId) return;
+  const res = await bpApiCall('delete', { id: state.pendingDeletePlanId });
+  document.getElementById('modal-delete-plan').classList.remove('open');
+  if (res.status === 'ok') {
+    if (state.currentPlanId === state.pendingDeletePlanId) bpResetPlan();
+    state.pendingDeletePlanId = null;
+    // Recharge la liste
+    bpOpenPlansModal();
+  } else {
+    alert('Erreur suppression : ' + (res.message || '?'));
+  }
+}
+
+// ─── Partage ───────────────────────────────────────────────────────────────
+
+function bpOpenShareModal() {
+  if (!state.currentPlanId) {
+    alert('Sauvegardez d\'abord le plan pour pouvoir le partager.');
+    return;
+  }
+  const toggle = document.getElementById('share-toggle-public');
+  const link   = document.getElementById('share-link-input');
+  if (toggle) toggle.checked = !!state.currentShareToken;
+  if (link)   link.value     = state.currentShareToken ? bpShareUrl(state.currentShareToken) : '';
+  document.getElementById('modal-share').classList.add('open');
+}
+
+function bpShareUrl(token) {
+  const base = window.location.origin + window.location.pathname;
+  return base + '?plan=' + encodeURIComponent(token);
+}
+
+async function bpTogglePublicShare(checked) {
+  if (!state.currentPlanId) return;
+  if (checked) {
+    const res = await bpApiCall('share', { id: state.currentPlanId });
+    if (res.status === 'ok') {
+      state.currentShareToken = res.share_token;
+      const link = document.getElementById('share-link-input');
+      if (link) link.value = bpShareUrl(res.share_token);
+    } else {
+      alert('Erreur partage : ' + (res.message || '?'));
+      document.getElementById('share-toggle-public').checked = false;
+    }
+  } else {
+    const res = await bpApiCall('unshare', { id: state.currentPlanId });
+    if (res.status === 'ok') {
+      state.currentShareToken = null;
+      const link = document.getElementById('share-link-input');
+      if (link) link.value = '';
+    } else {
+      alert('Erreur : ' + (res.message || '?'));
+      document.getElementById('share-toggle-public').checked = true;
+    }
+  }
+}
+
+function bpCopyShareLink() {
+  const link = document.getElementById('share-link-input');
+  if (!link || !link.value) return;
+  link.select();
+  try {
+    navigator.clipboard.writeText(link.value);
+    const btn = document.getElementById('share-copy-btn');
+    if (btn) {
+      const old = btn.textContent;
+      btn.textContent = '✓ Copié';
+      setTimeout(() => { btn.textContent = old; }, 1500);
+    }
+  } catch (e) {
+    document.execCommand('copy');
+  }
+}
+
+// ─── Auto-load via URL ?plan=<token> ───────────────────────────────────────
+
+async function bpTryLoadFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const token  = params.get('plan');
+  if (!token) return;
+  const res = await bpApiCall('load_shared', { token });
+  if (res.status !== 'ok') {
+    console.warn('[plan] Chargement partagé échoué :', res.message);
+    return;
+  }
+  state.currentPlanId     = res.plan.id;
+  state.currentPlanName   = res.plan.name;
+  state.currentShareToken = res.plan.share_token || null;
+  state.readonly          = !!res.readonly;
+  bpApplyPlanData(res.plan.data);
+}
+
+// ─── Câblage boutons + auto-load ───────────────────────────────────────────
+
+function bpInitPersistence() {
+  // Note : les boutons toolbar (btn-save-plan/btn-my-plans/btn-share-plan) et
+  // save-confirm-btn sont câblés dans base_planner.html (handlers inline) qui
+  // dispatchent vers bpOpenSaveModal / bpOpenPlansModal / bpOpenShareModal /
+  // bpSaveCurrentPlan si elles existent. On évite le double câblage ici.
+  document.getElementById('new-plan-btn')         ?.addEventListener('click', () => {
+    document.getElementById('modal-plans').classList.remove('open');
+    bpResetPlan();
+  });
+  document.getElementById('delete-plan-confirm-btn')?.addEventListener('click', bpDeletePlanConfirmed);
+  document.getElementById('share-toggle-public')  ?.addEventListener('change', (e) => bpTogglePublicShare(e.target.checked));
+  document.getElementById('share-copy-btn')       ?.addEventListener('click', bpCopyShareLink);
+
+  // Charge automatiquement si URL ?plan=<token>
+  bpTryLoadFromUrl();
+  bpRefreshPlanHud();
+}
+
+// ─── Exposer les fonctions API sur window ──────────────────────────────────
+// Le script est chargé en mode `type="module"` → tout est dans le scope du module,
+// PAS accessible depuis les handlers inline du HTML (qui sont en scope global).
+// On expose explicitement ce dont le HTML a besoin.
+window.bpOpenSaveModal       = bpOpenSaveModal;
+window.bpOpenPlansModal      = bpOpenPlansModal;
+window.bpOpenShareModal      = bpOpenShareModal;
+window.bpSaveCurrentPlan     = bpSaveCurrentPlan;
+window.bpResetPlan           = bpResetPlan;
+window.bpLoadPlanById        = bpLoadPlanById;
+window.bpDeletePlanConfirmed = bpDeletePlanConfirmed;
+window.bpTogglePublicShare   = bpTogglePublicShare;
+window.bpCopyShareLink       = bpCopyShareLink;
+
+// Debug helpers : permet d'inspecter state, screenToWorld, snapForPiece, etc.
+// depuis la console DevTools (sinon inaccessibles à cause du module ES6).
+window.bpDebug = {
+  state,
+  screenToWorld,
+  snapForPiece,
+  computeStability,
+  placedMeshes,
+  // Helpers prêts à l'emploi pour debug rapide
+  listTriangles(z = 0) {
+    const floor = state.plan.floors.find(f => f.z === z);
+    if (!floor) return [];
+    return floor.items.filter(it => {
+      const p = state.piecesById.get(it.piece_id);
+      return p && /triangle/.test((p.placement_rules || {}).footprint_shape || '');
+    }).map(it => ({ x: it.x, y: it.y, rot: it.rotation || 0, piece_id: it.piece_id }));
+  },
+  lastPlaced(z = 0) {
+    const floor = state.plan.floors.find(f => f.z === z);
+    if (!floor) return null;
+    return floor.items.slice(-1)[0];
+  },
+};
 
 // ============================================================
 // BOUCLE DE RENDU

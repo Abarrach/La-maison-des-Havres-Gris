@@ -59,6 +59,35 @@
       flex-shrink: 0;
     }
 
+    /* Onglets de mode (Structures / Machines / Véhicules) */
+    .bp-mode-tabs {
+      display: flex;
+      border-bottom: 1px solid #3d2b16;
+      flex-shrink: 0;
+      background: rgba(0,0,0,0.25);
+    }
+    .bp-mode-tab {
+      flex: 1;
+      padding: 10px 4px;
+      font-size: 10px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: #8b6b3a;
+      background: transparent;
+      border: none;
+      border-right: 1px solid #3d2b16;
+      cursor: pointer;
+      transition: color 0.15s ease, background 0.15s ease;
+    }
+    .bp-mode-tab:last-child { border-right: none; }
+    .bp-mode-tab:hover { color: #cda434; background: rgba(205,164,52,0.06); }
+    .bp-mode-tab.active {
+      color: #cda434;
+      background: rgba(205,164,52,0.12);
+      box-shadow: inset 0 -2px 0 #cda434;
+    }
+
     /* Barre de variantes cosmétiques (bas de la liste pièces) */
     .bp-variant-bar {
       flex-shrink: 0;
@@ -880,11 +909,21 @@
       gap: 4px;
       flex: 1;
       overflow-x: auto;
-      scrollbar-width: none;
+      overflow-y: hidden;
       align-items: center;
       min-width: 0;
+      scrollbar-width: thin;            /* Firefox : barre fine */
+      scrollbar-color: #5c4025 #0d0805; /* Firefox : thumb / track */
+      padding-bottom: 2px;              /* évite que la scrollbar mange la barre des onglets */
     }
-    .bp-floors-scroll::-webkit-scrollbar { display: none; }
+    /* Chrome / Edge / Safari : scrollbar fine et thématisée */
+    .bp-floors-scroll::-webkit-scrollbar { height: 6px; }
+    .bp-floors-scroll::-webkit-scrollbar-track { background: #0d0805; }
+    .bp-floors-scroll::-webkit-scrollbar-thumb {
+      background: #5c4025;
+      border-radius: 3px;
+    }
+    .bp-floors-scroll::-webkit-scrollbar-thumb:hover { background: #a67c33; }
 
     .bp-floor-tab {
       padding: 5px 12px;
@@ -1190,8 +1229,12 @@
   <!-- ============================= SIDEBAR PALETTE (gauche) ============================= -->
   <aside class="bp-sidebar">
 
-    <!-- Titre palette -->
-    <div class="bp-sidebar-title">Pièces structurelles</div>
+    <!-- Onglets de mode (Structures / Machines / Véhicules) -->
+    <div class="bp-mode-tabs" id="bp-mode-tabs">
+      <button class="bp-mode-tab active" data-tab="structures">Structures</button>
+      <button class="bp-mode-tab"        data-tab="machines">Machines</button>
+      <button class="bp-mode-tab"        data-tab="vehicles">Véhicules</button>
+    </div>
 
     <!-- Recherche -->
     <div class="bp-search">
@@ -1218,12 +1261,16 @@
         <option value="foundations">Fondations</option>
         <option value="walls">Murs</option>
         <option value="windows">Fenêtres</option>
-        <option value="floors">Sols / Toits-plats</option>
+        <option value="floors">Sols</option>
+        <option value="roofs_flat">Toits plats</option>
         <option value="roofs">Toits inclinés</option>
         <option value="doors">Portes</option>
         <option value="stairs">Escaliers &amp; Rampes</option>
         <option value="structures">Structures (piliers, échelles)</option>
         <option value="railings">Rambardes</option>
+        <option value="refineries">Raffineries</option>
+        <option value="fabricators">Fabricateurs</option>
+        <option value="vehicles">Véhicules</option>
       </select>
     </div>
 
@@ -1349,6 +1396,10 @@
       <span class="bp-tool-label">Vue</span>
       <button class="bp-tool-btn" id="tool-solid" title="Vue solide — masquer le verre (T)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/><path d="M12 6c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z"/></svg>
+      </button>
+      <!-- Mode stabilité (bouclier) — vert/jaune/rouge selon distance aux ancres -->
+      <button class="bp-tool-btn" id="tool-stability" title="Vue stabilité — vert/jaune/rouge selon distance aux ancres">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
       </button>
     </div>
     <!-- /bp-toolbar -->
@@ -1560,7 +1611,7 @@
 
     <!-- Extensions verticales -->
     <div class="bp-modal-field">
-      <label>Pieux verticaux posés (0 – 5) — chaque pieu ajoute ~7 niveaux en hauteur et ~5 en sous-sol</label>
+      <label>Pieux verticaux posés (0 – 5) — chaque pieu ajoute +6 niveaux en hauteur et +4 en sous-sol</label>
       <div class="bp-counter-row">
         <button class="bp-counter-btn" id="save-vert-dec">−</button>
         <span class="bp-counter-val" id="save-vert-val">0</span>
@@ -1666,15 +1717,28 @@
 
 <!-- === JS (logique dans base_planner.js — à implémenter) === -->
 <script>
-  // Boutons modales
+  // Boutons modales — passe par bpOpen*Modal de base_planner.js si dispo (API câblée),
+  // sinon fallback : ouvre juste la modale (utile pour preview/débug sans backend).
   document.getElementById('btn-save-plan').addEventListener('click', function() {
+    if (typeof bpOpenSaveModal === 'function') return bpOpenSaveModal();
     document.getElementById('modal-save').classList.add('open');
   });
   document.getElementById('btn-my-plans').addEventListener('click', function() {
+    if (typeof bpOpenPlansModal === 'function') return bpOpenPlansModal();
     document.getElementById('modal-plans').classList.add('open');
   });
   document.getElementById('btn-share-plan').addEventListener('click', function() {
+    if (typeof bpOpenShareModal === 'function') return bpOpenShareModal();
     document.getElementById('modal-share').classList.add('open');
+  });
+  // Confirmation de sauvegarde dans la modale — câblage direct ici en plus du JS
+  // pour garantir l'appel même si bpInitPersistence n'a pas tourné (sécurité).
+  document.getElementById('save-confirm-btn').addEventListener('click', function() {
+    if (typeof bpSaveCurrentPlan === 'function') {
+      bpSaveCurrentPlan();
+    } else {
+      alert('Module de sauvegarde non chargé — recharge la page (Ctrl+F5).');
+    }
   });
 
   // Fermeture modales au clic overlay
@@ -1796,14 +1860,17 @@
   }
 
   // === MODALE SAVE — Compteur extensions verticales ===
+  // Valeurs alignées sur le système Advanced Sub-Fief de Dune Awakening :
+  // base = 6 niveaux au-dessus + 7 sous-sols (volume théorique ~14 niveaux),
+  // +6/+4 par pieu vertical, max 5 pieux → S27 → N36 (64 niveaux).
   var vertExt = 0;
   var VERT_HEIGHTS = [
-    { above: 6,  below: 0,  desc: 'Hauteur : RDC → N6<br>Pas de sous-sol par défaut' },
-    { above: 13, below: 5,  desc: 'Hauteur : S5 → N13<br>+7 niveaux, +5 sous-sol' },
-    { above: 20, below: 10, desc: 'Hauteur : S10 → N20' },
-    { above: 27, below: 15, desc: 'Hauteur : S15 → N27' },
-    { above: 34, below: 20, desc: 'Hauteur : S20 → N34' },
-    { above: 41, below: 25, desc: 'Hauteur : S25 → N41 (maximum)' },
+    { above: 6,  below: 7,  desc: 'Hauteur : S7 → N6<br>~14 niveaux (volume du Sub-Fief)' },
+    { above: 12, below: 11, desc: 'Hauteur : S11 → N12<br>+6 niveaux, +4 sous-sol' },
+    { above: 18, below: 15, desc: 'Hauteur : S15 → N18<br>+12 niveaux, +8 sous-sol' },
+    { above: 24, below: 19, desc: 'Hauteur : S19 → N24<br>+18 niveaux, +12 sous-sol' },
+    { above: 30, below: 23, desc: 'Hauteur : S23 → N30<br>+24 niveaux, +16 sous-sol' },
+    { above: 36, below: 27, desc: 'Hauteur : S27 → N36<br>+30 niveaux, +20 sous-sol (max)' },
   ];
 
   function updateVertExt() {

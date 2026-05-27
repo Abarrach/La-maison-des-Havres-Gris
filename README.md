@@ -142,7 +142,7 @@ Script Python d'archivage hebdomadaire. Maintient `dune_counts.csv` dans une fen
 ### Constructeur de Base (`base_planner.html`)
 
 > [!WARNING]
-> **Feature en cours de développement.** Sessions 0–6.1 livrées (pipeline datamining v3 + socle 3D + géométries + claim + multi-étages + UX avancée + demi-étages + 9 factions). Sessions 7–8 à venir (toits inclinés, placeables, sauvegarde PHP). Pas encore liée depuis `menu.html` (sera ajoutée en session 8).
+> **Feature en cours de développement.** Sessions 0–7b + 8 livrées (pipeline datamining v3 + socle 3D + géométries + claim + multi-étages + UX avancée + demi-étages + 9 factions + murs triangulaires + sols/toits séparés + machines/véhicules avec blocage volumétrique + sauvegarde PHP + partage public + tuile menu). Sessions 7a (refonte géométries toits) + 7c (sélection multiple) + 7d (simulation de stabilité) à venir.
 
 Outil de planification 3D pour Dune Awakening. Permet aux membres de la guilde de poser virtuellement les pièces de construction du jeu sur une grille de claim avant de bâtir in-game.
 
@@ -171,7 +171,7 @@ j:\Download\Fmodel\Output\Exports\DuneSandbox\Content\Dune\Systems\Building\Data
                               ↓
                j:\Download\Fmodel\import_building_data.js   (script Node, ~350 lignes)
                               ↓
-               base_pieces_v3.json   (643 pièces, ~780 KB, source unique du planner)
+               base_pieces_v3.json   (670 pièces, ~820 KB, source unique du planner)
 ```
 
 **Logique du script `import_building_data.js` :**
@@ -183,7 +183,7 @@ j:\Download\Fmodel\Output\Exports\DuneSandbox\Content\Dune\Systems\Building\Data
 - Labels depuis `m_DisplayName.LocalizedString` (traduction officielle du jeu)
 - Filtre `faction_id !== 'blockout'` à l'usage (les Blockout restent dans le JSON comme référence)
 
-Stats v3 : **643 pièces**, 9 factions, 525 carrés / 86 coins / 13 coins inversés / 19 triangles équilatéraux.
+Stats v3 (post-session 7b) : **670 pièces** = 643 structurelles + 19 machines (raffineries + fabricateurs, depuis `DT_PlaceableData_Functional.json`) + 8 véhicules (depuis les BPs `Systems/Vehicles/Blueprints/*`). 9 factions structurelles + 1 faction virtuelle `placeables` pour machines/véhicules (universelle).
 
 #### État au moment de la pause de cette branche
 
@@ -202,13 +202,17 @@ Stats v3 : **643 pièces**, 9 factions, 525 carrés / 86 coins / 13 coins invers
 | 5.5 | **Système demi-étages** : `state.ghostHalf` + bouton UI — `findBestPlacementFloor` retourne `currentFloor - 1` si ghostHalf actif, `placeMeshAt` ajoute `+0.5 * WALL_UNIT` en Y. Détection de conflit half-aware : edge snaps comparent `it.half !== state.ghostHalf`, cell snaps idem — deux pièces à ±0.5 du même niveau ne se bloquent plus mutuellement. |
 | 6 | **Pipeline datamining v3** : `import_building_data.js` génère `base_pieces_v3.json` directement depuis les DataTables FModel. 9 factions (Atréides, Harkonnen, CHOAM, CHOAM Shelter, CHOAM N2, Contrebandiers, Marchands d'eau, Blockout, Mini-sets) avec onglets faction dans la sidebar. `BRUSH_SHAPE_MAP` mappe les enums jeu → géométrie JS. `GROUP_VISUAL_SHAPE_OVERRIDE` force `shape='corner'` pour les groupes visuellement arrondis (footprint Square dans le jeu, cylindre creux en 3D). Fenêtres arrondies distinctes des murs arrondis : cadre ouvert (`makeRoundCornerWindowGeometry` : allège + traverse + montants) + vitrage bleu (`makeRoundCornerWallGeometry` thin). Format JSON v3 : wrapper `{ pieces: [...] }`, champs `faction_id`, `label_fr/en`, `dimensions.w/d/h/shape`, `placement_rules.footprint_shape`, `menu_order`. |
 | 6.1 | **Correctifs fenêtres & catégories** : (1) `isPieceWindowType` étendu au label_fr (`/fenêtre/i`) — capture `Wall_Round_Corner_03` = "Fenêtre arrondie" dont l'ID ne contient pas "Window" → correctement classé en `category: windows` dans v3 et rendu avec cadre ouvert + vitrage ; (2) `buildVariantIndex` utilise `getDisplayGroup(p)` à la place de `p.group` brut → fenêtres arrondies et murs arrondis ne partagent plus le même groupe de variantes ; (3) vitrage des fenêtres arrondies stocké dans `userData.cornerGlass` (pas `glassPanel`) → **toujours visible** même en solidView (opacité 0.38 normal / 0.18 solidView), épaisseur portée à 60% de l'épaisseur du mur pour être clairement identifiable. Même logique de détection appliquée dans `import_building_data.js` pour la génération du JSON. |
+| 6.2 | **Murs triangulaires (géométrie 3D) + séparation Sols/Toits-plats** : (1) `makeTriangleWallGeometry(w, h, corner)` + helper `triangleWallCorner(group)` → 4 variantes BL/BR/TL/TR couvrant les 88 entrées `Wall_Triangle_*` (Half/Wide/Tall traitées automatiquement via `dim.w/h`) ; (2) `MIXED_FLOOR_GROUPS` whitelist (`Floor`, `Floor_Round_Corner`, `Floor_Round_Corner_Inverted`, `Floor_Wedge`) + `getDisplayGroup` suffixe `_Roof` aux pièces rooflike → séparation des tuiles "Toit plat" et "Plancher" dans la sidebar ; (3) `getEffectiveCategory` retourne `'roofs_flat'` pour les rooflike → catégorie sidebar séparée. `piece.category` JSON reste `'floors'` donc aucun impact sur `getCategoryYOffset` / `isPieceRooflike` / `ignore_groups`. |
+| 8 | **Sauvegarde PHP + partage public + tuile menu** : (1) `base_planner_api.php` (~190 lignes) — CRUD plans avec actions `list`/`load`/`load_shared`/`save`/`delete`/`share`/`unshare`, stockage dans `base_plans.json`, ownership vérifiée pour les actions destructives. (2) Section persistance dans `base_planner.js` (~280 lignes) — `bpSerializePlanData` (claim + items, pas les meshes) / `bpApplyPlanData` (reconstruit les meshes via `buildMeshForPiece`) / `bpResetPlan` / modale save/list/share/delete câblées / auto-load via URL `?plan=<token>` (lecture seule si pas owner). Exposition explicite des fonctions sur `window` car le script est chargé en `type="module"` (scope module → handlers inline HTML ne voient pas les fonctions sans cet expose). Synchronisation `state.plan.{id,name}` avec `state.currentPlanId/Name`. (3) `menu.html` : tuile "Constructeur de Base" ajoutée comme 7ème carte (icône maison stylisée, fallback `intro.jpg`). Déploiement : `chmod 664 base_plans.json` lors de la première sauvegarde. |
+| 7b (restreint) | **Machines + véhicules** : (1) Pipeline étendu (`import_building_data.js` + 100 lignes) — lit `DT_PlaceableData_Functional.json` pour 19 machines (whitelist `MACHINE_IDS_REFINERIES` 8 + `MACHINE_IDS_FABRICATORS` 11) et parse les BPs `Systems/Vehicles/Blueprints/{Ground,Flying}Vehicles/BP_*` pour 8 véhicules. Dimensions calculées depuis `m_PlaceableBoxesData.m_PlacementCheckBox.m_Extent` (machines) ou `VehicleInteractionComponent.m_BoxExtent` (véhicules) — convention `taille_cells = ceil(extent×2/100 / 2.5)`, `real_size_m` conservé pour rendu visuel. Constante `CELL_METERS = 2.5`, faction virtuelle `placeables`, flags `is_machine`/`is_vehicle`. (2) **Onglets sidebar Structures/Machines/Véhicules** (`state.activeTab`, `pieceTabOf(p)`, `TAB_CATEGORIES`, `setActiveTab`) avec pills faction cachées sur Machines/Véhicules. (3) **Rendu** : `createGeometryForPiece` retourne `BoxGeometry` aux vraies dimensions m (centré sur footprint), matériau semi-transparent (opacity 0.55, edges 0.75), couleurs distinctes via `getPieceColor` (`placeables=0xc8a64a` ambré machines, `vehicles=0x4a78b8` bleu acier véhicules), label sprite-canvas `makeMachineLabelSprite` flottant au sommet (depthTest false → toujours lisible). (4) **Blocage volumétrique** : `getOccupiedCells(piece, item)` (footprint avec échange w↔d à rotation 90/270), `getFloorRange` (`[z, z+h-1]` pour machines), `edgeAdjacentCells` / `cornerAdjacentCells`, `isMachinePlacementAllowed` (machine vs autre machine = intersection footprints ; vs mur = mur intérieur ; vs pilier coin = 4 cellules adjacentes ; vs pilier central = dans footprint ; vs sol/plafond via `carriedFloorIndex` → conflit ssi plancher porté strictement à l'intérieur de la plage verticale machine), `checkAgainstExistingMachines` (symétrique). (5) `findBestPlacementFloor` retourne `state.currentFloor` pour les machines (PAS d'auto-stack — ghost rouge force le changement d'étage manuel). |
 
 **Sessions à venir :**
 
 | Session | Contenu prévu |
 |---|---|
-| 7 | Toits inclinés (géométries `Roof_Wedge`, `Roof_Corner`, `Roof_Cover`), **placeables** (469 objets) avec règles de contact depuis `DT_PlaceablePlacementGroups.json`, sélection multiple (Shift+clic), copier-coller un étage entier. |
-| 8 | Sauvegarde PHP : `base_planner_api.php` (CRUD plans côté serveur), modale « Mes plans » fonctionnelle, système de partage avec `share_token` public (URL `?plan=abc123`), intégration de la tuile dans `menu.html`. |
+| 7a | **Toits inclinés** : géométries dédiées pour `Roof`, `Roof_Half`, `Roof_Corner` (+ `_Half`, `_Inward`), `Roof_Round_Corner`, `Roof_Wedge_Bottom/Top`, `Roof_Cover_*`, `Angled_Wedge_*`. ⚠️ **Session partiellement faite** : les pièces sont posables et identifiables, mais les géométries sont des **approximations** (rampes / pyramides simples) qui ne correspondent pas à la réalité du jeu. **À refaire** sur la base des thumbnails FModel observés (`J:\Download\Fmodel\...\Thumbnails\Atre\`) : (1) **`Roof_Half`** = 3 plaques empilées en cascade descendante (escalier de toit Atréides), pas une rampe inclinée — c'est la signature visuelle de la faction ; (2) **`Roof_Corner_Half`** = cascade diagonale descendant vers un coin ; (3) **`Roof_Corner_Half_In`** = cascade concave inverse (proche de l'impl actuelle mais pas exactement) ; (4) **`Roof_Cover_*`** = wedge effilé asymétrique (auvent / couverture allongée), différencié par Bottom/Top (orientation du mur vertical) et Left/Right (miroir) ; (5) **`Roof_Round_Corner_Half`** = quart de cylindre arrondi sur ~3 niveaux verticaux superposés (pas un slab plate quart de disque) ; (6) **`Rooftop_*`** = toit plat avec léger décrochement décoratif. Pas de variantes "full height" en jeu — l'utilisateur empile plusieurs `_Half` pour gagner en hauteur. **`Roof_Wedge_*`** n'a pas de thumbnail dédié dans `Atre/` — probablement la même cascade orientée sur un footprint triangulaire. |
+| 7c | **UX d'édition** : sélection multiple (Shift+clic), copier-coller un étage entier (Ctrl+C / Ctrl+V sur onglet d'étage), déplacement/rotation/suppression en groupe. |
+| 7d | **Simulation de stabilité** : module dédié basé sur les sockets dataminés (`DT_DuneSocketCostsData.json` + `DT_DuneSocketSetupData.json`). Règles confirmées par vidéo : ancrage uniquement Foundation/Pillar/Column au sol, budget de **9 pas** propagé depuis chaque ancrage (1 pas = 10 unités cost), horizontal = 1 pas, vertical via mur = 1 pas, vertical via pilier/empilement fondations = 0 pas. Algorithme : BFS depuis pièces ancrées, pièces non atteintes → overlay d'alerte rouge. |
 
 #### Conventions techniques (à garder en tête pour la suite)
 - 1 cellule = 1 unité monde Three.js (CELL = 1)
@@ -233,8 +237,10 @@ Stats v3 : **643 pièces**, 9 factions, 525 carrés / 86 coins / 13 coins invers
 
 ```
 base_planner.html              # Layout + importmap Three.js + modales + CSS sidebar
-base_planner.js                # Logique 3D complète (~2200 lignes après session 6.1)
-base_pieces_v3.json            # Catalogue dataminé (643 pièces, ~780 KB, source unique)
+base_planner.js                # Logique 3D complète (~3300 lignes après session 8 — script type="module" → expose API sur window)
+base_planner_api.php           # CRUD plans côté serveur (list/load/save/delete/share/unshare)
+base_pieces_v3.json            # Catalogue dataminé (670 pièces, ~820 KB, source unique)
+base_plans.json                # Plans utilisateurs (créé automatiquement à la 1ère sauvegarde, chmod 664 si write_error)
 base_planner_v1.bak.html       # Backup Konva (à supprimer après validation longue)
 base_planner_v1.bak.js         # Backup Konva (idem)
 tools/
@@ -336,7 +342,7 @@ DuneMap/
 ├── skills.js             # Simulateur de talents + commandes de craft
 ├── planner.js            # Planificateur d'événements
 ├── migration.js          # Logique de migration (validation, refus, Discord)
-├── base_planner.js       # Logique 3D du Constructeur de Base (Three.js, ~2200 lignes après session 6.1)
+├── base_planner.js       # Logique 3D du Constructeur de Base (Three.js, ~3300 lignes après session 7b)
 ├── auth-guard.js         # Protection des pages (redirection login si non connecté)
 │
 ├── save.php              # API principale (bases, utilisateurs, craft, commandes)
@@ -356,7 +362,7 @@ DuneMap/
 ├── profiles_data.json    # Profils joueurs (avatar, Discord)
 ├── landsraad_data.json   # Quêtes disponibles
 ├── metiers.json          # Définitions des talents
-├── base_pieces_v3.json   # Catalogue dataminé des pièces du Constructeur de Base (643 pièces, ~780 KB)
+├── base_pieces_v3.json   # Catalogue dataminé des pièces du Constructeur de Base (670 pièces, ~820 KB)
 ├── base_placeables_data.json  # Catalogue des placeables Dune Awakening (469 objets)
 ├── last_wipe.txt         # Horodatage du dernier wipe hebdomadaire du Désert Profond
 │

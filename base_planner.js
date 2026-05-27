@@ -1289,24 +1289,16 @@ function placeMeshAt(mesh, item, piece) {
     mesh.position.y = yBase + FLOOR_THICKNESS;
   }
   // ---- Triangulaires (géométrie centrée XZ, origine bas) ----
-  // Le triangle isocèle a son centre de MASSE à 1/6 de la hauteur depuis la base
-  // (= décalé du centre géométrique du carré). Sans compensation, la rotation
-  // pivote autour du centre du carré, et le triangle "flotte" visuellement vers
-  // une cellule ou une autre selon l'orientation → l'utilisateur croit qu'il
-  // change de cellule. On compense en décalant la position du mesh de d/6 dans
-  // la direction opposée au CM après rotation, pour que le triangle paraisse
-  // toujours centré sur la cellule logique.
+  // Le triangle isocèle occupe sa cellule comme un carré : sa base est sur une
+  // arête de la cellule, la pointe au milieu de l'arête opposée. Aucun décalage
+  // de compensation : pour rester COLLÉ aux planchers rectangulaires voisins,
+  // le mesh doit être centré sur (item.x + w/2, item.y + d/2) sans correction.
+  // Conséquence visuelle (attendue) : à la rotation, la masse visible se
+  // déplace dans la cellule. C'est ce qui permet à 4 triangles tournés à
+  // 0/90/180/270 de former une étoile à 4 branches autour d'un carré central.
   else if (rules.footprint_shape === 'triangle_isosceles' || rules.footprint_shape === 'triangle_equilateral') {
-    let cx = item.x + w / 2;
-    let cz = item.y + d / 2;
-    const rot = (((item.rotation || 0) % 360) + 360) % 360;
-    const off = d / 6;
-    if      (rot === 0)   cz += off;   // pointe nord → CM sud → décale nord
-    else if (rot === 90)  cx += off;   // pointe ouest → CM est → décale est
-    else if (rot === 180) cz -= off;   // pointe sud → CM nord → décale sud
-    else if (rot === 270) cx -= off;   // pointe est → CM ouest → décale ouest
-    mesh.position.x = cx;
-    mesh.position.z = cz;
+    mesh.position.x = item.x + w / 2;
+    mesh.position.z = item.y + d / 2;
     mesh.position.y = yBase;
   }
   // ---- Foundation / Floor / Roof (BoxGeometry centré) ----

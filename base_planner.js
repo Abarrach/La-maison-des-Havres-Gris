@@ -504,27 +504,42 @@ function raycastPlacedMeshes(clientX, clientY) {
 // ============================================================
 // GEOMETRY FACTORIES — par type de pièce
 // ============================================================
-/** Prisme triangle rectangle 1×1 (wedges, round corners de fondations/sols/toits).
- *  Géométrie centrée sur XZ (origine au centre de la cellule) → bottom à Y=0.
- *  La diagonale (hypoténuse) va de (w/2, ?, -d/2) à (-w/2, ?, d/2). Le coin "plein"
- *  est en (-w/2, ?, -d/2). Rotation utilisateur fera tourner autour du centre.
+/** Prisme triangle ÉQUILATÉRAL pour Floor_Wedge / Foundation_Wedge / roof wedges.
+ *
+ *  Géométrie en jeu (confirmée par analyse vidéo Dune Awakening) :
+ *  - 3 côtés strictement égaux à 1 unité (= 1 côté de cellule)
+ *  - 3 angles de 60°
+ *  - Hauteur (perpendiculaire à la base) = √3/2 ≈ 0.866 unité
+ *  - 2 triangles base-contre-base forment un LOSANGE 60°/120° (PAS un rectangle)
+ *  - 6 triangles autour d'un point forment un hexagone régulier
+ *
+ *  Convention de centrage : la BASE est sur l'arête sud de la cellule (z = -d/2 local).
+ *  L'apex pointe vers le NORD à z = -d/2 + √3/2 ≈ 0.366 en local (donc à l'intérieur
+ *  de la cellule, ≈0.866 unité après le sud, n'atteint pas le nord puisque √3/2 < 1).
+ *  Centre de rotation = centre de cellule (origine locale 0,0,0). Les rotations
+ *  0/90/180/270 placent ainsi la base sur les 4 arêtes de la cellule.
+ *
+ *  Note Phase 1 : la géométrie est maintenant correcte (équilatéral) mais le système
+ *  de snap reste cellule-aligné (4 rotations). Le snap par arête + 6 rotations à 60°
+ *  arrivera en Phase 2-4. Conséquence visuelle : un triangle posé seul a sa base
+ *  flush avec une arête de cellule et son apex N'ATTEINT PAS l'arête opposée (gap
+ *  visible de ~0.134 unité = 1 - √3/2). C'est attendu — le triangle équilatéral est
+ *  géométriquement plus court que la cellule carrée.
  */
 function makeTrianglePrismGeometry(w, h, d) {
-  // Triangle ISOCÈLE : base sur le côté -Z (de (-w/2,-d/2) à (+w/2,-d/2)), pointe
-  // au milieu du côté opposé +Z (en (0,+d/2)). 4 triangles à 0/90/180/270 forment
-  // une étoile à 4 branches dont les bases couvrent les 4 côtés du carré (et
-  // laissent un carré central vide où loger un sol carré normal).
-  // Le ExtrudeGeometry crée le shape en XY puis on le rotate pour le mettre en XZ.
+  const H = w * Math.sqrt(3) / 2;  // hauteur de l'équilatéral (≈ 0.866 si w=1)
   const shape = new THREE.Shape();
   shape.moveTo(0, 0);          // base gauche
   shape.lineTo(w, 0);          // base droite
-  shape.lineTo(w / 2, d);      // pointe (milieu du côté opposé)
+  shape.lineTo(w / 2, H);      // apex au-dessus du milieu de la base
   shape.closePath();
   const geom = new THREE.ExtrudeGeometry(shape, { depth: h, bevelEnabled: false });
   // Rotation +PI/2 autour de X : shape passe de XY à XZ, extrusion +Z devient -Y.
   geom.rotateX(Math.PI / 2);
   geom.translate(0, h, 0);            // bottom à Y=0
-  geom.translate(-w / 2, 0, -d / 2);  // centré sur XZ
+  // Centrer sur la cellule : base à z = -d/2 (sud), apex à z = H - d/2.
+  // Note : H = √3/2 ≈ 0.866 < d=1, donc l'apex est à z ≈ 0.366 (sous le nord à z=0.5).
+  geom.translate(-w / 2, 0, -d / 2);
   return geom;
 }
 
@@ -1292,14 +1307,14 @@ function placeMeshAt(mesh, item, piece) {
     mesh.position.z = item.y + d / 2;
     mesh.position.y = yBase + FLOOR_THICKNESS;
   }
-  // ---- Triangulaires (géométrie centrée XZ, origine bas) ----
-  // Le triangle isocèle occupe sa cellule comme un carré : sa base est sur une
-  // arête de la cellule, la pointe au milieu de l'arête opposée. Aucun décalage
-  // de compensation : pour rester COLLÉ aux planchers rectangulaires voisins,
-  // le mesh doit être centré sur (item.x + w/2, item.y + d/2) sans correction.
-  // Conséquence visuelle (attendue) : à la rotation, la masse visible se
-  // déplace dans la cellule. C'est ce qui permet à 4 triangles tournés à
-  // 0/90/180/270 de former une étoile à 4 branches autour d'un carré central.
+  // ---- Triangulaires (géométrie ÉQUILATÉRALE centrée XZ, origine bas) ----
+  // Phase 1 du refactor triangle : la géométrie est maintenant équilatérale (3 côtés
+  // égaux de 1 unité, hauteur √3/2 ≈ 0.866). Le mesh reste centré sur la cellule
+  // (item.x + w/2, item.y + d/2) — la base s'aligne donc sur une arête de cellule
+  // (sud par défaut, rot 0) et l'apex pointe vers l'intérieur de la cellule à
+  // 0.866 unité (n'atteint pas l'arête opposée à z=1). Centre de rotation = centre
+  // de cellule, donc rot 0/90/180/270 placent la base sur les 4 arêtes du carré.
+  // À VENIR (Phase 2-4) : snap par arête (au lieu de cellule) + rotations 60° + ancrage.
   else if (rules.footprint_shape === 'triangle_isosceles' || rules.footprint_shape === 'triangle_equilateral') {
     mesh.position.x = item.x + w / 2;
     mesh.position.z = item.y + d / 2;

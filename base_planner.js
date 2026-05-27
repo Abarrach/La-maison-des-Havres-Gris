@@ -140,6 +140,10 @@ const state = {
   histFront:      -1,   // index de l'action courante
   // Rotation fantôme (pendant drag OU click-to-place)
   ghostRotation:  0,
+  // Pour les triangles : true quand l'utilisateur a forcé la rotation avec R/molette,
+  // false par défaut → auto-orientation basée sur l'arête voisine occupée la plus
+  // proche du curseur (réplique le comportement du jeu). Reset au changement de pièce.
+  ghostUserSetRotation: false,
   // Click-to-place : pièce sélectionnée dans la sidebar, posée par clic sur le canvas
   activePieceId:  null,
   // Vue solide : masque le verre (fenêtres transparentes)
@@ -2249,6 +2253,7 @@ function endDrag() {
   // peut continuer à poser plusieurs exemplaires).
   if (!state.activePieceId) {
     state.ghostRotation = 0;
+    state.ghostUserSetRotation = false;
   }
   lastGhostState = null;
   state.dragPieceId = null;
@@ -2262,6 +2267,7 @@ function endDrag() {
 function setActivePiece(pieceId) {
   if (pieceId !== state.activePieceId) {
     state.ghostRotation = 0;
+    state.ghostUserSetRotation = false;  // ré-active l'auto-rotation pour la nouvelle pièce
     state.ghostHalf     = false;   // remet le demi-étage à zéro quand on change de pièce
     updateHalfHud();
     lastGhostState = null;
@@ -2285,6 +2291,70 @@ function setActivePiece(pieceId) {
   }
 }
 
+/**
+ * Auto-rotation pour les triangles (footprint isocèle/équilatéral).
+ * Réplique le comportement du jeu : la BASE du triangle se colle à l'arête
+ * voisine occupée la plus proche du curseur. Renvoie 0/90/180/270 ou null
+ * si aucune cellule voisine n'est occupée par un sol/fondation/triangle.
+ *
+ * Convention rotation (cohérente avec le rendu existant) :
+ *   - rot 0   : pointe nord (+Z), base SUD  → voisin (cx, cy-1)
+ *   - rot 90  : pointe ouest    , base EST  → voisin (cx+1, cy)
+ *   - rot 180 : pointe sud      , base NORD → voisin (cx, cy+1)
+ *   - rot 270 : pointe est      , base OUEST→ voisin (cx-1, cy)
+ */
+function computeTriangleAutoRotation(cx, cy, z, lx, lz) {
+  const floor = state.plan.floors.find(f => f.z === z);
+  if (!floor) return null;
+
+  // Ensemble des cellules occupées par un sol/fondation (incluant triangles)
+  // au même étage. C'est suffisant pour repérer une arête "supportable".
+  const occupied = new Set();
+  for (const it of floor.items) {
+    const p = state.piecesById.get(it.piece_id);
+    if (!p) continue;
+    const cat = p.category;
+    if (cat !== 'floors' && cat !== 'foundations') continue;
+    const cells = getOccupiedCells(p, it);
+    for (const c of cells) occupied.add(c);
+  }
+  if (occupied.size === 0) return null;
+
+  // 4 arêtes candidates : { rotation, distance curseur, clé voisin }
+  const edges = [
+    { rot: 0,   dist: lz,     nbr: `${cx},${cy - 1}` },
+    { rot: 90,  dist: 1 - lx, nbr: `${cx + 1},${cy}` },
+    { rot: 180, dist: 1 - lz, nbr: `${cx},${cy + 1}` },
+    { rot: 270, dist: lx,     nbr: `${cx - 1},${cy}` },
+  ];
+
+  const candidates = edges
+    .filter(e => occupied.has(e.nbr))
+    .sort((a, b) => a.dist - b.dist);
+
+  return candidates.length > 0 ? candidates[0].rot : null;
+}
+
+/**
+ * Rotation effective pour le ghost et la pose :
+ *  - si l'utilisateur a forcé via R/molette → state.ghostRotation
+ *  - sinon pour les triangles → auto-rotation (sinon fallback state.ghostRotation)
+ *  - sinon (pièces non-triangulaires) → state.ghostRotation
+ */
+function computeEffectiveRotation(piece, snap, world, resolvedFloor) {
+  if (state.ghostUserSetRotation) return state.ghostRotation;
+
+  const rules = piece.placement_rules || {};
+  const isTriangle = rules.footprint_shape === 'triangle_isosceles'
+                  || rules.footprint_shape === 'triangle_equilateral';
+  if (!isTriangle || snap.kind !== 'cell') return state.ghostRotation;
+
+  const lx = world.x / CELL - snap.x;
+  const lz = world.z / CELL - snap.y;
+  const auto = computeTriangleAutoRotation(snap.x, snap.y, resolvedFloor, lx, lz);
+  return auto !== null ? auto : state.ghostRotation;
+}
+
 /** Affiche le ghost pour une pièce à la position écran donnée. Renvoie true si OK. */
 function tryShowGhostForPiece(pieceId, clientX, clientY) {
   const piece = state.piecesById.get(pieceId);
@@ -2295,8 +2365,9 @@ function tryShowGhostForPiece(pieceId, clientX, clientY) {
   if (!snap) return false;
   const resolvedFloor = findBestPlacementFloor(piece, snap);
   const allowed = isPlacementAllowedOnFloor(piece, snap, resolvedFloor);
-  lastGhostState = { piece, snap, resolvedFloor, allowed };
-  showGhost(piece, snap, resolvedFloor, allowed);
+  const effectiveRot = computeEffectiveRotation(piece, snap, world, resolvedFloor);
+  lastGhostState = { piece, snap, resolvedFloor, allowed, effectiveRot };
+  showGhost(piece, snap, resolvedFloor, allowed, effectiveRot);
   showFloorResolveHud(resolvedFloor);
   setText(dom.hudCoords, formatSnapHud(snap));
   return true;
@@ -2317,10 +2388,11 @@ function tryPlacePieceAt(pieceId, clientX, clientY) {
     showFloorResolveHud(resolvedFloor, 'Pose refusée : stabilité insuffisante');
     return null;
   }
-  return placePieceFromSnap(pieceId, snap, resolvedFloor, state.ghostRotation);
+  const effectiveRot = computeEffectiveRotation(piece, snap, world, resolvedFloor);
+  return placePieceFromSnap(pieceId, snap, resolvedFloor, effectiveRot);
 }
 
-function showGhost(piece, snap, resolvedFloor, allowed) {
+function showGhost(piece, snap, resolvedFloor, allowed, rotation = state.ghostRotation) {
   clearGhost();
   const tmpItem = {
     id: 'ghost',
@@ -2329,7 +2401,7 @@ function showGhost(piece, snap, resolvedFloor, allowed) {
     x: snap.x, y: snap.y,
     axis: snap.axis,
     z: resolvedFloor,
-    rotation: state.ghostRotation,  // rotation fantôme courante (touche R)
+    rotation,                       // rotation effective (auto pour triangles, sinon ghostRotation)
     half: state.ghostHalf,          // demi-étage fantôme courant (touche H)
   };
   const mesh = buildMeshForPiece(piece, tmpItem);
@@ -3240,13 +3312,17 @@ function initKeyboard() {
     // R — rotation : fantôme pendant drag/click-to-place, pièces sélectionnées, sinon reset vue
     if (e.key === 'r' || e.key === 'R') {
       if (state.dragPieceId || state.activePieceId) {
-        // +90° sur la rotation fantôme puis re-render immédiat du ghost
-        state.ghostRotation = (state.ghostRotation + 90) % 360;
+        // Base = rotation effective courante (peut être l'auto-rotation pour les triangles).
+        // +90° depuis cette base puis bascule en mode manuel (désactive l'auto-rotation
+        // jusqu'au changement de pièce).
+        const baseRot = lastGhostState?.effectiveRot ?? state.ghostRotation;
+        state.ghostRotation = (baseRot + 90) % 360;
+        state.ghostUserSetRotation = true;
         if (lastGhostState) {
           const { piece, snap, resolvedFloor, allowed } = lastGhostState;
           clearGhost();
-          lastGhostState = { piece, snap, resolvedFloor, allowed };
-          showGhost(piece, snap, resolvedFloor, allowed);
+          lastGhostState = { piece, snap, resolvedFloor, allowed, effectiveRot: state.ghostRotation };
+          showGhost(piece, snap, resolvedFloor, allowed, state.ghostRotation);
           showFloorResolveHud(resolvedFloor);
         }
         return;
@@ -3286,9 +3362,9 @@ function initKeyboard() {
     state.ghostHalf = wantHalf;
     updateHalfHud();
     if (lastGhostState && (state.dragPieceId || state.activePieceId)) {
-      const { piece, snap, resolvedFloor, allowed } = lastGhostState;
+      const { piece, snap, resolvedFloor, allowed, effectiveRot } = lastGhostState;
       clearGhost();
-      showGhost(piece, snap, resolvedFloor, allowed);
+      showGhost(piece, snap, resolvedFloor, allowed, effectiveRot ?? state.ghostRotation);
     }
   }
   document.addEventListener('keydown', (e) => {
@@ -3331,9 +3407,10 @@ function initDragDrop() {
     if (!snap) return;
     const resolvedFloor = findBestPlacementFloor(piece, snap);
     const allowed = isPlacementAllowedOnFloor(piece, snap, resolvedFloor);
+    const effectiveRot = computeEffectiveRotation(piece, snap, world, resolvedFloor);
     // Mémorise l'état pour re-render immédiat lors d'un keydown R
-    lastGhostState = { piece, snap, resolvedFloor, allowed };
-    showGhost(piece, snap, resolvedFloor, allowed);
+    lastGhostState = { piece, snap, resolvedFloor, allowed, effectiveRot };
+    showGhost(piece, snap, resolvedFloor, allowed, effectiveRot);
     showFloorResolveHud(resolvedFloor);
     setText(dom.hudCoords, formatSnapHud(snap));
   });
@@ -3349,7 +3426,7 @@ function initDragDrop() {
     const snap = snapForPiece(world, piece);
     if (!snap) { endDrag(); return; }
     const resolvedFloor = findBestPlacementFloor(piece, snap);
-    const dropRot = state.ghostRotation;   // capture avant endDrag()
+    const dropRot = computeEffectiveRotation(piece, snap, world, resolvedFloor);
     if (isPlacementAllowedOnFloor(piece, snap, resolvedFloor)) {
       if (state.showStability && !wouldBeStableAfterPlacing(piece, snap, resolvedFloor)) {
         showFloorResolveHud(resolvedFloor, 'Pose refusée : stabilité insuffisante');
@@ -3423,12 +3500,15 @@ function initDragDrop() {
       e.stopPropagation();
       if (state.dragPieceId || state.activePieceId) {
         const delta = e.deltaY < 0 ? -90 : 90;  // molette vers le haut = -90°
-        state.ghostRotation = (state.ghostRotation + delta + 360) % 360;
+        // Base = rotation effective courante (peut être l'auto-rotation pour les triangles).
+        const baseRot = lastGhostState?.effectiveRot ?? state.ghostRotation;
+        state.ghostRotation = (baseRot + delta + 360) % 360;
+        state.ghostUserSetRotation = true;
         if (lastGhostState) {
           const { piece, snap, resolvedFloor, allowed } = lastGhostState;
           clearGhost();
-          lastGhostState = { piece, snap, resolvedFloor, allowed };
-          showGhost(piece, snap, resolvedFloor, allowed);
+          lastGhostState = { piece, snap, resolvedFloor, allowed, effectiveRot: state.ghostRotation };
+          showGhost(piece, snap, resolvedFloor, allowed, state.ghostRotation);
           showFloorResolveHud(resolvedFloor);
         }
       }

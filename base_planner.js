@@ -1929,59 +1929,110 @@ function migrateTriangleSnaps(plan) {
   const TOL = 0.15;   // tolérance en unités monde pour matcher base ↔ arête
   let migrated = 0;
 
+  /** Calcule le milieu de la base d'un triangle stocké en mode cellule. */
+  const baseMidOf = (tri, piece) => {
+    const dim = piece.dimensions || { w: 1, d: 1 };
+    const w = (dim.w || 1) * CELL;
+    const d = (dim.d || 1) * CELL;
+    const cx = tri.x + w / 2;
+    const cz = tri.y + d / 2;
+    const rotRad = THREE.MathUtils.degToRad(tri.rotation || 0);
+    const cosR = Math.cos(rotRad);
+    const sinR = Math.sin(rotRad);
+    return {
+      x: cx + 0 * cosR + (-d / 2) * sinR,
+      z: cz - 0 * sinR + (-d / 2) * cosR,
+    };
+  };
+
+  /** Cherche l'arête la plus proche d'un point parmi les ancres candidates. */
+  const findNearestEdge = (baseMid, candidates) => {
+    let best = { anchor: null, index: -1, dist: Infinity };
+    for (const other of candidates) {
+      const otherPiece = state.piecesById.get(other.piece_id);
+      if (!otherPiece) continue;
+      const edges = getPieceEdges(otherPiece, other);
+      for (const e of edges) {
+        const dx = e.mid.x - baseMid.x;
+        const dz = e.mid.z - baseMid.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist < best.dist) best = { anchor: other, index: e.index, dist };
+      }
+    }
+    return best;
+  };
+
   for (const floor of plan.floors) {
     if (!Array.isArray(floor.items)) continue;
-    for (const tri of floor.items) {
-      const piece = state.piecesById.get(tri.piece_id);
-      if (!piece) continue;
-      const rules = piece.placement_rules || {};
+
+    // ── Pré-passe : nettoyer les ancrages cassés (cycles, anchors orphelins) ─────
+    // Si une ancre existante ne se résout pas (cycle ou item disparu), on retire
+    // les champs anchor pour forcer une re-migration propre depuis les données
+    // cellule (x, y, rotation toujours conservés dans l'item).
+    for (const it of floor.items) {
+      if (it.snap_kind !== 'anchor') continue;
+      const resolved = resolveTrianglePosition(it, plan);
+      if (resolved === null) {
+        delete it.snap_kind;
+        delete it.anchor_item_id;
+        delete it.anchor_edge_index;
+      }
+    }
+
+    // Set des items déjà "résolvables" sans risque de cycle :
+    //  - toutes les pièces non-triangulaires (carrés, fondations) : toujours OK
+    //  - les triangles déjà ancrés (la pré-passe ci-dessus a garanti que leur
+    //    résolution réussit, donc pas de cycle ni d'orphelin)
+    const resolvable = new Set();
+    const trianglesToMigrate = [];
+
+    for (const it of floor.items) {
+      const p = state.piecesById.get(it.piece_id);
+      if (!p) continue;
+      const rules = p.placement_rules || {};
       const isTri = rules.footprint_shape === 'triangle_isosceles'
                  || rules.footprint_shape === 'triangle_equilateral';
-      if (!isTri) continue;
-      if (tri.snap_kind === 'anchor') continue;   // déjà migré
+      if (!isTri) {
+        resolvable.add(it.id);
+      } else if (it.snap_kind === 'anchor') {
+        // pré-passe a validé : ancrage OK
+        resolvable.add(it.id);
+      } else {
+        trianglesToMigrate.push(it);
+      }
+    }
 
-      // Milieu de la base en monde (à partir du modèle cellule existant)
-      const dim = piece.dimensions || { w: 1, d: 1 };
-      const w = (dim.w || 1) * CELL;
-      const d = (dim.d || 1) * CELL;
-      const cx = tri.x + w / 2;
-      const cz = tri.y + d / 2;
-      const rotRad = THREE.MathUtils.degToRad(tri.rotation || 0);
-      const cosR = Math.cos(rotRad);
-      const sinR = Math.sin(rotRad);
-      // Local base midpoint = (0, -d/2) → world via matrice rotation Three.js
-      const baseMidX = cx + 0 * cosR + (-d / 2) * sinR;
-      const baseMidZ = cz - 0 * sinR + (-d / 2) * cosR;
+    // Migration par vagues : chaque vague tente d'ancrer les triangles restants
+    // vers des items DÉJÀ résolvables. À chaque ajout au set, on relance une vague.
+    // Garantit l'absence de cycle puisqu'un triangle ne peut s'ancrer qu'à du
+    // déjà-résolu. Les triangles isolés (sans voisin résolu) restent en cell mode.
+    let progress = true;
+    while (progress) {
+      progress = false;
+      for (let i = trianglesToMigrate.length - 1; i >= 0; i--) {
+        const tri = trianglesToMigrate[i];
+        const piece = state.piecesById.get(tri.piece_id);
+        if (!piece) { trianglesToMigrate.splice(i, 1); continue; }
 
-      // Cherche l'arête la plus proche parmi les autres pièces du même étage
-      let bestAnchor = null;
-      let bestIndex  = -1;
-      let bestDist   = Infinity;
-      for (const other of floor.items) {
-        if (other.id === tri.id) continue;
-        const otherPiece = state.piecesById.get(other.piece_id);
-        if (!otherPiece) continue;
-        const edges = getPieceEdges(otherPiece, other);
-        for (const e of edges) {
-          const dx = e.mid.x - baseMidX;
-          const dz = e.mid.z - baseMidZ;
-          const dist = Math.hypot(dx, dz);
-          if (dist < bestDist) {
-            bestDist   = dist;
-            bestAnchor = other;
-            bestIndex  = e.index;
-          }
+        // Candidats : items résolvables, en excluant le triangle lui-même
+        const candidates = floor.items.filter(o => o.id !== tri.id && resolvable.has(o.id));
+        if (candidates.length === 0) continue;
+
+        const baseMid = baseMidOf(tri, piece);
+        const best = findNearestEdge(baseMid, candidates);
+        if (best.anchor && best.dist <= TOL) {
+          tri.snap_kind         = 'anchor';
+          tri.anchor_item_id    = best.anchor.id;
+          tri.anchor_edge_index = best.index;
+          resolvable.add(tri.id);
+          trianglesToMigrate.splice(i, 1);
+          migrated++;
+          progress = true;
         }
       }
-
-      if (bestAnchor && bestDist <= TOL) {
-        tri.snap_kind         = 'anchor';
-        tri.anchor_item_id    = bestAnchor.id;
-        tri.anchor_edge_index = bestIndex;
-        migrated++;
-      }
-      // Sinon : on laisse en mode cellule, le rendu continue via le fallback.
     }
+    // Les triangles restants dans trianglesToMigrate n'ont pas trouvé d'ancre
+    // valide → restent en cell mode (fallback dans positionMesh).
   }
   return migrated;
 }

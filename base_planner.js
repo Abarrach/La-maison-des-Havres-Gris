@@ -1804,6 +1804,113 @@ function sameVerticalSpace(pieceA, pieceB) {
 }
 
 // ============================================================
+// ARÊTES 3D DES PIÈCES (refactor triangle Phase 2.1)
+// ============================================================
+
+/**
+ * Calcule les arêtes 3D (dans le plan XZ) d'une pièce posée, dans son orientation
+ * actuelle (item.rotation appliquée autour du centre de cellule).
+ *
+ * Utilisé par le snap par arête des triangles : étant donné une pièce posée, on
+ * connaît ses N arêtes "libres" (= non partagées avec un voisin direct), et un
+ * nouveau triangle peut s'ancrer à l'une d'elles avec sa base alignée dessus.
+ *
+ * Renvoie un tableau d'arêtes. Chaque arête :
+ *   { p1, p2, mid, outX, outZ, length, index }
+ *  - p1, p2  : extrémités en monde (objets {x, z})
+ *  - mid     : milieu de l'arête
+ *  - outX/Z  : composantes du vecteur normal sortant unité (perpendiculaire à
+ *              l'arête, pointant vers l'extérieur de la pièce)
+ *  - length  : longueur de l'arête (1 pour carré standard, 1 pour côté de triangle équi)
+ *  - index   : index stable de l'arête dans la pièce
+ *              - carré : 0=sud, 1=est, 2=nord, 3=ouest (avant rotation)
+ *              - triangle : 0=base, 1=oblique droite, 2=oblique gauche
+ *
+ * Pour les pièces non-ancrables (murs, escaliers, machines), renvoie un tableau vide.
+ *
+ * Note convention rotation : Three.js mesh.rotation.y positif applique la matrice
+ *   [cos  0  sin]   à un vecteur local (lx, 0, lz), donnant
+ *   [-sin 0  cos]   (lx*cos + lz*sin, 0, -lx*sin + lz*cos).
+ * On utilise exactement cette même formule pour calculer les vertices visuels.
+ */
+function getPieceEdges(piece, item) {
+  if (!piece || !item) return [];
+  const rules = piece.placement_rules || {};
+  const cat   = piece.category;
+  // Seuls les sols/fondations (carrés ou triangulaires) sont ancrables pour l'instant.
+  if (cat !== 'floors' && cat !== 'foundations') return [];
+
+  const dim = piece.dimensions || {};
+  const w   = (dim.w || 1) * CELL;
+  const d   = (dim.d || 1) * CELL;
+  const isTriangle = rules.footprint_shape === 'triangle_isosceles'
+                  || rules.footprint_shape === 'triangle_equilateral';
+
+  const cx = item.x + w / 2;
+  const cz = item.y + d / 2;
+  const rotRad = THREE.MathUtils.degToRad(item.rotation || 0);
+  const cosR = Math.cos(rotRad);
+  const sinR = Math.sin(rotRad);
+
+  // Transforme un point local (avant rotation, relatif au centre de pièce) en monde.
+  const toWorld = (lx, lz) => ({
+    x: cx + lx * cosR + lz * sinR,
+    z: cz - lx * sinR + lz * cosR,
+  });
+
+  if (isTriangle) {
+    const H = w * Math.sqrt(3) / 2;     // hauteur équilatérale ≈ 0.866 si w=1
+    // Vertices locaux (cohérents avec makeTrianglePrismGeometry) :
+    //   base gauche  : (-w/2, -d/2)
+    //   base droite  : ( w/2, -d/2)
+    //   apex         : (0,     H - d/2)
+    const v0 = toWorld(-w / 2, -d / 2);  // base gauche
+    const v1 = toWorld( w / 2, -d / 2);  // base droite
+    const v2 = toWorld( 0,      H - d / 2); // apex
+    return [
+      buildEdge(v0, v1, v2,    0),  // base       : 0 → 1, normale opposée à apex
+      buildEdge(v1, v2, v0,    1),  // oblique dr : 1 → 2, normale opposée à base gauche
+      buildEdge(v2, v0, v1,    2),  // oblique g  : 2 → 0, normale opposée à base droite
+    ];
+  }
+
+  // Pièce carrée (sol ou fondation) — 4 arêtes
+  const sw = toWorld(-w / 2, -d / 2);
+  const se = toWorld( w / 2, -d / 2);
+  const ne = toWorld( w / 2,  d / 2);
+  const nw = toWorld(-w / 2,  d / 2);
+  const center = { x: cx, z: cz };
+  return [
+    buildEdge(sw, se, center, 0),  // sud
+    buildEdge(se, ne, center, 1),  // est
+    buildEdge(ne, nw, center, 2),  // nord
+    buildEdge(nw, sw, center, 3),  // ouest
+  ];
+}
+
+/**
+ * Helper : construit un objet arête à partir de 2 extrémités p1, p2 et d'un
+ * point intérieur (inside) qui sert à déterminer la direction "sortante" de la
+ * normale. La normale pointe à l'opposé de inside.
+ */
+function buildEdge(p1, p2, inside, index) {
+  const mid = { x: (p1.x + p2.x) / 2, z: (p1.z + p2.z) / 2 };
+  const dx  = p2.x - p1.x;
+  const dz  = p2.z - p1.z;
+  const len = Math.hypot(dx, dz) || 1;  // garde-fou contre /0
+  // 2 perpendiculaires : (-dz, dx) et (dz, -dx). On choisit celle qui s'éloigne de inside.
+  let nx = -dz / len;
+  let nz =  dx / len;
+  // Produit scalaire entre (nx, nz) et (inside - mid) : si > 0 alors la normale
+  // pointe vers inside → on l'inverse.
+  if (nx * (inside.x - mid.x) + nz * (inside.z - mid.z) > 0) {
+    nx = -nx;
+    nz = -nz;
+  }
+  return { p1, p2, mid, outX: nx, outZ: nz, length: len, index };
+}
+
+// ============================================================
 // FOOTPRINT & PLAGE D'ÉTAGES (pour blocage volumétrique machines/véhicules)
 // ============================================================
 
@@ -4422,6 +4529,8 @@ window.bpDebug = {
   snapForPiece,
   computeStability,
   placedMeshes,
+  // Phase 2.1 refactor triangle : helpers d'arête
+  getPieceEdges,
   // Helpers prêts à l'emploi pour debug rapide
   listTriangles(z = 0) {
     const floor = state.plan.floors.find(f => f.z === z);

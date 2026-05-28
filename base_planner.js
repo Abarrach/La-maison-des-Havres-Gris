@@ -1316,6 +1316,28 @@ function placeMeshAt(mesh, item, piece) {
   // de cellule, donc rot 0/90/180/270 placent la base sur les 4 arêtes du carré.
   // À VENIR (Phase 2-4) : snap par arête (au lieu de cellule) + rotations 60° + ancrage.
   else if (rules.footprint_shape === 'triangle_isosceles' || rules.footprint_shape === 'triangle_equilateral') {
+    // Refactor Phase 2.3 : si l'item est ancré sur une arête (snap_kind='anchor'),
+    // on résout sa position via resolveTrianglePosition au lieu d'utiliser (item.x,
+    // item.y) comme cellule. Pour les anciens items cellule-snap, on garde le
+    // comportement précédent (utilisé tant que la migration Phase 2.4 n'a pas
+    // converti l'item).
+    if (item.snap_kind === 'anchor') {
+      const resolved = resolveTrianglePosition(item, state.plan);
+      if (resolved) {
+        mesh.position.x = resolved.x;
+        mesh.position.z = resolved.z;
+        mesh.position.y = yBase;
+        // La rotation absolue est posée ici ; le bloc "rotation utilisateur"
+        // plus bas l'écraserait sinon → on neutralise item.rotation pour ce path
+        // en posant directement mesh.rotation.y et en sortant par retour anticipé
+        // de la fonction.
+        mesh.rotation.y = THREE.MathUtils.degToRad(resolved.rotation);
+        return;
+      }
+      // Si la résolution échoue (orphelin ou cycle), fallback sur l'ancien mode
+      // pour ne pas crasher : positionne au centre des coords stockées si présent.
+      console.warn('[triangle] anchor non résolu pour item', item.id, '— fallback cell');
+    }
     mesh.position.x = item.x + w / 2;
     mesh.position.z = item.y + d / 2;
     mesh.position.y = yBase;
@@ -1886,6 +1908,84 @@ function getPieceEdges(piece, item) {
     buildEdge(ne, nw, center, 2),  // nord
     buildEdge(nw, sw, center, 3),  // ouest
   ];
+}
+
+/**
+ * Pour un item triangle avec snap_kind === 'anchor', calcule sa position 3D
+ * absolue (mesh.position.x, mesh.position.z) et sa rotation effective en degrés.
+ *
+ * Algorithme :
+ *  1. Suivre la référence anchor_item_id → trouver la pièce d'ancrage
+ *  2. Si l'ancre est elle-même ancrée (chaîne de triangles), récursion
+ *  3. Calculer les arêtes monde de l'ancre via getPieceEdges
+ *  4. Sélectionner l'arête d'index anchor_edge_index
+ *  5. Positionner le triangle : base sur l'arête (centre = milieu d'arête),
+ *     apex à √3/2 unité dans la direction de la normale sortante
+ *  6. Calculer la rotation Three.js telle que le local +Z (direction de l'apex)
+ *     s'aligne sur la normale sortante : θ = atan2(outX, outZ)
+ *
+ * Renvoie { x, z, rotation } en coords monde / degrés.
+ * Renvoie null si la chaîne d'ancrage est cassée (orphelin) ou cyclique.
+ *
+ * Le paramètre visited (Set d'ids) sert à détecter les cycles d'ancrage
+ * (improbable mais possible si le fichier est édité à la main).
+ */
+function resolveTrianglePosition(item, plan, visited) {
+  if (!item || item.snap_kind !== 'anchor') return null;
+  if (!visited) visited = new Set();
+  if (visited.has(item.id)) return null;   // cycle
+  visited.add(item.id);
+
+  const anchorId = item.anchor_item_id;
+  if (!anchorId) return null;
+
+  const floor = plan.floors.find(f => f.z === item.z);
+  if (!floor) return null;
+  const anchor = floor.items.find(it => it.id === anchorId);
+  if (!anchor) return null;
+
+  const anchorPiece = state.piecesById.get(anchor.piece_id);
+  if (!anchorPiece) return null;
+
+  // Si l'ancre est elle-même un triangle ancré, on doit la résoudre d'abord
+  // pour avoir des coords monde valides pour ses arêtes.
+  let resolvedAnchor = anchor;
+  if (anchor.snap_kind === 'anchor') {
+    const res = resolveTrianglePosition(anchor, plan, visited);
+    if (!res) return null;
+    // Reconstruit un item "virtuel" résolu : getPieceEdges attend item.x/y au coin SW
+    // (interprétation cellule), donc on dérive depuis le centre résolu.
+    const aDim = anchorPiece.dimensions || { w: 1, d: 1 };
+    const aw = (aDim.w || 1) * CELL;
+    const ad = (aDim.d || 1) * CELL;
+    resolvedAnchor = {
+      ...anchor,
+      x: res.x - aw / 2,
+      y: res.z - ad / 2,
+      rotation: res.rotation,
+    };
+  }
+
+  const edges = getPieceEdges(anchorPiece, resolvedAnchor);
+  const edge = edges.find(e => e.index === item.anchor_edge_index);
+  if (!edge) return null;
+
+  // Rotation : local +Z (apex direction) doit s'aligner sur la normale sortante.
+  // Three.js mesh.rotation.y applique (lx, lz) → (lx*cos + lz*sin, -lx*sin + lz*cos).
+  // Pour (0, 1) → (outX, outZ) : sin = outX, cos = outZ → θ = atan2(outX, outZ)
+  const θ = Math.atan2(edge.outX, edge.outZ);
+  const rotationDeg = ((THREE.MathUtils.radToDeg(θ) % 360) + 360) % 360;
+
+  // Position : la base du triangle est au milieu de l'arête d'ancrage.
+  // Le mesh est positionné de telle sorte que sa base locale (z = -d/2) tombe
+  // sur edge.mid. Donc mesh.position = edge.mid + (d/2) * outward.
+  const piece = state.piecesById.get(item.piece_id);
+  const dim   = piece?.dimensions || { d: 1 };
+  const d     = (dim.d || 1) * CELL;
+  const x = edge.mid.x + (d / 2) * edge.outX;
+  const z = edge.mid.z + (d / 2) * edge.outZ;
+
+  return { x, z, rotation: rotationDeg };
 }
 
 /**
@@ -4529,8 +4629,9 @@ window.bpDebug = {
   snapForPiece,
   computeStability,
   placedMeshes,
-  // Phase 2.1 refactor triangle : helpers d'arête
+  // Phase 2.1-2.2 refactor triangle : helpers d'arête et résolution d'ancrage
   getPieceEdges,
+  resolveTrianglePosition: (item) => resolveTrianglePosition(item, state.plan),
   // Helpers prêts à l'emploi pour debug rapide
   listTriangles(z = 0) {
     const floor = state.plan.floors.find(f => f.z === z);

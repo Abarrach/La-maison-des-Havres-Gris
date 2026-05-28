@@ -1762,6 +1762,24 @@ function snapForPiece(worldPos, piece) {
   if (!worldPos) return null;
   const rules = piece.placement_rules || {};
 
+  // Phase 3.2 refactor triangle — Pour les triangles (footprint isocèle ou
+  // équilatéral) en snap cellule, on bascule en snap par arête : la base se
+  // colle à l'arête libre la plus proche du curseur. Si aucune arête libre
+  // dans le voisinage de l'étage courant → null (pas de pose possible,
+  // règle "doit être relié" du jeu).
+  const isTriangle = rules.footprint_shape === 'triangle_isosceles'
+                  || rules.footprint_shape === 'triangle_equilateral';
+  if (isTriangle && rules.snap_target === 'cell') {
+    const z = state.currentFloor;
+    const nearest = findNearestFreeEdge(worldPos, state.plan, z);
+    if (!nearest) return null;
+    return {
+      kind: 'anchor',
+      anchor_item_id: nearest.item.id,
+      anchor_edge_index: nearest.edge.index,
+    };
+  }
+
   const cx = Math.floor(worldPos.x / CELL);
   const cz = Math.floor(worldPos.z / CELL);
   const lx = worldPos.x / CELL - cx;
@@ -1908,6 +1926,127 @@ function getPieceEdges(piece, item) {
     buildEdge(ne, nw, center, 2),  // nord
     buildEdge(nw, sw, center, 3),  // ouest
   ];
+}
+
+/**
+ * Phase 3.1 — Ensemble des arêtes "consommées" sur un étage : impossibles à
+ * utiliser comme cible d'ancrage d'un nouveau triangle.
+ *
+ * Une arête (itemId, edgeIndex) est considérée occupée si :
+ *  - Un autre triangle a son anchor_item_id == itemId et anchor_edge_index == edgeIndex
+ *  - Ou bien c'est la BASE (index 0) d'un triangle déjà ancré (sa propre base
+ *    est consommée par son ancrage côté parent — un autre triangle ne peut pas
+ *    s'y attacher).
+ *
+ * Renvoie un Set<string> "itemId:edgeIndex".
+ */
+function getUsedEdges(plan, z) {
+  const used = new Set();
+  const floor = plan.floors.find(f => f.z === z);
+  if (!floor) return used;
+  for (const it of floor.items) {
+    if (it.snap_kind !== 'anchor') continue;
+    used.add(`${it.anchor_item_id}:${it.anchor_edge_index}`);
+    used.add(`${it.id}:0`);  // la base de cet item est consommée par son ancrage
+  }
+  return used;
+}
+
+/**
+ * Phase 3.1 — Cherche l'arête LIBRE la plus proche d'un point monde sur un
+ * étage donné. Une arête est libre si elle n'est pas dans le set "used".
+ *
+ * Renvoie { piece, item, edge, dist } où :
+ *  - piece, item : la pièce qui porte l'arête
+ *  - edge : l'objet d'arête de getPieceEdges
+ *  - dist : distance du point au SEGMENT (pas au milieu) — permet un snap plus
+ *    naturel quand le curseur est près d'un bout d'arête, pas au milieu
+ *
+ * Renvoie null si aucune arête libre n'est trouvée.
+ */
+function findNearestFreeEdge(worldPos, plan, z) {
+  if (!worldPos) return null;
+  const floor = plan.floors.find(f => f.z === z);
+  if (!floor) return null;
+  const used = getUsedEdges(plan, z);
+
+  let best = null;
+  for (const it of floor.items) {
+    const piece = state.piecesById.get(it.piece_id);
+    if (!piece) continue;
+
+    // Pour les triangles ancrés, on doit utiliser leur POSITION RÉSOLUE (pas
+    // les x/y de cell-mode qui peuvent être périmés) pour calculer leurs arêtes.
+    let renderItem = it;
+    if (it.snap_kind === 'anchor') {
+      const res = resolveTrianglePosition(it, plan);
+      if (!res) continue;   // orphelin → on l'ignore comme ancrable
+      const dim = piece.dimensions || { w: 1, d: 1 };
+      const aw = (dim.w || 1) * CELL;
+      const ad = (dim.d || 1) * CELL;
+      renderItem = {
+        ...it,
+        x: res.x - aw / 2,
+        y: res.z - ad / 2,
+        rotation: res.rotation,
+      };
+    }
+
+    const edges = getPieceEdges(piece, renderItem);
+    for (const edge of edges) {
+      if (used.has(`${it.id}:${edge.index}`)) continue;
+      const dist = distancePointToSegment(worldPos, edge.p1, edge.p2);
+      if (!best || dist < best.dist) {
+        best = { piece, item: it, edge, dist };
+      }
+    }
+  }
+  return best;
+}
+
+/** Distance d'un point au segment 2D (plan XZ). Projection clamp [0,1]. */
+function distancePointToSegment(p, a, b) {
+  const dx = b.x - a.x;
+  const dz = b.z - a.z;
+  const len2 = dx * dx + dz * dz;
+  if (len2 < 1e-12) return Math.hypot(p.x - a.x, p.z - a.z);
+  let t = ((p.x - a.x) * dx + (p.z - a.z) * dz) / len2;
+  t = Math.max(0, Math.min(1, t));
+  const px = a.x + t * dx;
+  const pz = a.z + t * dz;
+  return Math.hypot(p.x - px, p.z - pz);
+}
+
+/**
+ * Phase 3.3 — Pour un snap de type 'anchor', construit un objet item virtuel
+ * complet (avec x, y, rotation dérivés) prêt à passer à buildMeshForPiece /
+ * positionMesh. Utilisé pour le ghost ET pour la pose réelle.
+ *
+ * Renvoie null si l'ancre n'est plus résolvable au moment de l'appel.
+ */
+function materializeAnchorSnap(snap, pieceId, floorZ) {
+  if (!snap || snap.kind !== 'anchor') return null;
+  const piece = state.piecesById.get(pieceId);
+  if (!piece) return null;
+  const tmpItem = {
+    piece_id: pieceId,
+    snap_kind: 'anchor',
+    anchor_item_id: snap.anchor_item_id,
+    anchor_edge_index: snap.anchor_edge_index,
+    z: floorZ,
+  };
+  const resolved = resolveTrianglePosition(tmpItem, state.plan);
+  if (!resolved) return null;
+  const dim = piece.dimensions || { w: 1, d: 1 };
+  const w = (dim.w || 1) * CELL;
+  const d = (dim.d || 1) * CELL;
+  return {
+    ...tmpItem,
+    // x, y dérivés au coin SW pour compat avec le reste du code
+    x: resolved.x - w / 2,
+    y: resolved.z - d / 2,
+    rotation: resolved.rotation,
+  };
 }
 
 /**
@@ -2349,8 +2488,35 @@ function checkAgainstExistingMachines(piece, snap, floorZ) {
 function isPlacementAllowedOnFloor(piece, snap, floorZ) {
   // 1. Limites verticales du claim
   if (floorZ < getMinFloor() || floorZ > getMaxFloor()) return false;
-  // 2. Limite XZ du claim
-  if (!isWithinClaim(snap)) return false;
+  // 2. Limite XZ du claim — pour les snaps d'ancrage, on saute ce check ici
+  //    car le ghost peut être loin de la grille de claim ; on validera plutôt
+  //    la position résolue plus bas.
+  if (snap.kind !== 'anchor' && !isWithinClaim(snap)) return false;
+
+  // Phase 3.5 — snap d'ancrage : vérifications spécifiques au mode arête.
+  //  a) L'arête cible n'est pas déjà utilisée par un autre triangle ancré
+  //  b) L'arête de base (index 0) du triangle qu'on s'apprête à poser n'existe
+  //     pas encore (équivalent : c'est implicite, on est le 1er à utiliser cet
+  //     anchor_item_id+edge_index)
+  //  c) La position résolue est dans le claim
+  if (snap.kind === 'anchor') {
+    const floor = getFloor(floorZ);
+    if (!floor) return false;
+    for (const it of floor.items) {
+      if (it.snap_kind !== 'anchor') continue;
+      if (it.anchor_item_id === snap.anchor_item_id
+          && it.anchor_edge_index === snap.anchor_edge_index) {
+        return false;   // arête déjà occupée
+      }
+    }
+    // Position résolue dans le claim ?
+    const materialized = materializeAnchorSnap(snap, piece.id, floorZ);
+    if (!materialized) return false;
+    // Pour le check de claim, on simule un snap cellule à la position résolue.
+    const cellSnap = { kind: 'cell', x: Math.floor(materialized.x + 0.5), y: Math.floor(materialized.y + 0.5) };
+    if (!isWithinClaim(cellSnap)) return false;
+    return true;
+  }
 
   // 3. Dispatch volumétrique : machines/véhicules ont un footprint multi-cellule
   //    et une hauteur multi-étage. Les pièces standards vérifient en plus qu'elles
@@ -2421,6 +2587,9 @@ function isPlacementAllowed(piece, snap) {
 function findBestPlacementFloor(piece, snap) {
   const rules = piece.placement_rules || {};
   if (rules.snap_target === 'corner') return state.currentFloor;
+  // Snap d'ancrage (Phase 3) : l'ancre est forcément sur l'étage courant
+  // (snapForPiece a cherché les arêtes libres de state.currentFloor uniquement)
+  if (snap.kind === 'anchor') return state.currentFloor;
   if (!isWithinClaim(snap)) return state.currentFloor; // hors claim → ghost rouge immédiat
   // Machines / véhicules : PAS d'auto-stack. La pièce reste sur l'étage sélectionné
   // par l'utilisateur ; si conflit, ghost rouge → l'utilisateur change d'étage à la main.
@@ -2455,16 +2624,39 @@ function placePieceFromSnap(pieceId, snap, floorZ, rotation = 0) {
   if (!floor) return null;
 
   const itemId = 'item_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
-  const item = {
-    id: itemId,
-    piece_id: pieceId,
-    snap_kind: snap.kind,
-    x: snap.x, y: snap.y,
-    axis: snap.axis,
-    z: targetZ,
-    rotation: rotation % 360,
-    half: state.ghostHalf || false,   // demi-étage : décalage Y de +0.5 WALL_UNIT
-  };
+  let item;
+  if (snap.kind === 'anchor') {
+    // Phase 3.3 — Item triangle ancré : on stocke uniquement les références
+    // d'ancrage. Pour la robustesse face au fallback (positionMesh), on calcule
+    // aussi x, y et rotation dérivés au moment de la création — ils ne servent
+    // pas au rendu normal (qui passe par resolveTrianglePosition) mais évitent
+    // un NaN si l'ancre disparaît plus tard.
+    const materialized = materializeAnchorSnap(snap, pieceId, targetZ);
+    if (!materialized) return null;
+    item = {
+      id: itemId,
+      piece_id: pieceId,
+      snap_kind: 'anchor',
+      anchor_item_id: snap.anchor_item_id,
+      anchor_edge_index: snap.anchor_edge_index,
+      z: targetZ,
+      rotation: materialized.rotation,
+      x: materialized.x,
+      y: materialized.y,
+      half: state.ghostHalf || false,
+    };
+  } else {
+    item = {
+      id: itemId,
+      piece_id: pieceId,
+      snap_kind: snap.kind,
+      x: snap.x, y: snap.y,
+      axis: snap.axis,
+      z: targetZ,
+      rotation: rotation % 360,
+      half: state.ghostHalf || false,   // demi-étage : décalage Y de +0.5 WALL_UNIT
+    };
+  }
   floor.items.push(item);
 
   const mesh = buildMeshForPiece(piece, item);
@@ -2743,16 +2935,36 @@ function tryPlacePieceAt(pieceId, clientX, clientY) {
 
 function showGhost(piece, snap, resolvedFloor, allowed, rotation = state.ghostRotation) {
   clearGhost();
-  const tmpItem = {
-    id: 'ghost',
-    piece_id: piece.id,
-    snap_kind: snap.kind,
-    x: snap.x, y: snap.y,
-    axis: snap.axis,
-    z: resolvedFloor,
-    rotation,                       // rotation effective (auto pour triangles, sinon ghostRotation)
-    half: state.ghostHalf,          // demi-étage fantôme courant (touche H)
-  };
+  let tmpItem;
+  if (snap.kind === 'anchor') {
+    // Phase 3.4 — Pour un ghost triangle ancré, on dérive x, y, rotation depuis
+    // l'ancre via materializeAnchorSnap. Si la résolution échoue (ancre orpheline
+    // pendant le hover), on n'affiche pas le ghost.
+    const m = materializeAnchorSnap(snap, piece.id, resolvedFloor);
+    if (!m) return;
+    tmpItem = {
+      id: 'ghost',
+      piece_id: piece.id,
+      snap_kind: 'anchor',
+      anchor_item_id: snap.anchor_item_id,
+      anchor_edge_index: snap.anchor_edge_index,
+      x: m.x, y: m.y,
+      z: resolvedFloor,
+      rotation: m.rotation,
+      half: state.ghostHalf,
+    };
+  } else {
+    tmpItem = {
+      id: 'ghost',
+      piece_id: piece.id,
+      snap_kind: snap.kind,
+      x: snap.x, y: snap.y,
+      axis: snap.axis,
+      z: resolvedFloor,
+      rotation,                       // rotation effective (auto pour triangles, sinon ghostRotation)
+      half: state.ghostHalf,          // demi-étage fantôme courant (touche H)
+    };
+  }
   const mesh = buildMeshForPiece(piece, tmpItem);
   const color = allowed ? COLOR_GHOST_OK : COLOR_GHOST_BAD;
   mesh.material.color.setHex(color);
@@ -2805,6 +3017,33 @@ function showHoverHelper(snap, resolvedFloor) {
     const geo = new THREE.CylinderGeometry(0.18, 0.18, 0.04, 16);
     hoverHelper = new THREE.Mesh(geo, mat);
     hoverHelper.position.set(snap.x, yBase, snap.y);
+  } else if (snap.kind === 'anchor') {
+    // Phase 3.4 — Highlight de l'arête cible (segment) en orientant une fine
+    // barre 3D alignée sur l'arête de la pièce d'ancrage.
+    const z = resolvedFloor ?? state.currentFloor;
+    const floor = state.plan.floors.find(f => f.z === z);
+    const anchor = floor && floor.items.find(it => it.id === snap.anchor_item_id);
+    const anchorPiece = anchor && state.piecesById.get(anchor.piece_id);
+    if (anchor && anchorPiece) {
+      let renderItem = anchor;
+      if (anchor.snap_kind === 'anchor') {
+        const res = resolveTrianglePosition(anchor, state.plan);
+        if (res) {
+          const aDim = anchorPiece.dimensions || { w: 1, d: 1 };
+          renderItem = { ...anchor, x: res.x - aDim.w * CELL / 2, y: res.z - aDim.d * CELL / 2, rotation: res.rotation };
+        }
+      }
+      const edges = getPieceEdges(anchorPiece, renderItem);
+      const edge = edges.find(e => e.index === snap.anchor_edge_index);
+      if (edge) {
+        // Barre fine de longueur = edge.length, orientée selon l'arête
+        const geo = new THREE.BoxGeometry(edge.length, 0.04, 0.12);
+        hoverHelper = new THREE.Mesh(geo, mat);
+        hoverHelper.position.set(edge.mid.x, yBase, edge.mid.z);
+        const angle = Math.atan2(edge.p2.z - edge.p1.z, edge.p2.x - edge.p1.x);
+        hoverHelper.rotation.y = -angle;   // ajuste pour le repère Three.js
+      }
+    }
   } else {
     // Cellule : carré translucide
     const geo = new THREE.BoxGeometry(CELL * 0.95, 0.03, CELL * 0.95);
@@ -2813,7 +3052,7 @@ function showHoverHelper(snap, resolvedFloor) {
     hoverHelper = new THREE.Mesh(geo, cellMat);
     hoverHelper.position.set(snap.x + CELL / 2, yBase, snap.y + CELL / 2);
   }
-  scene.add(hoverHelper);
+  if (hoverHelper) scene.add(hoverHelper);
 }
 
 // ============================================================
@@ -3872,6 +4111,7 @@ function initDragDrop() {
 function formatSnapHud(snap) {
   if (snap.kind === 'edge')   return `arête x:${snap.x} y:${snap.y} ${snap.axis === 'h' ? '─' : '│'}`;
   if (snap.kind === 'corner') return `coin x:${snap.x} y:${snap.y}`;
+  if (snap.kind === 'anchor') return `ancre #${snap.anchor_edge_index} → ${snap.anchor_item_id.slice(-5)}`;
   return `x:${snap.x} y:${snap.y}`;
 }
 
@@ -4333,17 +4573,37 @@ function toggleStabilityMode() {
 function wouldBeStableAfterPlacing(piece, snap, floorZ) {
   if (!state.showStability) return true;  // mode off → ne bloque jamais
 
-  // Si la pièce candidate serait une ancre, elle est stable d'office
-  const ghostItem = {
-    id:       '_ghost_stab_',
-    piece_id: piece.id,
-    x:        snap.x,
-    y:        snap.y,
-    axis:     snap.axis,
-    z:        floorZ,
-    rotation: state.ghostRotation || 0,
-    half:     state.ghostHalf || false,
-  };
+  // Phase 3 — pour un snap d'ancrage (triangle), on dérive x, y, rotation depuis
+  // la matérialisation. Pas d'arête de claim à vérifier, mais on simule la
+  // présence d'un item posé pour le calcul de stabilité.
+  let ghostItem;
+  if (snap.kind === 'anchor') {
+    const m = materializeAnchorSnap(snap, piece.id, floorZ);
+    if (!m) return true;   // ancre orpheline → on ne bloque pas par stabilité
+    ghostItem = {
+      id:                '_ghost_stab_',
+      piece_id:          piece.id,
+      snap_kind:         'anchor',
+      anchor_item_id:    snap.anchor_item_id,
+      anchor_edge_index: snap.anchor_edge_index,
+      x:                 m.x,
+      y:                 m.y,
+      z:                 floorZ,
+      rotation:          m.rotation,
+      half:              state.ghostHalf || false,
+    };
+  } else {
+    ghostItem = {
+      id:       '_ghost_stab_',
+      piece_id: piece.id,
+      x:        snap.x,
+      y:        snap.y,
+      axis:     snap.axis,
+      z:        floorZ,
+      rotation: state.ghostRotation || 0,
+      half:     state.ghostHalf || false,
+    };
+  }
   if (isStabilityAnchor(piece, ghostItem)) return true;
 
   // Insertion temporaire du ghost dans le plan, recalcul, lecture, retrait
@@ -4784,10 +5044,12 @@ window.bpDebug = {
   snapForPiece,
   computeStability,
   placedMeshes,
-  // Phase 2.1-2.2-2.4 refactor triangle : helpers d'arête, résolution, migration
+  // Phase 2-3 refactor triangle : helpers d'arête, résolution, migration, snap
   getPieceEdges,
   resolveTrianglePosition: (item) => resolveTrianglePosition(item, state.plan),
   migrateTriangleSnaps: () => migrateTriangleSnaps(state.plan),
+  findNearestFreeEdge: (worldPos, z = state.currentFloor) => findNearestFreeEdge(worldPos, state.plan, z),
+  getUsedEdges: (z = state.currentFloor) => Array.from(getUsedEdges(state.plan, z)),
   // Helpers prêts à l'emploi pour debug rapide
   listTriangles(z = 0) {
     const floor = state.plan.floors.find(f => f.z === z);

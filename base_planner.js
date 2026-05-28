@@ -1911,6 +1911,82 @@ function getPieceEdges(piece, item) {
 }
 
 /**
+ * Migration Phase 2.4 : convertit les triangles d'un plan stockés en mode cellule
+ * (snap_kind absent ou 'cell') vers le nouveau mode 'anchor' (ancrage à l'arête
+ * d'une pièce voisine). Modifie le plan en place.
+ *
+ * Pour chaque triangle en mode cellule :
+ *  1. Calcule le milieu de sa base actuelle en monde (à partir de x, y, rotation)
+ *  2. Cherche l'arête de la pièce voisine la plus proche de ce milieu
+ *  3. Si une arête à ≤ tolérance est trouvée → convertit en mode 'anchor'
+ *  4. Sinon → laisse le triangle en mode cellule (continuera de rendre via le
+ *     fallback dans positionMesh). Aucun item n'est supprimé.
+ *
+ * Renvoie le nombre de triangles migrés.
+ */
+function migrateTriangleSnaps(plan) {
+  if (!plan || !Array.isArray(plan.floors)) return 0;
+  const TOL = 0.15;   // tolérance en unités monde pour matcher base ↔ arête
+  let migrated = 0;
+
+  for (const floor of plan.floors) {
+    if (!Array.isArray(floor.items)) continue;
+    for (const tri of floor.items) {
+      const piece = state.piecesById.get(tri.piece_id);
+      if (!piece) continue;
+      const rules = piece.placement_rules || {};
+      const isTri = rules.footprint_shape === 'triangle_isosceles'
+                 || rules.footprint_shape === 'triangle_equilateral';
+      if (!isTri) continue;
+      if (tri.snap_kind === 'anchor') continue;   // déjà migré
+
+      // Milieu de la base en monde (à partir du modèle cellule existant)
+      const dim = piece.dimensions || { w: 1, d: 1 };
+      const w = (dim.w || 1) * CELL;
+      const d = (dim.d || 1) * CELL;
+      const cx = tri.x + w / 2;
+      const cz = tri.y + d / 2;
+      const rotRad = THREE.MathUtils.degToRad(tri.rotation || 0);
+      const cosR = Math.cos(rotRad);
+      const sinR = Math.sin(rotRad);
+      // Local base midpoint = (0, -d/2) → world via matrice rotation Three.js
+      const baseMidX = cx + 0 * cosR + (-d / 2) * sinR;
+      const baseMidZ = cz - 0 * sinR + (-d / 2) * cosR;
+
+      // Cherche l'arête la plus proche parmi les autres pièces du même étage
+      let bestAnchor = null;
+      let bestIndex  = -1;
+      let bestDist   = Infinity;
+      for (const other of floor.items) {
+        if (other.id === tri.id) continue;
+        const otherPiece = state.piecesById.get(other.piece_id);
+        if (!otherPiece) continue;
+        const edges = getPieceEdges(otherPiece, other);
+        for (const e of edges) {
+          const dx = e.mid.x - baseMidX;
+          const dz = e.mid.z - baseMidZ;
+          const dist = Math.hypot(dx, dz);
+          if (dist < bestDist) {
+            bestDist   = dist;
+            bestAnchor = other;
+            bestIndex  = e.index;
+          }
+        }
+      }
+
+      if (bestAnchor && bestDist <= TOL) {
+        tri.snap_kind         = 'anchor';
+        tri.anchor_item_id    = bestAnchor.id;
+        tri.anchor_edge_index = bestIndex;
+        migrated++;
+      }
+      // Sinon : on laisse en mode cellule, le rendu continue via le fallback.
+    }
+  }
+  return migrated;
+}
+
+/**
  * Pour un item triangle avec snap_kind === 'anchor', calcule sa position 3D
  * absolue (mesh.position.x, mesh.position.z) et sa rotation effective en degrés.
  *
@@ -4274,16 +4350,28 @@ function bpSerializePlanData() {
   const floors = srcFloors.map(f => ({
     z:     f.z,
     name:  f.name,
-    items: (f.items || []).map(it => ({
-      id:       it.id,
-      piece_id: it.piece_id,
-      x:        it.x,
-      y:        it.y,
-      axis:     it.axis,
-      z:        it.z,
-      rotation: it.rotation || 0,
-      half:     it.half || false,
-    })),
+    items: (f.items || []).map(it => {
+      const out = {
+        id:       it.id,
+        piece_id: it.piece_id,
+        x:        it.x,
+        y:        it.y,
+        axis:     it.axis,
+        z:        it.z,
+        rotation: it.rotation || 0,
+        half:     it.half || false,
+      };
+      // Refactor triangle Phase 2.5 : si l'item est ancré, on sérialise les
+      // champs d'ancrage. Les autres items (cell-snap) restent au format
+      // historique pour compat ascendante (les anciens serveurs/lecteurs ne
+      // verront pas ces nouveaux champs).
+      if (it.snap_kind === 'anchor') {
+        out.snap_kind         = 'anchor';
+        out.anchor_item_id    = it.anchor_item_id;
+        out.anchor_edge_index = it.anchor_edge_index;
+      }
+      return out;
+    }),
   }));
   const itemCount = floors.reduce((s, f) => s + f.items.length, 0);
   return {
@@ -4317,7 +4405,7 @@ function bpApplyPlanData(data) {
   state.history   = [];
   state.histFront = -1;
 
-  // Reconstruire les items
+  // Reconstruire les items (1ère passe : juste les données, pas les meshes)
   let skipped = 0;
   for (const fData of data.floors) {
     const floor = state.plan.floors.find(f => f.z === fData.z);
@@ -4326,12 +4414,28 @@ function bpApplyPlanData(data) {
       const piece = state.piecesById.get(itData.piece_id);
       if (!piece) { skipped++; continue; }   // pièce inconnue (catalogue mis à jour)
       floor.items.push(itData);
+    }
+  }
+  if (skipped > 0) console.warn('[plan] ' + skipped + ' pièces ignorées (id introuvable dans le catalogue)');
+
+  // Refactor triangle Phase 2.4 : migrer les anciens triangles (cell-snap) vers
+  // le nouveau format ancrage (anchor-snap). Doit se faire APRÈS que tous les
+  // items soient chargés pour que chaque triangle puisse trouver sa pièce
+  // d'ancrage parmi ses voisins.
+  const migrated = migrateTriangleSnaps(state.plan);
+  if (migrated > 0) console.info('[plan] ' + migrated + ' triangles migrés en mode ancrage');
+
+  // 2e passe : créer les meshes (ordre indifférent car les triangles ancrés se
+  // résolvent dynamiquement via leur anchor_item_id, pas via une référence directe).
+  for (const floor of state.plan.floors) {
+    for (const itData of floor.items) {
+      const piece = state.piecesById.get(itData.piece_id);
+      if (!piece) continue;
       const mesh = buildMeshForPiece(piece, itData);
       scene.add(mesh);
       placedMeshes.set(itData.id, mesh);
     }
   }
-  if (skipped > 0) console.warn('[plan] ' + skipped + ' pièces ignorées (id introuvable dans le catalogue)');
 
   // Refresh UI
   if (typeof rebuildFloorTabs === 'function') rebuildFloorTabs();
@@ -4629,9 +4733,10 @@ window.bpDebug = {
   snapForPiece,
   computeStability,
   placedMeshes,
-  // Phase 2.1-2.2 refactor triangle : helpers d'arête et résolution d'ancrage
+  // Phase 2.1-2.2-2.4 refactor triangle : helpers d'arête, résolution, migration
   getPieceEdges,
   resolveTrianglePosition: (item) => resolveTrianglePosition(item, state.plan),
+  migrateTriangleSnaps: () => migrateTriangleSnaps(state.plan),
   // Helpers prêts à l'emploi pour debug rapide
   listTriangles(z = 0) {
     const floor = state.plan.floors.find(f => f.z === z);

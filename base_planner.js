@@ -2029,6 +2029,87 @@ function findNearestFreeEdge(worldPos, plan, z) {
   return best;
 }
 
+/**
+ * Phase 4a — Polygone XZ d'une pièce posée (vertices en monde, ordre contiguous).
+ * Pour carré : 4 vertices. Pour triangle équilatéral : 3 vertices.
+ * Utilise getPieceEdges qui gère déjà la rotation et le type de footprint.
+ */
+function getPiecePolygon(piece, item) {
+  const edges = getPieceEdges(piece, item);
+  if (edges.length === 0) return [];
+  // Chaque arête a p1 → p2 ; les p1 successives forment le polygone.
+  return edges.map(e => e.p1);
+}
+
+/**
+ * Phase 4a — Test de chevauchement de 2 polygones convexes XZ via le théorème
+ * des axes séparateurs (SAT). Renvoie true si les polygones se recouvrent
+ * réellement (chevauchement de surface > epsilon). Renvoie false si :
+ *  - Polygones disjoints
+ *  - Polygones simplement touchants par une arête (gap = 0 dans la tolérance)
+ *
+ * Algorithme : pour chaque axe perpendiculaire à une arête de l'un des
+ * polygones, on projette les deux polygones et on vérifie s'ils se chevauchent
+ * sur cet axe. Si UN axe sépare les polygones, ils ne se touchent pas. Si TOUS
+ * les axes montrent un chevauchement, les polygones se recouvrent.
+ */
+function polygonsOverlap(polyA, polyB) {
+  if (polyA.length < 3 || polyB.length < 3) return false;
+  const EPS = 0.001;   // tolérance pour considérer "touchant" comme non-overlap
+  const collectAxes = (poly) => {
+    const out = [];
+    for (let i = 0; i < poly.length; i++) {
+      const j = (i + 1) % poly.length;
+      const dx = poly[j].x - poly[i].x;
+      const dz = poly[j].z - poly[i].z;
+      const len = Math.hypot(dx, dz);
+      if (len < 1e-9) continue;
+      // Normale (perpendiculaire) à l'arête, unité
+      out.push({ x: -dz / len, z: dx / len });
+    }
+    return out;
+  };
+  const axes = [...collectAxes(polyA), ...collectAxes(polyB)];
+  const projectMinMax = (poly, ax) => {
+    let mn = Infinity, mx = -Infinity;
+    for (const v of poly) {
+      const p = v.x * ax.x + v.z * ax.z;
+      if (p < mn) mn = p;
+      if (p > mx) mx = p;
+    }
+    return [mn, mx];
+  };
+  for (const ax of axes) {
+    const [minA, maxA] = projectMinMax(polyA, ax);
+    const [minB, maxB] = projectMinMax(polyB, ax);
+    // Si un axe sépare les deux projections (même avec tolérance), pas de chevauchement
+    if (maxA <= minB + EPS || maxB <= minA + EPS) return false;
+  }
+  return true;
+}
+
+/**
+ * Phase 4a — Helper : renvoie le polygone monde d'un item existant en gérant
+ * sa résolution si snap_kind === 'anchor'.
+ */
+function getItemWorldPolygon(item, plan) {
+  const piece = state.piecesById.get(item.piece_id);
+  if (!piece) return [];
+  let renderItem = item;
+  if (item.snap_kind === 'anchor') {
+    const res = resolveTrianglePosition(item, plan);
+    if (!res) return [];
+    const dim = piece.dimensions || { w: 1, d: 1 };
+    renderItem = {
+      ...item,
+      x: res.x - (dim.w || 1) * CELL / 2,
+      y: res.z - (dim.d || 1) * CELL / 2,
+      rotation: res.rotation,
+    };
+  }
+  return getPiecePolygon(piece, renderItem);
+}
+
 /** Distance d'un point au segment 2D (plan XZ). Projection clamp [0,1]. */
 function distancePointToSegment(p, a, b) {
   const dx = b.x - a.x;
@@ -2520,10 +2601,8 @@ function isPlacementAllowedOnFloor(piece, snap, floorZ) {
 
   // Phase 3.5 — snap d'ancrage : vérifications spécifiques au mode arête.
   //  a) L'arête cible n'est pas déjà utilisée par un autre triangle ancré
-  //  b) L'arête de base (index 0) du triangle qu'on s'apprête à poser n'existe
-  //     pas encore (équivalent : c'est implicite, on est le 1er à utiliser cet
-  //     anchor_item_id+edge_index)
-  //  c) La position résolue est dans le claim
+  //  b) La position résolue est dans le claim
+  //  c) Phase 4a : aucun chevauchement de polygone avec une pièce existante
   if (snap.kind === 'anchor') {
     const floor = getFloor(floorZ);
     if (!floor) return false;
@@ -2537,9 +2616,21 @@ function isPlacementAllowedOnFloor(piece, snap, floorZ) {
     // Position résolue dans le claim ?
     const materialized = materializeAnchorSnap(snap, piece.id, floorZ);
     if (!materialized) return false;
-    // Pour le check de claim, on simule un snap cellule à la position résolue.
     const cellSnap = { kind: 'cell', x: Math.floor(materialized.x + 0.5), y: Math.floor(materialized.y + 0.5) };
     if (!isWithinClaim(cellSnap)) return false;
+
+    // Phase 4a — Anti-overlap : la nouvelle pièce ne doit pas recouvrir un sol/
+    // fondation existant. Touche-arête OK (tolérance epsilon dans polygonsOverlap).
+    const myPoly = getPiecePolygon(piece, materialized);
+    for (const it of floor.items) {
+      const otherPiece = state.piecesById.get(it.piece_id);
+      if (!otherPiece) continue;
+      const oCat = otherPiece.category;
+      if (oCat !== 'floors' && oCat !== 'foundations') continue;
+      const otherPoly = getItemWorldPolygon(it, state.plan);
+      if (otherPoly.length === 0) continue;
+      if (polygonsOverlap(myPoly, otherPoly)) return false;
+    }
     return true;
   }
 
@@ -2596,6 +2687,32 @@ function isPlacementAllowedOnFloor(piece, snap, floorZ) {
       }
     }
   }
+
+  // Phase 4a — Anti-overlap polygon : si la pièce est un sol/fondation en mode
+  // cellule, on vérifie aussi qu'elle ne chevauche pas une pièce ancrée existante
+  // (les checks cell-vs-cell ci-dessus ne couvrent que les conflits de grille).
+  if (snap.kind === 'cell' && (piece.category === 'floors' || piece.category === 'foundations')) {
+    const myItem = {
+      piece_id: piece.id,
+      x: snap.x,
+      y: snap.y,
+      rotation: state.ghostRotation || 0,
+    };
+    const myPoly = getPiecePolygon(piece, myItem);
+    if (myPoly.length > 0) {
+      for (const it of floor.items) {
+        if (it.snap_kind !== 'anchor') continue;   // déjà couvert par cell-vs-cell
+        const otherPiece = state.piecesById.get(it.piece_id);
+        if (!otherPiece) continue;
+        const oCat = otherPiece.category;
+        if (oCat !== 'floors' && oCat !== 'foundations') continue;
+        const otherPoly = getItemWorldPolygon(it, state.plan);
+        if (otherPoly.length === 0) continue;
+        if (polygonsOverlap(myPoly, otherPoly)) return false;
+      }
+    }
+  }
+
   return true;
 }
 

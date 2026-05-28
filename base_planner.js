@@ -1761,23 +1761,55 @@ function nearestEdgeOfCell(cx, cz, lx, lz) {
 function snapForPiece(worldPos, piece) {
   if (!worldPos) return null;
   const rules = piece.placement_rules || {};
+  const cat   = piece.category;
 
-  // Phase 3.2 refactor triangle — Pour les triangles (footprint isocèle ou
-  // équilatéral) en snap cellule, on bascule en snap par arête : la base se
-  // colle à l'arête libre la plus proche du curseur. Si aucune arête libre
-  // dans le voisinage de l'étage courant → null (pas de pose possible,
-  // règle "doit être relié" du jeu).
+  // Phase 3.2 + 4b refactor triangle — Pour tous les sols/fondations en
+  // snap_target='cell', on essaie d'abord le snap par arête (ancrage). Le snap
+  // qui place la pièce le plus PROCHE du curseur l'emporte (cellule vs ancre).
+  //
+  // Triangle (footprint équilatéral/isocèle) : toujours en ancrage, jamais en
+  // cellule (règle "doit être relié" du jeu). Si aucune arête libre → null.
+  //
+  // Carré/fondation (footprint square) : ancrage si attractif, sinon grille.
+  // Permet de garder la pose libre sur grille en zone vide, tout en snappant
+  // naturellement aux pièces existantes quand le curseur s'en approche.
   const isTriangle = rules.footprint_shape === 'triangle_isosceles'
                   || rules.footprint_shape === 'triangle_equilateral';
-  if (isTriangle && rules.snap_target === 'cell') {
+  const isFloorOrFoundation = cat === 'floors' || cat === 'foundations';
+
+  if (isFloorOrFoundation && rules.snap_target === 'cell') {
     const z = state.currentFloor;
     const nearest = findNearestFreeEdge(worldPos, state.plan, z);
-    if (!nearest) return null;
-    return {
-      kind: 'anchor',
-      anchor_item_id: nearest.item.id,
-      anchor_edge_index: nearest.edge.index,
-    };
+
+    if (isTriangle) {
+      if (!nearest) return null;
+      return {
+        kind: 'anchor',
+        anchor_item_id: nearest.item.id,
+        anchor_edge_index: nearest.edge.index,
+      };
+    }
+
+    // Pour les pièces carrées : on compare l'attractivité de l'ancrage vs la cellule
+    if (nearest) {
+      const anchorSnap = {
+        kind: 'anchor',
+        anchor_item_id: nearest.item.id,
+        anchor_edge_index: nearest.edge.index,
+      };
+      const m = materializeAnchorSnap(anchorSnap, piece.id, z);
+      if (m) {
+        const anchorDist = Math.hypot(worldPos.x - m.x, worldPos.z - m.z);
+        const cxCell = Math.floor(worldPos.x / CELL);
+        const czCell = Math.floor(worldPos.z / CELL);
+        const cellDist = Math.hypot(
+          worldPos.x - (cxCell + 0.5),
+          worldPos.z - (czCell + 0.5),
+        );
+        if (anchorDist < cellDist) return anchorSnap;
+      }
+    }
+    // sinon : fallback grille → on continue avec le code cell-snap ci-dessous
   }
 
   const cx = Math.floor(worldPos.x / CELL);

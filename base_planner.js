@@ -1790,24 +1790,17 @@ function snapForPiece(worldPos, piece) {
       };
     }
 
-    // Pour les pièces carrées : on compare l'attractivité de l'ancrage vs la cellule
-    if (nearest) {
-      const anchorSnap = {
+    // Pour les pièces carrées : ancrage si le CURSEUR est proche d'une arête libre.
+    // Le seuil = à quelle distance de l'arête on bascule de "grille" à "ancrage".
+    // 0.5 = quand le curseur est plus près d'une arête que du centre de cellule.
+    // Au-delà → la pièce s'aligne sur la grille.
+    const ANCHOR_THRESHOLD = 0.5;
+    if (nearest && nearest.dist < ANCHOR_THRESHOLD) {
+      return {
         kind: 'anchor',
         anchor_item_id: nearest.item.id,
         anchor_edge_index: nearest.edge.index,
       };
-      const m = materializeAnchorSnap(anchorSnap, piece.id, z);
-      if (m) {
-        const anchorDist = Math.hypot(worldPos.x - m.x, worldPos.z - m.z);
-        const cxCell = Math.floor(worldPos.x / CELL);
-        const czCell = Math.floor(worldPos.z / CELL);
-        const cellDist = Math.hypot(
-          worldPos.x - (cxCell + 0.5),
-          worldPos.z - (czCell + 0.5),
-        );
-        if (anchorDist < cellDist) return anchorSnap;
-      }
     }
     // sinon : fallback grille → on continue avec le code cell-snap ci-dessous
   }

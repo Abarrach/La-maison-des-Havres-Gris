@@ -106,14 +106,26 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 - La tuile est masquée sur le menu pour les membres non autorisés
 - Le flag est persisté dans `settings.json` (doit être en `664` sur le serveur)
 - Chargement automatique du fichier `dune_counts.csv` (ou import manuel par glisser-déposer)
-- **Disclaimer** : bandeau précisant que les données proviennent de Gaming Tools et couvrent uniquement les joueurs présents dans Hagga Basin (hors Deep Desert)
-- KPIs : monde le plus peuplé, pic d'affluence, sietch dominant, **tendance** (évolution sur la fenêtre courante vs la même durée précédente, label dynamique)
-- **Courbe de population mondiale** avec rangeslider et boutons de zoom (12h → Max)
-- **Matrice d'activité** (heatmap heures de pointe par jour), **Top 15 Mondes** et **Top 15 Sietches** se mettent à jour automatiquement selon la fenêtre temporelle visible sur la courbe (rangeslider inclus)
+- **Disclaimer** : bandeau précisant que les données proviennent de Gaming Tools, couvrent uniquement les **serveurs européens** (guilde française) et les joueurs présents dans Hagga Basin (hors Deep Desert)
+- KPIs : monde le plus peuplé, pic d'affluence (d'un monde), sietch dominant, **tendance** (évolution sur la fenêtre courante vs la même durée précédente, calculée sur le **total** de connectés, label dynamique)
+- **Cartes « Pic de connexion »** : pic du total de joueurs connectés sur les **3 derniers jours** et les **3 derniers mois**, avec indicateur d'évolution rapide (pic 3j rapporté au pic 3 mois)
+- **Courbe « Fluctuations »** : **total des joueurs connectés par heure** (somme des mondes EU ; en vue serveur unique = population de ce serveur), avec rangeslider et boutons de zoom (12h → Max)
+- **Matrice d'activité** (heatmap heures de pointe par jour, en **moyenne**), **Top 15 Mondes** et **Top 15 Sietches** se mettent à jour automatiquement selon la fenêtre temporelle visible sur la courbe (rangeslider inclus)
 - Filtre global : monde cible ; drill-down clic/Ctrl+Clic sur les barres
+- **Serveurs désactivés** (regroupement Funcom du 26/05/2026) : les 59 mondes fermés sont **retirés des listes déroulantes** (on ne peut plus s'y connecter) mais **conservés dans les données** pour que totaux, tendances et historique restent justes
 - **Sietch dominant** : calculé sur le serveur le plus peuplé de la fenêtre active (ou le serveur sélectionné), pour éviter une moyenne diluée par des mondes quasi-vides
-- **Comparateur de Serveurs et Sietches** : ajoutez plusieurs mondes pour comparer leurs courbes ; tableau de synthèse avec pop. moyenne, pic, heure de pointe, tendance et sietch dominant par serveur — les stats et tendances se recalculent automatiquement selon la fenêtre de zoom du graphe de comparaison ; répartition par sietch dépliable avec tooltip d'évolution temporelle au survol
+- **Comparateur de Serveurs et Sietches** : ajoutez plusieurs mondes pour comparer leurs courbes ; tableau de synthèse avec pop. moy. (période), pic, heure de pointe, tendance et sietch dominant par serveur — les stats et tendances se recalculent automatiquement selon la fenêtre de zoom du graphe de comparaison ; répartition par sietch dépliable avec tooltip d'évolution temporelle au survol
 - **Chargement d'archive transparent** : les boutons de zoom > 1 mois (1m, 3m, 6m, 1y) déclenchent automatiquement le chargement de `dune_counts_archive.csv` si non encore chargé — fusion et déduplication en mémoire, sans action manuelle ; si les données archivées restent insuffisantes pour la période demandée, retour automatique à la vue Max
+- **Lien vers la synthèse** : bouton « 📊 Synthèse Regroupement » dans l'en-tête, vers `rapport_regroupement.html`
+
+### Synthèse Regroupement des serveurs (`rapport_regroupement.html`)
+
+Rapport autonome (HTML + Plotly) destiné à la guilde, documentant le regroupement des serveurs EU de mai 2026 (87 → 28 mondes).
+
+- **Comparaison Avant / Après** des 28 mondes conservés (population au pic début mai vs fin mai), côte à côte, pour identifier les mondes qui ont absorbé la migration
+- KPIs : mondes fermés (59), conservés (28), croissance des survivants (×2,1), plus gros gain
+- Synthèse rédigée + classement des mondes conservés par palier de population
+- Bouton « ← Retour aux Analytiques » vers `dune_analytics.html`
 
 ### Collecte de données (`dune_logger_all.py`)
 
@@ -333,6 +345,7 @@ DuneMap/
 ├── planner.html          # Planificateur Landsraad
 ├── migration.html        # Coordinateur de migration vers Icarus
 ├── dune_analytics.html   # Télémétrie des mondes (stats population)
+├── rapport_regroupement.html # Synthèse guilde : regroupement serveurs EU (mai 2026)
 ├── dune_chronologie.html # Chronologie de l'univers
 ├── news.html             # Actualités du jeu
 ├── register.html         # Création de compte (design deux colonnes : formulaire + présentation guilde)

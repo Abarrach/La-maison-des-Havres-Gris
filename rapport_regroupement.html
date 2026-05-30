@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Regroupement des serveurs EU — Synthèse Havres Gris</title>
+<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Segoe+UI&display=swap" rel="stylesheet">
+<style>
+  :root{--or-vif:#f3c44f;--or-base:#d4a23b;--or-sombre:#8b6e3b;--brun-bordure:#3b2a16;
+        --brun-fond:rgba(20,12,4,.9);--texte:#f5deb3;--bg:#0a0603;--rouge:#e74c3c;--vert:#5fae6a;}
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--texte);
+       background-image:radial-gradient(circle at 50% -10%,rgba(212,162,59,.10),transparent 60%);
+       padding:0 0 60px;font-size:14px;line-height:1.55;}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px;}
+  header{text-align:center;padding:48px 24px 28px;border-bottom:1px solid var(--brun-bordure);margin-bottom:34px;}
+  h1{font-family:'Cinzel',serif;color:var(--or-vif);font-size:30px;letter-spacing:2px;text-transform:uppercase;
+     text-shadow:0 2px 16px rgba(243,196,79,.3);}
+  .sub{color:var(--texte);opacity:.65;margin-top:10px;font-size:15px;letter-spacing:.5px;}
+  .badge{display:inline-block;margin-top:16px;background:rgba(212,162,59,.12);border:1px solid var(--or-sombre);
+         color:var(--or-vif);padding:6px 18px;border-radius:20px;font-weight:600;font-size:13px;letter-spacing:1px;}
+  h2{font-family:'Cinzel',serif;color:var(--or-vif);font-size:19px;letter-spacing:1.5px;text-transform:uppercase;
+     border-bottom:1px solid #5c4025;padding-bottom:10px;margin:42px 0 18px;}
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:18px;}
+  .kpi{background:var(--brun-fond);border:1px solid var(--brun-bordure);border-radius:8px;padding:22px;
+       box-shadow:0 10px 30px rgba(0,0,0,.5);}
+  .kpi .lbl{font-family:'Cinzel',serif;font-size:12px;color:var(--or-base);text-transform:uppercase;letter-spacing:1px;
+            border-bottom:1px solid #5c4025;padding-bottom:8px;margin-bottom:12px;}
+  .kpi .val{font-family:'Cinzel',serif;font-size:32px;font-weight:700;color:var(--texte);}
+  .kpi .sm{font-size:12px;opacity:.6;margin-top:6px;}
+  .card{background:var(--brun-fond);border:1px solid var(--brun-bordure);border-radius:8px;padding:22px;
+        box-shadow:0 10px 30px rgba(0,0,0,.5);margin-bottom:8px;}
+  .panels{display:flex;gap:14px;flex-wrap:wrap;}
+  .panel{flex:1;min-width:330px;}
+  .panel-title{font-family:'Cinzel',serif;text-align:center;font-size:15px;letter-spacing:1px;
+               text-transform:uppercase;color:var(--or-vif);margin-bottom:6px;}
+  .panel-title small{display:block;font-family:'Segoe UI';font-size:11px;opacity:.55;letter-spacing:0;text-transform:none;}
+  .cap{font-size:12px;opacity:.55;font-style:italic;margin:6px 4px 18px;}
+  .note{background:rgba(243,196,79,.05);border-left:3px solid var(--or-sombre);border-radius:0 6px 6px 0;
+        padding:18px 22px;margin:14px 0;}
+  .note b{color:var(--or-vif);}
+  .tiers{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-top:6px;}
+  .tier{background:var(--brun-fond);border:1px solid var(--brun-bordure);border-radius:8px;padding:16px 18px;}
+  .tier h3{font-family:'Cinzel',serif;font-size:14px;letter-spacing:1px;margin-bottom:4px;}
+  .tier .desc{font-size:11px;opacity:.55;margin-bottom:10px;}
+  .tier ul{list-style:none;font-size:13px;}
+  .tier li{padding:3px 0;border-bottom:1px solid rgba(245,222,179,.06);display:flex;justify-content:space-between;gap:8px;}
+  .tier li .g{color:var(--vert);font-size:11px;}
+  .tier li .v{color:var(--or-vif);font-weight:600;}
+  .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;vertical-align:middle;}
+  footer{text-align:center;margin-top:46px;opacity:.45;font-size:12px;}
+  .backbtn{display:inline-block;margin-top:22px;background:linear-gradient(180deg,#443311,#221100);
+    border:1px solid var(--or-base);color:var(--or-vif);padding:9px 22px;border-radius:4px;
+    text-decoration:none;font-size:13px;font-weight:bold;text-transform:uppercase;letter-spacing:1px;
+    transition:all .25s;}
+  .backbtn:hover{background:var(--or-base);color:#000;border-color:#fff;box-shadow:0 0 14px rgba(243,196,79,.5);}
+</style>
+</head>
+<body>
+<header>
+  <h1>Regroupement des Serveurs EU</h1>
+  <div class="sub">Synthèse guilde — Havres Gris · Dune Awakening (Hagga Basin, serveurs européens)</div>
+  <div class="badge">87 mondes → 28 mondes · migration de mai 2026</div>
+  <div><a href="dune_analytics.html" class="backbtn">← Retour aux Analytiques</a></div>
+</header>
+
+<div class="wrap">
+
+  <h2>L'essentiel en 4 chiffres</h2>
+  <div class="kpis">
+    <div class="kpi"><div class="lbl">Mondes fermés</div><div class="val" style="color:var(--rouge)">59</div><div class="sm">drainés progressivement, vides avant la fermeture du 26/05</div></div>
+    <div class="kpi"><div class="lbl">Mondes conservés</div><div class="val" style="color:var(--vert)">28</div><div class="sm">les mondes qui ont accueilli les joueurs</div></div>
+    <div class="kpi"><div class="lbl">Population des conservés</div><div class="val">×2,1</div><div class="sm">+114 % au pic (2&nbsp;103 → 4&nbsp;505 joueurs)</div></div>
+    <div class="kpi"><div class="lbl">Plus gros gain</div><div class="val" style="color:var(--vert)">+366</div><div class="sm">Andromeda (×5,8) · puis Corona Borealis +346</div></div>
+  </div>
+
+  <h2>Avant / Après — les 28 mondes conservés</h2>
+  <div class="card">
+    <div class="panels">
+      <div class="panel">
+        <div class="panel-title">Début mai <small>population au pic (avant la migration)</small></div>
+        <div id="chart-debut" style="width:100%;height:780px;"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Fin mai <small>population au pic (après le regroupement)</small></div>
+        <div id="chart-fin" style="width:100%;height:780px;"></div>
+      </div>
+    </div>
+  </div>
+  <div class="cap">Pic de population concurrente par monde, même ordre des deux côtés (classés sur fin mai). Entre parenthèses : la variation de joueurs. Couleur = palier de population.</div>
+
+  <div class="note">
+    <b>Vers où sont allés les joueurs ?</b> La migration a quasiment <b>doublé</b> la population des mondes conservés (+114&nbsp;%).
+    Pas de monde gagnant sorti de nulle part : les joueurs ont rejoint les mondes <b>déjà gros</b>, qui se sont nettement <b>renforcés</b>.
+    Les plus gros bénéficiaires sont <b>Andromeda</b> (+366, ×5,8) et <b>Corona Borealis</b> (+346, ×4,5), suivis d'Icarus (+182), Hagal (+177) et Solaria (+153).
+    Seul <b>Pax</b> recule (−103) : déjà le plus rempli début mai, il s'est plutôt vidé au profit des autres.
+    <br><span style="opacity:.7">À noter pour nous : notre départ de <b>Galacia</b> (+37) vers <b>Icarus</b> (+182, désormais 3ᵉ mondes le plus peuplé) suit exactement cette dynamique de concentration.</span>
+  </div>
+
+  <h2>Hiérarchie des mondes conservés (fin mai)</h2>
+  <div class="tiers" id="tiers"></div>
+
+</div>
+
+<footer>Source : Gaming Tools · serveurs européens (Hagga Basin) · données du 04 au 30 mai 2026 · généré pour Havres Gris</footer>
+
+<script>
+const theme={primary:'#f3c44f',base:'#d4a23b',sombre:'#8b6e3b',brun:'#5c4025',texte:'#f5deb3',
+  grid:'rgba(245,222,179,.06)',rouge:'#e74c3c',vert:'#5fae6a'};
+const baseLayout={paper_bgcolor:'transparent',plot_bgcolor:'transparent',
+  font:{color:theme.texte,family:'Segoe UI'},
+  hoverlabel:{bgcolor:'rgba(20,12,4,.96)',font:{color:theme.texte},bordercolor:theme.base}};
+
+// [nom, début mai, fin mai]
+const surv=[
+ ["Corona Borealis",98,444],["Andromeda",76,442],["Icarus",186,368],["Pax",457,354],
+ ["Epsilon Eridani",259,339],["Hagal",138,315],["Solaria",57,210],["Alpha Corvus",72,192],
+ ["Rhea",38,134],["Korona",60,131],["Terminus",47,121],["Selene",44,111],["Aquarius",38,103],
+ ["Cassiopeia",36,99],["Puppis",36,92],["Xenophon",62,87],["Fides",36,87],["Limos",29,86],
+ ["Daxos",26,85],["Canopus",35,84],["Mycenae",26,81],["Galacia",44,81],["Tucana",43,80],
+ ["Oxylon",37,78],["Jongleur",33,77],["Eluzai",31,77],["Khala",31,76],["Quirinus",28,71]];
+
+surv.sort((a,b)=>b[2]-a[2]);
+const order=[...surv].reverse();              // bas->haut : le plus peuplé en haut
+const names=order.map(s=>s[0]);
+const debut=order.map(s=>s[1]);
+const fin=order.map(s=>s[2]);
+const xmax=Math.max(...fin)*1.22;
+function tierColor(v){return v>=300?theme.primary:v>=150?theme.base:v>=90?theme.sombre:theme.brun;}
+const commonY={tickfont:{size:11},automargin:false};
+const commonX={range:[0,xmax],gridcolor:theme.grid,tickfont:{size:10},tickformat:'d'};
+
+Plotly.newPlot('chart-debut',[{
+  type:'bar',orientation:'h',y:names,x:debut,marker:{color:theme.sombre,opacity:.85},
+  text:debut,textposition:'outside',textfont:{size:10,color:theme.texte},
+  hovertemplate:'<b>%{y}</b><br>Début mai : %{x} joueurs<extra></extra>'
+}],{...baseLayout,margin:{l:130,r:34,t:8,b:34},xaxis:commonX,yaxis:commonY},{displayModeBar:false,responsive:true});
+
+Plotly.newPlot('chart-fin',[{
+  type:'bar',orientation:'h',y:names,x:fin,marker:{color:fin.map(tierColor)},
+  text:order.map(s=>{const g=s[2]-s[1];return s[2]+(g>=0?'  (+'+g+')':'  ('+g+')');}),
+  textposition:'outside',
+  textfont:order.map(s=>({size:10,color:(s[2]-s[1])<0?theme.rouge:theme.vert})),
+  hovertemplate:'<b>%{y}</b><br>Fin mai : %{x} joueurs<extra></extra>'
+}],{...baseLayout,margin:{l:130,r:60,t:8,b:34},xaxis:commonX,yaxis:commonY},{displayModeBar:false,responsive:true});
+
+// Paliers
+const tiers=[
+ {n:'Géants',c:theme.primary,d:'≥ 300 joueurs au pic',f:v=>v>=300},
+ {n:'Majeurs',c:theme.base,d:'150 – 299 joueurs',f:v=>v>=150&&v<300},
+ {n:'Intermédiaires',c:theme.sombre,d:'90 – 149 joueurs',f:v=>v>=90&&v<150},
+ {n:'Petits',c:theme.brun,d:'moins de 90 joueurs',f:v=>v<90}];
+document.getElementById('tiers').innerHTML=tiers.map(t=>{
+  const list=surv.filter(s=>t.f(s[2]));
+  return `<div class="tier"><h3><span class="dot" style="background:${t.c}"></span>${t.n}</h3>
+    <div class="desc">${t.d} · ${list.length} monde${list.length>1?'s':''}</div>
+    <ul>${list.map(s=>{const g=s[2]-s[1];return `<li><span>${s[0]}</span><span><span class="g">${g>=0?'+':''}${g}</span> &nbsp; <span class="v">${s[2]}</span></span></li>`;}).join('')}</ul></div>`;
+}).join('');
+</script>
+</body>
+</html>

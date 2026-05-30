@@ -257,6 +257,7 @@
         <div class="ua-avatar" id="ua-avatar">?</div>
         <span class="ua-pseudo" id="ua-pseudo">…</span>
       </a>
+      <a href="rapport_regroupement.html" class="btn-menu">📊 Synthèse Regroupement</a>
       <a href="menu.html" class="btn-menu">Retour Menu</a>
     </div>
 </header>
@@ -286,7 +287,7 @@
             <div style="margin-left: auto; color: var(--or-sombre); font-size: 12px;" id="data-range-txt"></div>
         </div>
         <div style="padding: 8px 16px; background: rgba(243,196,79,0.04); border-left: 2px solid var(--or-sombre); border-radius: 0 4px 4px 0; font-size: 11px; color: var(--texte-beige); opacity: 0.6; font-style: italic; line-height: 1.5;">
-            Source : <a href="https://gaming.tools" target="_blank" style="color: inherit; text-decoration: underline; text-underline-offset: 2px;">Gaming Tools</a> — données limitées aux joueurs présents dans <strong style="opacity: 0.85; font-style: normal;">Hagga Basin</strong>. Ces statistiques reflètent une tendance de l'activité globale sur les serveurs, et ne couvrent pas la présence dans le Deep Desert.
+            Source : <a href="https://gaming.tools" target="_blank" style="color: inherit; text-decoration: underline; text-underline-offset: 2px;">Gaming Tools</a> — serveurs <strong style="opacity: 0.85; font-style: normal;">européens</strong> uniquement (guilde française), joueurs présents dans <strong style="opacity: 0.85; font-style: normal;">Hagga Basin</strong>. Ces statistiques reflètent une tendance de l'activité globale sur les serveurs, et ne couvrent pas la présence dans le Deep Desert.
         </div>
 
         <div id="drill-bar">
@@ -318,11 +319,26 @@
             </div>
         </div>
 
+        <div class="stat-row" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));">
+            <div class="nouveau-composant stat-card">
+                <div class="stat-label">Pic de connexion — 3 derniers jours</div>
+                <div class="stat-value" id="kpi-peak-3d">0</div>
+                <div class="stat-sub" id="kpi-peak-3d-sub">-</div>
+                <div class="stat-sub" id="kpi-peak-evo" style="margin-top:6px; font-weight:600;"></div>
+            </div>
+            <div class="nouveau-composant stat-card">
+                <div class="stat-label">Pic de connexion — 3 derniers mois</div>
+                <div class="stat-value" id="kpi-peak-3m">0</div>
+                <div class="stat-sub" id="kpi-peak-3m-sub">-</div>
+                <div class="stat-sub" style="margin-top:6px; opacity:0.5;">Total joueurs connectés · tous mondes EU</div>
+            </div>
+        </div>
+
         <div class="grid2">
             <div class="nouveau-composant grid-full">
                 <div class="nouveau-composant-titre">
                     <span>Fluctuations de la Population Mondiale</span>
-                    <span style="font-size: 11px; color: var(--texte-beige); opacity: 0.6; text-transform: none; font-family: 'Segoe UI', sans-serif; letter-spacing: normal;">Moyenne horaire par serveur</span>
+                    <span style="font-size: 11px; color: var(--texte-beige); opacity: 0.6; text-transform: none; font-family: 'Segoe UI', sans-serif; letter-spacing: normal;">Total des joueurs connectés par heure</span>
                 </div>
                 <div class="chart-wrap" style="height: 450px; position: relative;">
                     <div id="zoom-main" class="zoom-controls"></div>
@@ -382,7 +398,7 @@
                             <thead>
                                 <tr>
                                     <th>Monde</th>
-                                    <th>Pop. Moyenne</th>
+                                    <th>Pop. moy. (période)</th>
                                     <th>Pic</th>
                                     <th>Heure de pointe</th>
                                     <th id="migr-col-trend">Tendance</th>
@@ -409,6 +425,7 @@
     let sietchTooltipTimer = null;
     let _relayoutTimer = null;
     let _migrRelayoutTimer = null;
+    let _allRunsCache = null, _allRunsCacheLen = -1;
 
     // Palette Havres Gris
     const cTheme = {
@@ -491,7 +508,8 @@
                         rawData = [...archRows, ...rawData];
                         rawData.sort((a, b) => a.timestamp - b.timestamp);
                         // Mettre à jour la liste des serveurs dans les selects
-                        const uniqueServers = [...new Set(rawData.map(d => d.serveur))].sort();
+                        const uniqueServers = [...new Set(rawData.map(d => d.serveur))].sort()
+                            .filter(s => !SERVEURS_DESACTIVES.has(s));
                         const srvSelect = document.getElementById('server-filter');
                         const migSelect = document.getElementById('migration-select');
                         while (srvSelect.options.length > 1) srvSelect.remove(1);
@@ -538,6 +556,20 @@
     // Serveurs parasites connus (outils tiers capturés par l'API gaming.tools)
     const SERVEURS_EXCLUS = new Set(['awoo.tools']);
 
+    // Serveurs désactivés lors du regroupement du 26/05/2026.
+    // IMPORTANT : on les GARDE dans les données (totaux, tendances, pic 3j/3m et historique
+    // restent justes), on les retire UNIQUEMENT des listes déroulantes — on ne peut plus s'y
+    // connecter. Trop peu peuplés (1-4 joueurs moy.) pour figurer dans les Top 15 / KPI.
+    const SERVEURS_DESACTIVES = new Set([
+      'Actaeon','Aiglon','Archidamas III','Arkon','Bahamonde','Batigh','Buzzell','Calypso',
+      'Centaurus','Chapterhouse','Circinus','Cycliadas','Daedros','Deneb','Dione','Dur',
+      'Eumenes','Gansireed','Ghanima','Grumman','Helios','Hicetas','Horologium','Indra',
+      'Ipyr','Ixalco','Jansine','Karna','Lacerta','Lampadas','Laurrant','Leto','Lothar',
+      'Lynx','Martijoz','Menelaus','Mihna','Molitor','Nereus','Niveus','Numenor','Octans',
+      'Orion','Ostara','Persephone','Phaedra','Pisces','Porthos','Remus','Richese','Rossak',
+      'Salusa Secundus','Saturnia','Serpens','Shamal','Suk Alusus','Tantalus','Thule','Volans'
+    ]);
+
     function processRawData(data) {
         rawData = [];
         const seen = new Set();
@@ -564,17 +596,104 @@
         rawData.sort((a, b) => a.timestamp - b.timestamp);
 
         const uniqueServers = [...new Set(rawData.map(d => d.serveur))].sort();
+        // Seuls les serveurs encore actifs sont proposés à la sélection.
+        const selectableServers = uniqueServers.filter(s => !SERVEURS_DESACTIVES.has(s));
         const srvSelect = document.getElementById('server-filter');
         while (srvSelect.options.length > 1) { srvSelect.remove(1); }
-        uniqueServers.forEach(srv => srvSelect.add(new Option(srv, srv)));
+        selectableServers.forEach(srv => srvSelect.add(new Option(srv, srv)));
 
         const migSelect = document.getElementById('migration-select');
         migSelect.innerHTML = '<option value="" disabled selected>Sélectionnez un monde à évaluer...</option>';
-        uniqueServers.forEach(srv => migSelect.add(new Option(srv, srv)));
+        selectableServers.forEach(srv => migSelect.add(new Option(srv, srv)));
 
         document.getElementById('loading').style.display = 'none';
         document.getElementById('dashboard').style.display = 'block';
         applyGlobalFilters();
+
+        // Cartes "Pic de connexion" : calculées sur les données chargées (dune_counts.csv).
+        // On ne force PAS le chargement de l'archive ici (ça alourdirait chaque clic) ;
+        // la carte 3 mois s'affine si l'archive est chargée via un zoom long.
+        renderPeakCards();
+    }
+
+    // Cache de getCleanRuns(rawData) — recalculé seulement quand rawData change.
+    // Évite de re-parcourir tout l'historique à chaque clic (drill-down, filtre…).
+    function getAllRuns() {
+        if (_allRunsCache && _allRunsCacheLen === rawData.length) return _allRunsCache;
+        _allRunsCache = getCleanRuns(rawData);
+        _allRunsCacheLen = rawData.length;
+        return _allRunsCache;
+    }
+
+    // Pic du TOTAL horaire de connectés (somme des serveurs) sur une fenêtre glissante.
+    // Même définition que le graphe "Fluctuations" : par heure, on moyenne chaque
+    // serveur sur ses relevés puis on somme les serveurs ; on garde le max.
+    function peakTotalSince(daysBack) {
+        const cutoff = Date.now() - daysBack * 86400000;
+        const runs = getCleanRuns(rawData.filter(d => d.timestamp.getTime() >= cutoff));
+        const hourMap = new Map();
+        runs.forEach(d => {
+            const hk = Math.floor(d.ts.getTime() / 3600000);
+            if (!hourMap.has(hk)) hourMap.set(hk, new Map());
+            const sm = hourMap.get(hk);
+            if (!sm.has(d.srv)) sm.set(d.srv, { sum: 0, count: 0 });
+            const s = sm.get(d.srv);
+            s.sum += d.total;
+            s.count += 1;
+        });
+        let peak = 0, peakTs = null;
+        hourMap.forEach((sm, hk) => {
+            let tot = 0;
+            sm.forEach(s => tot += s.sum / s.count);
+            if (tot > peak) { peak = tot; peakTs = hk * 3600000; }
+        });
+        return { peak: Math.round(peak), peakTs };
+    }
+
+    // Moyenne du TOTAL horaire de connectés (somme des serveurs) sur une liste de runs.
+    function avgHourlyTotal(runs) {
+        const hourMap = new Map();
+        runs.forEach(d => {
+            const hk = Math.floor(d.ts.getTime() / 3600000);
+            if (!hourMap.has(hk)) hourMap.set(hk, new Map());
+            const sm = hourMap.get(hk);
+            if (!sm.has(d.srv)) sm.set(d.srv, { sum: 0, count: 0 });
+            const s = sm.get(d.srv);
+            s.sum += d.total;
+            s.count += 1;
+        });
+        if (!hourMap.size) return 0;
+        let acc = 0;
+        hourMap.forEach(sm => { let t = 0; sm.forEach(s => t += s.sum / s.count); acc += t; });
+        return acc / hourMap.size;
+    }
+
+    function _fmtPeakDate(ts) {
+        if (!ts) return 'Aucune donnée';
+        return new Date(ts).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    }
+
+    function renderPeakCards() {
+        const p3d = peakTotalSince(3);
+        const p3m = peakTotalSince(90);
+        document.getElementById('kpi-peak-3d').innerText = p3d.peak.toLocaleString('fr-FR');
+        document.getElementById('kpi-peak-3d-sub').innerText = _fmtPeakDate(p3d.peakTs);
+        document.getElementById('kpi-peak-3m').innerText = p3m.peak.toLocaleString('fr-FR');
+        document.getElementById('kpi-peak-3m-sub').innerText = _fmtPeakDate(p3m.peakTs);
+
+        // Évolution rapide : le pic des 3 jours par rapport au pic des 3 mois
+        const evEl = document.getElementById('kpi-peak-evo');
+        if (evEl) {
+            if (p3m.peak > 0 && p3d.peak >= p3m.peak) {
+                evEl.innerHTML = '<span style="color:var(--or-vif)">▲ Au plus haut sur 3 mois</span>';
+            } else if (p3m.peak > 0) {
+                const pct = Math.round(p3d.peak / p3m.peak * 100);
+                const color = pct >= 80 ? 'var(--or-vif)' : pct >= 50 ? 'var(--texte-beige)' : '#e74c3c';
+                evEl.innerHTML = `<span style="color:${color}">${pct}% du pic 3 mois</span>`;
+            } else {
+                evEl.innerHTML = '';
+            }
+        }
     }
 
     function applyGlobalFilters() {
@@ -805,6 +924,7 @@
                 btnEl.innerText = origLabel;
                 btnEl.disabled = false;
                 applyGlobalFilters(); // rerender charts — renderZoomButtons consommera pendingZoomHours
+                renderPeakCards();    // l'archive est chargée : la carte "pic 3 mois" s'affine
             });
             return;
         }
@@ -856,7 +976,7 @@
         const trendLblEl  = document.getElementById('kpi-trend-label');
         if (trendEl) {
             // Dérive la fenêtre depuis activeBase : reflète le zoom du graphe ET le filtre dropdown
-            const winRuns = getCleanRuns(activeBase).sort((a,b) => a.ts - b.ts);
+            const winRuns = [...activeTotals].sort((a,b) => a.ts - b.ts);
             if (winRuns.length > 1) {
                 const winStart = winRuns[0].ts;
                 const winEnd   = winRuns[winRuns.length - 1].ts;
@@ -865,12 +985,12 @@
                 const lbl = spanH < 36 ? `${Math.round(spanH)}h` : `${Math.round(spanH / 24)}j`;
                 if (trendLblEl) trendLblEl.textContent = `Tendance (${lbl})`;
 
-                const allRuns  = getCleanRuns(rawData);
+                const allRuns  = getAllRuns();
                 const prevStart = new Date(winStart.getTime() - spanMs);
                 const recent = allRuns.filter(d => d.ts >= winStart && d.ts <= winEnd);
                 const prev   = allRuns.filter(d => d.ts >= prevStart && d.ts < winStart);
-                const rAvg = recent.length ? recent.reduce((s,d) => s + d.total, 0) / recent.length : 0;
-                const pAvg = prev.length   ? prev.reduce((s,d)   => s + d.total, 0) / prev.length   : 0;
+                const rAvg = avgHourlyTotal(recent);
+                const pAvg = avgHourlyTotal(prev);
                 if (pAvg > 0 && recent.length > 0) {
                     const pct  = (rAvg - pAvg) / pAvg * 100;
                     const sign  = pct > 1 ? '▲' : pct < -1 ? '▼' : '→';
@@ -1011,26 +1131,35 @@
 
         // --- COURBE TEMPORELLE (référence, ne change pas avec le zoom) ---
         const activeTotals = getCleanRuns(activeData);
+        // Total des joueurs connectés par heure : on moyenne d'abord chaque serveur
+        // sur les relevés de l'heure (robuste si plusieurs runs), puis on SOMME les serveurs.
         const timeSeriesMap = new Map();
         activeTotals.forEach(d => {
             const tsStr = `${d.ts.getFullYear()}-${String(d.ts.getMonth()+1).padStart(2,'0')}-${String(d.ts.getDate()).padStart(2,'0')} ${String(d.ts.getHours()).padStart(2,'0')}:00:00`;
-            if (!timeSeriesMap.has(tsStr)) timeSeriesMap.set(tsStr, { ts: d.ts.getTime(), sum: 0, count: 0 });
-            timeSeriesMap.get(tsStr).sum += d.total;
-            timeSeriesMap.get(tsStr).count += 1;
+            if (!timeSeriesMap.has(tsStr)) timeSeriesMap.set(tsStr, { ts: d.ts.getTime(), servers: new Map() });
+            const bucket = timeSeriesMap.get(tsStr);
+            if (!bucket.servers.has(d.srv)) bucket.servers.set(d.srv, { sum: 0, count: 0 });
+            const s = bucket.servers.get(d.srv);
+            s.sum += d.total;
+            s.count += 1;
         });
-        const timeSeries = Array.from(timeSeriesMap, ([date, a]) => ({ date, ts: a.ts, avg: a.sum / a.count })).sort((a,b) => a.ts - b.ts);
+        const timeSeries = Array.from(timeSeriesMap, ([date, a]) => {
+            let total = 0;
+            a.servers.forEach(s => total += s.sum / s.count);
+            return { date, ts: a.ts, total };
+        }).sort((a,b) => a.ts - b.ts);
 
         let selectedServer = document.getElementById('server-filter').value;
         if(selectedServer === 'all' && currentDrillDowns.length > 0) {
             let srvDrill = currentDrillDowns.find(d => d.field === 'serveur' && d.type === 'include');
             if(srvDrill) selectedServer = srvDrill.value;
         }
-        const legendName = selectedServer !== 'all' ? `Pop. ${selectedServer} — Moyenne` : 'Pop. Mondiale — Moyenne';
+        const legendName = selectedServer !== 'all' ? `Pop. ${selectedServer} — Total` : 'Pop. Mondiale — Total';
 
         Plotly.newPlot('chart-timeline', [{
-            type: 'scatter', mode: 'lines', x: timeSeries.map(d => d.date), y: timeSeries.map(d => d.avg), name: legendName,
+            type: 'scatter', mode: 'lines', x: timeSeries.map(d => d.date), y: timeSeries.map(d => d.total), name: legendName,
             line: { color: cTheme.primary, shape: 'spline', width: 2 }, fill: 'tozeroy', fillcolor: 'rgba(243, 196, 79, 0.05)',
-            hovertemplate: '<b>%{data.name}</b> : %{y:.0f}<extra></extra>'
+            hovertemplate: '<b>%{data.name}</b> : %{y:.0f} joueurs<extra></extra>'
         }], {
             ...pLayout, margin: {l: 50, r: 20, t: 40, b: 10}, hovermode: 'x unified', xaxis: steamDbXaxis,
             yaxis: { beginAtZero: true, gridcolor: cTheme.grid, zerolinecolor: cTheme.grid, tickfont: {size: 11}, tickformat: 'd' }

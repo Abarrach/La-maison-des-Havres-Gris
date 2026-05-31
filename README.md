@@ -66,7 +66,7 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 - Formulaire de soumission avec description détaillée
 - Ajout de jusqu'à 4 images par demande
 - Suivi et gestion des requêtes côté administration
-- **Message Discord automatique** après soumission : lien direct vers l'onglet Commandes (`?tab=requetes`), copie en un clic avec fermeture automatique
+- **Intégration Discord automatique** (`discord_helper.php` via `save.php`) : à la création, un embed est posté sur le salon (bordure dorée, type/note/lien/capture) ; à la prise en charge il devient vert avec « Pris en charge par … » ; une fois terminé ou supprimé, le message Discord est effacé. Lien adaptatif (`window.location`), repli sur copie manuelle si webhook absent. URL du webhook dans `discord_webhook.txt` (non versionné)
 - Confirmation de suppression dans une modale stylisée (thème sombre, cohérent avec le site)
 - **Suppression protégée** : seul l'auteur peut supprimer sa propre demande (vérification côté serveur) ; les demandes marquées « Terminé » sont verrouillées en historique permanent
 - Correction : guard contre un `id` undefined sur les anciennes entrées (évite l'erreur `missing_data`)

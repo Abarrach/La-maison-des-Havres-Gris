@@ -1,3 +1,4 @@
+# Données runtime / fichiers sensibles (jamais sur GitHub)
 users_SECURE_9x.json
 requetes.json
 bases.json
@@ -5,3 +6,6 @@ migration_data.json
 
 # État local Claude Code (worktrees, settings personnels)
 .claude/
+
+# Secret webhook Discord (NE JAMAIS COMMITER)
+discord_webhook.txt

@@ -566,11 +566,12 @@ window.submitRequest = async function() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                action : "addRequete",
-                user   : currentUserReq,
+                action  : "addRequete",
+                user    : currentUserReq,
                 type,
                 notes,
-                images : pendingImages.map(i => i.base64)
+                images  : pendingImages.map(i => i.base64),
+                siteUrl : window.location.origin + window.location.pathname + "?tab=requetes"
             })
         });
 
@@ -601,8 +602,15 @@ window.submitRequest = async function() {
             pendingImages = [];
             renderImgPreviews();
             loadRequests();
-            showToast("✅ Demande postée !", 'ok');
-            showDiscordModal(currentUserReq, postedType, postedNotes);
+            if (r.discord) {
+                // Envoi Discord automatique réussi : pas besoin de copier-coller
+                showToast("✅ Demande postée et annoncée sur Discord !", 'ok');
+            } else {
+                // Webhook non configuré / échec Discord : on propose le copier-coller manuel
+                showToast("✅ Demande postée !", 'ok');
+                if (r.discordReason) console.warn("Discord non posté — raison :", r.discordReason);
+                showDiscordModal(currentUserReq, postedType, postedNotes);
+            }
         } else {
             alert("Erreur serveur : " + r.error);
         }

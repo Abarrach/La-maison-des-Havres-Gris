@@ -4,6 +4,9 @@ header('Content-Type: application/json; charset=utf-8');
 // ⚠ IMPORTANT : On force l'heure de Paris
 date_default_timezone_set('Europe/Paris');
 
+// Intégration Discord (envoi/suppression auto des messages de demande)
+require_once __DIR__ . '/discord_helper.php';
+
 function jerr($msg, $code = 400) {
     http_response_code($code);
     echo json_encode(['ok' => false, 'error' => $msg], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
@@ -239,13 +242,35 @@ switch ($action) {
             'image'           => $imageUrls[0] ?? null,   // champ legacy (1re image)
             'images'          => $imageUrls,               // nouveau champ (toutes les images)
             'status'          => 'pending',
-            'crafterAssigned' => null
+            'crafterAssigned' => null,
+            'discordMsgId'    => null,                      // ID du message Discord (pour suppression auto)
+            'siteUrl'         => trim($data['siteUrl'] ?? '') // URL du lien (pour rééditer le message plus tard)
         ];
 
         array_unshift($reqs, $newReq);
 
+        // 1) On ENREGISTRE la demande AVANT tout envoi Discord.
+        //    Si l'écriture échoue, rien n'est posté sur Discord (pas de message orphelin).
         if (!writeJson($reqFile, $reqs)) jerr("write_error");
-        echo json_encode(['ok' => true, 'id' => $newReq['id']]);
+
+        // 2) Envoi automatique sur Discord (silencieux si webhook non configuré).
+        //    L'URL du lien est fournie par le navigateur (gère /v2/, http/https, etc.).
+        $siteUrl = $newReq['siteUrl'];
+        $msgId = discord_post_request($newReq, $siteUrl);
+        if ($msgId) {
+            // On mémorise l'ID du message pour pouvoir le supprimer plus tard
+            $reqs[0]['discordMsgId'] = $msgId;
+            writeJson($reqFile, $reqs); // best-effort : si ça rate, pas grave
+        }
+
+        $discordReason = $GLOBALS['discord_last_error'] ?? null;
+        // Log debug serveur (lisible en SSH : tail -n 20 /chemin/v2/discord_debug.log)
+        if (!$msgId && $discordReason) {
+            @file_put_contents(__DIR__ . '/discord_debug.log',
+                date('Y-m-d H:i:s') . " | " . $discordReason . "\n", FILE_APPEND);
+        }
+
+        echo json_encode(['ok' => true, 'id' => $newReq['id'], 'discord' => (bool)$msgId, 'discordReason' => $discordReason]);
         exit;
 
     case 'updateRequete':
@@ -258,20 +283,39 @@ switch ($action) {
         $reqFile = __DIR__ . '/requetes.json';
         $reqs = readJson($reqFile);
         $found = false;
+        $msgToDelete = null;   // ID du message Discord à effacer si la demande est terminée
+        $msgToEdit   = null;   // ID du message Discord à rééditer (prise en charge)
+        $reqForEdit  = null;   // copie de la demande à jour pour reconstruire le message
 
         foreach ($reqs as &$r) {
             if ($r['id'] === $id) {
                 $r['status'] = $status;
                 if ($status === 'progress') {
                     $r['crafterAssigned'] = $crafter;
+                    // Prise en charge : on prévoit l'édition du message Discord
+                    if (!empty($r['discordMsgId'])) {
+                        $msgToEdit  = $r['discordMsgId'];
+                        $reqForEdit = $r;
+                    }
+                }
+                // Travail terminé : on prévoit la suppression du message Discord
+                if ($status === 'done' && !empty($r['discordMsgId'])) {
+                    $msgToDelete = $r['discordMsgId'];
+                    $r['discordMsgId'] = null;
                 }
                 $found = true;
                 break;
             }
         }
+        unset($r);
 
         if ($found) {
             if (!writeJson($reqFile, $reqs)) jerr("write_error");
+            if ($msgToDelete) {
+                discord_delete_message($msgToDelete);
+            } elseif ($msgToEdit) {
+                discord_edit_message($msgToEdit, $reqForEdit, $reqForEdit['siteUrl'] ?? '');
+            }
             echo json_encode(['ok' => true]);
         } else {
             jerr("requete_not_found");
@@ -295,6 +339,10 @@ switch ($action) {
 
         $newReqs = array_filter($reqs, fn($r) => $r['id'] !== $id);
         if (!writeJson($reqFile, array_values($newReqs))) jerr("write_error");
+
+        // On efface aussi le message Discord associé (silencieux si absent)
+        if (!empty($target['discordMsgId'])) discord_delete_message($target['discordMsgId']);
+
         echo json_encode(['ok' => true]);
         exit;
 

@@ -229,6 +229,78 @@ function discord_edit_message($messageId, $req, $siteUrl = '') {
 }
 
 /**
+ * Construit l'EMBED « remerciement » affiché quand une demande est terminée.
+ * Épuré et compact (3 lignes), bordure VIOLETTE « honneur ».
+ * Pas d'image ni de note : on ne garde que l'essentiel pour ne pas spammer le salon.
+ *
+ * @param array $req  La demande terminée (player, type, crafterAssigned)
+ * @return array      Structure d'embed prête pour l'API Discord.
+ */
+function discord_build_thanks_embed($req) {
+    $player  = $req['player'] ?? '?';
+    $type    = trim($req['type'] ?? '');
+    $crafter = trim($req['crafterAssigned'] ?? '');
+    $thanked = $crafter !== '' ? $crafter : $player;
+
+    $desc  = "## 🙏 Merci à **{$thanked}** !\n";
+    $desc .= "⚙️ **{$type}** · 👤 **{$player}**\n";
+    $desc .= "*✨ Travail réalisé*";
+
+    return [
+        'description' => $desc,
+        'color'       => hexdec('9B59B6'), // violet « honneur »
+    ];
+}
+
+/**
+ * Transforme un message Discord existant en remerciement (demande terminée).
+ * On réédite l'embed et on retire les pièces jointes (attachments: []) pour
+ * que la capture ne reste pas collée sous le message.
+ * Silencieux : ne bloque jamais le flux principal.
+ *
+ * @param string $messageId  ID du message Discord
+ * @param array  $req        La demande terminée
+ */
+function discord_complete_message($messageId, $req) {
+    if (!$messageId) return false;
+    $url = discord_get_webhook_url();
+    if (!$url) return false;
+    if (!function_exists('curl_init')) return false;
+
+    // Sépare l'éventuelle query string (?thread_id=...) avant d'ajouter /messages/<id>
+    $base = $url;
+    $query = '';
+    if (($qpos = strpos($url, '?')) !== false) {
+        $base  = substr($url, 0, $qpos);
+        $query = substr($url, $qpos); // inclut le '?'
+    }
+    $editUrl = rtrim($base, '/') . '/messages/' . rawurlencode($messageId) . $query;
+
+    $embed   = discord_build_thanks_embed($req);
+    $payload = json_encode(
+        ['embeds' => [$embed], 'attachments' => []], // attachments vide = on retire les captures
+        JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+    );
+
+    $ch = curl_init($editUrl);
+    curl_setopt_array($ch, [
+        CURLOPT_CUSTOMREQUEST  => 'PATCH',
+        CURLOPT_POSTFIELDS     => $payload,
+        CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 10,
+        CURLOPT_CONNECTTIMEOUT => 5,
+    ]);
+    $resp = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($code >= 200 && $code < 300) return true;
+    @error_log("Discord complete (remerciement) échec (HTTP $code) : " . substr((string)$resp, 0, 300));
+    return false;
+}
+
+/**
  * Supprime un message Discord précédemment posté par le webhook.
  * Silencieux : ne bloque jamais le flux principal.
  *

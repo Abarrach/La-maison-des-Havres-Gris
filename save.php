@@ -283,9 +283,10 @@ switch ($action) {
         $reqFile = __DIR__ . '/requetes.json';
         $reqs = readJson($reqFile);
         $found = false;
-        $msgToDelete = null;   // ID du message Discord à effacer si la demande est terminée
+        $msgToThank  = null;   // ID du message Discord à transformer en remerciement (terminé)
         $msgToEdit   = null;   // ID du message Discord à rééditer (prise en charge)
         $reqForEdit  = null;   // copie de la demande à jour pour reconstruire le message
+        $reqForThank = null;   // copie de la demande terminée pour le remerciement
 
         foreach ($reqs as &$r) {
             if ($r['id'] === $id) {
@@ -298,10 +299,10 @@ switch ($action) {
                         $reqForEdit = $r;
                     }
                 }
-                // Travail terminé : on prévoit la suppression du message Discord
+                // Travail terminé : on transforme le message Discord en remerciement
                 if ($status === 'done' && !empty($r['discordMsgId'])) {
-                    $msgToDelete = $r['discordMsgId'];
-                    $r['discordMsgId'] = null;
+                    $msgToThank  = $r['discordMsgId'];
+                    $reqForThank = $r;
                 }
                 $found = true;
                 break;
@@ -311,8 +312,8 @@ switch ($action) {
 
         if ($found) {
             if (!writeJson($reqFile, $reqs)) jerr("write_error");
-            if ($msgToDelete) {
-                discord_delete_message($msgToDelete);
+            if ($msgToThank) {
+                discord_complete_message($msgToThank, $reqForThank);
             } elseif ($msgToEdit) {
                 discord_edit_message($msgToEdit, $reqForEdit, $reqForEdit['siteUrl'] ?? '');
             }

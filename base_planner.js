@@ -9,6 +9,22 @@
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+// ?v= : cache-busting. Bump à chaque modif des modules pour forcer le rechargement
+// (sinon le navigateur sert l'ancienne version mise en cache).
+import { createEngine } from './planner_socket_engine.js?v=lot1k';
+import { createMeshFactory } from './planner_mesh.js?v=lot1k';
+
+// ============================================================
+// MOTEUR — bascule ancien (géométrie+grille) / nouveau (sockets+meshes réels)
+// ============================================================
+const ENGINE = 'sockets';            // 'sockets' = nouveau moteur · 'legacy' = ancien
+const CM_PER_CELL  = 512;            // 1 cellule legacy = 1 fondation = 512 cm
+const CM_PER_LEVEL = 384;            // 1 niveau d'étage = 384 cm
+const WORLD_PER_CM = 1 / CM_PER_CELL;// monde uniforme : 1 unité = 1 cellule (512 cm)
+// Accès catalogue normalisé pour le moteur (champs camelCase attendus)
+const engineGetPiece = id => state.piecesById.get(id);
+const socketEngine = createEngine(engineGetPiece);
+const meshFactory  = createMeshFactory({ getPiece: engineGetPiece, modelsBase: 'models/', scale: WORLD_PER_CM });
 
 // ============================================================
 // CONSTANTES
@@ -298,17 +314,52 @@ document.addEventListener('DOMContentLoaded', init);
 // CHARGEMENT CATALOGUE
 // ============================================================
 async function loadCatalog() {
-  const resp = await fetch(PIECES_JSON_URL);
+  const url = ENGINE === 'sockets' ? 'planner_pieces.json' : PIECES_JSON_URL;
+  const resp = await fetch(url);
   if (!resp.ok) throw new Error('pieces ' + resp.status);
   const piecesData = await resp.json();
   state.pieces = (piecesData.pieces || []).filter(p => p.faction_id !== 'blockout');
+
+  // Normalisation camelCase pour le moteur de sockets (planner_pieces.json est en snake_case).
+  for (const p of state.pieces) {
+    p.sockets       = p.sockets || [];
+    p.socketProfile = p.socket_profile ?? null;
+    p.isFoundation  = !!p.is_foundation;
+    p.isPillar      = !!p.is_pillar_socket;
+    p.snapRotation  = p.snap_rotation ?? null;
+    // Re-dérive la catégorie depuis le GROUP (les catégories dataminées sont incohérentes :
+    // colonnes en 'foundations', rambardes en 'pillars', triangles larges en 'extra'…).
+    if (ENGINE === 'sockets') p.category = deriveGameCategory(p);
+  }
 
   const { canonicals, variantMap } = buildVariantIndex(state.pieces);
   state.canonicals = canonicals;
   state.variantMap = variantMap;
 
+  // Mode sockets : on montre TOUTES les pièces individuellement (vrais meshes = vraies
+  // apparences différentes), pas une pièce canonique avec un sélecteur de skins.
+  if (ENGINE === 'sockets') {
+    state.canonicals = state.pieces.slice();
+    state.variantMap = new Map(state.pieces.map(p => [p.id, [p]]));
+  }
+
   state.piecesById = new Map();
   for (const p of state.pieces) state.piecesById.set(p.id, p);
+}
+
+/** Catégorie "comme dans le jeu", dérivée du group (fiable) plutôt que du champ dataminé. */
+function deriveGameCategory(p) {
+  const g = p.group || '', id = p.id || '';
+  if (/Window/i.test(id) || /^Window/.test(g)) return 'windows';
+  if (/^Foundation/.test(g)) return 'foundations';
+  if (/^Floor/.test(g))      return 'floors';
+  if (/^(Roof|Rooftop)/.test(g)) return 'roofs';
+  if (/^Railing/.test(g))    return 'railings';
+  if (/^(Door|Gate|Hatch|Passageway|PrudenceDoor|Arch)/.test(g)) return 'doors';
+  if (/^(Ramp|Stairs)/.test(g)) return 'stairs';
+  if (/^(Pillar|Ladder|Column|Tower)/.test(g)) return 'structures';
+  if (/^Wall/.test(g))       return 'walls';
+  return p.category || 'walls';
 }
 
 /**
@@ -431,6 +482,7 @@ function setupControls() {
 // ============================================================
 // GRILLE / CLAIM
 // ============================================================
+let gridHelper = null;
 function setupGrid() {
   claimGroup = new THREE.Group();
   scene.add(claimGroup);
@@ -443,12 +495,34 @@ function setupGrid() {
   scene.add(ground);
 
   for (const b of state.plan.claim.blocks) drawClaimBlock(b.gx, b.gy);
+  rebuildGrid();
+}
 
-  const grid = new THREE.GridHelper(40, 40, COLOR_GRID_MAJOR, COLOR_GRID_MINOR);
-  grid.position.y = 0.005;
-  grid.material.transparent = true;
-  grid.material.opacity = 0.55;
-  scene.add(grid);
+/** Bornes monde du claim (en unités = cellules). */
+function claimBoundsWorld() {
+  const blocks = (state.plan.claim && state.plan.claim.blocks) || [];
+  let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+  for (const b of blocks) {
+    minX = Math.min(minX, b.gx * BLOCK_CELLS);     maxX = Math.max(maxX, b.gx * BLOCK_CELLS + BLOCK_CELLS);
+    minZ = Math.min(minZ, b.gy * BLOCK_CELLS);     maxZ = Math.max(maxZ, b.gy * BLOCK_CELLS + BLOCK_CELLS);
+  }
+  if (!isFinite(minX)) { minX = 0; maxX = BLOCK_CELLS; minZ = 0; maxZ = BLOCK_CELLS; }
+  return { minX, maxX, minZ, maxZ };
+}
+
+/** (Re)construit la grille de fond pour couvrir tout le claim + une marge. */
+function rebuildGrid() {
+  if (gridHelper) { scene.remove(gridHelper); gridHelper.geometry.dispose(); gridHelper.material.dispose(); }
+  const b = claimBoundsWorld();
+  const margin = BLOCK_CELLS;                       // 1 bloc de marge autour
+  const cx = (b.minX + b.maxX) / 2, cz = (b.minZ + b.maxZ) / 2;
+  let size = Math.max(b.maxX - b.minX, b.maxZ - b.minZ) + margin * 2;
+  size = Math.ceil(size / 2) * 2;                   // pair → lignes alignées sur les entiers
+  gridHelper = new THREE.GridHelper(size, size, COLOR_GRID_MAJOR, COLOR_GRID_MINOR);
+  gridHelper.position.set(cx, 0.005, cz);           // centrée sur le claim → couvre les extensions
+  gridHelper.material.transparent = true;
+  gridHelper.material.opacity = 0.55;
+  scene.add(gridHelper);
 }
 function drawClaimBlock(gx, gy) {
   const ox = gx * BLOCK_CELLS;
@@ -1482,6 +1556,7 @@ function makeMachineLabelSprite(text, accentColor) {
 }
 
 function buildMeshForPiece(piece, item) {
+  if (ENGINE === 'sockets') return socketBuildMesh(item);
   const color = getPieceColor(piece);
   const geo   = createGeometryForPiece(piece);
   // Machines : matériau semi-transparent pour qu'on voie les pièces structurelles à travers
@@ -1571,6 +1646,21 @@ function updateFloorVisibility() {
   const cur   = state.currentFloor;
   const selId = state.selectedItemId;
   for (const [itemId, mesh] of placedMeshes) {
+    // ── Meshes socket (Groups) : visibilité par SPAN d'étages ────────────────
+    // Une pièce occupe [floorZ .. floorTop] (floorTop > floorZ pour les pièces hautes
+    // comme la Grande porte). Opaque si l'étage courant est dans le span, estompée si
+    // entièrement en dessous, masquée si entièrement au-dessus.
+    if (mesh.userData.socket) {
+      const fz = mesh.userData.floorZ ?? 0;
+      const ft = mesh.userData.floorTop ?? fz;
+      if (fz > cur) { mesh.visible = false; continue; }    // entièrement au-dessus
+      mesh.visible = true;
+      const op = (cur <= ft) ? 1 : 0.28;                   // dans le span = opaque, sinon estompé
+      mesh.traverse(o => { if (o.isMesh && o.material) {
+        o.material.transparent = op < 1; o.material.opacity = op; o.material.needsUpdate = true;
+      }});
+      continue;
+    }
     const z     = mesh.userData.floorZ;
     if (z === undefined) continue;
     const piece  = mesh.userData.piece;
@@ -2821,6 +2911,14 @@ function placePieceFromSnap(pieceId, snap, floorZ, rotation = 0) {
 /** Dispose complet d'un mesh (edges + vitrage + label + géométrie). */
 function disposeMesh(mesh) {
   if (!mesh) return;
+  // Groupes (meshes socket / ghost) : pas de geometry/material direct → traverse.
+  if (mesh.isGroup || (!mesh.geometry && mesh.children && mesh.children.length)) {
+    mesh.traverse(o => {
+      if (o.geometry) o.geometry.dispose();
+      if (o.material) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => m.dispose());
+    });
+    return;
+  }
   if (mesh.userData.edges) {
     mesh.userData.edges.geometry.dispose();
     mesh.userData.edges.material.dispose();
@@ -3038,8 +3136,149 @@ function computeEffectiveRotation(piece, snap, world, resolvedFloor) {
   return auto !== null ? auto : state.ghostRotation;
 }
 
+// ============================================================
+// MOTEUR SOCKETS — rendu / curseur / snap / ghost / pose (ENGINE='sockets')
+// item socket : { id, piece_id, x, y (cm horizontal), cz (cm hauteur), z (niveau, bucketing), rotation }
+// ============================================================
+function applyTransformSocket(g, item) {
+  g.position.set((item.x || 0) * WORLD_PER_CM, (item.cz || 0) * WORLD_PER_CM, (item.y || 0) * WORLD_PER_CM);
+  g.rotation.y = THREE.MathUtils.degToRad(item.rotation || 0);
+}
+// Nombre d'étages SUPPLÉMENTAIRES qu'une pièce occupe au-dessus de sa base
+// (0 pour mur/sol/fondation standard, 4 pour la Grande porte de 5 niveaux).
+function pieceLevelSpan(piece) {
+  let maxLz = 0;
+  for (const s of (piece?.sockets || [])) if (s.lz > maxLz) maxLz = s.lz;
+  return Math.max(0, Math.round(maxLz / CM_PER_LEVEL) - 1);
+}
+function socketBuildMesh(item) {
+  const g = meshFactory.buildObject(item.piece_id, {});
+  applyTransformSocket(g, item);
+  const piece = state.piecesById.get(item.piece_id);
+  // userData attendu par updateFloorVisibility / sélection
+  g.userData.socket  = true;
+  g.userData.floorZ  = item.z;                          // étage de base
+  g.userData.floorTop = item.z + pieceLevelSpan(piece); // dernier étage occupé (pièces hautes)
+  g.userData.piece   = piece;
+  g.userData.itemId  = item.id;
+  return g;
+}
+function socketCursorCm(clientX, clientY) {
+  const world = screenToWorld(clientX, clientY);
+  if (!world) return null;
+  const x = world.x / WORLD_PER_CM, y = world.z / WORLD_PER_CM;
+  // Guard NaN : quand le curseur sort du ground plane (bord haut du canvas, angle rasant),
+  // Three.js peut renvoyer un point avec NaN. Sans ce guard, toutes les distances passent
+  // le filtre (NaN > G = false), ce qui fait accrocher n'importe quoi n'importe où.
+  if (!isFinite(x) || !isFinite(y)) return null;
+  return { x, y, z: (state.currentFloor || 0) * CM_PER_LEVEL };
+}
+function socketPlacedList() {
+  const out = [];
+  for (const f of state.plan.floors) for (const it of f.items) {
+    out.push({ id: it.id, building_type: it.piece_id, x: it.x, y: it.y, z: it.cz || 0, rotation: it.rotation || 0 });
+  }
+  return out;
+}
+// Catégories qui DOIVENT s'accrocher par socket (pas de pose libre en dehors du vide).
+// Fondations : pose libre toujours autorisée (point de départ de la base).
+const SOCKET_ONLY_CATS = new Set(['walls','doors','rooftop','ramp','pillar','decoration']);
+const norm360 = d => ((d % 360) + 360) % 360;
+// Une position cm est-elle dans la zone de fief ? (centre de la pièce dans un bloc de claim)
+// Bloc (gx,gy) → monde [gx*10 .. gx*10+10]. Pièce → cm×WORLD_PER_CM. Tolérance ½ case sur le bord.
+function socketInClaim(cmX, cmY) {
+  // eps petit : les murs de périmètre (sur le bord exact 0 ou 10) passent, mais une
+  // fondation une case dehors (centre à 10.5) est refusée.
+  const wx = cmX * WORLD_PER_CM, wy = cmY * WORLD_PER_CM, eps = 0.05;
+  for (const b of (state.plan.claim?.blocks || [])) {
+    const ox = b.gx * BLOCK_CELLS, oz = b.gy * BLOCK_CELLS;
+    if (wx >= ox - eps && wx <= ox + BLOCK_CELLS + eps && wy >= oz - eps && wy <= oz + BLOCK_CELLS + eps) return true;
+  }
+  return false;
+}
+// Hauteur cm attendue pour poser sur l'ÉTAGE COURANT.
+// Mesuré : RDC → fondation cz=0, murs/sols cz=384. Donc fondation = niveau×384, autres = (niveau+1)×384.
+function expectedCzFor(piece) {
+  return (state.currentFloor + (piece?.is_foundation ? 0 : 1)) * CM_PER_LEVEL;
+}
+function socketComputeSnap(pieceId, cur) {
+  const placed = socketPlacedList();
+  const piece = state.piecesById.get(pieceId);
+  const zHint = expectedCzFor(piece);
+  // zHint : on ne s'accroche qu'aux sockets proches de la hauteur de l'étage courant
+  // (empêche d'attraper une fondation RDC quand on est sur N1).
+  const r = socketEngine.snapPiece(cur, pieceId, placed, socketEngine.occSet(placed),
+    { zHint, zTol: CM_PER_LEVEL / 2 });
+  // La rotation manuelle (R / Ctrl+molette → state.ghostRotation) s'AJOUTE à l'orientation
+  // d'accrochage : la pièce tourne autour de son origine (= son centre sur la case).
+  if (r) return { pos: r.pos, rotation: norm360(r.rotation + (state.ghostRotation || 0)), snapped: true };
+  // Pose LIBRE réservée aux FONDATIONS (ancrage au sol). Tout le reste (sols, murs, toits…)
+  // DOIT s'accrocher à un socket → plus de pièces flottantes en l'air.
+  if (!piece?.is_foundation) return null;
+  const g = socketEngine.gridSnap(cur.x, cur.y, zHint);
+  return { pos: g, rotation: state.ghostRotation || 0, snapped: false };
+}
+let lastSocketSnap = null;
+let lastSocketClientPos = { x: 0, y: 0 };   // mémorise le curseur pour refresh R-key
+function socketShowGhost(pieceId, clientX, clientY) {
+  lastSocketClientPos = { x: clientX, y: clientY };
+  const cur = socketCursorCm(clientX, clientY);
+  if (!cur) return false;
+  const snap = socketComputeSnap(pieceId, cur);
+  if (!snap) { clearGhost(); lastSocketSnap = null; return false; }
+  snap.inClaim = socketInClaim(snap.pos.x, snap.pos.y);   // dans la zone de fief ?
+  lastSocketSnap = { pieceId, snap };
+  clearGhost();
+  const col = !snap.inClaim ? COLOR_GHOST_BAD : (snap.snapped ? COLOR_GHOST_OK : 0x6a8f6a);
+  const g = meshFactory.buildObject(pieceId, { color: col, opacity: 0.5 });
+  applyTransformSocket(g, { x: snap.pos.x, y: snap.pos.y, cz: snap.pos.z, rotation: snap.rotation });
+  ghostMesh = g;
+  scene.add(ghostMesh);
+  setText(dom.hudCoords, `x:${Math.round(snap.pos.x)} y:${Math.round(snap.pos.y)} z:${Math.round(snap.pos.z)} cm`);
+  return true;
+}
+function socketPlaceAt(pieceId, clientX, clientY) {
+  const cur = socketCursorCm(clientX, clientY);
+  if (!cur) return null;
+  const snap = (lastSocketSnap && lastSocketSnap.pieceId === pieceId) ? lastSocketSnap.snap : socketComputeSnap(pieceId, cur);
+  if (!snap) return null;   // pose refusée (snap null = pas d'accrochage valide)
+  // Refus hors de la zone de fief
+  if (!socketInClaim(snap.pos.x, snap.pos.y)) { showFloorResolveHud?.(state.currentFloor, 'Hors de la zone de fief'); return null; }
+  // Anti-superposition : rejeter si une pièce du MÊME type occupe déjà ce point d'origine
+  // (même x,y,z à ~30 cm près). On compare au type pour autoriser sol+trappe, mur+fenêtre…
+  const all = socketPlacedList();
+  const DUP = 30;
+  if (all.some(it => it.building_type === pieceId &&
+        Math.abs(it.x - snap.pos.x) < DUP && Math.abs(it.y - snap.pos.y) < DUP && Math.abs(it.z - snap.pos.z) < DUP)) return null;
+  // L'item appartient à l'ÉTAGE COURANT (tab sélectionné), pas à un niveau dérivé de la
+  // hauteur cm — sinon un mur posé au RDC (socket à 384 cm) filerait en N1.
+  const targetFloor = getFloor(state.currentFloor) || state.plan.floors[0];
+  if (!targetFloor) return null;
+  const item = {
+    id: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'it_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+    piece_id: pieceId,
+    x: snap.pos.x, y: snap.pos.y, cz: snap.pos.z,
+    z: targetFloor.z,
+    rotation: snap.rotation,
+  };
+  targetFloor.items.push(item);
+  const mesh = socketBuildMesh(item);
+  scene.add(mesh);
+  placedMeshes.set(item.id, mesh);
+  updateFloorVisibility();
+  updateFloorBadges();
+  updatePieceCount();
+  const saved = JSON.parse(JSON.stringify(item));
+  pushHistory(
+    () => _removeItemCore(saved.id),
+    () => restoreItem(JSON.parse(JSON.stringify(saved))),
+  );
+  return item.id;
+}
+
 /** Affiche le ghost pour une pièce à la position écran donnée. Renvoie true si OK. */
 function tryShowGhostForPiece(pieceId, clientX, clientY) {
+  if (ENGINE === 'sockets') return socketShowGhost(pieceId, clientX, clientY);
   const piece = state.piecesById.get(pieceId);
   if (!piece) return false;
   const world = screenToWorld(clientX, clientY);
@@ -3058,6 +3297,7 @@ function tryShowGhostForPiece(pieceId, clientX, clientY) {
 
 /** Pose la pièce active à la position écran. Renvoie l'itemId créé ou null. */
 function tryPlacePieceAt(pieceId, clientX, clientY) {
+  if (ENGINE === 'sockets') return socketPlaceAt(pieceId, clientX, clientY);
   const piece = state.piecesById.get(pieceId);
   if (!piece) return null;
   const world = screenToWorld(clientX, clientY);
@@ -3900,31 +4140,30 @@ function toggleSolidView() {
   if (btn) btn.classList.toggle('active', state.solidView);
 
   if (state.solidView) {
-    // ── Mode solide : tout opaque, tout visible, pas de verre ──────────────
+    // ── Mode solide : tout opaque, tout visible ──────────────────────────────
     for (const mesh of placedMeshes.values()) {
       mesh.visible = true;
-      const mat = mesh.material;
-      if (mat) {
-        mat.transparent = false;
-        mat.opacity     = 1;
-        mat.color.setHex(mesh.userData.baseColor);
-        mat.needsUpdate = true;
-      }
-      const edges = mesh.userData.edges;
-      if (edges) {
-        edges.material.color.setHex(0x000000);
-        edges.material.opacity = 0.45;
-        edges.material.needsUpdate = true;
-      }
-      if (mesh.userData.glassPanel) mesh.userData.glassPanel.visible = false;
-      if (mesh.userData.cornerGlass) {
-        mesh.userData.cornerGlass.material.opacity = 0.18;
-        mesh.userData.cornerGlass.material.needsUpdate = true;
+      // Groupes socket (ENGINE=sockets) → traverse les sous-meshes
+      if (mesh.isGroup) {
+        mesh.traverse(o => { if (o.isMesh && o.material) {
+          o.material.transparent = false; o.material.opacity = 1; o.material.needsUpdate = true;
+        }});
+      } else {
+        const mat = mesh.material;
+        if (mat) { mat.transparent = false; mat.opacity = 1; mat.color.setHex(mesh.userData.baseColor); mat.needsUpdate = true; }
+        const edges = mesh.userData.edges;
+        if (edges) { edges.material.color.setHex(0x000000); edges.material.opacity = 0.45; edges.material.needsUpdate = true; }
+        if (mesh.userData.glassPanel) mesh.userData.glassPanel.visible = false;
+        if (mesh.userData.cornerGlass) { mesh.userData.cornerGlass.material.opacity = 0.18; mesh.userData.cornerGlass.material.needsUpdate = true; }
       }
     }
   } else {
-    // ── Mode normal : restaurer le verre et la visibilité par étage ────────
+    // ── Mode normal : restaurer la visibilité ───────────────────────────────
     for (const mesh of placedMeshes.values()) {
+      if (mesh.isGroup) {
+        mesh.traverse(o => { if (o.isMesh && o.material) { o.material.transparent = false; o.material.opacity = 1; o.material.needsUpdate = true; }});
+        continue;
+      }
       if (mesh.userData.glassPanel) mesh.userData.glassPanel.visible = true;
       if (mesh.userData.cornerGlass) {
         mesh.userData.cornerGlass.material.opacity = 0.38;
@@ -4042,6 +4281,15 @@ function initKeyboard() {
     // R — rotation : fantôme pendant drag/click-to-place, pièces sélectionnées, sinon reset vue
     if (e.key === 'r' || e.key === 'R') {
       if (state.dragPieceId || state.activePieceId) {
+        if (ENGINE === 'sockets') {
+          // En mode sockets : rotation manuelle de +90°, puis refresh immédiat du ghost
+          // avec la dernière position curseur mémorisée.
+          state.ghostRotation = ((state.ghostRotation || 0) + 90) % 360;
+          if (state.activePieceId) {
+            socketShowGhost(state.activePieceId, lastSocketClientPos.x, lastSocketClientPos.y);
+          }
+          return;
+        }
         // Base = rotation effective courante (peut être l'auto-rotation pour les triangles).
         // +90° depuis cette base puis bascule en mode manuel (désactive l'auto-rotation
         // jusqu'au changement de pièce).
@@ -4230,6 +4478,11 @@ function initDragDrop() {
       e.stopPropagation();
       if (state.dragPieceId || state.activePieceId) {
         const delta = e.deltaY < 0 ? -90 : 90;  // molette vers le haut = -90°
+        if (ENGINE === 'sockets') {
+          state.ghostRotation = norm360((state.ghostRotation || 0) + delta);
+          if (state.activePieceId) socketShowGhost(state.activePieceId, lastSocketClientPos.x, lastSocketClientPos.y);
+          return;
+        }
         // Base = rotation effective courante (peut être l'auto-rotation pour les triangles).
         const baseRot = lastGhostState?.effectiveRot ?? state.ghostRotation;
         state.ghostRotation = (baseRot + delta + 360) % 360;
@@ -4368,6 +4621,7 @@ function addClaimBlock(gx, gy) {
   if (!adjacent) return;
   blocks.push({ gx, gy });
   drawClaimBlock(gx, gy);
+  rebuildGrid();          // la grille suit l'extension du fief
   renderClaimViz();
   updateClaimPanel();
 }
@@ -4379,6 +4633,7 @@ function removeClaimBlock(gx, gy) {
   if (!isClaimConnected(remaining)) return; // préserve la connectivité
   state.plan.claim.blocks = remaining;
   rebuildClaimVisuals3D();
+  rebuildGrid();          // la grille se réajuste à la réduction du fief
   renderClaimViz();
   updateClaimPanel();
 }
@@ -4463,8 +4718,10 @@ function renderClaimViz() {
     minX = Math.min(minX, gx); maxX = Math.max(maxX, gx);
     minY = Math.min(minY, gy); maxY = Math.max(maxY, gy);
   }
-  minX = Math.max(minX, -3); maxX = Math.min(maxX, 5);
-  minY = Math.max(minY, -2); maxY = Math.min(maxY, 3);
+  // Bornes symétriques : le bloc principal est en (0,0) et on peut faire jusqu'à 5
+  // extensions dans N'IMPORTE quelle direction (+1 anneau de cellules disponibles = ±6).
+  minX = Math.max(minX, -6); maxX = Math.min(maxX, 6);
+  minY = Math.max(minY, -6); maxY = Math.min(maxY, 6);
 
   const cols = maxX - minX + 1;
   const rows = maxY - minY + 1;
@@ -4814,6 +5071,8 @@ function bpSerializePlanData() {
         rotation: it.rotation || 0,
         half:     it.half || false,
       };
+      // Moteur sockets : hauteur cm (rendu + moteur). Indispensable pour recharger.
+      if (it.cz != null) out.cz = it.cz;
       // Refactor triangle Phase 2.5 : si l'item est ancré, on sérialise les
       // champs d'ancrage. Les autres items (cell-snap) restent au format
       // historique pour compat ascendante (les anciens serveurs/lecteurs ne
@@ -4828,7 +5087,7 @@ function bpSerializePlanData() {
   }));
   const itemCount = floors.reduce((s, f) => s + f.items.length, 0);
   return {
-    version:      1,
+    version:      ENGINE === 'sockets' ? 2 : 1,   // v2 = items en cm (sockets)
     claim:        (state.plan && state.plan.claim) || null,
     floors,
     currentFloor: state.currentFloor,
@@ -4848,7 +5107,10 @@ function bpApplyPlanData(data) {
 
   // Reset state.plan.{claim, floors}
   if (!state.plan) state.plan = {};
-  if (data.claim) state.plan.claim = data.claim;
+  if (data.claim) {
+    state.plan.claim = data.claim;
+    if (claimGroup) { rebuildClaimVisuals3D(); rebuildGrid(); }   // redessine fief + grille du plan chargé
+  }
   state.plan.floors = data.floors.map(f => ({
     z:     f.z,
     name:  f.name || (f.z < 0 ? 'S' + Math.abs(f.z) : f.z === 0 ? 'RDC' : 'N' + f.z),
@@ -5212,7 +5474,20 @@ window.bpDebug = {
 // BOUCLE DE RENDU
 // ============================================================
 function animate() {
-  requestAnimationFrame(animate);
+  if (!window.__bpPauseRender) requestAnimationFrame(animate);
   if (orbitControls.enabled) orbitControls.update();
   renderer.render(scene, activeCam);
 }
+// Hook debug (test/preview) : permet de capturer (pause la boucle rAF) et d'inspecter.
+window.__bp = {
+  state, placedMeshes, socketEngine, meshFactory,
+  get scene() { return scene; },           // getter : scene assignée pendant init()
+  get ghostMesh() { return ghostMesh; },
+  pauseRender() { window.__bpPauseRender = true; },
+  resumeRender() { if (window.__bpPauseRender) { window.__bpPauseRender = false; animate(); } },
+  renderOnce() { renderer.render(scene, activeCam); },
+  itemsFlat() { return state.plan.floors.flatMap(f => f.items.map(it => ({ ...it }))); },
+  serialize() { return bpSerializePlanData(); },
+  applyPlan(d) { return bpApplyPlanData(d); },
+  inClaim(x, y) { return socketInClaim(x, y); },
+};

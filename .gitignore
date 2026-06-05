@@ -9,3 +9,7 @@ migration_data.json
 
 # Secret webhook Discord (NE JAMAIS COMMITER)
 discord_webhook.txt
+
+# Meshes du jeu extraits via FModel (lourd ~357Mo + assets Funcom) — déploiement WinSCP séparé
+models/
+*.glb

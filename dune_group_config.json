@@ -1,0 +1,554 @@
+{
+  "Empty": {
+    "socketSetupName": "Empty",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Ramp": {
+    "socketSetupName": "Angled",
+    "snapRotation": "SnapAll",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Ramp_Half": {
+    "socketSetupName": "Angled_Half",
+    "snapRotation": "SnapAll",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Ramp_Corner": {
+    "socketSetupName": "Angled_Corner",
+    "snapRotation": "SnapAll",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Ramp_Corner_Half": {
+    "socketSetupName": "Angled_Corner_Half",
+    "snapRotation": "SnapAll",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Ramp_Corner_Inward": {
+    "socketSetupName": "Angled_Corner_Inward",
+    "snapRotation": "SnapAll",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Ramp_Corner_Half_Inward": {
+    "socketSetupName": "Angled_Corner_Half_Inward",
+    "snapRotation": "SnapAll",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Ramp_Round_Corner": {
+    "socketSetupName": "Angled_Round_Corner",
+    "snapRotation": "SnapAll",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Ramp_Round_Corner_Half": {
+    "socketSetupName": "Angled_Round_Corner_Half",
+    "snapRotation": "SnapAll",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Stairs": {
+    "socketSetupName": "Angled",
+    "snapRotation": "SnapAll",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Stairs_Half": {
+    "socketSetupName": "Angled_Half",
+    "snapRotation": "SnapAll",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Stairs_Corner": {
+    "socketSetupName": "Angled_Corner",
+    "snapRotation": "SnapAll",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Stairs_Corner_Half": {
+    "socketSetupName": "Angled_Corner_Half",
+    "snapRotation": "SnapAll",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Stairs_Corner_Inward": {
+    "socketSetupName": "Angled_Corner_Inward",
+    "snapRotation": "SnapAll",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Stairs_Corner_Half_Inward": {
+    "socketSetupName": "Angled_Corner_Half_Inward",
+    "snapRotation": "SnapAll",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Roof": {
+    "socketSetupName": "Angled",
+    "snapRotation": "SnapAll",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Roof_Half": {
+    "socketSetupName": "Angled_Half",
+    "snapRotation": "SnapAll",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Roof_Corner": {
+    "socketSetupName": "Angled_Corner",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Roof_Corner_Half": {
+    "socketSetupName": "Angled_Corner_Half",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Roof_Corner_Inward": {
+    "socketSetupName": "Angled_Corner_Inward",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Roof_Corner_Half_Inward": {
+    "socketSetupName": "Angled_Corner_Half_Inward",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Roof_Round_Corner": {
+    "socketSetupName": "Angled_Round_Corner",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Roof_Round_Corner_Half": {
+    "socketSetupName": "Angled_Round_Corner_Half",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Angled_Wedge_Bottom": {
+    "socketSetupName": "Angled_Wedge_Bottom",
+    "snapRotation": "SnapAll",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Angled_Wedge_Top": {
+    "socketSetupName": "Angled_Wedge_Top",
+    "snapRotation": "SnapAll",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Door_Frame": {
+    "socketSetupName": "Door_Frame",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Door_Frame_Tall": {
+    "socketSetupName": "Door_Frame_Tall",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Door_Frame_Wide": {
+    "socketSetupName": "Door_Frame_Wide",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Floor": {
+    "socketSetupName": "Floor",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Floor_Round_Corner": {
+    "socketSetupName": "Floor_Round_Corner",
+    "snapRotation": "SnapOne",
+    "cornersShape": "TriangleIsosceles",
+    "ghostCameraAngleOffset": 0
+  },
+  "Floor_Wedge": {
+    "socketSetupName": "Floor_Wedge",
+    "snapRotation": "SnapOne",
+    "cornersShape": "TriangleEquilateral",
+    "ghostCameraAngleOffset": 0
+  },
+  "Floor_Round_Corner_Inverted": {
+    "socketSetupName": "Floor_Round_Corner_Inverted",
+    "snapRotation": "SnapOne",
+    "cornersShape": "TriangleIsosceles",
+    "ghostCameraAngleOffset": 0
+  },
+  "Rooftop": {
+    "socketSetupName": "Floor",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Foundation": {
+    "socketSetupName": "Foundation",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Foundation_Round_Corner": {
+    "socketSetupName": "Foundation_Round_Corner",
+    "snapRotation": "SnapOne",
+    "cornersShape": "TriangleIsosceles",
+    "ghostCameraAngleOffset": 0
+  },
+  "Foundation_Wedge": {
+    "socketSetupName": "Foundation_Wedge",
+    "snapRotation": "SnapOne",
+    "cornersShape": "TriangleEquilateral",
+    "ghostCameraAngleOffset": 0
+  },
+  "Gate_Big": {
+    "socketSetupName": "Gate_Big",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Hatch_Frame": {
+    "socketSetupName": "Hatch_Frame",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Pillar": {
+    "socketSetupName": "Pillar",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Pillar_Corner": {
+    "socketSetupName": "Pillar_Corner",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Railing": {
+    "socketSetupName": "Railing",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Railing_Inclined": {
+    "socketSetupName": "Railing_Inclined",
+    "snapRotation": "SnapAll",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Railing_Inclined_Half": {
+    "socketSetupName": "Railing_Inclined_Half",
+    "snapRotation": "SnapAll",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Railing_Round_Corner": {
+    "socketSetupName": "Railing_Round_Corner",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Tower": {
+    "socketSetupName": "Tower",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Wall": {
+    "socketSetupName": "Wall",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Wall_Half": {
+    "socketSetupName": "Wall_Half",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Wall_Protuding": {
+    "socketSetupName": "Wall",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Wall_Inclined_Tall": {
+    "socketSetupName": "Wall_Inclined_Tall",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Wall_Inclined_Corner_Tall": {
+    "socketSetupName": "Wall_Inclined_Corner_Tall",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Wall_Round_Corner": {
+    "socketSetupName": "Wall_Round_Corner",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Wall_Round_Corner_Sideless": {
+    "socketSetupName": "Wall_Round_Corner_Sideless",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Wall_Round_Corner_Half": {
+    "socketSetupName": "Wall_Round_Corner_Half",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Wall_Triangle_Bottom_Left": {
+    "socketSetupName": "Wall_Triangle_Bottom_Left",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Wall_Triangle_Bottom_Right": {
+    "socketSetupName": "Wall_Triangle_Bottom_Right",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Wall_Triangle_Bottom_Half_Left": {
+    "socketSetupName": "Wall_Triangle_Bottom_Half_Left",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Wall_Triangle_Bottom_Half_Right": {
+    "socketSetupName": "Wall_Triangle_Bottom_Half_Right",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Wall_Triangle_Bottom_Tall_Left": {
+    "socketSetupName": "Wall_Triangle_Bottom_Tall_Left",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Wall_Triangle_Bottom_Tall_Right": {
+    "socketSetupName": "Wall_Triangle_Bottom_Tall_Right",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Wall_Triangle_Top_Left": {
+    "socketSetupName": "Wall_Triangle_Top_Left",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Wall_Triangle_Top_Right": {
+    "socketSetupName": "Wall_Triangle_Top_Right",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Wall_Triangle_Top_Half_Left": {
+    "socketSetupName": "Wall_Triangle_Top_Half_Left",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Wall_Triangle_Top_Half_Right": {
+    "socketSetupName": "Wall_Triangle_Top_Half_Right",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Wall_Triangle_Top_Tall_Left": {
+    "socketSetupName": "Wall_Triangle_Top_Tall_Left",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Wall_Triangle_Top_Tall_Right": {
+    "socketSetupName": "Wall_Triangle_Top_Tall_Right",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "PrudenceDoor_Frame": {
+    "socketSetupName": "Door_Frame",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Ramp_Edge_Wide_Left": {
+    "socketSetupName": "Ramp_Edge_Wide_Left",
+    "snapRotation": "SnapAll",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Ramp_Edge_Wide_Right": {
+    "socketSetupName": "Ramp_Edge_Wide_Right",
+    "snapRotation": "SnapAll",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Ramp_Wide": {
+    "socketSetupName": "Ramp_Wide",
+    "snapRotation": "SnapAll",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Wall_Triangle_Top_Wide_Left": {
+    "socketSetupName": "Wall_Triangle_Top_Wide_Left",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Wall_Triangle_Top_Wide_Right": {
+    "socketSetupName": "Wall_Triangle_Top_Wide_Right",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Floor_Triangle_Wide_Left": {
+    "socketSetupName": "Floor_Triangle_Wide_Left",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Floor_Triangle_Wide_Right": {
+    "socketSetupName": "Floor_Triangle_Wide_Right",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Wall_Inclined_Wide_Left": {
+    "socketSetupName": "Wall_Inclined_Wide_Left",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Wall_Inclined_Wide_Right": {
+    "socketSetupName": "Wall_Inclined_Wide_Right",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Roof_Cover_Bottom_Left": {
+    "socketSetupName": "Wall_Triangle_Bottom_Left",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Roof_Cover_Bottom_Right": {
+    "socketSetupName": "Wall_Triangle_Bottom_Right",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Roof_Cover_Bottom_Half_Left": {
+    "socketSetupName": "Wall_Triangle_Bottom_Half_Left",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Roof_Cover_Bottom_Half_Right": {
+    "socketSetupName": "Wall_Triangle_Bottom_Half_Right",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Roof_Cover_Top_Left": {
+    "socketSetupName": "Wall_Triangle_Top_Left",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Roof_Cover_Top_Right": {
+    "socketSetupName": "Wall_Triangle_Top_Right",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Roof_Cover_Top_Half_Left": {
+    "socketSetupName": "Wall_Triangle_Top_Half_Left",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Roof_Cover_Top_Half_Right": {
+    "socketSetupName": "Wall_Triangle_Top_Half_Right",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Roof_Wedge_Bottom": {
+    "socketSetupName": "Angled_Wedge_Bottom",
+    "snapRotation": "SnapAll",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Roof_Wedge_Top": {
+    "socketSetupName": "Angled_Wedge_Top",
+    "snapRotation": "SnapAll",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Passageway": {
+    "socketSetupName": "Wall",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Ladder": {
+    "socketSetupName": "Ladder",
+    "snapRotation": "SnapAll",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Roof_Wedge_Bottom_Half": {
+    "socketSetupName": "Angled_Wedge_Bottom_Half",
+    "snapRotation": "SnapAll",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Roof_Wedge_Top_Half": {
+    "socketSetupName": "Angled_Wedge_Top_Half",
+    "snapRotation": "SnapAll",
+    "cornersShape": "TriangleIsosceles",
+    "ghostCameraAngleOffset": 0
+  },
+  "Door_Frame_Garage": {
+    "socketSetupName": "Door_Frame_Garage",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Arch": {
+    "socketSetupName": "Arch",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Window_Wide": {
+    "socketSetupName": "Door_Frame_Wide",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  }
+}

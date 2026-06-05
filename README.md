@@ -153,10 +153,59 @@ Script Python d'archivage hebdomadaire. Maintient `dune_counts.csv` dans une fen
 
 ### Constructeur de Base (`base_planner.html`)
 
-> [!WARNING]
-> **Feature en cours de développement.** Sessions 0–7b + 8 livrées (pipeline datamining v3 + socle 3D + géométries + claim + multi-étages + UX avancée + demi-étages + 9 factions + murs triangulaires + sols/toits séparés + machines/véhicules avec blocage volumétrique + sauvegarde PHP + partage public + tuile menu). Sessions 7a (refonte géométries toits) + 7c (sélection multiple) + 7d (simulation de stabilité) à venir.
+> [!IMPORTANT]
+> **Refonte v2 (2026-06) — moteur sockets + meshes réels du jeu.** Le planner n'utilise plus
+> de primitives schématiques : il charge les **vrais maillages `.glb`** extraits du jeu (FModel)
+> et un **accrochage par sockets** (points de connexion du jeu). Bascule via le flag `ENGINE`
+> dans `base_planner.js` (`'sockets'` = nouveau moteur, `'legacy'` = ancien). Voir la section
+> **« Refonte v2 »** ci-dessous. L'historique des sessions 0–8 (approche primitives) reste documenté plus bas.
 
 Outil de planification 3D pour Dune Awakening. Permet aux membres de la guilde de poser virtuellement les pièces de construction du jeu sur une grille de claim avant de bâtir in-game.
+
+#### Refonte v2 — Sockets + meshes réels (2026-06)
+
+**Pourquoi.** L'approche v1 (chaque pièce = une primitive faite main) rendait les formes spéciales
+(triangles, rampes longues, coins arrondis) non reconnaissables et coûtait un temps fou à caler.
+Le reverse-engineering de `dune.layout.tools` a montré le bon chemin : réutiliser **les données du jeu**.
+
+**Architecture (3 modules réutilisables) :**
+- `planner_socket_engine.js` — moteur d'accrochage **sans dépendance Three** : matcher socket-à-socket
+  généralisé (chaque socket actif vs chaque socket posé, compat `type`+`cost`), `gridSnap`, garde NaN,
+  filtre de hauteur (`zHint`). Travaille en **cm Unreal** (X/Y horizontal, Z up).
+- `planner_mesh.js` — rendu Three.js : cache `GLTFLoader`, matériau « argile » clair `DoubleSide`,
+  fallback boîte dérivée des sockets, swap async glb→clay. Mesh FModel = mètres → échelle `100×SCALE`.
+- `planner_pieces.json` — catalogue unifié (généré par `tools/build_planner_pieces.js`) : champs UI de
+  `base_pieces_v3.json` + sockets/mesh/size de `dune_pieces_sockets.json`.
+
+**Données du jeu (reverse de dune.layout.tools + extraction FModel) :**
+- `dune_socket_profiles.json` (71 profils de sockets), `dune_group_config.json` (92 groupes),
+  `dune_pieces_sockets.json` (552 pièces : sockets `{lx,ly,lz,yawDeg,cost,types}`, size, mesh).
+- Meshes `.glb` : export FModel de `DuneSandbox/Content/Dune/Environment/PlayerBuilt/<Faction>/Outpost/Meshes/`
+  (index **non chiffré**, UE **5.2.1**, profil natif `GAME_DuneAwakening`, `.usmap` auto). Aplatis dans
+  `models/<basename>.glb` via `tools/flatten_glb.js`. **`models/` est gitignoré (~357 Mo, assets Funcom) —
+  déploiement séparé via WinSCP.** Smuggler/Watershippers sous `/DLC/...` restent à exporter.
+
+**Bridge coordonnées (intégration dans `base_planner.js`) :**
+- 1 unité monde = 1 cellule = `CM_PER_CELL` (512 cm = 1 fondation) ; 1 niveau = `CM_PER_LEVEL` (384 cm) ;
+  `WORLD_PER_CM = 1/512`. Échelle uniforme (pas de distorsion des meshes).
+- Item v2 : `{ id, piece_id, x, y (cm), cz (cm hauteur), z (niveau d'étage), rotation }`.
+  Sauvegarde **version 2** (`cz` sérialisé). Pas de migration v1 (repartir à zéro).
+- Coutures : `buildMeshForPiece`/`placeMeshAt` → meshes ; `tryShowGhostForPiece`/`tryPlacePieceAt` → snap ;
+  `loadCatalog` → catalogue + re-dérivation catégories (`deriveGameCategory`) + désactivation du groupement de variantes.
+
+**Acquis v2 (vérifiés) :** accrochage fidèle (triangles, rampes, demi-pièces), centrage cases, anti-superposition,
+rotation `R`/`Ctrl+molette` (autour du centre), **étages** (snap conscient de la hauteur, visibilité par span,
+pièces hautes type Grande porte), vue solide, **limites du fief** (ghost rouge hors zone) + **grille dynamique**
+qui suit l'extension du claim (5 extensions dans toutes les directions), sauvegarde/chargement v2.
+
+**Pièges rencontrés (à retenir) :** une erreur d'éval ESM (déclaration dupliquée) fait planter **tout** le module
+silencieusement → la console preview ne la capture pas ; diag via `import('/base_planner.js?probe=…').catch`.
+Le **cache navigateur des modules ES** masque les déploiements → versioning `?v=lotX` sur le `<script>` + les
+`import` (bumper à chaque modif) + Ctrl+Shift+R.
+
+---
+
+#### Historique v1 (approche primitives schématiques)
 
 #### Choix techniques fondateurs
 - **3D abstraite avec Three.js r170** (via importmap ES module + OrbitControls). Pas de modèles in-game importés ; chaque pièce est représentée par une primitive (pavé, prisme triangulaire, rampe inclinée, marches, quart de cylindre…). Le rendu 3D est intentionnellement schématique pour rester lisible comme un blueprint.

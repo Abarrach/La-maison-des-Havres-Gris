@@ -11,8 +11,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 // ?v= : cache-busting. Bump à chaque modif des modules pour forcer le rechargement
 // (sinon le navigateur sert l'ancienne version mise en cache).
-import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot20floors';
-import { createMeshFactory } from './planner_mesh.js?v=lot20floors';
+import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot26railattach';
+import { createMeshFactory } from './planner_mesh.js?v=lot26railattach';
 
 // ============================================================
 // MOTEUR — bascule ancien (géométrie+grille) / nouveau (sockets+meshes réels)
@@ -163,8 +163,9 @@ const state = {
   ghostUserSetRotation: false,
   // Click-to-place : pièce sélectionnée dans la sidebar, posée par clic sur le canvas
   activePieceId:  null,
-  // Vue solide : masque le verre (fenêtres transparentes)
-  solidView:      false,
+  // Vue solide : masque le verre (fenêtres transparentes). ACTIVÉE par défaut
+  // (tous les étages visibles et opaques à l'ouverture) — togglable via le bouton / T.
+  solidView:      true,
   // Mode demi-étage : la pièce en cours de pose est décalée de +0.5 WALL_UNIT
   ghostHalf:      false,
 };
@@ -308,6 +309,7 @@ async function init() {
   updatePlanPanel();
   updateFloorVisibility();
   updateFloorBadges();
+  applySolidView();     // mode solide actif par défaut → bouton actif + rendu opaque
   hideHint();
   animate();
 }
@@ -327,7 +329,7 @@ const EXCLUDED_PIECE_IDS = new Set([
 ]);
 
 async function loadCatalog() {
-  const url = ENGINE === 'sockets' ? 'planner_pieces.json' : PIECES_JSON_URL;
+  const url = ENGINE === 'sockets' ? 'planner_pieces.json?v=lot26railattach' : PIECES_JSON_URL;
   const resp = await fetch(url);
   if (!resp.ok) throw new Error('pieces ' + resp.status);
   const piecesData = await resp.json();
@@ -3186,6 +3188,28 @@ function socketBuildMesh(item) {
   return g;
 }
 function socketCursorCm(clientX, clientY) {
+  // PRIORITÉ : la géométrie réellement SOUS le curseur (pièce posée). Le point actif
+  // suit alors visuellement la souris quel que soit l'angle de caméra, au lieu d'être
+  // projeté sur le plan du sol (Y=0) — décalage gênant en vue 3D (cf. retour utilisateur :
+  // croix dans le vide mais ghost accroché loin sur un sol surélevé).
+  const rect = renderer.domElement.getBoundingClientRect();
+  mouseNDC.x = ((clientX - rect.left) / rect.width)  * 2 - 1;
+  mouseNDC.y = -((clientY - rect.top)  / rect.height) * 2 + 1;
+  raycaster.setFromCamera(mouseNDC, activeCam);
+  const hits = raycaster.intersectObjects(Array.from(placedMeshes.values()), true);
+  if (hits.length) {
+    const p = hits[0].point;
+    if (isFinite(p.x) && isFinite(p.y) && isFinite(p.z)) {
+      // Étage visé = celui dont la SURFACE est à la HAUTEUR du point touché (pas le
+      // floorZ de la pièce). Surface du niveau f à cz=(f+1)×384 → floor = round(cz/384)-1.
+      // Conséquence intuitive : survoler le HAUT d'un escalier/rampe vise le niveau du
+      // dessus (→ on enchaîne pour monter) ; survoler le bas vise le niveau du bas.
+      const cz = p.y / WORLD_PER_CM;
+      const floor = Math.round(cz / CM_PER_LEVEL) - 1;
+      return { x: p.x / WORLD_PER_CM, y: p.z / WORLD_PER_CM, z: cz, floor };
+    }
+  }
+  // Sinon (curseur dans le vide) : projection sur le plan du sol à l'étage courant.
   const world = screenToWorld(clientX, clientY);
   if (!world) return null;
   const x = world.x / WORLD_PER_CM, y = world.z / WORLD_PER_CM;
@@ -3193,7 +3217,7 @@ function socketCursorCm(clientX, clientY) {
   // Three.js peut renvoyer un point avec NaN. Sans ce guard, toutes les distances passent
   // le filtre (NaN > G = false), ce qui fait accrocher n'importe quoi n'importe où.
   if (!isFinite(x) || !isFinite(y)) return null;
-  return { x, y, z: (state.currentFloor || 0) * CM_PER_LEVEL };
+  return { x, y, z: (state.currentFloor || 0) * CM_PER_LEVEL, floor: state.currentFloor || 0 };
 }
 function socketPlacedList() {
   const out = [];
@@ -3218,22 +3242,26 @@ function socketInClaim(cmX, cmY) {
   }
   return false;
 }
-// Hauteur cm attendue pour poser sur l'ÉTAGE COURANT.
+// Hauteur cm attendue pour poser sur un étage donné (défaut : étage courant).
 // Mesuré : RDC → fondation cz=0, murs/sols cz=384. Donc fondation = niveau×384, autres = (niveau+1)×384.
-function expectedCzFor(piece) {
-  return (state.currentFloor + (piece?.is_foundation ? 0 : 1)) * CM_PER_LEVEL;
+function expectedCzFor(piece, floor) {
+  const f = (floor != null) ? floor : (state.currentFloor || 0);
+  return (f + (piece?.is_foundation ? 0 : 1)) * CM_PER_LEVEL;
 }
 function socketComputeSnap(pieceId, cur) {
   const placed = socketPlacedList();
   const piece = state.piecesById.get(pieceId);
+  // Étage cible = celui de la pièce SOUS le curseur (cur.floor), sinon l'étage courant.
+  // Permet de poser/empiler là où on pointe en 3D, pas seulement sur l'onglet actif.
+  const curFloor = (cur.floor != null) ? cur.floor : (state.currentFloor || 0);
 
-  // ── Machines / véhicules : pose libre centrée à l'étage courant ──
+  // ── Machines / véhicules : pose libre centrée à l'étage visé ──
   if (piece?.is_machine || piece?.is_vehicle) {
-    const zHint = expectedCzFor(piece);
+    const zHint = expectedCzFor(piece, curFloor);
     const { wC, dC } = footprintDims(piece, state.ghostRotation || 0);
     return {
       pos: { x: placeableSnapAxis(cur.x, wC), y: placeableSnapAxis(cur.y, dC), z: zHint },
-      rotation: state.ghostRotation || 0, snapped: false, floor: state.currentFloor || 0,
+      rotation: state.ghostRotation || 0, snapped: false, floor: curFloor,
     };
   }
 
@@ -3241,7 +3269,7 @@ function socketComputeSnap(pieceId, cur) {
   // AUTO-EMPILEMENT : si la case est déjà occupée par une fondation/pilier au niveau courant,
   // on monte d'un étage → cliquer plusieurs fois empile les fondations vers le haut.
   if (piece?.is_foundation || piece?.is_pillar) {
-    const baseF = state.currentFloor || 0;
+    const baseF = curFloor;
     const maxF = getMaxFloor();
     for (let floor = baseF; floor <= maxF; floor++) {
       const g = socketEngine.gridSnap(cur.x, cur.y, floor * CM_PER_LEVEL);
@@ -3269,12 +3297,12 @@ function socketComputeSnap(pieceId, cur) {
     });
   }
   const occ = socketEngine.occSet(occList);
-  // On essaie l'étage courant puis on MONTE. À chaque niveau, snapPiece renvoie l'accroche
+  // On essaie l'étage visé puis on MONTE. À chaque niveau, snapPiece renvoie l'accroche
   // LIBRE la plus proche du curseur. On retient le niveau dont l'accroche est la plus proche :
   // si l'emplacement sous le curseur est déjà occupé, l'accroche du DESSUS (juste au-dessus)
   // est plus proche que la case voisine libre → la pièce s'empile vers le haut. Ainsi cliquer
   // plusieurs fois au même endroit monte étage par étage.
-  const base = state.currentFloor || 0;
+  const base = curFloor;
   const top = Math.min(base + 8, getMaxFloor());
   const NEAR = CM_PER_CELL * 0.65;   // « bien sous le curseur » (< accroche d'une case voisine ~362)
   let best = null;
@@ -3290,10 +3318,15 @@ function socketComputeSnap(pieceId, cur) {
     if (dOr <= NEAR) break;
   }
   if (!best) {
-    // Pose LIBRE de secours UNIQUEMENT pour les MURS/FENÊTRES arrondis : leurs sockets
-    // (BP_DuneCurvedWallSocket_C) ne s'accrochent pas aux sols → sans ça ils seraient imposables.
-    // Les SOLS arrondis ont des sockets de bord normaux → ils s'accrochent (donc PAS de fallback,
-    // sinon ils flotteraient n'importe où — comportement signalé anormal).
+    // Pose LIBRE de secours (positionnement manuel + rotation R) quand AUCUN socket ne
+    // matche, pour les pièces qui seraient sinon IMPOSABLES :
+    //  - MURS/FENÊTRES arrondis : sockets BP_DuneCurvedWallSocket_C non mappés aux sols.
+    //  - RAMBARDES : surtout les rambardes INCLINÉES dont l'unique socket est `No_Cost` à
+    //    types vides → 0 socket actif → jamais accrochables par le moteur. (Les rambardes
+    //    droites/arrondies s'accrochent quand le curseur est près d'un bord ; sinon elles
+    //    retombent ici en pose libre plutôt que de rester imposables.)
+    // Les SOLS arrondis ont des sockets de bord normaux → ils s'accrochent (PAS de fallback,
+    // sinon ils flotteraient n'importe où).
     const cat = getEffectiveCategory(piece);
     if (/Round_Corner/.test(piece?.group || '') && (cat === 'walls' || cat === 'windows')) {
       const g = socketEngine.gridSnap(cur.x, cur.y, (base + 1) * CM_PER_LEVEL);
@@ -3797,38 +3830,33 @@ function pasteFloorClipboard() {
     return;
   }
   const targetZ = state.currentFloor;
+  const sourceZ = state.floorClipboard.sourceZ ?? targetZ;
+  const dCz     = (targetZ - sourceZ) * CM_PER_LEVEL;   // décalage de hauteur entre étages
   const placed  = [];
   const skipped = [];
+  const floor   = getFloor(targetZ);
+  if (!floor) { showFloorResolveHud(targetZ, 'Étage cible introuvable'); return; }
+
+  const DUP = 30;
+  const exists = (pid, x, y, cz) => floor.items.some(it =>
+    it.piece_id === pid && Math.abs((it.x || 0) - x) < DUP &&
+    Math.abs((it.y || 0) - y) < DUP && Math.abs((it.cz || 0) - cz) < DUP);
 
   for (const src of state.floorClipboard.items) {
     const piece = state.piecesById.get(src.piece_id);
     if (!piece) { skipped.push(src); continue; }
-
-    // Construit un snap compatible avec isPlacementAllowedOnFloor
-    const rules = piece.placement_rules || {};
-    const snap = {
-      kind: rules.snap_target || 'cell',
-      x:    src.x,
-      y:    src.y,
-      axis: src.axis,
-    };
-    if (!isPlacementAllowedOnFloor(piece, snap, targetZ)) {
-      skipped.push(src);
-      continue;
-    }
-    // Crée un nouvel item avec nouvel id, mais conserve x/y/axis/rotation/half
+    // Coordonnées sockets en cm : x/y inchangés, hauteur décalée du nb d'étages.
+    const x = src.x || 0, y = src.y || 0, cz = (src.cz || 0) + dCz;
+    // Ignore les doublons exacts (même type au même point sur l'étage cible).
+    if (exists(src.piece_id, x, y, cz)) { skipped.push(src); continue; }
     const newItem = {
-      id:       'item_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+      id: (window.crypto && crypto.randomUUID) ? crypto.randomUUID()
+        : 'item_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
       piece_id: src.piece_id,
-      snap_kind: snap.kind,
-      x:        src.x,
-      y:        src.y,
-      axis:     src.axis,
+      x, y, cz,
       z:        targetZ,
       rotation: src.rotation || 0,
-      half:     src.half || false,
     };
-    const floor = getFloor(targetZ);
     floor.items.push(newItem);
     const mesh = buildMeshForPiece(piece, newItem);
     scene.add(mesh);
@@ -3949,8 +3977,7 @@ function toggleSelectedHalf() {
 
   const applyHalf = (h) => {
     item.half = h;
-    mesh.rotation.set(0, 0, 0);
-    placeMeshAt(mesh, item, piece);
+    applyTransformSocket(mesh, item);
     // Met à jour le bouton dans le panneau
     const btn = document.getElementById('bp-sel-half');
     if (btn) btn.classList.toggle('active', h);
@@ -3976,8 +4003,7 @@ function rotateSelected(delta) {
 
   const applyRot = (rot) => {
     item.rotation = rot;
-    mesh.rotation.set(0, 0, 0);
-    placeMeshAt(mesh, item, piece);
+    applyTransformSocket(mesh, item);
     setText(dom.selRot, rot + '°');
   };
 
@@ -4526,6 +4552,11 @@ function initToolbar() {
  *  et vue solide (tous les étages visibles et opaques, sans verre). */
 function toggleSolidView() {
   state.solidView = !state.solidView;
+  applySolidView();
+}
+/** Applique l'état `state.solidView` courant aux meshes + au bouton (idempotent).
+ *  Appelée par toggleSolidView ET à l'init (mode solide actif par défaut). */
+function applySolidView() {
   const btn = document.getElementById('tool-solid');
   if (btn) btn.classList.toggle('active', state.solidView);
 
@@ -4675,9 +4706,8 @@ function initKeyboard() {
           // En mode sockets : rotation manuelle de +90°, puis refresh immédiat du ghost
           // avec la dernière position curseur mémorisée.
           state.ghostRotation = ((state.ghostRotation || 0) + 90) % 360;
-          if (state.activePieceId) {
-            socketShowGhost(state.activePieceId, lastSocketClientPos.x, lastSocketClientPos.y);
-          }
+          const pid = state.activePieceId || state.dragPieceId;
+          if (pid) socketShowGhost(pid, lastSocketClientPos.x, lastSocketClientPos.y);
           return;
         }
         // Base = rotation effective courante (peut être l'auto-rotation pour les triangles).
@@ -4769,49 +4799,19 @@ function initDragDrop() {
   const DRAG_PX = 5;
   el.addEventListener('mousedown', (e) => { if (e.button === 0) { downX = e.clientX; downY = e.clientY; dragged = false; } });
 
+  // Drag-and-drop : même moteur que le click-to-place (sockets). Le ghost suit le
+  // curseur pendant le survol, la pose se fait au drop via le moteur de sockets.
   el.addEventListener('dragover', (e) => {
     e.preventDefault();
     if (!state.dragPieceId) return;
-    state.ghostHalf = e.shiftKey;          // Shift tenu → demi-étage
-    updateHalfHud();
-    const piece = state.piecesById.get(state.dragPieceId);
-    if (!piece) return;
-    const world = screenToWorld(e.clientX, e.clientY);
-    if (!world) return;
-    const snap = snapForPiece(world, piece);
-    if (!snap) return;
-    const resolvedFloor = findBestPlacementFloor(piece, snap);
-    const allowed = isPlacementAllowedOnFloor(piece, snap, resolvedFloor);
-    const effectiveRot = computeEffectiveRotation(piece, snap, world, resolvedFloor);
-    // Mémorise l'état pour re-render immédiat lors d'un keydown R
-    lastGhostState = { piece, snap, resolvedFloor, allowed, effectiveRot };
-    showGhost(piece, snap, resolvedFloor, allowed, effectiveRot);
-    showFloorResolveHud(resolvedFloor);
-    setText(dom.hudCoords, formatSnapHud(snap));
+    tryShowGhostForPiece(state.dragPieceId, e.clientX, e.clientY);
   });
 
   el.addEventListener('drop', (e) => {
     e.preventDefault();
-    state.ghostHalf = e.shiftKey;          // capture Shift au moment du drop
     if (!state.dragPieceId) { endDrag(); return; }
-    const piece = state.piecesById.get(state.dragPieceId);
-    if (!piece) { endDrag(); return; }
-    const world = screenToWorld(e.clientX, e.clientY);
-    if (!world) { endDrag(); return; }
-    const snap = snapForPiece(world, piece);
-    if (!snap) { endDrag(); return; }
-    const resolvedFloor = findBestPlacementFloor(piece, snap);
-    const dropRot = computeEffectiveRotation(piece, snap, world, resolvedFloor);
-    if (isPlacementAllowedOnFloor(piece, snap, resolvedFloor)) {
-      if (state.showStability && !wouldBeStableAfterPlacing(piece, snap, resolvedFloor)) {
-        showFloorResolveHud(resolvedFloor, 'Pose refusée : stabilité insuffisante');
-      } else {
-        placePieceFromSnap(state.dragPieceId, snap, resolvedFloor, dropRot);
-      }
-    }
+    tryPlacePieceAt(state.dragPieceId, e.clientX, e.clientY);
     endDrag();
-    state.ghostHalf = false;
-    updateHalfHud();
   });
 
   el.addEventListener('dragleave', () => endDrag());
@@ -4894,7 +4894,8 @@ function initDragDrop() {
         const delta = e.deltaY < 0 ? -90 : 90;  // molette vers le haut = -90°
         if (ENGINE === 'sockets') {
           state.ghostRotation = norm360((state.ghostRotation || 0) + delta);
-          if (state.activePieceId) socketShowGhost(state.activePieceId, lastSocketClientPos.x, lastSocketClientPos.y);
+          const pid = state.activePieceId || state.dragPieceId;
+          if (pid) socketShowGhost(pid, lastSocketClientPos.x, lastSocketClientPos.y);
           return;
         }
         // Base = rotation effective courante (peut être l'auto-rotation pour les triangles).

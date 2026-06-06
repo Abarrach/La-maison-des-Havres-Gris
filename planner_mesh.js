@@ -95,7 +95,11 @@ export function createMeshFactory({ getPiece, modelsBase = 'models/', scale = 0.
         m.scale.setScalar(100 * SCALE * MESH_TUNE.scale);
         m.rotation.set(MESH_TUNE.rotX, MESH_TUNE.rotY, MESH_TUNE.rotZ);
         // Pièce posée → argile clair ; ghost → couleur demandée (doré/vert/rouge).
-        tint(m, opacity < 1 ? color : 0xcfc6b4, opacity);
+        // Si une teinte de stabilité est active sur le groupe, elle prime (sinon le
+        // swap async écraserait le vert/jaune/rouge par l'argile).
+        const body = (g.userData.stabilityTint != null) ? g.userData.stabilityTint
+                   : (opacity < 1 ? color : 0xcfc6b4);
+        tint(m, body, opacity);
         g.add(m);
       });
     }

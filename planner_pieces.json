@@ -83812,7 +83812,12 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/FabricatorLarge/Meshes/Source/Static_02/SM_Plac_Choam_Fabricator_Large_01.SM_Plac_Choam_Fabricator_Large_01",
       "is_machine": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Plac_Choam_Fabricator_Large_01",
+      "footprint": {
+        "w": 1,
+        "d": 1,
+        "h": 1
+      }
     },
     {
       "id": "PortableFabricator_Placeable",
@@ -83872,7 +83877,12 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/SpiceRefinery/Meshes/SM_Env_Props_Choam_SpiceRefinery.SM_Env_Props_Choam_SpiceRefinery",
       "is_machine": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Env_Props_Choam_SpiceRefinery",
+      "footprint": {
+        "w": 1,
+        "d": 1,
+        "h": 2
+      }
     },
     {
       "id": "MediumOreRefinery_Placeable",
@@ -83902,7 +83912,12 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/OreRefinery/Meshes/SM_Env_Prop_Choam_OreRefinery_01.SM_Env_Prop_Choam_OreRefinery_01",
       "is_machine": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Env_Prop_Choam_OreRefinery_01",
+      "footprint": {
+        "w": 2,
+        "d": 1,
+        "h": 1
+      }
     },
     {
       "id": "SmallOreRefinery_Placeable",
@@ -83932,7 +83947,12 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/OreRefinery/Meshes/SM_Env_Prop_Choam_OreRefinery_Small.SM_Env_Prop_Choam_OreRefinery_Small",
       "is_machine": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Env_Prop_Choam_OreRefinery_Small",
+      "footprint": {
+        "w": 1,
+        "d": 1,
+        "h": 1
+      }
     },
     {
       "id": "SmallChemicalRefinery_Placeable",
@@ -83962,7 +83982,12 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/ChemicalRefinery/Meshes/SM_Env_Prop_Choam_ChemicalRefinery_Small.SM_Env_Prop_Choam_ChemicalRefinery_Small",
       "is_machine": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Env_Prop_Choam_ChemicalRefinery_Small",
+      "footprint": {
+        "w": 1,
+        "d": 1,
+        "h": 1
+      }
     },
     {
       "id": "WeaponsFabricator_Placeable",
@@ -83992,7 +84017,12 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/Fabricator/Meshes/SM_Env_Prop_Choam_Fabricator_Weapons.SM_Env_Prop_Choam_Fabricator_Weapons",
       "is_machine": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Env_Prop_Choam_Fabricator_Weapons",
+      "footprint": {
+        "w": 1,
+        "d": 1,
+        "h": 1
+      }
     },
     {
       "id": "WearablesFabricator_Placeable",
@@ -84022,7 +84052,12 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/Fabricator/Meshes/SM_Env_Prop_Choam_Fabricator_Wearables.SM_Env_Prop_Choam_Fabricator_Wearables",
       "is_machine": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Env_Prop_Choam_Fabricator_Wearables",
+      "footprint": {
+        "w": 1,
+        "d": 1,
+        "h": 1
+      }
     },
     {
       "id": "VehiclesFabricator_Placeable",
@@ -84052,7 +84087,12 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/Fabricator/Meshes/SM_Env_Prop_Choam_Fabricator_Vehicles.SM_Env_Prop_Choam_Fabricator_Vehicles",
       "is_machine": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Env_Prop_Choam_Fabricator_Vehicles",
+      "footprint": {
+        "w": 1,
+        "d": 1,
+        "h": 1
+      }
     },
     {
       "id": "SurvivalFabricator_Placeable",
@@ -84082,7 +84122,12 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/Fabricator/Meshes/SM_Env_Prop_Choam_Fabricator_Survival.SM_Env_Prop_Choam_Fabricator_Survival",
       "is_machine": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Env_Prop_Choam_Fabricator_Survival",
+      "footprint": {
+        "w": 1,
+        "d": 1,
+        "h": 1
+      }
     },
     {
       "id": "ConstructionFabricator_Placeable",
@@ -84142,7 +84187,12 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/ChemicalRefinery/Meshes/SM_Env_Prop_Choam_ChemicalRefinery_Medium.SM_Env_Prop_Choam_ChemicalRefinery_Medium",
       "is_machine": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Env_Prop_Choam_ChemicalRefinery_Medium",
+      "footprint": {
+        "w": 2,
+        "d": 1,
+        "h": 1
+      }
     },
     {
       "id": "MediumSpiceRefinery_Placeable",
@@ -84172,7 +84222,12 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/SpiceRefinery/Meshes/SM_Env_Prop_Choam_SpiceRefinery_Medium.SM_Env_Prop_Choam_SpiceRefinery_Medium",
       "is_machine": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Env_Prop_Choam_SpiceRefinery_Medium",
+      "footprint": {
+        "w": 2,
+        "d": 1,
+        "h": 2
+      }
     },
     {
       "id": "AdvancedWeaponsFabricator_Placeable",
@@ -84202,7 +84257,12 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/Fabricator/Meshes/SM_Env_Prop_Choam_Fabricator_Weapons_Advanced.SM_Env_Prop_Choam_Fabricator_Weapons_Advanced",
       "is_machine": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Env_Prop_Choam_Fabricator_Weapons_Advanced",
+      "footprint": {
+        "w": 1,
+        "d": 1,
+        "h": 1
+      }
     },
     {
       "id": "AdvancedWearablesFabricator_Placeable",
@@ -84232,7 +84292,12 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/Fabricator/Meshes/SM_Env_Prop_Choam_Fabricator_Wearables_Advandced.SM_Env_Prop_Choam_Fabricator_Wearables_Advandced",
       "is_machine": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Env_Prop_Choam_Fabricator_Wearables_Advandced",
+      "footprint": {
+        "w": 1,
+        "d": 1,
+        "h": 1
+      }
     },
     {
       "id": "Advanced_VehiclesFabricator_Placeable",
@@ -84262,7 +84327,12 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/Fabricator/Meshes/SM_Env_Prop_Choam_Fabricator_Vehicles_Large.SM_Env_Prop_Choam_Fabricator_Vehicles_Large",
       "is_machine": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Env_Prop_Choam_Fabricator_Vehicles_Large",
+      "footprint": {
+        "w": 3,
+        "d": 3,
+        "h": 1
+      }
     },
     {
       "id": "Advanced_SurvivalFabricator_Placeable",
@@ -84292,7 +84362,12 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/Fabricator/Meshes/SM_Env_Prop_Choam_Fabricator_Survival_Advanced_01_assemble.SM_Env_Prop_Choam_Fabricator_Survival_Advanced_01_assemble",
       "is_machine": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Env_Prop_Choam_Fabricator_Survival_Advanced_01_assemble",
+      "footprint": {
+        "w": 1,
+        "d": 1,
+        "h": 1
+      }
     },
     {
       "id": "LargeOreRefinery_Placeable",
@@ -84322,7 +84397,12 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/OreRefinery/Meshes/SM_Env_Prop_Choam_OreRefinery_Large.SM_Env_Prop_Choam_OreRefinery_Large",
       "is_machine": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Env_Prop_Choam_OreRefinery_Large",
+      "footprint": {
+        "w": 3,
+        "d": 2,
+        "h": 2
+      }
     },
     {
       "id": "LargeSpiceRefinery_Placeable",
@@ -84352,7 +84432,12 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/SpiceRefinery/Meshes/SM_Env_Prop_Choam_SpiceRefinery_Large_Full.SM_Env_Prop_Choam_SpiceRefinery_Large_Full",
       "is_machine": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Env_Prop_Choam_SpiceRefinery_Large_Full",
+      "footprint": {
+        "w": 2,
+        "d": 2,
+        "h": 4
+      }
     },
     {
       "id": "Sandbike_Vehicle",
@@ -84379,11 +84464,16 @@
       },
       "menu_order": 900000,
       "icon_path": "",
-      "mesh_path": "",
+      "mesh_path": "/Game/Dune/Vehicles/GroundVehicles/GroundCar/ChoamFaction/1Man/Mesh/ProxyMeshes/SM_ProxyMesh_Choam_GC_Sandbike.SM_ProxyMesh_Choam_GC_Sandbike",
       "is_machine": true,
       "is_vehicle": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_ProxyMesh_Choam_GC_Sandbike",
+      "footprint": {
+        "w": 1,
+        "d": 1,
+        "h": 1
+      }
     },
     {
       "id": "Buggy_Vehicle",
@@ -84410,11 +84500,16 @@
       },
       "menu_order": 900001,
       "icon_path": "",
-      "mesh_path": "",
+      "mesh_path": "/Game/Dune/Vehicles/GroundVehicles/GroundCar/ChoamFaction/Buggy/Mesh/ProxyMeshes/SM_ProxyMesh_Choam_GC_Buggy.SM_ProxyMesh_Choam_GC_Buggy",
       "is_machine": true,
       "is_vehicle": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_ProxyMesh_Choam_GC_Buggy",
+      "footprint": {
+        "w": 2,
+        "d": 1,
+        "h": 1
+      }
     },
     {
       "id": "Tank_Vehicle",
@@ -84472,11 +84567,16 @@
       },
       "menu_order": 900003,
       "icon_path": "",
-      "mesh_path": "",
+      "mesh_path": "/Game/Dune/Vehicles/GroundVehicles/GroundCar/ChoamFaction/Industrial/Mesh/ProxyMeshes/SM_ProxyMesh_Choam_GC_Industrial.SM_ProxyMesh_Choam_GC_Industrial",
       "is_machine": true,
       "is_vehicle": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_ProxyMesh_Choam_GC_Industrial",
+      "footprint": {
+        "w": 4,
+        "d": 2,
+        "h": 2
+      }
     },
     {
       "id": "TreadWheel_Vehicle",
@@ -84534,11 +84634,16 @@
       },
       "menu_order": 900005,
       "icon_path": "",
-      "mesh_path": "",
+      "mesh_path": "/Game/Dune/Vehicles/FlyingVehicles/Ornithopter/ChoamFaction/Light/Mesh/ProxyMeshes/SM_ProxyMesh_Choam_Ornithopter_Light.SM_ProxyMesh_Choam_Ornithopter_Light",
       "is_machine": true,
       "is_vehicle": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_ProxyMesh_Choam_Ornithopter_Light",
+      "footprint": {
+        "w": 2,
+        "d": 1,
+        "h": 1
+      }
     },
     {
       "id": "MediumOrnithopter_Vehicle",
@@ -84565,11 +84670,16 @@
       },
       "menu_order": 900006,
       "icon_path": "",
-      "mesh_path": "",
+      "mesh_path": "/Game/Dune/Vehicles/FlyingVehicles/Ornithopter/ChoamFaction/Medium/Mesh/ProxyMeshes/SM_ProxyMesh_Choam_Ornithopter_Medium.SM_ProxyMesh_Choam_Ornithopter_Medium",
       "is_machine": true,
       "is_vehicle": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_ProxyMesh_Choam_Ornithopter_Medium",
+      "footprint": {
+        "w": 2,
+        "d": 1,
+        "h": 1
+      }
     },
     {
       "id": "TransportOrnithopter_Vehicle",
@@ -84596,11 +84706,16 @@
       },
       "menu_order": 900007,
       "icon_path": "",
-      "mesh_path": "",
+      "mesh_path": "/Game/Dune/Vehicles/FlyingVehicles/Ornithopter/ChoamFaction/Transport/Mesh/ProxyMeshes/SM_ProxyMesh_Choam_Ornithopter_Transport.SM_ProxyMesh_Choam_Ornithopter_Transport",
       "is_machine": true,
       "is_vehicle": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_ProxyMesh_Choam_Ornithopter_Transport",
+      "footprint": {
+        "w": 3,
+        "d": 3,
+        "h": 2
+      }
     }
   ]
 }

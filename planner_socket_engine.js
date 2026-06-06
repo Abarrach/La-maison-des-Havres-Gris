@@ -40,8 +40,8 @@ const COST_OK = {
   Sideways:        new Set(['Sideways']),
   Foundation_Edge: new Set(['Down', 'Up', 'Foundation_Edge']),
 };
-const costMatch = (a, b) => COST_OK[a]?.has(b) ?? false;
-function typeMatch(a, b) {
+export const costMatch = (a, b) => COST_OK[a]?.has(b) ?? false;
+export function typeMatch(a, b) {
   if (K(a.types, b.types)) return true;
   return K(a.targetTypes, b.types) && K(b.targetTypes, a.types);
 }
@@ -73,6 +73,9 @@ export function createEngine(getPiece) {
   }
   function isBig(type) {                       // pièce "grande/tuilable" (sol, fondation)
     const p = getPiece(type); if (!p) return false;
+    // Rampes / escaliers : posables SUR un sol → ne participent pas au blocage d'emprise
+    // (sinon ils ne peuvent jamais chevaucher un sol/une fondation existants).
+    if (p.category === 'stairs') return false;
     if (p.sockets.some(k => k.cost === 'Down')) return false;
     return p.sockets.some(k => k.cost === 'Up' && k.types.includes('BP_DuneBuildingSocket_C') && (Math.abs(k.lx) > 1 || Math.abs(k.ly) > 1));
   }

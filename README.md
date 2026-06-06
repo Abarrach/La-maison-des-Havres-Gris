@@ -203,6 +203,32 @@ silencieusement → la console preview ne la capture pas ; diag via `import('/ba
 Le **cache navigateur des modules ES** masque les déploiements → versioning `?v=lotX` sur le `<script>` + les
 `import` (bumper à chaque modif) + Ctrl+Shift+R.
 
+**Finitions (2026-06, lots `lot1`→`lot20`) :**
+- **Stabilité (socket)** : `computeStabilitySocket` — connectivité par **coïncidence de sockets monde**
+  (mêmes règles que le snap, `costMatch`/`typeMatch` exportés), **budget 10 pas** propagé en BFS depuis
+  les ancres (fondations + **piliers/colonnes au sol**). Coût : horizontal 1, vertical via mur 1, via
+  pilier/fondation 0. Rejet des jonctions **coin↔coin** (sinon raccourci diagonal sol↔sol). Bouton
+  bouclier : vert/orange/rouge + pose bloquée si hors budget.
+- **Catalogue mesh complet** : 100 % des factions structurelles (Atréides, Harkonnen, CHOAM, CHOAM N2,
+  Abri CHOAM, Contrebandiers, Marchands d'eau, extra) + **17 machines** + **6 véhicules** (via les
+  **proxy meshes** statiques `SM_ProxyMesh_*`, ornithoptères ailes ouvertes mais collision sur boîte
+  garée). 3 racines de mesh : `Dune/Environment/PlayerBuilt`, `/Game/DLC/…`, `Dune/Vehicles/…`.
+- **Vignettes de palette** : rendu offscreen des `.glb` (vue iso, lazy via IntersectionObserver, cache).
+  Fallback **glyphe SVG** par type tant que le mesh charge / si absent. Piège CSS : `background:` (raccourci)
+  réinitialise `background-size` → vignettes rognées ; fix `background-color:` + longhands JS.
+- **Machines/véhicules** : pose libre centrée (empreinte parité-aware depuis la **vraie bbox du glb**,
+  `real_size_m` ayant des axes incohérents) + **règles de pose** : pas de chevauchement placeable↔placeable,
+  **sol porteur requis** sous l'empreinte, **pas à travers un mur**.
+- **Auto-empilement** : cliquer plusieurs fois au même endroit empile murs/sols/fondations vers le haut
+  (scan des niveaux, priorité au plus bas si accroche sous le curseur). Fondations/piliers idem.
+- **Piliers/colonnes** = catégorie `foundations` (comme le jeu), **pose libre** au sol (ancres), empilables.
+  Colonne **centrale** = support ponctuel (pas de bords) ; colonne **de coin** supporte les coins de sol.
+- **UX** : sélection réparée (raycast récursif sur les groupes glb + surbrillance émissive), curseur
+  contextuel (pointeur sur survol), drag-vs-clic (orbiter sans poser), **bouton Nouveau plan** + flag
+  « modifié » + confirmation, **modale d'aide** (raccourcis + tutoriel), URL `?plan=` nettoyée après load.
+- **Mode texturé : abandonné** — les `_M` exportés sont des masques packés, la couleur du jeu est composée
+  à l'exécution par un matériau en couches (non reproductible). On garde l'argile (comme dune.layout.tools).
+
 ---
 
 #### Historique v1 (approche primitives schématiques)

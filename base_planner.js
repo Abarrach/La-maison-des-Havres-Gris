@@ -11,8 +11,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 // ?v= : cache-busting. Bump à chaque modif des modules pour forcer le rechargement
 // (sinon le navigateur sert l'ancienne version mise en cache).
-import { createEngine } from './planner_socket_engine.js?v=lot1k';
-import { createMeshFactory } from './planner_mesh.js?v=lot1k';
+import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot20floors';
+import { createMeshFactory } from './planner_mesh.js?v=lot20floors';
 
 // ============================================================
 // MOTEUR — bascule ancien (géométrie+grille) / nouveau (sockets+meshes réels)
@@ -65,10 +65,11 @@ const PER_VERT_UP         = 6;   // niveaux supplémentaires en hauteur par pieu
 const PER_VERT_DOWN       = 4;   // niveaux supplémentaires en sous-sol par pieu vertical
 
 // Simulation de stabilité (session 7d) — dataminé + confirmé par la communauté DA :
-// chaque ancre (fondation/pilier au sol) distribue un budget de 9 pas. Chaque saut
-// horizontal ou vertical via mur coûte 1 pas. Saut vertical via fondation empilée
-// ou pilier coûte 0 (transmission gratuite).
-const STABILITY_BUDGET    = 9;
+// chaque ancre (fondation/pilier au sol) distribue un budget de 10 pas (= 100 points,
+// 10 pts par pièce dans le jeu → 10 sols posables après une fondation, le 10e à 0).
+// Chaque saut horizontal ou vertical via mur coûte 1 pas. Saut vertical via fondation
+// empilée ou pilier coûte 0 (transmission gratuite).
+const STABILITY_BUDGET    = 10;
 const STABILITY_COLOR_OK      = 0x4caf76;  // vert — stable avec marge
 const STABILITY_COLOR_WARNING = 0xddaa33;  // jaune — limite (budget 0-1)
 const STABILITY_COLOR_ERROR   = 0xcc3333;  // rouge — instable ou non-atteint
@@ -230,6 +231,7 @@ function setText(el, v) { if (el) el.textContent = v; }
 const HISTORY_MAX = 50;
 
 function pushHistory(undoFn, redoFn) {
+  bpSetDirty(true);                       // toute pose/suppression/rotation = plan modifié
   // Supprime le stack redo si on est en milieu d'historique
   state.history.splice(state.histFront + 1);
   state.history.push({ undo: undoFn, redo: redoFn });
@@ -245,11 +247,13 @@ function undoAction() {
   if (state.histFront < 0) return;
   state.history[state.histFront].undo();
   state.histFront--;
+  bpSetDirty(true);
 }
 function redoAction() {
   if (state.histFront >= state.history.length - 1) return;
   state.histFront++;
   state.history[state.histFront].redo();
+  bpSetDirty(true);
 }
 
 // Réinjecte un item précédemment supprimé (pour undo place / redo remove)
@@ -313,12 +317,22 @@ document.addEventListener('DOMContentLoaded', init);
 // ============================================================
 // CHARGEMENT CATALOGUE
 // ============================================================
+// Pièces retirées de la palette (entrées dataminées sans mesh / contenu non sorti).
+// Conservé en code (et non par suppression du JSON) pour survivre à une régénération
+// du catalogue. Tank = pas encore sorti ; TreadWheel = sans intérêt ; les 2 fabricateurs
+// n'ont pas de mesh exportable.
+const EXCLUDED_PIECE_IDS = new Set([
+  'Tank_Vehicle', 'TreadWheel_Vehicle',
+  'PortableFabricator_Placeable', 'ConstructionFabricator_Placeable',
+]);
+
 async function loadCatalog() {
   const url = ENGINE === 'sockets' ? 'planner_pieces.json' : PIECES_JSON_URL;
   const resp = await fetch(url);
   if (!resp.ok) throw new Error('pieces ' + resp.status);
   const piecesData = await resp.json();
-  state.pieces = (piecesData.pieces || []).filter(p => p.faction_id !== 'blockout');
+  state.pieces = (piecesData.pieces || [])
+    .filter(p => p.faction_id !== 'blockout' && !EXCLUDED_PIECE_IDS.has(p.id));
 
   // Normalisation camelCase pour le moteur de sockets (planner_pieces.json est en snake_case).
   for (const p of state.pieces) {
@@ -357,7 +371,9 @@ function deriveGameCategory(p) {
   if (/^Railing/.test(g))    return 'railings';
   if (/^(Door|Gate|Hatch|Passageway|PrudenceDoor|Arch)/.test(g)) return 'doors';
   if (/^(Ramp|Stairs)/.test(g)) return 'stairs';
-  if (/^(Pillar|Ladder|Column|Tower)/.test(g)) return 'structures';
+  // Piliers / colonnes = FONDATIONS (catégorie officielle du jeu) → ancres de stabilité.
+  if (/^Pillar/.test(g))     return 'foundations';
+  if (/^(Ladder|Tower)/.test(g)) return 'structures';
   if (/^Wall/.test(g))       return 'walls';
   return p.category || 'walls';
 }
@@ -571,8 +587,14 @@ function raycastPlacedMeshes(clientX, clientY) {
   mouseNDC.x = ((clientX - rect.left) / rect.width)  * 2 - 1;
   mouseNDC.y = -((clientY - rect.top)  / rect.height) * 2 + 1;
   raycaster.setFromCamera(mouseNDC, activeCam);
-  const hits = raycaster.intersectObjects(Array.from(placedMeshes.values()), false);
-  return hits.length > 0 ? hits[0].object : null;
+  // RÉCURSIF : en mode sockets les pièces sont des Group (vrai mesh glb en sous-objets),
+  // sans géométrie propre → un raycast non-récursif ne touchait jamais rien.
+  const hits = raycaster.intersectObjects(Array.from(placedMeshes.values()), true);
+  if (!hits.length) return null;
+  // Le ray touche un sous-mesh : remonter jusqu'au groupe porteur de l'itemId.
+  let o = hits[0].object;
+  while (o && o.userData.itemId == null && o.parent) o = o.parent;
+  return (o && o.userData.itemId != null) ? o : null;
 }
 
 // ============================================================
@@ -3204,20 +3226,197 @@ function expectedCzFor(piece) {
 function socketComputeSnap(pieceId, cur) {
   const placed = socketPlacedList();
   const piece = state.piecesById.get(pieceId);
-  const zHint = expectedCzFor(piece);
-  // zHint : on ne s'accroche qu'aux sockets proches de la hauteur de l'étage courant
-  // (empêche d'attraper une fondation RDC quand on est sur N1).
-  const r = socketEngine.snapPiece(cur, pieceId, placed, socketEngine.occSet(placed),
-    { zHint, zTol: CM_PER_LEVEL / 2 });
-  // La rotation manuelle (R / Ctrl+molette → state.ghostRotation) s'AJOUTE à l'orientation
-  // d'accrochage : la pièce tourne autour de son origine (= son centre sur la case).
-  if (r) return { pos: r.pos, rotation: norm360(r.rotation + (state.ghostRotation || 0)), snapped: true };
-  // Pose LIBRE réservée aux FONDATIONS (ancrage au sol). Tout le reste (sols, murs, toits…)
-  // DOIT s'accrocher à un socket → plus de pièces flottantes en l'air.
-  if (!piece?.is_foundation) return null;
-  const g = socketEngine.gridSnap(cur.x, cur.y, zHint);
-  return { pos: g, rotation: state.ghostRotation || 0, snapped: false };
+
+  // ── Machines / véhicules : pose libre centrée à l'étage courant ──
+  if (piece?.is_machine || piece?.is_vehicle) {
+    const zHint = expectedCzFor(piece);
+    const { wC, dC } = footprintDims(piece, state.ghostRotation || 0);
+    return {
+      pos: { x: placeableSnapAxis(cur.x, wC), y: placeableSnapAxis(cur.y, dC), z: zHint },
+      rotation: state.ghostRotation || 0, snapped: false, floor: state.currentFloor || 0,
+    };
+  }
+
+  // ── Fondations + PILIERS/COLONNES : pose LIBRE sur la grille (cz = niveau×384) AVEC
+  // AUTO-EMPILEMENT : si la case est déjà occupée par une fondation/pilier au niveau courant,
+  // on monte d'un étage → cliquer plusieurs fois empile les fondations vers le haut.
+  if (piece?.is_foundation || piece?.is_pillar) {
+    const baseF = state.currentFloor || 0;
+    const maxF = getMaxFloor();
+    for (let floor = baseF; floor <= maxF; floor++) {
+      const g = socketEngine.gridSnap(cur.x, cur.y, floor * CM_PER_LEVEL);
+      const occupied = state.plan.floors.some(f => f.items.some(it => {
+        if (it.z !== floor) return false;
+        const op = state.piecesById.get(it.piece_id);
+        if (!op || !(op.is_foundation || op.is_pillar)) return false;
+        return Math.abs((it.x || 0) - g.x) < 30 && Math.abs((it.y || 0) - g.y) < 30;
+      }));
+      if (!occupied) return { pos: g, rotation: state.ghostRotation || 0, snapped: false, floor };
+    }
+    const g = socketEngine.gridSnap(cur.x, cur.y, baseF * CM_PER_LEVEL);
+    return { pos: g, rotation: state.ghostRotation || 0, snapped: false, floor: baseF };
+  }
+
+  // ── Pièces accrochées (murs, sols, toits, escaliers…) : AUTO-EMPILEMENT ──
+  // Rampes / escaliers : posables SUR un sol → on retire sols/fondations/toits-plats de l'occ.
+  let occList = placed;
+  if (getEffectiveCategory(piece) === 'stairs') {
+    occList = placed.filter(it => {
+      const p = state.piecesById.get(it.building_type);
+      if (!p) return true;
+      const c = getEffectiveCategory(p);
+      return c !== 'floors' && c !== 'foundations' && c !== 'roofs_flat';
+    });
+  }
+  const occ = socketEngine.occSet(occList);
+  // On essaie l'étage courant puis on MONTE. À chaque niveau, snapPiece renvoie l'accroche
+  // LIBRE la plus proche du curseur. On retient le niveau dont l'accroche est la plus proche :
+  // si l'emplacement sous le curseur est déjà occupé, l'accroche du DESSUS (juste au-dessus)
+  // est plus proche que la case voisine libre → la pièce s'empile vers le haut. Ainsi cliquer
+  // plusieurs fois au même endroit monte étage par étage.
+  const base = state.currentFloor || 0;
+  const top = Math.min(base + 8, getMaxFloor());
+  const NEAR = CM_PER_CELL * 0.65;   // « bien sous le curseur » (< accroche d'une case voisine ~362)
+  let best = null;
+  for (let floor = base; floor <= top; floor++) {
+    const zHint = (floor + 1) * CM_PER_LEVEL;   // non-fondation : cz = (floor+1)×384
+    const r = socketEngine.snapPiece(cur, pieceId, placed, occ, { zHint, zTol: CM_PER_LEVEL / 2 });
+    if (!r) { if (best) break; else continue; }   // plus rien au-dessus → stop (pile contiguë)
+    const dOr = Math.hypot(cur.x - r.pos.x, cur.y - r.pos.y);
+    if (!best || dOr < best.dOr - 1) best = { r, dOr, floor: Math.round(r.pos.z / CM_PER_LEVEL) - 1 };
+    // PRIORITÉ AU PLUS BAS : si l'accroche est bien sous le curseur, on s'arrête (pas d'empilement
+    // intempestif). L'auto-empilement ne se déclenche que si l'étage courant n'a RIEN de proche
+    // (case occupée → l'accroche libre la plus proche est une voisine lointaine → on monte).
+    if (dOr <= NEAR) break;
+  }
+  if (!best) {
+    // Pose LIBRE de secours UNIQUEMENT pour les MURS/FENÊTRES arrondis : leurs sockets
+    // (BP_DuneCurvedWallSocket_C) ne s'accrochent pas aux sols → sans ça ils seraient imposables.
+    // Les SOLS arrondis ont des sockets de bord normaux → ils s'accrochent (donc PAS de fallback,
+    // sinon ils flotteraient n'importe où — comportement signalé anormal).
+    const cat = getEffectiveCategory(piece);
+    if (/Round_Corner/.test(piece?.group || '') && (cat === 'walls' || cat === 'windows')) {
+      const g = socketEngine.gridSnap(cur.x, cur.y, (base + 1) * CM_PER_LEVEL);
+      return { pos: g, rotation: state.ghostRotation || 0, snapped: false, floor: base };
+    }
+    return null;
+  }
+  return {
+    pos: best.r.pos,
+    rotation: norm360(best.r.rotation + (state.ghostRotation || 0)),
+    snapped: true, floor: best.floor,
+  };
 }
+// Une pièce posée en `pos` (cm) serait-elle stable ? (mode sockets)
+// Les ancres (fondation/pilier au sol) le sont toujours.
+function socketCandidateStable(pieceId, pos, zLevel, rotation) {
+  const piece = state.piecesById.get(pieceId);
+  if (piece && (piece.is_foundation || piece.is_pillar) && (pos.z || 0) <= 1) return true;
+  const cand = { id: '_ghost_stab_', piece_id: pieceId, x: pos.x, y: pos.y, cz: pos.z, z: zLevel, rotation: rotation || 0 };
+  const b = computeStabilitySocket([cand]).get('_ghost_stab_');
+  return b != null && b >= 0;
+}
+
+// ── Anti-chevauchement machines / véhicules (mode sockets) ──────────────────
+// Empreinte en cellules de fondation (512 cm) dérivée de la TAILLE RÉELLE (m),
+// centrée sur la cellule d'origine. (dimensions.w/d du catalogue sont en unités
+// 2.5 m ≠ cellule socket 5.12 m → on repart de real_size_m.)
+const SOCKET_CELL_M = CM_PER_CELL / 100;   // 5.12 m
+const HALF_CELL = CM_PER_CELL / 2;         // 256 cm
+// Empreinte d'un placeable (en cases). Priorité au champ `footprint` (dérivé du
+// vrai mesh dans planner_pieces.json) ; fallback sur real_size_m si absent.
+function placeableFootprint(piece) {
+  const fp = piece.footprint;
+  if (fp) return { w: Math.max(1, fp.w || 1), d: Math.max(1, fp.d || 1), h: Math.max(1, fp.h || 1) };
+  const rs = piece.real_size_m || {};
+  const c = (m, div) => Math.max(1, Math.ceil((m || div) / div - 0.15));
+  return { w: c(rs.w, SOCKET_CELL_M), d: c(rs.d, SOCKET_CELL_M), h: c(rs.h, CM_PER_LEVEL / 100) };
+}
+// Snap d'un axe pour un footprint de `cells` cases, CENTRÉ : origine = k*512 + cells*256.
+// → footprint pair (2,4…) centré sur un BORD de case ; impair centré sur le MILIEU d'une case.
+// Conséquence : le mesh (centré sur l'origine) tombe pile sur ses cases, et bouger d'une case
+// translate d'exactement une case.
+function placeableSnapAxis(v, cells) {
+  return Math.round((v - cells * HALF_CELL) / CM_PER_CELL) * CM_PER_CELL + cells * HALF_CELL;
+}
+function footprintDims(piece, rotation) {
+  const fp = placeableFootprint(piece);
+  let wC = fp.w, dC = fp.d;
+  const rot = ((rotation || 0) % 360 + 360) % 360;
+  if (rot === 90 || rot === 270) { const t = wC; wC = dC; dC = t; }
+  return { wC, dC, h: fp.h };
+}
+function socketFootprintCells(piece, item) {
+  const { wC, dC } = footprintDims(piece, item.rotation);
+  const cx0 = Math.round(((item.x || 0) - wC * HALF_CELL) / CM_PER_CELL);  // case de gauche/bas
+  const cy0 = Math.round(((item.y || 0) - dC * HALF_CELL) / CM_PER_CELL);
+  const cells = new Set();
+  for (let i = 0; i < wC; i++) for (let j = 0; j < dC; j++) cells.add((cx0 + i) + ',' + (cy0 + j));
+  return cells;
+}
+// Nombre de niveaux occupés en hauteur par un placeable (≥1).
+function socketLevelSpanReal(piece) {
+  return placeableFootprint(piece).h;
+}
+// Cellule (case) d'un item posé (origine au centre/bord selon snap → on retombe sur l'entier).
+function socketItemCell(it) {
+  return Math.round(((it.x || 0) - HALF_CELL) / CM_PER_CELL) + ',' + Math.round(((it.y || 0) - HALF_CELL) / CM_PER_CELL);
+}
+// Cases ayant une SURFACE praticable au niveau z : fondation/sol à z, ou toit-plat (plafond) à z-1.
+function socketSurfaceCells(z) {
+  const set = new Set();
+  for (const f of state.plan.floors) for (const it of f.items) {
+    const p = state.piecesById.get(it.piece_id);
+    if (!p) continue;
+    const cat = getEffectiveCategory(p);
+    if ((p.is_foundation || cat === 'floors') && it.z === z) set.add(socketItemCell(it));
+    else if (cat === 'roofs_flat' && it.z === z - 1) set.add(socketItemCell(it));   // toit plat = sol du niveau au-dessus
+  }
+  return set;
+}
+// Raison de refus d'un placeable (null = OK) : chevauchement / pas de sol porteur / traverse un mur.
+function socketPlaceableReason(pieceId, pos, zLevel, rotation) {
+  const piece = state.piecesById.get(pieceId);
+  if (!piece || !(piece.is_machine || piece.is_vehicle)) return null;
+  const cCells = socketFootprintCells(piece, { x: pos.x, y: pos.y, rotation });
+  const cz0 = zLevel, cz1 = zLevel + socketLevelSpanReal(piece) - 1;
+
+  // 1. Chevauchement avec un autre placeable (même volume).
+  for (const f of state.plan.floors) for (const it of f.items) {
+    const op = state.piecesById.get(it.piece_id);
+    if (!op || !(op.is_machine || op.is_vehicle)) continue;
+    const oz0 = it.z, oz1 = it.z + socketLevelSpanReal(op) - 1;
+    if (cz1 < oz0 || oz1 < cz0) continue;
+    const oCells = socketFootprintCells(op, it);
+    for (const c of cCells) if (oCells.has(c)) return 'Emplacement occupé';
+  }
+
+  // 2. Sol porteur requis sous TOUTE l'empreinte (sinon flottant / hors plancher).
+  const surf = socketSurfaceCells(zLevel);
+  for (const c of cCells) if (!surf.has(c)) return 'Pas de sol sous la pièce';
+
+  // 3. Ne doit pas traverser un mur (mur strictement à l'intérieur de l'empreinte).
+  const { wC, dC } = footprintDims(piece, rotation);
+  const cx0 = Math.round((pos.x - wC * HALF_CELL) / CM_PER_CELL);
+  const cy0 = Math.round((pos.y - dC * HALF_CELL) / CM_PER_CELL);
+  const x0 = cx0 * CM_PER_CELL, x1 = (cx0 + wC) * CM_PER_CELL;
+  const y0 = cy0 * CM_PER_CELL, y1 = (cy0 + dC) * CM_PER_CELL;
+  const EPS = 20;
+  for (const f of state.plan.floors) for (const it of f.items) {
+    const p = state.piecesById.get(it.piece_id);
+    if (!p) continue;
+    const cat = getEffectiveCategory(p);
+    if (cat !== 'walls' && cat !== 'windows') continue;
+    if (it.z < cz0 || it.z > cz1) continue;
+    const wx = it.x || 0, wy = it.y || 0;
+    if (wx > x0 + EPS && wx < x1 - EPS && wy > y0 + EPS && wy < y1 - EPS) return 'Traverse un mur';
+  }
+  return null;
+}
+function socketPlaceableBlocked(pieceId, pos, zLevel, rotation) {
+  return socketPlaceableReason(pieceId, pos, zLevel, rotation) != null;
+}
+
 let lastSocketSnap = null;
 let lastSocketClientPos = { x: 0, y: 0 };   // mémorise le curseur pour refresh R-key
 function socketShowGhost(pieceId, clientX, clientY) {
@@ -3226,14 +3425,23 @@ function socketShowGhost(pieceId, clientX, clientY) {
   if (!cur) return false;
   const snap = socketComputeSnap(pieceId, cur);
   if (!snap) { clearGhost(); lastSocketSnap = null; return false; }
+  const lvl = snap.floor != null ? snap.floor : (state.currentFloor || 0);
   snap.inClaim = socketInClaim(snap.pos.x, snap.pos.y);   // dans la zone de fief ?
+  // Mode stabilité : ghost rouge si la pièce serait instable (hors budget).
+  snap.unstable = state.showStability && snap.inClaim &&
+    !socketCandidateStable(pieceId, snap.pos, lvl, snap.rotation);
+  // Machines / véhicules : ghost rouge si l'emplacement est déjà occupé.
+  snap.blocked = snap.inClaim && socketPlaceableBlocked(pieceId, snap.pos, lvl, snap.rotation);
   lastSocketSnap = { pieceId, snap };
   clearGhost();
-  const col = !snap.inClaim ? COLOR_GHOST_BAD : (snap.snapped ? COLOR_GHOST_OK : 0x6a8f6a);
+  const col = (!snap.inClaim || snap.unstable || snap.blocked) ? COLOR_GHOST_BAD
+            : (snap.snapped ? COLOR_GHOST_OK : 0x6a8f6a);
   const g = meshFactory.buildObject(pieceId, { color: col, opacity: 0.5 });
   applyTransformSocket(g, { x: snap.pos.x, y: snap.pos.y, cz: snap.pos.z, rotation: snap.rotation });
   ghostMesh = g;
   scene.add(ghostMesh);
+  // Auto-empilement : HUD "↑ Nx" si la pose se fait au-dessus du tab courant (masqué sinon).
+  showFloorResolveHud?.(lvl);
   setText(dom.hudCoords, `x:${Math.round(snap.pos.x)} y:${Math.round(snap.pos.y)} z:${Math.round(snap.pos.z)} cm`);
   return true;
 }
@@ -3250,10 +3458,22 @@ function socketPlaceAt(pieceId, clientX, clientY) {
   const DUP = 30;
   if (all.some(it => it.building_type === pieceId &&
         Math.abs(it.x - snap.pos.x) < DUP && Math.abs(it.y - snap.pos.y) < DUP && Math.abs(it.z - snap.pos.z) < DUP)) return null;
-  // L'item appartient à l'ÉTAGE COURANT (tab sélectionné), pas à un niveau dérivé de la
-  // hauteur cm — sinon un mur posé au RDC (socket à 384 cm) filerait en N1.
-  const targetFloor = getFloor(state.currentFloor) || state.plan.floors[0];
+  // Étage de pose : snap.floor (auto-empilement) sinon l'étage courant. Le niveau est dérivé
+  // de l'accroche (cz), ce qui permet d'empiler au-dessus en cliquant au même endroit.
+  const lvl = snap.floor != null ? snap.floor : (state.currentFloor || 0);
+  const targetFloor = getFloor(lvl) || getFloor(state.currentFloor) || state.plan.floors[0];
   if (!targetFloor) return null;
+  // Mode stabilité ON : refuse la pose si la pièce serait instable (hors budget de 9 pas).
+  if (state.showStability && !socketCandidateStable(pieceId, snap.pos, targetFloor.z, snap.rotation)) {
+    showFloorResolveHud?.(state.currentFloor, 'Pose refusée : stabilité insuffisante');
+    return null;
+  }
+  // Machines / véhicules : refuse si occupé / sans sol porteur / à travers un mur.
+  const placeReason = socketPlaceableReason(pieceId, snap.pos, targetFloor.z, snap.rotation);
+  if (placeReason) {
+    showFloorResolveHud?.(state.currentFloor, 'Pose refusée : ' + placeReason.toLowerCase());
+    return null;
+  }
   const item = {
     id: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'it_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
     piece_id: pieceId,
@@ -3268,6 +3488,7 @@ function socketPlaceAt(pieceId, clientX, clientY) {
   updateFloorVisibility();
   updateFloorBadges();
   updatePieceCount();
+  recomputeStabilityIfActive();
   const saved = JSON.parse(JSON.stringify(item));
   pushHistory(
     () => _removeItemCore(saved.id),
@@ -3443,18 +3664,27 @@ function showHoverHelper(snap, resolvedFloor) {
 
 /** Applique l'apparence "sélectionnée" à un mesh (edges dorés). */
 function _markSelectedVisual(mesh) {
-  if (mesh && mesh.userData.edges) {
+  if (!mesh) return;
+  if (mesh.userData.edges) {
     mesh.userData.edges.material.color.setHex(COLOR_SELECT);
     mesh.userData.edges.material.opacity = 1;
   }
+  // Groupes sockets (glb) : pas d'edges → surlignage par émissif doré.
+  if (mesh.isGroup) mesh.traverse(o => {
+    if (o.isMesh && o.material && o.material.emissive) { o.material.emissive.setHex(0x5a4416); o.material.emissiveIntensity = 1; }
+  });
 }
 
-/** Applique l'apparence "non-sélectionnée" à un mesh (edges noirs). */
+/** Applique l'apparence "non-sélectionnée" à un mesh (edges noirs / émissif éteint). */
 function _markUnselectedVisual(mesh) {
-  if (mesh && mesh.userData.edges) {
+  if (!mesh) return;
+  if (mesh.userData.edges) {
     mesh.userData.edges.material.color.setHex(0x000000);
     mesh.userData.edges.material.opacity = 0.45;
   }
+  if (mesh.isGroup) mesh.traverse(o => {
+    if (o.isMesh && o.material && o.material.emissive) o.material.emissive.setHex(0x000000);
+  });
 }
 
 /**
@@ -3884,8 +4114,158 @@ function fmtGroupLabel(group) {
   return MAP[group] || group.replace(/_/g, ' ');
 }
 
+// Couleur de faction d'une pièce en #rrggbb (pour les glyphes SVG de la palette).
+function facHex(p) { return '#' + (getPieceColor(p) & 0xffffff).toString(16).padStart(6, '0'); }
+
+// Classe une pièce en « famille de glyphe » pour l'icône de palette (vue de profil).
+function pieceIconKind(p) {
+  if (p.is_vehicle) return 'vehicle';
+  if (p.is_machine) return 'machine';
+  const cat = getEffectiveCategory(p);
+  const g = p.group || '';
+  const tri = /Triangle|Wedge/.test(g);
+  switch (cat) {
+    case 'foundations': return tri ? 'foundation_tri' : 'foundation';
+    case 'floors':      return tri ? 'floor_tri' : 'floor';
+    case 'roofs_flat':  return 'roof_flat';
+    case 'roofs':       return /Cover|Wedge|Angled|Half|Corner/.test(g) ? 'roof_slope' : 'roof_flat';
+    case 'windows':     return 'window';
+    case 'doors':       return /Hatch/.test(g) ? 'hatch' : (/Gate|Garage/.test(g) ? 'gate' : 'door');
+    case 'stairs':      return /Ramp/.test(g) ? 'ramp' : 'stairs';
+    case 'railings':    return 'railing';
+    case 'walls':       return tri ? 'wall_tri' : (/Half/.test(g) ? 'wall_half' : 'wall');
+    case 'structures':  return /Ladder/.test(g) ? 'ladder' : (/Tower/.test(g) ? 'tower' : 'pillar');
+    default:            return 'wall';
+  }
+}
+
+// Génère le glyphe SVG (vue de profil) d'une pièce, teinté couleur de faction.
+function pieceIconSVG(p) {
+  const c = facHex(p);
+  const hole = '#160d05';                                    // « creux » = fond de la tuile
+  const f = `fill="${c}" fill-opacity="0.34"`;
+  const S = inner => `<svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="${c}"`
+    + ` stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">${inner}</svg>`;
+  const base = `<line x1="2.5" y1="20.5" x2="21.5" y2="20.5" stroke="${c}" stroke-opacity="0.4" stroke-width="1.2"/>`;
+  switch (pieceIconKind(p)) {
+    case 'foundation':     return S(`${base}<rect x="4" y="11" width="16" height="9" rx="1" ${f}/><line x1="4" y1="14.6" x2="20" y2="14.6" stroke-opacity="0.5" stroke-width="1.1"/>`);
+    case 'foundation_tri': return S(`${base}<path d="M4 20 L20 20 L4 11 Z" ${f}/>`);
+    case 'floor':          return S(`<rect x="3" y="13" width="18" height="4" rx="1" ${f}/>`);
+    case 'floor_tri':      return S(`<path d="M3 17 L21 17 L3 13 Z" ${f}/>`);
+    case 'roof_flat':      return S(`<rect x="3" y="12" width="18" height="4" rx="0.5" ${f}/><path d="M4 12 L4 9.5 M20 12 L20 9.5"/>`);
+    case 'roof_slope':     return S(`<path d="M4 18 L20 8 L20 18 Z" ${f}/>`);
+    case 'wall':           return S(`${base}<rect x="7.5" y="5" width="9" height="15" rx="0.5" ${f}/>`);
+    case 'wall_half':      return S(`${base}<rect x="7.5" y="12.5" width="9" height="7.5" rx="0.5" ${f}/>`);
+    case 'wall_tri':       return S(`${base}<path d="M7 20 L17 20 L17 5 Z" ${f}/>`);
+    case 'window':         return S(`${base}<rect x="7.5" y="5" width="9" height="15" rx="0.5" ${f}/><rect x="10" y="9" width="4" height="5" fill="${hole}" stroke-width="1.2"/>`);
+    case 'door':           return S(`${base}<rect x="6.5" y="5" width="11" height="15" rx="0.5" ${f}/><path d="M9.5 20 L9.5 11.5 Q12 8.8 14.5 11.5 L14.5 20" fill="${hole}" stroke-width="1.2"/>`);
+    case 'gate':           return S(`${base}<rect x="4" y="5" width="16" height="15" rx="0.5" ${f}/><rect x="7" y="9" width="10" height="11" fill="${hole}" stroke-width="1.2"/>`);
+    case 'hatch':          return S(`<rect x="4" y="9" width="16" height="6" rx="1" ${f}/><rect x="9" y="10.4" width="6" height="3.2" fill="${hole}" stroke-width="1.1"/>`);
+    case 'stairs':         return S(`<path d="M4 20 L4 16 L8 16 L8 12 L12 12 L12 8 L16 8 L16 20 Z" ${f}/>`);
+    case 'ramp':           return S(`${base}<path d="M4 20 L20 8 L20 20 Z" ${f}/>`);
+    case 'pillar':         return S(`${base}<rect x="9.5" y="4" width="5" height="16" rx="0.5" ${f}/>`);
+    case 'ladder':         return S(`${base}<line x1="9" y1="4" x2="9" y2="20"/><line x1="15" y1="4" x2="15" y2="20"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="9" y1="12.5" x2="15" y2="12.5"/><line x1="9" y1="17" x2="15" y2="17"/>`);
+    case 'tower':          return S(`${base}<rect x="8" y="7" width="8" height="13" ${f}/><path d="M8 7 L9 4.5 L15 4.5 L16 7"/>`);
+    case 'railing':        return S(`${base}<line x1="5" y1="11" x2="19" y2="11"/><line x1="6" y1="11" x2="6" y2="20"/><line x1="12" y1="11" x2="12" y2="20"/><line x1="18" y1="11" x2="18" y2="20"/>`);
+    case 'machine':        return S(`<circle cx="12" cy="12" r="6.4" ${f}/><circle cx="12" cy="12" r="2.3" fill="${hole}" stroke-width="1.1"/><g stroke-width="1.3"><line x1="12" y1="3.2" x2="12" y2="5.6"/><line x1="12" y1="18.4" x2="12" y2="20.8"/><line x1="3.2" y1="12" x2="5.6" y2="12"/><line x1="18.4" y1="12" x2="20.8" y2="12"/></g>`);
+    case 'vehicle':        return S(`${base}<path d="M4 17 L6 12 L15 12 L19 15 L20 17 Z" ${f}/><circle cx="8" cy="17.3" r="1.8" fill="${hole}"/><circle cx="17" cy="17.3" r="1.8" fill="${hole}"/>`);
+    default:               return S(`${base}<rect x="7.5" y="5" width="9" height="15" ${f}/>`);
+  }
+}
+
+// ============================================================
+// VIGNETTES DE PALETTE — rendu offscreen des meshes glb en images
+// (lazy via IntersectionObserver + cache session). Fallback = glyphe SVG.
+// ============================================================
+const THUMB_SIZE = 128;
+let _thumbRenderer = null, _thumbScene = null, _thumbCam = null, _thumbHead = null;
+const _thumbCache = new Map();    // pieceId → dataURL
+const _thumbPending = new Map();  // pieceId → Promise
+
+function _initThumbRenderer() {
+  if (_thumbRenderer) return;
+  _thumbRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+  _thumbRenderer.setSize(THUMB_SIZE, THUMB_SIZE);
+  _thumbRenderer.setPixelRatio(1);
+  _thumbRenderer.setClearColor(0x000000, 0);
+  _thumbScene = new THREE.Scene();
+  // Éclairage homogène : hémisphère (pas de face totalement sombre) + key + headlight
+  // (suit la caméra → la face vue est toujours éclairée). Évite le rendu « à moitié sombre ».
+  _thumbScene.add(new THREE.AmbientLight(0xffffff, 0.55));
+  _thumbScene.add(new THREE.HemisphereLight(0xffffff, 0x6b5a3a, 1.0));
+  const key = new THREE.DirectionalLight(0xffffff, 0.9); key.position.set(4, 7, 6); _thumbScene.add(key);
+  _thumbHead = new THREE.DirectionalLight(0xffffff, 0.5); _thumbScene.add(_thumbHead);
+  _thumbCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.01, 5000);
+}
+
+/** Rend la vignette d'une pièce (Promise<dataURL|null>). Cache par id. */
+function renderThumb(piece) {
+  const id = piece.id;
+  if (_thumbCache.has(id)) return Promise.resolve(_thumbCache.get(id));
+  if (_thumbPending.has(id)) return _thumbPending.get(id);
+  if (!piece.mesh) return Promise.resolve(null);
+  const pr = meshFactory.loadModel(piece.mesh).then(scene => {
+    if (!scene) return null;
+    _initThumbRenderer();
+    const obj = scene.clone(true);
+    // Matériau argile (les géométries sont PARTAGÉES → on ne touche/dispose QUE les matériaux).
+    const mats = [];
+    obj.traverse(o => { if (o.isMesh) { o.material = meshFactory.clayMaterial(0xcfc6b4, 1); mats.push(o.material); } });
+    const box = new THREE.Box3().setFromObject(obj);
+    if (box.isEmpty()) return null;
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+    obj.position.sub(center);
+    _thumbScene.add(obj);
+    const maxd = Math.max(size.x, size.y, size.z) || 1;
+    // Cadrage plus plein : on prend la plus grande des extensions (diagonale au sol OU hauteur),
+    // avec une marge. Remplit mieux la vignette qu'une sphère englobante, sans rogner.
+    const r = Math.max(Math.hypot(size.x, size.z) * 0.5, size.y * 0.5, maxd * 0.5) * 1.1;
+    _thumbCam.left = -r; _thumbCam.right = r; _thumbCam.top = r; _thumbCam.bottom = -r;
+    _thumbCam.near = 0.01; _thumbCam.far = maxd * 20;
+    _thumbCam.position.set(maxd * 0.9, maxd * 1.05, maxd * 0.9);   // angle isométrique légèrement plongeant
+    _thumbCam.lookAt(0, 0, 0);
+    if (_thumbHead) _thumbHead.position.copy(_thumbCam.position);   // headlight = suit la caméra
+    _thumbCam.updateProjectionMatrix();
+    _thumbRenderer.render(_thumbScene, _thumbCam);
+    const url = _thumbRenderer.domElement.toDataURL('image/png');
+    _thumbScene.remove(obj);
+    for (const m of mats) m.dispose();                    // matériaux du clone uniquement
+    _thumbCache.set(id, url);
+    return url;
+  }).catch(() => null);
+  _thumbPending.set(id, pr);
+  return pr;
+}
+
+// Applique la vignette à l'icône (longhands explicites → jamais réinitialisés par un raccourci CSS).
+function _applyThumb(el, url) {
+  el.style.backgroundImage = 'url(' + url + ')';
+  el.style.backgroundSize = 'contain';
+  el.style.backgroundRepeat = 'no-repeat';
+  el.style.backgroundPosition = 'center';
+  el.classList.add('has-thumb');
+}
+
+let _thumbObserver = null;
+function _getThumbObserver() {
+  if (_thumbObserver) return _thumbObserver;
+  _thumbObserver = new IntersectionObserver(entries => {
+    for (const en of entries) {
+      if (!en.isIntersecting) continue;
+      const el = en.target;
+      _thumbObserver.unobserve(el);
+      const piece = state.piecesById.get(el.dataset.thumbPiece);
+      if (!piece) continue;
+      renderThumb(piece).then(url => {
+        if (url && el.isConnected) _applyThumb(el, url);
+      });
+    }
+  }, { root: null, rootMargin: '150px' });
+  return _thumbObserver;
+}
+
 function createPieceEl(p) {
-  const colorBg = facCss(p, 0.30);
   const colorBd = facCss(p, 0.55);
   const el = document.createElement('div');
   el.className = 'bp-piece-item';
@@ -3893,10 +4273,20 @@ function createPieceEl(p) {
   el.draggable = true;
   el.dataset.pieceId = p.id;
   el.innerHTML =
-    `<div class="bp-piece-icon" style="background:${colorBg};border:1px solid ${colorBd};">`
-    + fmtDimsLabel(p.dimensions || {})
+    `<div class="bp-piece-icon" style="background-color:${facCss(p, 0.12)};border:1px solid ${colorBd};">`
+    + pieceIconSVG(p)
     + '</div>'
     + '<div class="bp-piece-label">' + (p.label_fr || p.id) + '</div>';
+
+  // Vignette du vrai mesh (lazy) : glyphe SVG en attendant, puis image quand rendue.
+  if (p.mesh) {
+    const iconEl = el.querySelector('.bp-piece-icon');
+    if (iconEl) {
+      iconEl.dataset.thumbPiece = p.id;
+      if (_thumbCache.has(p.id)) _applyThumb(iconEl, _thumbCache.get(p.id));
+      else _getThumbObserver().observe(iconEl);
+    }
+  }
 
   // Drag & drop (méthode historique). Coexiste avec le click-to-place :
   // - on garde activePieceId actif (les deux modes peuvent cohabiter)
@@ -4372,6 +4762,13 @@ function onResize() {
 function initDragDrop() {
   const el = renderer.domElement;
 
+  // Distinguer un CLIC d'un GLISSÉ (orbite caméra) : si la souris a bougé entre
+  // mousedown et mouseup, on ne pose PAS la pièce active et on ne désélectionne pas
+  // (sinon impossible de pivoter la vue sans perdre/poser la pièce — retour utilisateur).
+  let downX = 0, downY = 0, dragged = false;
+  const DRAG_PX = 5;
+  el.addEventListener('mousedown', (e) => { if (e.button === 0) { downX = e.clientX; downY = e.clientY; dragged = false; } });
+
   el.addEventListener('dragover', (e) => {
     e.preventDefault();
     if (!state.dragPieceId) return;
@@ -4420,6 +4817,8 @@ function initDragDrop() {
   el.addEventListener('dragleave', () => endDrag());
 
   el.addEventListener('click', (e) => {
+    // Glissé (orbite caméra) → ni pose ni (dé)sélection : on laisse la vue pivoter.
+    if (dragged) { dragged = false; return; }
     // Mode click-to-place : pose la pièce, garde le mode actif pour pose multiple
     if (state.activePieceId) {
       state.ghostHalf = e.shiftKey;        // capture Shift au moment du clic
@@ -4450,10 +4849,15 @@ function initDragDrop() {
     }
   });
 
+  let lastCursorRay = 0;
   el.addEventListener('mousemove', (e) => {
+    // Détection glissé (bouton gauche maintenu + déplacement) → orbite, pas un clic.
+    if ((e.buttons & 1) && Math.hypot(e.clientX - downX, e.clientY - downY) > DRAG_PX) dragged = true;
+
     if (state.dragPieceId) return;  // pendant un drag, dragover gère le ghost
-    // Mode click-to-place : ghost suit le curseur
+    // Mode click-to-place : ghost suit le curseur (curseur de pose).
     if (state.activePieceId) {
+      el.style.cursor = 'crosshair';
       // Shift tenu → demi-étage ; sync en temps réel même si la souris bougait déjà
       if (e.shiftKey !== state.ghostHalf) {
         state.ghostHalf = e.shiftKey;
@@ -4462,7 +4866,17 @@ function initDragDrop() {
       tryShowGhostForPiece(state.activePieceId, e.clientX, e.clientY);
       return;
     }
-    // Sinon : MAJ HUD coords seulement
+    // Sinon : curseur « main » (orbite) par défaut, « pointeur » si on survole une pièce
+    // cliquable (sélection). Raycast throttlé pour rester léger sur les grosses bases.
+    if (!(e.buttons & 1)) {
+      const now = performance.now();
+      if (now - lastCursorRay > 60) {
+        lastCursorRay = now;
+        const over = raycastPlacedMeshes(e.clientX, e.clientY);
+        el.style.cursor = over ? 'pointer' : (state.cameraMode === 'persp' ? 'grab' : 'crosshair');
+      }
+    }
+    // MAJ HUD coords
     const world = screenToWorld(e.clientX, e.clientY);
     if (!world) return;
     const cx = Math.floor(world.x / CELL);
@@ -4814,6 +5228,15 @@ function updateFloorTabs() {
 
 /** True si la pièce est une ancre au sol (fondation/pilier au RDC). */
 function isStabilityAnchor(piece, item) {
+  if (ENGINE === 'sockets') {
+    // Ancres (comme dans le jeu : Foundation / Pillar / Column au sol).
+    // - Fondation : ancre si elle touche le sol (cz ≈ 0). Empilée en hauteur → pas une ancre.
+    if (piece.is_foundation) return (item.cz || 0) <= 1;
+    // - Pilier / colonne au niveau du sol (RDC ou sous-sol, z ≤ 0) : totem vertical = ancre.
+    //   (cz d'un pilier RDC = 384 car posé sur la fondation → on teste le NIVEAU, pas cz.)
+    if (piece.is_pillar) return (item.z || 0) <= 0;
+    return false;
+  }
   if (item.z !== 0) return false;
   if (piece.category === 'foundations') return true;
   if (piece.is_pillar) return true;
@@ -4848,8 +5271,108 @@ function stabilityCost(fromNode, toNode) {
   return 1;                                       // mur / colonne d'angle / autres → 1
 }
 
+// ============================================================
+// STABILITÉ — moteur SOCKETS
+// Connectivité par COÏNCIDENCE de sockets monde (même règle que le snap) :
+// deux pièces sont structurellement jointes si l'un de leurs sockets respectifs
+// occupe le même point monde et que les costs/types sont compatibles.
+// Le budget (9 pas) se propage en BFS depuis les ancres (fondations/piliers au sol).
+// ============================================================
+const STAB_GRID = 8;   // cm — quantification pour regrouper les sockets coïncidents
+
+function stabSocketKey(x, y, z) {
+  return `${Math.round(x / STAB_GRID)},${Math.round(y / STAB_GRID)},${Math.round(z / STAB_GRID)}`;
+}
+// Sockets exprimés dans le repère monde (cm) pour un item posé.
+function stabWorldSockets(item, piece) {
+  const out = [];
+  const p = { x: item.x || 0, y: item.y || 0, z: item.cz || 0, rotation: item.rotation || 0 };
+  for (const s of (piece.sockets || [])) {
+    if (s.cost === 'No_Cost') continue;   // socket neutre → pas de jonction structurelle
+    const w = M(p, s.lx, s.ly, s.lz);
+    out.push({ wx: w.x, wy: w.y, wz: w.z, sock: s });
+  }
+  return out;
+}
+// Un socket de COIN (décalé en diagonale, |lx|>1 ET |ly|>1) : sert l'accroche des
+// piliers d'angle. Deux sols voisins en DIAGONALE partagent un tel socket, ce qui
+// créerait un raccourci de stabilité illégitime (ils ne se touchent que par un coin,
+// pas une face porteuse). On rejette donc les jonctions COIN↔COIN, mais on garde
+// COIN↔centre (un vrai pilier d'angle supporte bien le sol).
+const stabIsCornerSocket = s => Math.abs(s.lx) > 1 && Math.abs(s.ly) > 1;
+
+// Deux sockets posés se joignent (coïncidence + compatibilité bidirectionnelle).
+function stabSocketsJoin(a, b) {
+  if (stabIsCornerSocket(a.sock) && stabIsCornerSocket(b.sock)) return false;   // pas de diagonale sol↔sol
+  if (Math.abs(a.wx - b.wx) > STAB_GRID || Math.abs(a.wy - b.wy) > STAB_GRID || Math.abs(a.wz - b.wz) > STAB_GRID) return false;
+  return (costMatch(a.sock.cost, b.sock.cost) || costMatch(b.sock.cost, a.sock.cost)) && typeMatch(a.sock, b.sock);
+}
+
+/**
+ * Calcule le budget de stabilité restant par item (moteur sockets).
+ * @param {Array} [extraItems] items virtuels à inclure (ghost de pose à tester).
+ * @returns {Map<string, number>} itemId → budget restant (absent = jamais atteint).
+ */
+function computeStabilitySocket(extraItems) {
+  // 1. Nodes
+  const nodes = [];
+  const pushItem = (it) => {
+    const piece = state.piecesById.get(it.piece_id);
+    if (!piece || !piece.sockets || !piece.sockets.length) return;
+    nodes.push({ item: it, piece, ws: stabWorldSockets(it, piece) });
+  };
+  for (const f of state.plan.floors) for (const it of f.items) pushItem(it);
+  if (extraItems) for (const it of extraItems) pushItem(it);
+
+  // 2. Buckets de sockets → adjacence (coïncidence + compatibilité)
+  const bucket = new Map();
+  nodes.forEach((n, ni) => { for (const ws of n.ws) {
+    const k = stabSocketKey(ws.wx, ws.wy, ws.wz);
+    if (!bucket.has(k)) bucket.set(k, []);
+    bucket.get(k).push({ ni, ws });
+  }});
+  const adj = nodes.map(() => new Set());
+  for (const arr of bucket.values()) {
+    for (let i = 0; i < arr.length; i++) for (let j = i + 1; j < arr.length; j++) {
+      const A = arr[i], B = arr[j];
+      if (A.ni === B.ni || adj[A.ni].has(B.ni)) continue;
+      if (stabSocketsJoin(A.ws, B.ws)) { adj[A.ni].add(B.ni); adj[B.ni].add(A.ni); }
+    }
+  }
+
+  // 3. Ancres → budget initial
+  const budget = new Map();   // ni → budget restant
+  const queue = [];
+  nodes.forEach((n, ni) => {
+    if (isStabilityAnchor(n.piece, n.item)) { budget.set(ni, STABILITY_BUDGET); queue.push(ni); }
+  });
+
+  // 4. BFS « max budget restant » (réutilise stabilityCost via les niveaux item.z)
+  let iter = 0; const MAX_ITER = nodes.length * 12 + 100;
+  while (queue.length && iter < MAX_ITER) {
+    iter++;
+    const ci = queue.shift();
+    const cb = budget.get(ci);
+    if (cb == null || cb <= 0) continue;
+    for (const ni of adj[ci]) {
+      const cost = stabilityCost(nodes[ci], nodes[ni]);
+      if (!isFinite(cost)) continue;
+      const nb = cb - cost;
+      const ex = budget.get(ni);
+      if (ex == null || nb > ex) { budget.set(ni, nb); queue.push(ni); }
+    }
+  }
+  if (iter >= MAX_ITER) console.warn('[stability/socket] BFS hit max iter (' + MAX_ITER + ')');
+
+  // 5. Remap ni → itemId
+  const out = new Map();
+  nodes.forEach((n, ni) => { if (budget.has(ni)) out.set(n.item.id, budget.get(ni)); });
+  return out;
+}
+
 /** Recalcule l'état de stabilité de toutes les pièces. Met à jour state.stabilityMap. */
 function computeStability() {
+  if (ENGINE === 'sockets') { state.stabilityMap = computeStabilitySocket(); return; }
   // 1. Collecte tous les nodes (item + piece + cellules + z)
   const nodes = [];
   for (const f of state.plan.floors) {
@@ -4929,21 +5452,27 @@ function computeStability() {
   state.stabilityMap = budget;
 }
 
+/** Couleur de stabilité pour un budget donné (null/<0 = rouge, 0-1 = jaune, ≥2 = vert). */
+function stabilityColorFor(budget) {
+  if (budget == null || budget < 0) return STABILITY_COLOR_ERROR;
+  if (budget < 2)                   return STABILITY_COLOR_WARNING;
+  return STABILITY_COLOR_OK;
+}
+
 /** Applique les couleurs vert/jaune/rouge selon state.stabilityMap. */
 function applyStabilityVisuals() {
   for (const [id, mesh] of placedMeshes.entries()) {
     const piece = mesh.userData.piece;
-    if (!piece || !mesh.material || !mesh.material.color) continue;
-    let color;
-    if (state.showStability) {
-      const b = state.stabilityMap.get(id);
-      if (b == null || b < 0) color = STABILITY_COLOR_ERROR;
-      else if (b < 2)         color = STABILITY_COLOR_WARNING;
-      else                    color = STABILITY_COLOR_OK;
-    } else {
-      color = getPieceColor(piece);  // restaure la couleur normale
+    if (!piece) continue;
+    // Meshes sockets = Group (boîte fallback OU glb argile) → on tinte chaque sous-mesh.
+    if (mesh.isGroup) {
+      const target = state.showStability ? stabilityColorFor(state.stabilityMap.get(id)) : 0xcfc6b4;
+      mesh.userData.stabilityTint = state.showStability ? target : null;   // mémorisé pour le swap glb async
+      mesh.traverse(o => { if (o.isMesh && o.material && o.material.color) o.material.color.setHex(target); });
+      continue;
     }
-    mesh.material.color.setHex(color);
+    if (!mesh.material || !mesh.material.color) continue;
+    mesh.material.color.setHex(state.showStability ? stabilityColorFor(state.stabilityMap.get(id)) : getPieceColor(piece));
   }
 }
 
@@ -5158,17 +5687,39 @@ function bpApplyPlanData(data) {
   updateFloorVisibility();
   updateFloorBadges();
   updatePieceCount();
+  state.dirty = false;            // un plan fraîchement chargé n'est pas "modifié"
   bpRefreshPlanHud();
   recomputeStabilityIfActive();
 }
 
+/** Marque le plan comme modifié / à jour et rafraîchit l'indicateur. */
+function bpSetDirty(v) {
+  if (state.dirty === v) return;
+  state.dirty = v;
+  bpRefreshPlanHud();
+}
+/** Y a-t-il des pièces posées dans le plan ? */
+function bpPlanHasItems() {
+  return !!(state.plan && state.plan.floors && state.plan.floors.some(f => f.items && f.items.length));
+}
+
 /** Affiche le nom du plan actif + état (modifié, readonly, partagé) dans le panneau de droite. */
 function bpRefreshPlanHud() {
-  const nameEl = document.getElementById('plan-name-display') || document.querySelector('.bp-plan-name-display');
+  const nameEl = document.getElementById('bp-plan-name') || document.querySelector('.bp-plan-name-display');
   if (nameEl) {
     let label = state.currentPlanName || (state.plan && state.plan.name) || 'Nouveau plan';
     if (state.readonly) label += ' (lecture seule)';
     nameEl.textContent = label;
+  }
+  const metaEl = document.getElementById('bp-plan-meta');
+  if (metaEl) {
+    const owner = (typeof bpCurrentUser === 'function' && bpCurrentUser()) || localStorage.getItem('user') || '—';
+    const saved = state.currentPlanId && !state.dirty;
+    const state_txt = state.readonly ? 'Lecture seule'
+                    : saved ? '<span style="color:#4caf76;">Enregistré ✓</span>'
+                    : state.dirty ? '<span style="color:#e0a83a;">Non sauvegardé •</span>'
+                    : 'Non sauvegardé';
+    metaEl.innerHTML = state_txt + '<br>Propriétaire : <span id="bp-plan-owner">' + owner + '</span>';
   }
 }
 
@@ -5197,12 +5748,27 @@ function bpResetPlan() {
     { z:  6, name: 'N6',  items: [] },
   ];
   state.currentFloor = 0;
+  state.dirty = false;
+  // Nettoie l'URL (?plan=) → un rechargement repart bien de ce plan vierge.
+  try { history.replaceState(null, '', window.location.pathname); } catch (e) {}
   if (typeof rebuildFloorTabs === 'function') rebuildFloorTabs();
   if (typeof switchFloor === 'function')      switchFloor(0, false);
   updateFloorVisibility();
   updateFloorBadges();
   updatePieceCount();
   bpRefreshPlanHud();
+}
+
+/** Crée un nouveau plan, avec confirmation si le plan courant n'est pas enregistré. */
+function bpRequestNewPlan() {
+  const unsaved = bpPlanHasItems() && (state.dirty || !state.currentPlanId);
+  if (unsaved) {
+    const modal = document.getElementById('modal-new-plan');
+    if (modal) { modal.classList.add('open'); return; }
+    // Fallback sans modale
+    if (!window.confirm('Le plan actuel n’est pas enregistré. Créer un nouveau plan et perdre les modifications ?')) return;
+  }
+  bpResetPlan();
 }
 
 // ─── Sauvegarde ────────────────────────────────────────────────────────────
@@ -5245,6 +5811,7 @@ async function bpSaveCurrentPlan() {
     if (!state.plan) state.plan = {};
     state.plan.id   = res.plan.id;
     state.plan.name = res.plan.name;
+    state.dirty     = false;          // plan à jour avec le serveur
     document.getElementById('modal-save').classList.remove('open');
     bpRefreshPlanHud();
     // Tente de relancer la fonction d'update du panneau si elle existe
@@ -5404,6 +5971,9 @@ async function bpTryLoadFromUrl() {
   state.currentShareToken = res.plan.share_token || null;
   state.readonly          = !!res.readonly;
   bpApplyPlanData(res.plan.data);
+  // Nettoie l'URL (retire ?plan=…) → un rechargement (Ctrl+Shift+R) repart d'un plan VIERGE
+  // au lieu de recharger le plan. Le lien de partage reste fonctionnel à la 1ʳᵉ ouverture.
+  try { history.replaceState(null, '', window.location.pathname); } catch (e) {}
 }
 
 // ─── Câblage boutons + auto-load ───────────────────────────────────────────
@@ -5415,7 +5985,7 @@ function bpInitPersistence() {
   // bpSaveCurrentPlan si elles existent. On évite le double câblage ici.
   document.getElementById('new-plan-btn')         ?.addEventListener('click', () => {
     document.getElementById('modal-plans').classList.remove('open');
-    bpResetPlan();
+    bpRequestNewPlan();
   });
   document.getElementById('delete-plan-confirm-btn')?.addEventListener('click', bpDeletePlanConfirmed);
   document.getElementById('share-toggle-public')  ?.addEventListener('change', (e) => bpTogglePublicShare(e.target.checked));
@@ -5435,6 +6005,7 @@ window.bpOpenPlansModal      = bpOpenPlansModal;
 window.bpOpenShareModal      = bpOpenShareModal;
 window.bpSaveCurrentPlan     = bpSaveCurrentPlan;
 window.bpResetPlan           = bpResetPlan;
+window.bpRequestNewPlan      = bpRequestNewPlan;
 window.bpLoadPlanById        = bpLoadPlanById;
 window.bpDeletePlanConfirmed = bpDeletePlanConfirmed;
 window.bpTogglePublicShare   = bpTogglePublicShare;

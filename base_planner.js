@@ -11,8 +11,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 // ?v= : cache-busting. Bump à chaque modif des modules pour forcer le rechargement
 // (sinon le navigateur sert l'ancienne version mise en cache).
-import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot27pick';
-import { createMeshFactory } from './planner_mesh.js?v=lot27pick';
+import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot28floortab';
+import { createMeshFactory } from './planner_mesh.js?v=lot28floortab';
 
 // ============================================================
 // MOTEUR — bascule ancien (géométrie+grille) / nouveau (sockets+meshes réels)
@@ -329,7 +329,7 @@ const EXCLUDED_PIECE_IDS = new Set([
 ]);
 
 async function loadCatalog() {
-  const url = ENGINE === 'sockets' ? 'planner_pieces.json?v=lot27pick' : PIECES_JSON_URL;
+  const url = ENGINE === 'sockets' ? 'planner_pieces.json?v=lot28floortab' : PIECES_JSON_URL;
   const resp = await fetch(url);
   if (!resp.ok) throw new Error('pieces ' + resp.status);
   const piecesData = await resp.json();
@@ -3273,9 +3273,13 @@ function expectedCzFor(piece, floor) {
 function socketComputeSnap(pieceId, cur) {
   const placed = socketPlacedList();
   const piece = state.piecesById.get(pieceId);
-  // Étage cible = celui de la pièce SOUS le curseur (cur.floor), sinon l'étage courant.
-  // Permet de poser/empiler là où on pointe en 3D, pas seulement sur l'onglet actif.
-  const curFloor = (cur.floor != null) ? cur.floor : (state.currentFloor || 0);
+  // Étage cible : par défaut l'ONGLET courant (intention explicite de l'utilisateur — il
+  // choisit l'étage via les onglets). EXCEPTION escaliers/rampes : on suit la HAUTEUR du
+  // point survolé (cur.floor), ce qui permet d'enchaîner pour MONTER sans changer d'onglet.
+  // (Avant, la hauteur pilotait TOUT → le ghost partait sur l'étage de la structure survolée
+  // même quand on voulait poser sur un autre étage. Retour utilisateur.)
+  const isStairLike = getEffectiveCategory(piece) === 'stairs';
+  const curFloor = (isStairLike && cur.floor != null) ? cur.floor : (state.currentFloor || 0);
 
   // ── Machines / véhicules : pose libre centrée à l'étage visé ──
   if (piece?.is_machine || piece?.is_vehicle) {

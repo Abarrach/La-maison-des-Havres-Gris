@@ -262,6 +262,24 @@ function discord_build_thanks_embed($req) {
  * @param string $messageId  ID du message Discord
  * @param array  $req        La demande terminée
  */
+// PATCH JSON d'un message webhook. Retourne ['code'=>int, 'body'=>string].
+function discord_patch_json($editUrl, $payloadArr) {
+    $payload = json_encode($payloadArr, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    $ch = curl_init($editUrl);
+    curl_setopt_array($ch, [
+        CURLOPT_CUSTOMREQUEST  => 'PATCH',
+        CURLOPT_POSTFIELDS     => $payload,
+        CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 10,
+        CURLOPT_CONNECTTIMEOUT => 5,
+    ]);
+    $resp = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    return ['code' => $code, 'body' => substr((string)$resp, 0, 300)];
+}
+
 function discord_complete_message($messageId, $req) {
     if (!$messageId) return false;
     $url = discord_get_webhook_url();
@@ -277,27 +295,21 @@ function discord_complete_message($messageId, $req) {
     }
     $editUrl = rtrim($base, '/') . '/messages/' . rawurlencode($messageId) . $query;
 
-    $embed   = discord_build_thanks_embed($req);
-    $payload = json_encode(
-        ['embeds' => [$embed], 'attachments' => []], // attachments vide = on retire les captures
-        JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
-    );
+    $embed = discord_build_thanks_embed($req);
 
-    $ch = curl_init($editUrl);
-    curl_setopt_array($ch, [
-        CURLOPT_CUSTOMREQUEST  => 'PATCH',
-        CURLOPT_POSTFIELDS     => $payload,
-        CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT        => 10,
-        CURLOPT_CONNECTTIMEOUT => 5,
-    ]);
-    $resp = curl_exec($ch);
-    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
+    // Essai 1 : remplace l'embed ET retire les captures (attachments vide = message épuré).
+    $r1 = discord_patch_json($editUrl, ['embeds' => [$embed], 'attachments' => []]);
+    if ($r1['code'] >= 200 && $r1['code'] < 300) return true;
 
-    if ($code >= 200 && $code < 300) return true;
-    @error_log("Discord complete (remerciement) échec (HTTP $code) : " . substr((string)$resp, 0, 300));
+    // REPLI : certaines conditions refusent `attachments: []` (HTTP 400) → on retente SANS ce
+    // champ. Le remerciement s'affiche alors (la capture peut rester sous le message) plutôt que
+    // de laisser la demande inchangée. (Diagnostic du vrai code d'erreur dans discord_debug.log.)
+    $r2 = discord_patch_json($editUrl, ['embeds' => [$embed]]);
+    if ($r2['code'] >= 200 && $r2['code'] < 300) return true;
+
+    $msg = "Discord complete (remerciement) échec : essai1 HTTP {$r1['code']} {$r1['body']} || essai2 HTTP {$r2['code']} {$r2['body']}";
+    @error_log($msg);
+    @file_put_contents(__DIR__ . '/discord_debug.log', date('c') . ' ' . $msg . "\n", FILE_APPEND);
     return false;
 }
 

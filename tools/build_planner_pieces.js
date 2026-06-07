@@ -51,6 +51,41 @@ function normalizeAngledRailingSocket(s) {
   return true;
 }
 
+// --- Câblage mesh des MACHINES / VÉHICULES (placeables sans données socket) ---
+// Ces pièces n'ont pas d'entrée dans dune_pieces_sockets.json → `mesh` restait null après
+// build → vignettes/objets en fallback glyphe. Le mesh (machines = SM Props Choam ;
+// véhicules = SM_ProxyMesh véhicule complet low-poly) est mappé ICI pour survivre aux
+// régénérations (auparavant patch manuel dans planner_pieces.json, perdu à chaque rebuild).
+// basename → models/<basename>.glb.
+const MV_MESH = {
+  // Machines (17) — Props/Choam
+  Fabricator_Placeable: 'SM_Plac_Choam_Fabricator_Large_01',
+  SpiceRefinery_Placeable: 'SM_Env_Props_Choam_SpiceRefinery',
+  MediumOreRefinery_Placeable: 'SM_Env_Prop_Choam_OreRefinery_01',
+  SmallOreRefinery_Placeable: 'SM_Env_Prop_Choam_OreRefinery_Small',
+  SmallChemicalRefinery_Placeable: 'SM_Env_Prop_Choam_ChemicalRefinery_Small',
+  WeaponsFabricator_Placeable: 'SM_Env_Prop_Choam_Fabricator_Weapons',
+  WearablesFabricator_Placeable: 'SM_Env_Prop_Choam_Fabricator_Wearables',
+  VehiclesFabricator_Placeable: 'SM_Env_Prop_Choam_Fabricator_Vehicles',
+  SurvivalFabricator_Placeable: 'SM_Env_Prop_Choam_Fabricator_Survival',
+  MediumChemicalRefinery_Placeable: 'SM_Env_Prop_Choam_ChemicalRefinery_Medium',
+  MediumSpiceRefinery_Placeable: 'SM_Env_Prop_Choam_SpiceRefinery_Medium',
+  AdvancedWeaponsFabricator_Placeable: 'SM_Env_Prop_Choam_Fabricator_Weapons_Advanced',
+  AdvancedWearablesFabricator_Placeable: 'SM_Env_Prop_Choam_Fabricator_Wearables_Advandced',
+  Advanced_VehiclesFabricator_Placeable: 'SM_Env_Prop_Choam_Fabricator_Vehicles_Large',
+  Advanced_SurvivalFabricator_Placeable: 'SM_Env_Prop_Choam_Fabricator_Survival_Advanced_01_assemble',
+  LargeOreRefinery_Placeable: 'SM_Env_Prop_Choam_OreRefinery_Large',
+  LargeSpiceRefinery_Placeable: 'SM_Env_Prop_Choam_SpiceRefinery_Large_Full',
+  // Véhicules (6) — ProxyMeshes
+  Sandbike_Vehicle: 'SM_ProxyMesh_Choam_GC_Sandbike',
+  Buggy_Vehicle: 'SM_ProxyMesh_Choam_GC_Buggy',
+  Sandcrawler_Vehicle: 'SM_ProxyMesh_Choam_GC_Industrial',
+  LightOrnithopter_Vehicle: 'SM_ProxyMesh_Choam_Ornithopter_Light',
+  MediumOrnithopter_Vehicle: 'SM_ProxyMesh_Choam_Ornithopter_Medium',
+  TransportOrnithopter_Vehicle: 'SM_ProxyMesh_Choam_Ornithopter_Transport',
+};
+let mvMeshWired = 0;
+
 let enriched = 0, withMesh = 0, withSockets = 0;
 const pieces = v3.pieces.map(p => {
   const s = sock.get(p.id);
@@ -74,6 +109,8 @@ const pieces = v3.pieces.map(p => {
     out.sockets = [];                            // machines/véhicules/blockout → fallback
     out.mesh = null;
   }
+  // Câblage mesh machines/véhicules (survit aux régénérations).
+  if (MV_MESH[p.id]) { out.mesh = MV_MESH[p.id]; mvMeshWired++; }
   return out;
 });
 
@@ -93,3 +130,4 @@ console.log(`  avec mesh (.glb)         : ${withMesh}`);
 console.log(`  sans données socket      : ${pieces.length - enriched} (machines/véhicules/blockout → fallback)`);
 console.log(`  sockets centraux pilier promus (No_Cost→Foundation_Edge) : ${promotedPillarSockets}`);
 console.log(`  sockets rambarde inclinée normalisés (→Sideways) : ${promotedRailingSockets}`);
+console.log(`  mesh machines/véhicules câblés : ${mvMeshWired}`);

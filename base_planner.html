@@ -1618,52 +1618,9 @@
       <input type="text" id="save-plan-name" placeholder="Ex: Ma base à Tharwa" maxlength="80">
     </div>
 
-    <!-- Agencement horizontal -->
-    <div class="bp-modal-field">
-      <label>Agencement horizontal — blocs 10×10 (cliquez pour ajouter / retirer une extension)</label>
-      <div class="bp-claim-builder">
-        <!-- Grille 4 lignes × 6 colonnes — le bloc principal est en (ligne 1, col 0) -->
-        <div class="bp-claim-builder-grid" id="save-claim-grid">
-          <!-- Ligne 0 (au-dessus du bloc principal) -->
-          <div class="bp-cb-cell disabled" data-gx="0" data-gy="-1"></div>
-          <div class="bp-cb-cell disabled" data-gx="1" data-gy="-1"></div>
-          <div class="bp-cb-cell disabled" data-gx="2" data-gy="-1"></div>
-          <div class="bp-cb-cell disabled" data-gx="3" data-gy="-1"></div>
-          <div class="bp-cb-cell disabled" data-gx="4" data-gy="-1"></div>
-          <div class="bp-cb-cell disabled" data-gx="5" data-gy="-1"></div>
-          <!-- Ligne 1 (principale) -->
-          <div class="bp-cb-cell main"     data-gx="0" data-gy="0" title="Bloc principal">⚑</div>
-          <div class="bp-cb-cell"          data-gx="1" data-gy="0" title="Cliquez pour revendiquer">+</div>
-          <div class="bp-cb-cell disabled" data-gx="2" data-gy="0"></div>
-          <div class="bp-cb-cell disabled" data-gx="3" data-gy="0"></div>
-          <div class="bp-cb-cell disabled" data-gx="4" data-gy="0"></div>
-          <div class="bp-cb-cell disabled" data-gx="5" data-gy="0"></div>
-          <!-- Ligne 2 (en-dessous du bloc principal) -->
-          <div class="bp-cb-cell disabled" data-gx="0" data-gy="1"></div>
-          <div class="bp-cb-cell disabled" data-gx="1" data-gy="1"></div>
-          <div class="bp-cb-cell disabled" data-gx="2" data-gy="1"></div>
-          <div class="bp-cb-cell disabled" data-gx="3" data-gy="1"></div>
-          <div class="bp-cb-cell disabled" data-gx="4" data-gy="1"></div>
-          <div class="bp-cb-cell disabled" data-gx="5" data-gy="1"></div>
-        </div>
-        <div class="bp-claim-summary" id="save-claim-summary">
-          Bloc principal + <strong id="save-ext-count">0</strong> extension(s) — Surface totale : <strong id="save-total-cells">100</strong> cellules (1 × 10×10)
-        </div>
-      </div>
-    </div>
-
-    <!-- Extensions verticales -->
-    <div class="bp-modal-field">
-      <label>Pieux verticaux posés (0 – 5) — chaque pieu ajoute +6 niveaux en hauteur et +4 en sous-sol</label>
-      <div class="bp-counter-row">
-        <button class="bp-counter-btn" id="save-vert-dec">−</button>
-        <span class="bp-counter-val" id="save-vert-val">0</span>
-        <button class="bp-counter-btn" id="save-vert-inc">+</button>
-        <span class="bp-counter-desc" id="save-vert-desc">
-          Hauteur : RDC → N6<br>Pas de sous-sol par défaut
-        </span>
-      </div>
-    </div>
+    <!-- Le FIEF (blocs horizontaux + extensions verticales) s'édite dans le PANNEAU DE DROITE
+         et est sauvegardé tel quel. L'ancien éditeur de fief dupliqué ici était mort (jamais
+         lu à la sauvegarde) et trompeur → retiré. -->
 
     <div class="bp-modal-actions">
       <button class="bp-modal-btn cancel" onclick="document.getElementById('modal-save').classList.remove('open')">Annuler</button>
@@ -1900,131 +1857,8 @@
   var owner = localStorage.getItem('user') || '—';
   document.getElementById('bp-plan-owner').textContent = owner;
 
-  // === MODALE SAVE — Mini-grille claim ===
-  // État : ensemble de blocs revendiqués { "gx,gy": true }
-  var claimBlocks = { '0,0': true };  // bloc principal toujours présent
-
-  function getAdjacentKeys(gx, gy) {
-    return [gx+','+( gy-1), gx+','+(gy+1), (gx-1)+','+gy, (gx+1)+','+gy];
-  }
-
-  function isAdjacent(gx, gy) {
-    return getAdjacentKeys(gx, gy).some(function(k) { return claimBlocks[k]; });
-  }
-
-  function updateClaimGrid() {
-    var cells = document.querySelectorAll('#save-claim-grid .bp-cb-cell');
-    var extCount = Object.keys(claimBlocks).length - 1;
-
-    cells.forEach(function(cell) {
-      var gx = parseInt(cell.dataset.gx);
-      var gy = parseInt(cell.dataset.gy);
-      var key = gx + ',' + gy;
-      var isMain = (key === '0,0');
-      var isClaimed = !!claimBlocks[key];
-      var adj = isAdjacent(gx, gy);
-
-      cell.className = 'bp-cb-cell';
-      if (isMain) {
-        cell.classList.add('main');
-        cell.textContent = '⚑';
-      } else if (isClaimed) {
-        cell.classList.add('ext');
-        cell.textContent = '✓';
-      } else if (adj && extCount < 5) {
-        // case disponible adjacente
-        cell.textContent = '+';
-      } else {
-        cell.classList.add('disabled');
-        cell.textContent = '';
-      }
-    });
-
-    // Résumé
-    var totalCells = Object.keys(claimBlocks).length * 100;
-    document.getElementById('save-ext-count').textContent = extCount;
-    document.getElementById('save-total-cells').textContent = totalCells;
-    var blocLabel = Object.keys(claimBlocks).length === 1
-      ? '1 × 10×10'
-      : Object.keys(claimBlocks).length + ' × 10×10';
-    document.querySelector('#save-claim-summary').innerHTML =
-      'Bloc principal + <strong id="save-ext-count">' + extCount + '</strong> extension(s)'
-      + ' — Surface totale : <strong id="save-total-cells">' + totalCells + '</strong> cellules (' + blocLabel + ')';
-  }
-
-  document.querySelectorAll('#save-claim-grid .bp-cb-cell').forEach(function(cell) {
-    cell.addEventListener('click', function() {
-      var gx = parseInt(cell.dataset.gx);
-      var gy = parseInt(cell.dataset.gy);
-      var key = gx + ',' + gy;
-      if (key === '0,0') return;  // bloc principal non-retirable
-
-      var extCount = Object.keys(claimBlocks).length - 1;
-      if (claimBlocks[key]) {
-        // Retirer seulement si l'extension n'est pas le seul point d'attache d'autres
-        delete claimBlocks[key];
-        // Vérifier que les autres blocs restent connectés (simplifié : recon traversal)
-        var connected = isConnected(claimBlocks);
-        if (!connected) { claimBlocks[key] = true; }  // annuler si déconnecté
-      } else if (isAdjacent(gx, gy) && extCount < 5) {
-        claimBlocks[key] = true;
-      }
-      updateClaimGrid();
-    });
-  });
-
-  // Vérifie connectivité BFS depuis le bloc principal
-  function isConnected(blocks) {
-    var keys = Object.keys(blocks);
-    if (keys.length <= 1) return true;
-    var visited = {};
-    var queue = ['0,0'];
-    visited['0,0'] = true;
-    while (queue.length) {
-      var cur = queue.shift();
-      var parts = cur.split(',');
-      var cx = parseInt(parts[0]), cy = parseInt(parts[1]);
-      getAdjacentKeys(cx, cy).forEach(function(k) {
-        if (blocks[k] && !visited[k]) { visited[k] = true; queue.push(k); }
-      });
-    }
-    return Object.keys(visited).length === keys.length;
-  }
-
-  // === MODALE SAVE — Compteur extensions verticales ===
-  // Valeurs alignées sur le système Advanced Sub-Fief de Dune Awakening :
-  // base = 6 niveaux au-dessus + 7 sous-sols (volume théorique ~14 niveaux),
-  // +6/+4 par pieu vertical, max 5 pieux → S27 → N36 (64 niveaux).
-  var vertExt = 0;
-  var VERT_HEIGHTS = [
-    { above: 6,  below: 7,  desc: 'Hauteur : S7 → N6<br>~14 niveaux (volume du Sub-Fief)' },
-    { above: 12, below: 11, desc: 'Hauteur : S11 → N12<br>+6 niveaux, +4 sous-sol' },
-    { above: 18, below: 15, desc: 'Hauteur : S15 → N18<br>+12 niveaux, +8 sous-sol' },
-    { above: 24, below: 19, desc: 'Hauteur : S19 → N24<br>+18 niveaux, +12 sous-sol' },
-    { above: 30, below: 23, desc: 'Hauteur : S23 → N30<br>+24 niveaux, +16 sous-sol' },
-    { above: 36, below: 27, desc: 'Hauteur : S27 → N36<br>+30 niveaux, +20 sous-sol (max)' },
-  ];
-
-  function updateVertExt() {
-    document.getElementById('save-vert-val').textContent = vertExt;
-    var info = VERT_HEIGHTS[vertExt];
-    document.getElementById('save-vert-desc').innerHTML = info.desc;
-    document.getElementById('save-vert-dec').disabled = (vertExt === 0);
-    document.getElementById('save-vert-inc').disabled = (vertExt === 5);
-  }
-
-  document.getElementById('save-vert-dec').addEventListener('click', function() {
-    if (vertExt > 0) { vertExt--; updateVertExt(); }
-  });
-  document.getElementById('save-vert-inc').addEventListener('click', function() {
-    if (vertExt < 5) { vertExt++; updateVertExt(); }
-  });
-
-  // Init
-  updateClaimGrid();
-  updateVertExt();
 </script>
 
-<script type="module" src="base_planner.js?v=lot29mvmesh"></script>
+<script type="module" src="base_planner.js?v=lot30claimfix"></script>
 </body>
 </html>

@@ -11,8 +11,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 // ?v= : cache-busting. Bump à chaque modif des modules pour forcer le rechargement
 // (sinon le navigateur sert l'ancienne version mise en cache).
-import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot29mvmesh';
-import { createMeshFactory } from './planner_mesh.js?v=lot29mvmesh';
+import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot30claimfix';
+import { createMeshFactory } from './planner_mesh.js?v=lot30claimfix';
 
 // ============================================================
 // MOTEUR — bascule ancien (géométrie+grille) / nouveau (sockets+meshes réels)
@@ -329,7 +329,7 @@ const EXCLUDED_PIECE_IDS = new Set([
 ]);
 
 async function loadCatalog() {
-  const url = ENGINE === 'sockets' ? 'planner_pieces.json?v=lot29mvmesh' : PIECES_JSON_URL;
+  const url = ENGINE === 'sockets' ? 'planner_pieces.json?v=lot30claimfix' : PIECES_JSON_URL;
   const resp = await fetch(url);
   if (!resp.ok) throw new Error('pieces ' + resp.status);
   const piecesData = await resp.json();
@@ -5716,8 +5716,14 @@ function bpApplyPlanData(data) {
     }
   }
 
-  // Refresh UI
-  if (typeof rebuildFloorTabs === 'function') rebuildFloorTabs();
+  // Refresh UI — le FIEF (blocs + extensions verticales) et les ÉTAGES doivent refléter
+  // le plan chargé. (Bug : on appelait `rebuildFloorTabs` qui n'existe pas → onglets S…/N…
+  // et panneau fief restaient sur les valeurs par défaut malgré un claim bien restauré.)
+  ensureFloors();          // crée les objets étage pour TOUTE la plage (selon extensions verticales)
+  updateFloorTabs();       // régénère les onglets S…/N… selon getMin/MaxFloor (= vertical_extensions)
+  updateClaimPanel();      // compteurs « blocs / extensions verticales » (panneau droit)
+  renderClaimViz();        // mini-grille du fief (panneau droit)
+  renderVertPips();        // pips d'extensions verticales (panneau droit)
   if (typeof switchFloor === 'function')      switchFloor(state.currentFloor, false);
   updateFloorVisibility();
   updateFloorBadges();
@@ -5784,9 +5790,16 @@ function bpResetPlan() {
   ];
   state.currentFloor = 0;
   state.dirty = false;
+  // Réinitialise aussi le FIEF (1 bloc, 0 extension verticale) → cohérent avec les étages reset.
+  state.plan.claim = { blocks: [{ gx: 0, gy: 0 }], vertical_extensions: 0 };
+  if (claimGroup) { rebuildClaimVisuals3D(); rebuildGrid(); }
   // Nettoie l'URL (?plan=) → un rechargement repart bien de ce plan vierge.
   try { history.replaceState(null, '', window.location.pathname); } catch (e) {}
-  if (typeof rebuildFloorTabs === 'function') rebuildFloorTabs();
+  ensureFloors();
+  updateFloorTabs();
+  updateClaimPanel();
+  renderClaimViz();
+  renderVertPips();
   if (typeof switchFloor === 'function')      switchFloor(0, false);
   updateFloorVisibility();
   updateFloorBadges();

@@ -87,9 +87,10 @@ function discord_build_embed($req, $siteUrl = '', $imageFilename = '') {
         'color'       => $color,
     ];
 
-    // Image affichée DANS l'embed (donc en bas, à taille réduite par Discord)
+    // VIGNETTE (thumbnail) en haut à droite de l'embed = petite taille, au lieu de
+    // l'image pleine largeur (`image`). Demande : n'afficher que des vignettes.
     if ($imageFilename !== '') {
-        $embed['image'] = ['url' => 'attachment://' . $imageFilename];
+        $embed['thumbnail'] = ['url' => 'attachment://' . $imageFilename];
     }
 
     return $embed;
@@ -140,7 +141,7 @@ function discord_post_request($req, $siteUrl = '') {
         $i++;
     }
 
-    // La 1re image est intégrée DANS l'embed (en bas, taille réduite) ;
+    // La 1re image est intégrée DANS l'embed en VIGNETTE (thumbnail, petite, haut-droite) ;
     // les éventuelles autres restent jointes sous le message.
     $embed   = discord_build_embed($req, $siteUrl, $firstImageName);
     $payload = json_encode(['embeds' => [$embed]], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -242,7 +243,7 @@ function discord_build_thanks_embed($req) {
     $crafter = trim($req['crafterAssigned'] ?? '');
     $thanked = $crafter !== '' ? $crafter : $player;
 
-    $desc  = "## 🙏 Merci à **{$thanked}** !\n";
+    $desc  = "### 🙏 Merci à **{$thanked}** !\n";
     $desc .= "⚙️ **{$type}** · 👤 **{$player}**\n";
     $desc .= "*✨ Travail réalisé*";
 

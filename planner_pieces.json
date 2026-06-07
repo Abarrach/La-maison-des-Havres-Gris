@@ -1,6 +1,6 @@
 {
   "version": "planner-1",
-  "generated_at": "2026-06-07T10:05:34.117Z",
+  "generated_at": "2026-06-07T11:57:41.810Z",
   "source": {
     "ui": "base_pieces_v3.json",
     "engine": "dune_pieces_sockets.json"
@@ -1216,7 +1216,7 @@
           "targetTypes": [
             "BP_DuneCurvedWallSocket_C"
           ],
-          "cost": "Down"
+          "cost": "No_Cost"
         },
         {
           "lx": -256,
@@ -1368,7 +1368,7 @@
           "targetTypes": [
             "BP_DuneCurvedWallSocket_C"
           ],
-          "cost": "Down"
+          "cost": "No_Cost"
         },
         {
           "lx": 256,
@@ -12078,7 +12078,7 @@
           "targetTypes": [
             "BP_DuneCurvedWallSocket_C"
           ],
-          "cost": "Down"
+          "cost": "No_Cost"
         },
         {
           "lx": -256,
@@ -13409,7 +13409,7 @@
           "targetTypes": [
             "BP_DuneCurvedWallSocket_C"
           ],
-          "cost": "Down"
+          "cost": "No_Cost"
         },
         {
           "lx": -256,
@@ -13561,7 +13561,7 @@
           "targetTypes": [
             "BP_DuneCurvedWallSocket_C"
           ],
-          "cost": "Down"
+          "cost": "No_Cost"
         },
         {
           "lx": 256,
@@ -18121,7 +18121,7 @@
           "targetTypes": [
             "BP_DuneCurvedWallSocket_C"
           ],
-          "cost": "Down"
+          "cost": "No_Cost"
         },
         {
           "lx": -256,
@@ -18273,7 +18273,7 @@
           "targetTypes": [
             "BP_DuneCurvedWallSocket_C"
           ],
-          "cost": "Down"
+          "cost": "No_Cost"
         },
         {
           "lx": 256,
@@ -26013,7 +26013,7 @@
           "targetTypes": [
             "BP_DuneCurvedWallSocket_C"
           ],
-          "cost": "Down"
+          "cost": "No_Cost"
         },
         {
           "lx": -256,
@@ -26165,7 +26165,7 @@
           "targetTypes": [
             "BP_DuneCurvedWallSocket_C"
           ],
-          "cost": "Down"
+          "cost": "No_Cost"
         },
         {
           "lx": 256,
@@ -34351,7 +34351,7 @@
           "targetTypes": [
             "BP_DuneCurvedWallSocket_C"
           ],
-          "cost": "Down"
+          "cost": "No_Cost"
         },
         {
           "lx": -256,
@@ -34503,7 +34503,7 @@
           "targetTypes": [
             "BP_DuneCurvedWallSocket_C"
           ],
-          "cost": "Down"
+          "cost": "No_Cost"
         },
         {
           "lx": 256,
@@ -36358,7 +36358,7 @@
           "targetTypes": [
             "BP_DuneCurvedWallSocket_C"
           ],
-          "cost": "Down"
+          "cost": "No_Cost"
         },
         {
           "lx": -256,
@@ -41592,7 +41592,7 @@
           "targetTypes": [
             "BP_DuneCurvedWallSocket_C"
           ],
-          "cost": "Down"
+          "cost": "No_Cost"
         },
         {
           "lx": -256,
@@ -41744,7 +41744,7 @@
           "targetTypes": [
             "BP_DuneCurvedWallSocket_C"
           ],
-          "cost": "Down"
+          "cost": "No_Cost"
         },
         {
           "lx": 256,
@@ -49817,7 +49817,7 @@
           "targetTypes": [
             "BP_DuneCurvedWallSocket_C"
           ],
-          "cost": "Down"
+          "cost": "No_Cost"
         },
         {
           "lx": -256,
@@ -49969,7 +49969,7 @@
           "targetTypes": [
             "BP_DuneCurvedWallSocket_C"
           ],
-          "cost": "Down"
+          "cost": "No_Cost"
         },
         {
           "lx": 256,
@@ -51039,7 +51039,7 @@
           "targetTypes": [
             "BP_DuneCurvedWallSocket_C"
           ],
-          "cost": "Down"
+          "cost": "No_Cost"
         },
         {
           "lx": -256,
@@ -51191,7 +51191,7 @@
           "targetTypes": [
             "BP_DuneCurvedWallSocket_C"
           ],
-          "cost": "Down"
+          "cost": "No_Cost"
         },
         {
           "lx": 256,
@@ -61296,7 +61296,7 @@
           "targetTypes": [
             "BP_DuneCurvedWallSocket_C"
           ],
-          "cost": "Down"
+          "cost": "No_Cost"
         },
         {
           "lx": -256,
@@ -61448,7 +61448,7 @@
           "targetTypes": [
             "BP_DuneCurvedWallSocket_C"
           ],
-          "cost": "Down"
+          "cost": "No_Cost"
         },
         {
           "lx": 256,
@@ -66848,7 +66848,7 @@
           "targetTypes": [
             "BP_DuneCurvedWallSocket_C"
           ],
-          "cost": "Down"
+          "cost": "No_Cost"
         },
         {
           "lx": -256,
@@ -67176,7 +67176,7 @@
           "targetTypes": [
             "BP_DuneCurvedWallSocket_C"
           ],
-          "cost": "Down"
+          "cost": "No_Cost"
         },
         {
           "lx": 256,
@@ -71149,7 +71149,7 @@
           "targetTypes": [
             "BP_DuneCurvedWallSocket_C"
           ],
-          "cost": "Down"
+          "cost": "No_Cost"
         },
         {
           "lx": -256,
@@ -71301,7 +71301,7 @@
           "targetTypes": [
             "BP_DuneCurvedWallSocket_C"
           ],
-          "cost": "Down"
+          "cost": "No_Cost"
         },
         {
           "lx": 256,
@@ -77485,7 +77485,7 @@
           "targetTypes": [
             "BP_DuneCurvedWallSocket_C"
           ],
-          "cost": "Down"
+          "cost": "No_Cost"
         },
         {
           "lx": -256,
@@ -77650,7 +77650,7 @@
           "targetTypes": [
             "BP_DuneCurvedWallSocket_C"
           ],
-          "cost": "Down"
+          "cost": "No_Cost"
         },
         {
           "lx": -256,
@@ -77802,7 +77802,7 @@
           "targetTypes": [
             "BP_DuneCurvedWallSocket_C"
           ],
-          "cost": "Down"
+          "cost": "No_Cost"
         },
         {
           "lx": 256,

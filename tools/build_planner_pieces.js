@@ -86,6 +86,23 @@ const MV_MESH = {
 };
 let mvMeshWired = 0;
 
+// --- Désactivation du socket courbe (CurvedWall) sur les SOLS arrondis ---
+// Le sol arrondi (Floor_Round_Corner) porte un socket `BP_DuneCurvedWallSocket_C` ACTIF
+// (cost Down, en 256,256,20). En présence d'un MUR arrondi voisin, ce socket s'accroche au
+// socket courbe du mur (Up, en haut lz404) → le sol est aspiré SUR LE HAUT du mur au lieu de
+// se poser dans le recoin (bug signalé : « mur arrondi bloque le sol arrondi »). Le mur arrondi
+// se pose en pose libre (il n'a pas besoin de ce socket) → on neutralise le socket courbe CÔTÉ
+// SOL (No_Cost = ignoré par le moteur) pour que le sol se comporte pareil avec ou sans mur.
+let deactivatedFloorCurved = 0;
+function deactivateFloorCurvedSocket(s, group) {
+  if (!/^Floor/.test(group || '')) return false;
+  if (!(s.types || []).includes('BP_DuneCurvedWallSocket_C')) return false;
+  if (s.cost === 'No_Cost') return false;
+  s.cost = 'No_Cost';
+  deactivatedFloorCurved++;
+  return true;
+}
+
 let enriched = 0, withMesh = 0, withSockets = 0;
 const pieces = v3.pieces.map(p => {
   const s = sock.get(p.id);
@@ -101,6 +118,7 @@ const pieces = v3.pieces.map(p => {
     out.sockets        = s.sockets || [];
     out.sockets.forEach(promotePillarCenterSocket);     // sol↔pilier (cf. note ci-dessus)
     out.sockets.forEach(normalizeAngledRailingSocket);  // rambarde inclinée ↔ flanc rampe/escalier
+    out.sockets.forEach(sk => deactivateFloorCurvedSocket(sk, s.group));  // sol arrondi ne s'aspire plus sur un mur arrondi
     out.mesh           = s.mesh || null;         // basename glb (SM_/SK_…)
     out.mesh_rel       = s.meshPath || null;     // Dune/.../SM_xxx.glb
     if (out.mesh) withMesh++;
@@ -131,3 +149,4 @@ console.log(`  sans données socket      : ${pieces.length - enriched} (machines
 console.log(`  sockets centraux pilier promus (No_Cost→Foundation_Edge) : ${promotedPillarSockets}`);
 console.log(`  sockets rambarde inclinée normalisés (→Sideways) : ${promotedRailingSockets}`);
 console.log(`  mesh machines/véhicules câblés : ${mvMeshWired}`);
+console.log(`  sockets courbes désactivés sur sols arrondis : ${deactivatedFloorCurved}`);

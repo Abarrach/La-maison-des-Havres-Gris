@@ -11,8 +11,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 // ?v= : cache-busting. Bump à chaque modif des modules pour forcer le rechargement
 // (sinon le navigateur sert l'ancienne version mise en cache).
-import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot30claimfix';
-import { createMeshFactory } from './planner_mesh.js?v=lot30claimfix';
+import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot31roundfloor';
+import { createMeshFactory } from './planner_mesh.js?v=lot31roundfloor';
 
 // ============================================================
 // MOTEUR — bascule ancien (géométrie+grille) / nouveau (sockets+meshes réels)
@@ -329,7 +329,7 @@ const EXCLUDED_PIECE_IDS = new Set([
 ]);
 
 async function loadCatalog() {
-  const url = ENGINE === 'sockets' ? 'planner_pieces.json?v=lot30claimfix' : PIECES_JSON_URL;
+  const url = ENGINE === 'sockets' ? 'planner_pieces.json?v=lot31roundfloor' : PIECES_JSON_URL;
   const resp = await fetch(url);
   if (!resp.ok) throw new Error('pieces ' + resp.status);
   const piecesData = await resp.json();
@@ -3228,7 +3228,7 @@ function socketCursorCm(clientX, clientY) {
       // dessus (→ on enchaîne pour monter) ; survoler le bas vise le niveau du bas.
       const cz = p.y / WORLD_PER_CM;
       const floor = Math.round(cz / CM_PER_LEVEL) - 1;
-      return { x: p.x / WORLD_PER_CM, y: p.z / WORLD_PER_CM, z: cz, floor };
+      return { x: p.x / WORLD_PER_CM, y: p.z / WORLD_PER_CM, z: cz, floor, onGeometry: true };
     }
   }
   // Sinon (curseur dans le vide) : projection sur le plan du sol à l'étage courant.
@@ -3239,7 +3239,7 @@ function socketCursorCm(clientX, clientY) {
   // Three.js peut renvoyer un point avec NaN. Sans ce guard, toutes les distances passent
   // le filtre (NaN > G = false), ce qui fait accrocher n'importe quoi n'importe où.
   if (!isFinite(x) || !isFinite(y)) return null;
-  return { x, y, z: (state.currentFloor || 0) * CM_PER_LEVEL, floor: state.currentFloor || 0 };
+  return { x, y, z: (state.currentFloor || 0) * CM_PER_LEVEL, floor: state.currentFloor || 0, onGeometry: false };
 }
 function socketPlacedList() {
   const out = [];
@@ -3344,17 +3344,21 @@ function socketComputeSnap(pieceId, cur) {
     if (dOr <= NEAR) break;
   }
   if (!best) {
-    // Pose LIBRE de secours (positionnement manuel + rotation R) quand AUCUN socket ne
-    // matche, pour les pièces qui seraient sinon IMPOSABLES :
-    //  - MURS/FENÊTRES arrondis : sockets BP_DuneCurvedWallSocket_C non mappés aux sols.
-    //  - RAMBARDES : surtout les rambardes INCLINÉES dont l'unique socket est `No_Cost` à
-    //    types vides → 0 socket actif → jamais accrochables par le moteur. (Les rambardes
-    //    droites/arrondies s'accrochent quand le curseur est près d'un bord ; sinon elles
-    //    retombent ici en pose libre plutôt que de rester imposables.)
-    // Les SOLS arrondis ont des sockets de bord normaux → ils s'accrochent (PAS de fallback,
-    // sinon ils flotteraient n'importe où).
+    // Pose LIBRE de secours (positionnement manuel + rotation R) quand AUCUN socket ne matche :
+    //  - MURS/FENÊTRES arrondis : sockets BP_DuneCurvedWallSocket_C non mappés aux sols →
+    //    toujours en pose libre (sinon imposables).
+    //  - SOLS arrondis : normalement accrochés par leurs bords, mais dans un RECOIN intérieur
+    //    (entre des murs) le snap ne couvre pas la case → pose libre AUTORISÉE, mais SEULEMENT
+    //    si le curseur est SUR une structure existante (`cur.onGeometry`) afin de ne PAS les
+    //    faire flotter dans le vide (comportement signalé anormal auparavant). gridSnap place
+    //    sur la case visée ; rotation R pour orienter le quart-de-disque dans le bon coin.
     const cat = getEffectiveCategory(piece);
-    if (/Round_Corner/.test(piece?.group || '') && (cat === 'walls' || cat === 'windows')) {
+    const roundCorner = /Round_Corner/.test(piece?.group || '');
+    const allowFree = roundCorner && (
+      cat === 'walls' || cat === 'windows' ||
+      (cat === 'floors' && cur.onGeometry)
+    );
+    if (allowFree) {
       const g = socketEngine.gridSnap(cur.x, cur.y, (base + 1) * CM_PER_LEVEL);
       return { pos: g, rotation: state.ghostRotation || 0, snapped: false, floor: base };
     }

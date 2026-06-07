@@ -11,8 +11,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 // ?v= : cache-busting. Bump à chaque modif des modules pour forcer le rechargement
 // (sinon le navigateur sert l'ancienne version mise en cache).
-import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot32curvedfloor';
-import { createMeshFactory } from './planner_mesh.js?v=lot32curvedfloor';
+import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot33buildplane';
+import { createMeshFactory } from './planner_mesh.js?v=lot33buildplane';
 
 // ============================================================
 // MOTEUR — bascule ancien (géométrie+grille) / nouveau (sockets+meshes réels)
@@ -329,7 +329,7 @@ const EXCLUDED_PIECE_IDS = new Set([
 ]);
 
 async function loadCatalog() {
-  const url = ENGINE === 'sockets' ? 'planner_pieces.json?v=lot32curvedfloor' : PIECES_JSON_URL;
+  const url = ENGINE === 'sockets' ? 'planner_pieces.json?v=lot33buildplane' : PIECES_JSON_URL;
   const resp = await fetch(url);
   if (!resp.ok) throw new Error('pieces ' + resp.status);
   const piecesData = await resp.json();
@@ -3270,6 +3270,29 @@ function expectedCzFor(piece, floor) {
   const f = (floor != null) ? floor : (state.currentFloor || 0);
   return (f + (piece?.is_foundation ? 0 : 1)) * CM_PER_LEVEL;
 }
+// Projette un point écran sur un PLAN HORIZONTAL à la hauteur monde `worldY`.
+// Sert de « plan de construction » : donne la case visée à un étage donné quel que soit
+// l'angle de caméra / les murs, sans dépendre de ce que touche le raycast (mur, sol, vide).
+function screenToWorldAtHeight(clientX, clientY, worldY) {
+  if (clientX == null || clientY == null) return null;
+  const rect = renderer.domElement.getBoundingClientRect();
+  mouseNDC.x = ((clientX - rect.left) / rect.width)  * 2 - 1;
+  mouseNDC.y = -((clientY - rect.top)  / rect.height) * 2 + 1;
+  raycaster.setFromCamera(mouseNDC, activeCam);
+  const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -worldY);
+  const pt = new THREE.Vector3();
+  return raycaster.ray.intersectPlane(plane, pt) ? pt : null;
+}
+// La case (centre cm gx,gy) est-elle PORTÉE — elle-même ou une voisine orthogonale a une
+// surface (sol/fondation) au niveau `floor` ? → évite de poser un sol arrondi dans le vide.
+function roundFloorCellSupported(gx, gy, floor) {
+  const surf = socketSurfaceCells(floor);
+  if (!surf || !surf.size) return false;
+  const cx = Math.round((gx - HALF_CELL) / CM_PER_CELL);
+  const cy = Math.round((gy - HALF_CELL) / CM_PER_CELL);
+  return [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]
+    .some(([dx, dy]) => surf.has((cx + dx) + ',' + (cy + dy)));
+}
 function socketComputeSnap(pieceId, cur) {
   const placed = socketPlacedList();
   const piece = state.piecesById.get(pieceId);
@@ -3311,6 +3334,25 @@ function socketComputeSnap(pieceId, cur) {
     return { pos: g, rotation: state.ghostRotation || 0, snapped: false, floor: baseF };
   }
 
+  // ── SOL ARRONDI (quart-de-disque) : placement par PLAN DE CONSTRUCTION ──
+  // Il remplit un quart de case → on le pose sur la GRILLE (case visée), orienté par R, plutôt
+  // que par accroche de bords (peu fiable et dépendante de l'angle sur une structure surélevée :
+  // « marche d'un côté, pas de l'autre »). Le curseur est projeté sur un plan horizontal à la
+  // hauteur de l'étage courant → fonctionne partout sur le niveau. Garde-fou : la case (ou une
+  // voisine) doit porter une surface au même niveau → posable dans un recoin/extension, jamais
+  // dans le vide.
+  if (getEffectiveCategory(piece) === 'floors' && /Round_Corner/.test(piece?.group || '')) {
+    const surfY = (curFloor + 1) * CM_PER_LEVEL * WORLD_PER_CM;
+    const wp = screenToWorldAtHeight(lastSocketClientPos.x, lastSocketClientPos.y, surfY);
+    if (wp && isFinite(wp.x) && isFinite(wp.z)) {
+      const g = socketEngine.gridSnap(wp.x / WORLD_PER_CM, wp.z / WORLD_PER_CM, (curFloor + 1) * CM_PER_LEVEL);
+      if (roundFloorCellSupported(g.x, g.y, curFloor)) {
+        return { pos: g, rotation: state.ghostRotation || 0, snapped: false, floor: curFloor };
+      }
+    }
+    return null;
+  }
+
   // ── Pièces accrochées (murs, sols, toits, escaliers…) : AUTO-EMPILEMENT ──
   // Rampes / escaliers : posables SUR un sol → on retire sols/fondations/toits-plats de l'occ.
   let occList = placed;
@@ -3344,21 +3386,11 @@ function socketComputeSnap(pieceId, cur) {
     if (dOr <= NEAR) break;
   }
   if (!best) {
-    // Pose LIBRE de secours (positionnement manuel + rotation R) quand AUCUN socket ne matche :
-    //  - MURS/FENÊTRES arrondis : sockets BP_DuneCurvedWallSocket_C non mappés aux sols →
-    //    toujours en pose libre (sinon imposables).
-    //  - SOLS arrondis : normalement accrochés par leurs bords, mais dans un RECOIN intérieur
-    //    (entre des murs) le snap ne couvre pas la case → pose libre AUTORISÉE, mais SEULEMENT
-    //    si le curseur est SUR une structure existante (`cur.onGeometry`) afin de ne PAS les
-    //    faire flotter dans le vide (comportement signalé anormal auparavant). gridSnap place
-    //    sur la case visée ; rotation R pour orienter le quart-de-disque dans le bon coin.
+    // Pose LIBRE de secours (positionnement manuel + rotation R) pour les MURS/FENÊTRES
+    // arrondis : leurs sockets BP_DuneCurvedWallSocket_C ne se mappent pas aux sols → sinon
+    // imposables. (Les SOLS arrondis sont gérés plus haut par le plan de construction.)
     const cat = getEffectiveCategory(piece);
-    const roundCorner = /Round_Corner/.test(piece?.group || '');
-    const allowFree = roundCorner && (
-      cat === 'walls' || cat === 'windows' ||
-      (cat === 'floors' && cur.onGeometry)
-    );
-    if (allowFree) {
+    if (/Round_Corner/.test(piece?.group || '') && (cat === 'walls' || cat === 'windows')) {
       const g = socketEngine.gridSnap(cur.x, cur.y, (base + 1) * CM_PER_LEVEL);
       return { pos: g, rotation: state.ghostRotation || 0, snapped: false, floor: base };
     }

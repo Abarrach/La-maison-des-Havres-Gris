@@ -11,8 +11,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 // ?v= : cache-busting. Bump à chaque modif des modules pour forcer le rechargement
 // (sinon le navigateur sert l'ancienne version mise en cache).
-import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot26railattach';
-import { createMeshFactory } from './planner_mesh.js?v=lot26railattach';
+import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot27pick';
+import { createMeshFactory } from './planner_mesh.js?v=lot27pick';
 
 // ============================================================
 // MOTEUR — bascule ancien (géométrie+grille) / nouveau (sockets+meshes réels)
@@ -329,7 +329,7 @@ const EXCLUDED_PIECE_IDS = new Set([
 ]);
 
 async function loadCatalog() {
-  const url = ENGINE === 'sockets' ? 'planner_pieces.json?v=lot26railattach' : PIECES_JSON_URL;
+  const url = ENGINE === 'sockets' ? 'planner_pieces.json?v=lot27pick' : PIECES_JSON_URL;
   const resp = await fetch(url);
   if (!resp.ok) throw new Error('pieces ' + resp.status);
   const piecesData = await resp.json();
@@ -597,6 +597,28 @@ function raycastPlacedMeshes(clientX, clientY) {
   let o = hits[0].object;
   while (o && o.userData.itemId == null && o.parent) o = o.parent;
   return (o && o.userData.itemId != null) ? o : null;
+}
+// TOUTES les pièces sous le curseur, ordonnées du plus PROCHE au plus loin, dédupliquées,
+// pièces masquées (étage caché) exclues. Permet le « clic-pour-traverser » : reclic au même
+// endroit → pièce suivante derrière (sélection d'une pièce occultée par un mur/une fenêtre).
+function raycastPlacedMeshesAll(clientX, clientY) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  mouseNDC.x = ((clientX - rect.left) / rect.width)  * 2 - 1;
+  mouseNDC.y = -((clientY - rect.top)  / rect.height) * 2 + 1;
+  raycaster.setFromCamera(mouseNDC, activeCam);
+  const hits = raycaster.intersectObjects(Array.from(placedMeshes.values()), true);
+  const out = [];
+  const seen = new Set();
+  for (const h of hits) {
+    let o = h.object;
+    while (o && o.userData.itemId == null && o.parent) o = o.parent;
+    if (!o || o.userData.itemId == null) continue;
+    if (o.visible === false) continue;            // pièce d'un étage masqué → non sélectionnable
+    if (seen.has(o.userData.itemId)) continue;    // un seul hit par pièce (glb multi-sous-mesh)
+    seen.add(o.userData.itemId);
+    out.push(o);
+  }
+  return out;
 }
 
 // ============================================================
@@ -4796,6 +4818,7 @@ function initDragDrop() {
   // mousedown et mouseup, on ne pose PAS la pièce active et on ne désélectionne pas
   // (sinon impossible de pivoter la vue sans perdre/poser la pièce — retour utilisateur).
   let downX = 0, downY = 0, dragged = false;
+  let pickPrevX = -1, pickPrevY = -1, pickIndex = 0;   // clic-pour-traverser (cycle sélection)
   const DRAG_PX = 5;
   el.addEventListener('mousedown', (e) => { if (e.button === 0) { downX = e.clientX; downY = e.clientY; dragged = false; } });
 
@@ -4830,12 +4853,19 @@ function initDragDrop() {
       return;
     }
     // Sinon : sélection d'une pièce posée
-    const hit = raycastPlacedMeshes(e.clientX, e.clientY);
-    if (hit) {
+    const groups = raycastPlacedMeshesAll(e.clientX, e.clientY);
+    if (groups.length) {
       // Shift = ajouter à la sélection ; Ctrl/Cmd = toggle ; sinon remplacer
       const mode = e.shiftKey ? 'add' : (e.ctrlKey || e.metaKey) ? 'toggle' : 'replace';
-      select(hit, mode);
+      // CLIC-POUR-TRAVERSER : un reclic au MÊME endroit (sélection simple) passe à la pièce
+      // suivante derrière → permet d'atteindre un sol/une fenêtre occulté par un mur devant.
+      const samePos = Math.hypot(e.clientX - pickPrevX, e.clientY - pickPrevY) < 6;
+      let idx = 0;
+      if (mode === 'replace' && samePos) idx = (pickIndex + 1) % groups.length;
+      pickPrevX = e.clientX; pickPrevY = e.clientY; pickIndex = idx;
+      select(groups[idx], mode);
     } else {
+      pickPrevX = -1; pickPrevY = -1; pickIndex = 0;
       // Clic dans le vide sans modificateur : tout désélectionner
       if (!e.shiftKey && !e.ctrlKey && !e.metaKey) deselectAll();
     }

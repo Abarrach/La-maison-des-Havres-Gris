@@ -66,7 +66,7 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 - Formulaire de soumission avec description détaillée
 - Ajout de jusqu'à 4 images par demande
 - Suivi et gestion des requêtes côté administration
-- **Intégration Discord automatique** (`discord_helper.php` via `save.php`) : à la création, un embed est posté sur le salon (bordure dorée, type/note/lien/capture) ; à la prise en charge il devient vert avec « Pris en charge par … » ; une fois terminé ou supprimé, le message Discord est effacé. Lien adaptatif (`window.location`), repli sur copie manuelle si webhook absent. URL du webhook dans `discord_webhook.txt` (non versionné)
+- **Intégration Discord automatique** (`discord_helper.php` via `save.php`) : à la création, un embed est posté sur le salon (bordure dorée, type/note/lien + capture en **vignette**) ; à la prise en charge il devient **vert** avec « Pris en charge par … » ; une fois **terminé**, le message est **transformé en remerciement** (« 🙏 Merci à … », bordure violette, captures retirées) au lieu d'être effacé ; **supprimé** → le message Discord est effacé. Lien adaptatif (`window.location`), repli sur copie manuelle si webhook absent. URL du webhook dans `discord_webhook.txt` (non versionné). `discord_complete_message` est robuste (repli si Discord refuse `attachments:[]`, log dans `discord_debug.log`)
 - Confirmation de suppression dans une modale stylisée (thème sombre, cohérent avec le site)
 - **Suppression protégée** : seul l'auteur peut supprimer sa propre demande (vérification côté serveur) ; les demandes marquées « Terminé » sont verrouillées en historique permanent
 - Correction : guard contre un `id` undefined sur les anciennes entrées (évite l'erreur `missing_data`)
@@ -229,6 +229,25 @@ Le **cache navigateur des modules ES** masque les déploiements → versioning `
 - **Mode texturé : abandonné** — les `_M` exportés sont des masques packés, la couleur du jeu est composée
   à l'exécution par un matériau en couches (non reproductible). On garde l'argile (comme dune.layout.tools).
 
+**Durcissement post-lancement (lots `lot21`→`lot33`, retours utilisateurs en prod) :**
+- **Sol ↔ pilier** : le socket central des sols (`No_Cost`) est promu en `Foundation_Edge` au build →
+  on peut poser un sol sur un pilier et inversement.
+- **Chemins legacy réparés** : le drag-and-drop, le copier-coller d'étage (Ctrl+C/V) et la rotation d'une
+  pièce posée passaient encore par l'ancien moteur (coordonnées cellules) → re-câblés sur le moteur sockets.
+- **Mode solide actif par défaut** à l'ouverture.
+- **Curseur 3D fidèle** : le point actif suit la géométrie sous la souris (raycast) ; l'étage suit l'**onglet**
+  (sauf escaliers/rampes qui suivent la hauteur survolée pour enchaîner vers le haut). Les **sols arrondis**
+  se posent via un **plan de construction** (projection sur un plan horizontal à la hauteur de l'étage) →
+  fiable partout, quel que soit l'angle.
+- **Sélection « clic-pour-traverser »** : un re-clic au même endroit sélectionne la pièce occultée derrière
+  (utile en 3D quand un mur masque un sol).
+- **Fief sauvegardé/rechargé correctement** : l'UI (onglets d'étage, compteurs d'extensions) est rafraîchie
+  au chargement (bug `rebuildFloorTabs` inexistant corrigé) ; éditeur de fief mort retiré de la modale Sauvegarder.
+- **Meshes machines/véhicules câblés dans le build** (`MV_MESH`) → plus perdus à chaque régénération de `planner_pieces.json`.
+- **Rambardes inclinées** s'accrochent au flanc des escaliers/rampes ; le **mur arrondi** n'« aspire » plus le sol arrondi.
+- **Anti-cache** : versioning `?v=lotX` sur le `<script>` + les `import` + le `fetch` de `planner_pieces.json`
+  (bumper à chaque modif, actuellement `lot33buildplane`).
+
 ---
 
 #### Historique v1 (approche primitives schématiques)
@@ -324,7 +343,7 @@ Stats v3 (post-session 7b) : **670 pièces** = 643 structurelles + 19 machines (
 
 ```
 base_planner.html              # Layout + importmap Three.js + modales + CSS sidebar
-base_planner.js                # Logique 3D complète (~3300 lignes après session 8 — script type="module" → expose API sur window)
+base_planner.js                # Logique 3D complète (~6150 lignes, moteur sockets — script type="module" → expose API sur window)
 base_planner_api.php           # CRUD plans côté serveur (list/load/save/delete/share/unshare)
 base_pieces_v3.json            # Catalogue dataminé (670 pièces, ~820 KB, source unique)
 base_plans.json                # Plans utilisateurs (créé automatiquement à la 1ère sauvegarde, chmod 664 si write_error)
@@ -360,8 +379,11 @@ node import_building_data.js
 | `V` | Bascule caméra ortho ↔ perspective |
 | `Escape` | Annule le mode click-to-place ou désélectionne |
 | Clic dans la sidebar | Active la pièce pour pose au clic (toggle on/off) |
+| Clic sur une pièce posée | Sélection ; **re-clic au même endroit** → pièce occultée derrière (clic-pour-traverser) |
 | Clic droit canvas | Annule le mode click-to-place |
-| Drag depuis la sidebar | Mode drag-and-drop classique (toujours fonctionnel) |
+| Drag depuis la sidebar | Glisser-déposer (utilise le même moteur sockets que le click-to-place) |
+| `T` | Bascule **vue solide** (active par défaut) |
+| Onglets d'étage / `?` | Choix de l'étage de pose · bouton **?** = aide intégrée (fonctions + raccourcis) |
 
 #### Reprise dans une nouvelle session — checklist
 1. Relancer le pipeline si FModel a été ré-extrait : `cd j:\Download\Fmodel && node import_building_data.js`
@@ -424,13 +446,13 @@ DuneMap/
 ├── dune_chronologie.html # Chronologie de l'univers
 ├── news.html             # Actualités du jeu
 ├── register.html         # Création de compte (design deux colonnes : formulaire + présentation guilde)
-├── base_planner.html     # Constructeur de Base 3D (Three.js) — en dév (sessions 0-5 livrées, 6-7 à faire)
+├── base_planner.html     # Constructeur de Base 3D (Three.js, moteur sockets v2) — LIVRÉ en prod
 │
 ├── script.js             # Logique cartographique (Leaflet, marqueurs, Désert Profond)
 ├── skills.js             # Simulateur de talents + commandes de craft
 ├── planner.js            # Planificateur d'événements
 ├── migration.js          # Logique de migration (validation, refus, Discord)
-├── base_planner.js       # Logique 3D du Constructeur de Base (Three.js, ~3300 lignes après session 7b)
+├── base_planner.js       # Logique 3D du Constructeur de Base (Three.js, moteur sockets, ~6150 lignes)
 ├── auth-guard.js         # Protection des pages (redirection login si non connecté)
 │
 ├── save.php              # API principale (bases, utilisateurs, craft, commandes)

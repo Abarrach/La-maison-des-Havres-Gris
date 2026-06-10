@@ -40,12 +40,15 @@
         }
 
         .cards-container {
-            display: grid;
-            grid-template-columns: repeat(3, 260px);
-            gap: 22px;
+            display: flex;
+            flex-wrap: wrap;
             justify-content: center;
+            gap: 22px;
             width: 100%;
-            padding: 20px;
+            max-width: 1106px;   /* 4 cartes (4×260) + 3 gaps (3×22) → 2 lignes (4+3) sur grand écran */
+            margin: 0 auto;
+            box-sizing: border-box;
+            padding: 20px 0;
             position: relative;
             z-index: 1;
         }
@@ -143,15 +146,13 @@
             transform: translateY(-3px); /* Le bouton monte légèrement */
         }
 
-        /* === RESPONSIVE — Tablette (2 colonnes) === */
-        @media(max-width: 880px) {
-            .cards-container { grid-template-columns: repeat(2, 260px); }
-        }
+        /* Le flex-wrap réduit le nombre de cartes par ligne automatiquement quand l'écran
+           rétrécit (la dernière ligne reste centrée) — pas besoin de paliers de colonnes. */
 
         /* === RESPONSIVE — Mobile (1 colonne) === */
         @media(max-width: 580px) {
             .cards-top-spacer { height: 20px; }
-            .cards-container { grid-template-columns: 1fr; gap: 12px; padding: 10px; }
+            .cards-container { gap: 12px; padding: 10px; }
             .card { width: min(260px, calc(100vw - 40px)); margin: 0 auto; }
             .card-image { height: 120px; }
             .logout-btn { margin-top: 25px; padding: 12px 25px; font-size: 0.9em; }

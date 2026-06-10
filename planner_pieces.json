@@ -1,11 +1,11 @@
 {
   "version": "planner-1",
-  "generated_at": "2026-06-07T11:57:41.810Z",
+  "generated_at": "2026-06-10T17:32:18.747Z",
   "source": {
     "ui": "base_pieces_v3.json",
     "engine": "dune_pieces_sockets.json"
   },
-  "count": 670,
+  "count": 692,
   "pieces": [
     {
       "id": "Atreides_Outpost_Column",
@@ -84643,14 +84643,14 @@
       "label_fr": "Raffinerie d'épice de taille moyenne",
       "label_en": "Medium Spice Refinery",
       "dimensions": {
-        "w": 2,
-        "d": 3,
+        "w": 3,
+        "d": 2,
         "h": 2,
         "shape": "square"
       },
       "real_size_m": {
-        "w": 3.1,
-        "d": 6.2,
+        "w": 6.2,
+        "d": 3.1,
         "h": 5
       },
       "placement_rules": {
@@ -84793,14 +84793,14 @@
       "label_fr": "Grande raffinerie de minerai",
       "label_en": "Large Ore Refinery",
       "dimensions": {
-        "w": 4,
-        "d": 6,
+        "w": 6,
+        "d": 4,
         "h": 2,
         "shape": "square"
       },
       "real_size_m": {
-        "w": 8.6,
-        "d": 13.5,
+        "w": 13.5,
+        "d": 8.6,
         "h": 4.5
       },
       "placement_rules": {
@@ -85091,6 +85091,732 @@
       "is_vehicle": true,
       "sockets": [],
       "mesh": "SM_ProxyMesh_Choam_Ornithopter_Transport"
+    },
+    {
+      "id": "WindTurbineOmnidirectional_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "utilities",
+      "group": "WindTurbine",
+      "label_fr": "Éolienne omnidirectionnelle",
+      "label_en": "Wind Turbine Omnidirectional",
+      "dimensions": {
+        "w": 1,
+        "d": 1,
+        "h": 2,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 2.35,
+        "h": 7.32,
+        "d": 2
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 90000000,
+      "icon_path": null,
+      "mesh_path": null,
+      "is_machine": true,
+      "is_utility": true,
+      "sockets": [],
+      "mesh": "SM_Env_Prop_Choam_Windturbine_Omnidirectional_01",
+      "power": 150,
+      "water_capacity": 1000
+    },
+    {
+      "id": "WindTurbineDirectional_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "utilities",
+      "group": "WindTurbine",
+      "label_fr": "Éolienne directionnelle",
+      "label_en": "Wind Turbine Directional",
+      "dimensions": {
+        "w": 1,
+        "d": 1,
+        "h": 2,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 4.1,
+        "h": 6.76,
+        "d": 3.66
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 90000001,
+      "icon_path": null,
+      "mesh_path": null,
+      "is_machine": true,
+      "is_utility": true,
+      "sockets": [],
+      "mesh": "SM_Env_Prop_Choam_Windturbine_Directional_01",
+      "power": 350,
+      "water_capacity": 1000
+    },
+    {
+      "id": "Windtrap_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "utilities",
+      "group": "Windtrap",
+      "label_fr": "Piège à vent",
+      "label_en": "Windtrap",
+      "dimensions": {
+        "w": 1,
+        "d": 1,
+        "h": 2,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 4.2,
+        "h": 4.28,
+        "d": 4.43
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 90000002,
+      "icon_path": null,
+      "mesh_path": null,
+      "is_machine": true,
+      "is_utility": true,
+      "sockets": [],
+      "mesh": "SM_Env_Prop_Choam_Windtrap_Directional_01",
+      "power": -75,
+      "water_capacity": 500
+    },
+    {
+      "id": "LargeWindtrap_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "utilities",
+      "group": "Windtrap",
+      "label_fr": "Grand piège à vent",
+      "label_en": "Large Windtrap",
+      "dimensions": {
+        "w": 2,
+        "d": 2,
+        "h": 2,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 8.72,
+        "h": 5.38,
+        "d": 8.38
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 90000003,
+      "icon_path": null,
+      "mesh_path": null,
+      "is_machine": true,
+      "is_utility": true,
+      "sockets": [],
+      "mesh": "SM_Env_Prop_Choam_Windtrap_Omnidirectional_01",
+      "power": -135,
+      "water_capacity": 500
+    },
+    {
+      "id": "Generator_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "utilities",
+      "group": "Generator",
+      "label_fr": "Générateur à carburant",
+      "label_en": "Fuel-Powered Generator",
+      "dimensions": {
+        "w": 1,
+        "d": 1,
+        "h": 1,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 5.19,
+        "h": 1.71,
+        "d": 2.16
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 90000004,
+      "icon_path": null,
+      "mesh_path": null,
+      "is_machine": true,
+      "is_utility": true,
+      "sockets": [],
+      "mesh": "SM_Env_Prop_Choam_PowerGenerator",
+      "power": 75,
+      "water_capacity": 1000
+    },
+    {
+      "id": "SpiceGenerator_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "utilities",
+      "group": "Generator",
+      "label_fr": "Générateur à épice",
+      "label_en": "Spice-Powered Generator",
+      "dimensions": {
+        "w": 2,
+        "d": 1,
+        "h": 2,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 5.91,
+        "h": 5.34,
+        "d": 2.49
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 90000005,
+      "icon_path": null,
+      "mesh_path": null,
+      "is_machine": true,
+      "is_utility": true,
+      "sockets": [],
+      "mesh": "SM_Env_Prop_Choam_PowerGenerator_SpiceRefined",
+      "power": 1000,
+      "water_capacity": 1000
+    },
+    {
+      "id": "WaterCistern_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "utilities",
+      "group": "WaterCistern",
+      "label_fr": "Citerne à eau",
+      "label_en": "Water Cistern",
+      "dimensions": {
+        "w": 1,
+        "d": 1,
+        "h": 1,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 0.89,
+        "h": 1.35,
+        "d": 1.28
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 90000006,
+      "icon_path": null,
+      "mesh_path": null,
+      "is_machine": true,
+      "is_utility": true,
+      "sockets": [],
+      "mesh": "SM_Env_Prop_Choam_WaterCistern_Small_01",
+      "power": 0,
+      "water_capacity": 5000
+    },
+    {
+      "id": "MediumWaterCistern_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "utilities",
+      "group": "WaterCistern",
+      "label_fr": "Citerne à eau de taille moyenne",
+      "label_en": "Medium Water Cistern",
+      "dimensions": {
+        "w": 1,
+        "d": 1,
+        "h": 1,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 1.9,
+        "h": 2.54,
+        "d": 2.09
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 90000007,
+      "icon_path": null,
+      "mesh_path": null,
+      "is_machine": true,
+      "is_utility": true,
+      "sockets": [],
+      "mesh": "SM_Env_Prop_Choam_InsulatedCistern_Medium",
+      "power": 0,
+      "water_capacity": 25000
+    },
+    {
+      "id": "LargeWaterCistern_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "utilities",
+      "group": "WaterCistern",
+      "label_fr": "Grande citerne à eau",
+      "label_en": "Large Water Cistern",
+      "dimensions": {
+        "w": 1,
+        "d": 1,
+        "h": 1,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 3.75,
+        "h": 3.83,
+        "d": 3.32
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 90000008,
+      "icon_path": null,
+      "mesh_path": null,
+      "is_machine": true,
+      "is_utility": true,
+      "sockets": [],
+      "mesh": "SM_Env_Prop_Choam_WaterCistern_Large",
+      "power": 0,
+      "water_capacity": 100000
+    },
+    {
+      "id": "SmallInsulatedCistern_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "utilities",
+      "group": "WaterCistern",
+      "label_fr": "Petite citerne isolée",
+      "label_en": "Small Insulated Cistern",
+      "dimensions": {
+        "w": 1,
+        "d": 1,
+        "h": 1,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 1.9,
+        "h": 2.54,
+        "d": 2.09
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 90000009,
+      "icon_path": null,
+      "mesh_path": null,
+      "is_machine": true,
+      "is_utility": true,
+      "sockets": [],
+      "mesh": "SM_Env_Prop_Choam_InsulatedCistern_Medium",
+      "power": 0,
+      "water_capacity": 2500
+    },
+    {
+      "id": "MediumInsulatedCistern_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "utilities",
+      "group": "WaterCistern",
+      "label_fr": "Citerne isolée de taille moyenne",
+      "label_en": "Medium Insulated Cistern",
+      "dimensions": {
+        "w": 1,
+        "d": 1,
+        "h": 1,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 1.9,
+        "h": 2.54,
+        "d": 2.09
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 90000010,
+      "icon_path": null,
+      "mesh_path": null,
+      "is_machine": true,
+      "is_utility": true,
+      "sockets": [],
+      "mesh": "SM_Env_Prop_Choam_InsulatedCistern_Medium",
+      "power": 0,
+      "water_capacity": 7500
+    },
+    {
+      "id": "GenericContainer_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "utilities",
+      "group": "Storage",
+      "label_fr": "Coffre",
+      "label_en": "Chest",
+      "dimensions": {
+        "w": 1,
+        "d": 1,
+        "h": 1,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 1.5,
+        "h": 0.5,
+        "d": 0.75
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 90000011,
+      "icon_path": null,
+      "mesh_path": null,
+      "is_machine": true,
+      "is_utility": true,
+      "sockets": [],
+      "mesh": "SM_Env_Prop_Choam_StorageContainer_Small",
+      "power": 0,
+      "water_capacity": 1000
+    },
+    {
+      "id": "SpiceSilo_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "utilities",
+      "group": "Storage",
+      "label_fr": "Petit contenant de stockage",
+      "label_en": "Small Storage Container",
+      "dimensions": {
+        "w": 1,
+        "d": 1,
+        "h": 1,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 0.99,
+        "h": 0.95,
+        "d": 1.31
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 90000012,
+      "icon_path": null,
+      "mesh_path": null,
+      "is_machine": true,
+      "is_utility": true,
+      "sockets": [],
+      "mesh": "SM_Env_Prop_Neut_Crate_Spice_01_A",
+      "power": 0,
+      "water_capacity": 1000
+    },
+    {
+      "id": "MediumStorageContainer_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "utilities",
+      "group": "Storage",
+      "label_fr": "Contenant de stockage de taille moyenne",
+      "label_en": "Medium Storage Container",
+      "dimensions": {
+        "w": 1,
+        "d": 1,
+        "h": 1,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 3.04,
+        "h": 3.04,
+        "d": 4.11
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 90000013,
+      "icon_path": null,
+      "mesh_path": null,
+      "is_machine": true,
+      "is_utility": true,
+      "sockets": [],
+      "mesh": "SM_Env_Prop_Choam_StorageContainer_Medium",
+      "power": 0,
+      "water_capacity": 1000
+    },
+    {
+      "id": "StorageContainer_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "utilities",
+      "group": "Storage",
+      "label_fr": "Contenant de stockage",
+      "label_en": "Storage Container",
+      "dimensions": {
+        "w": 1,
+        "d": 1,
+        "h": 1,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 1.38,
+        "h": 1.28,
+        "d": 1.29
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 90000014,
+      "icon_path": null,
+      "mesh_path": null,
+      "is_machine": true,
+      "is_utility": true,
+      "sockets": [],
+      "mesh": "SM_Env_Prop_Choam_StorageContainer_Medium_02_Assemble",
+      "power": 0,
+      "water_capacity": 1000
+    },
+    {
+      "id": "ModdingStation_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "utilities",
+      "group": "ModdingStation",
+      "label_fr": "Atelier d'augmentation",
+      "label_en": "Augmentation Station",
+      "dimensions": {
+        "w": 1,
+        "d": 1,
+        "h": 1,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 2.94,
+        "h": 1.22,
+        "d": 1.6
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 90000015,
+      "icon_path": null,
+      "mesh_path": null,
+      "is_machine": true,
+      "is_utility": true,
+      "sockets": [],
+      "mesh": "SM_Player_Prop_Choam_ModdingStation",
+      "power": -50,
+      "water_capacity": 1000
+    },
+    {
+      "id": "RepairStation_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "utilities",
+      "group": "RepairStation",
+      "label_fr": "Atelier de réparation",
+      "label_en": "Repair Station",
+      "dimensions": {
+        "w": 1,
+        "d": 1,
+        "h": 1,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 3.71,
+        "h": 2.84,
+        "d": 2.45
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 90000016,
+      "icon_path": null,
+      "mesh_path": null,
+      "is_machine": true,
+      "is_utility": true,
+      "sockets": [],
+      "mesh": "SM_Env_Prop_Choam_RepairStation",
+      "power": -20,
+      "water_capacity": 1000
+    },
+    {
+      "id": "Recycler_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "utilities",
+      "group": "Recycler",
+      "label_fr": "Recycleur",
+      "label_en": "Recycler",
+      "dimensions": {
+        "w": 1,
+        "d": 1,
+        "h": 1,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 2.99,
+        "h": 1.92,
+        "d": 3.04
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 90000017,
+      "icon_path": null,
+      "mesh_path": null,
+      "is_machine": true,
+      "is_utility": true,
+      "sockets": [],
+      "mesh": "SM_Env_Prop_Choam_Recycler",
+      "power": -15,
+      "water_capacity": 1000
+    },
+    {
+      "id": "BloodWaterExtractor_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "utilities",
+      "group": "BloodPurifier",
+      "label_fr": "Purificateur de sang",
+      "label_en": "Blood Purifier",
+      "dimensions": {
+        "w": 1,
+        "d": 1,
+        "h": 1,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 2.62,
+        "h": 2.3,
+        "d": 2.65
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 90000018,
+      "icon_path": null,
+      "mesh_path": null,
+      "is_machine": true,
+      "is_utility": true,
+      "sockets": [],
+      "mesh": "SM_Env_Prop_Choam_BloodPurifier_M_Case",
+      "power": -10,
+      "water_capacity": 1000
+    },
+    {
+      "id": "BloodWaterExtractionAdvanced_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "utilities",
+      "group": "BloodPurifier",
+      "label_fr": "Purificateur de sang amélioré",
+      "label_en": "Improved Blood Purifier",
+      "dimensions": {
+        "w": 1,
+        "d": 1,
+        "h": 1,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 5.14,
+        "h": 2.96,
+        "d": 2.65
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 90000019,
+      "icon_path": null,
+      "mesh_path": null,
+      "is_machine": true,
+      "is_utility": true,
+      "sockets": [],
+      "mesh": "SM_Env_Prop_Choam_BloodPurifier_Advanced",
+      "power": -35,
+      "water_capacity": 1000
+    },
+    {
+      "id": "Deathstill_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "utilities",
+      "group": "Deathstill",
+      "label_fr": "Distille de mort fremen élaboré",
+      "label_en": "Advanced Fremen Deathstill",
+      "dimensions": {
+        "w": 1,
+        "d": 1,
+        "h": 1,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 3.8,
+        "h": 1.27,
+        "d": 1.55
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 90000020,
+      "icon_path": null,
+      "mesh_path": null,
+      "is_machine": true,
+      "is_utility": true,
+      "sockets": [],
+      "mesh": "SM_Env_Prop_Frem_Deathstill_T5",
+      "power": -350,
+      "water_capacity": 500
+    },
+    {
+      "id": "Fremen_Deathstill_Placeable",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "utilities",
+      "group": "Deathstill",
+      "label_fr": "Distille de mort fremen",
+      "label_en": "Fremen Deathstill",
+      "dimensions": {
+        "w": 1,
+        "d": 1,
+        "h": 1,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 3.49,
+        "h": 1.27,
+        "d": 1.55
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 90000021,
+      "icon_path": null,
+      "mesh_path": null,
+      "is_machine": true,
+      "is_utility": true,
+      "sockets": [],
+      "mesh": "SM_Env_Prop_Frem_Deathstill",
+      "power": -200,
+      "water_capacity": 500
     }
   ]
 }

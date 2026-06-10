@@ -12,6 +12,14 @@ const v3 = JSON.parse(fs.readFileSync(path.join(ROOT, 'base_pieces_v3.json'), 'u
 const sockArr = JSON.parse(fs.readFileSync(path.join(ROOT, 'dune_pieces_sockets.json'), 'utf8'));
 const sock = new Map(sockArr.map(s => [s.templateId, s]));
 
+// Utilitaires (placeables fonctionnels : éoliennes, pièges à vent, générateurs, citernes,
+// deathstills, recycleur, ateliers, stockage…) — absents de base_pieces_v3 (datamining
+// DT_PlaceableData_Functional). real_size_m = bbox du mesh .glb ; coûts dans planner_costs.json.
+const utilFile = path.join(ROOT, 'planner_utilities.json');
+const UTILITIES = fs.existsSync(utilFile)
+  ? JSON.parse(fs.readFileSync(utilFile, 'utf8')).utilities || []
+  : [];
+
 // --- Normalisation socket central pilier des sols (No_Cost → Foundation_Edge) ---
 // Dans le dump du jeu, le socket central `BP_DunePillarSocket_C` d'un sol est `No_Cost`
 // (gratuit côté jeu). Or le moteur de snap ignore tout socket No_Cost (ni actif ni cible),
@@ -86,6 +94,26 @@ const MV_MESH = {
 };
 let mvMeshWired = 0;
 
+// --- Correction des axes w/d inversés (footprint des placeables) ---
+// L'empreinte (footprint en cases) et la boîte visuelle des machines sont dérivées de
+// `real_size_m`. Or pour CERTAINES pièces, `real_size_m.w`/`.d` (et `dimensions.w`/`.d`)
+// sont INVERSÉS par rapport à l'orientation réelle du mesh .glb (axe X = largeur, Z =
+// profondeur). Vérifié par la bbox des glb : épice moyenne data {w:3.1,d:6.2} mais mesh
+// X:6.33×Z:3.10 ; grande raffinerie de minerai data {w:8.6,d:13.5} mais mesh X:13.49×Z:8.32.
+// Conséquence : empreinte tournée de 90° → machine pas centrée (snappée sur une ligne), et
+// la grande raffinerie « prend 9 cases » au lieu de 6 (boîte 2×3 mal orientée vs mesh).
+// FIX : on échange w↔d pour ces ids À LA GÉNÉRATION (les 21 autres machines/véhicules ont
+// des axes corrects, vérifiés). base_pieces_v3.json reste intact → survit à une ré-extraction.
+const SWAP_WD_IDS = new Set([
+  'MediumSpiceRefinery_Placeable',  // épice moyenne : mesh 6.33×3.10 → footprint 2×1 (centré)
+  'LargeOreRefinery_Placeable',     // grande minerai : mesh 13.49×8.32 → footprint 3×2 = 6 cases
+]);
+let swappedAxes = 0;
+function swapWD(o) {
+  if (!o || typeof o.w !== 'number' || typeof o.d !== 'number') return o;
+  return { ...o, w: o.d, d: o.w };
+}
+
 // --- Désactivation du socket courbe (CurvedWall) sur les SOLS arrondis ---
 // Le sol arrondi (Floor_Round_Corner) porte un socket `BP_DuneCurvedWallSocket_C` ACTIF
 // (cost Down, en 256,256,20). En présence d'un MUR arrondi voisin, ce socket s'accroche au
@@ -129,7 +157,42 @@ const pieces = v3.pieces.map(p => {
   }
   // Câblage mesh machines/véhicules (survit aux régénérations).
   if (MV_MESH[p.id]) { out.mesh = MV_MESH[p.id]; mvMeshWired++; }
+  // Correction d'axes w/d inversés vs mesh (footprint centré, cf. note ci-dessus).
+  if (SWAP_WD_IDS.has(p.id)) {
+    out.real_size_m = swapWD(out.real_size_m);
+    out.dimensions  = swapWD(out.dimensions);
+    swappedAxes++;
+  }
   return out;
+});
+
+// ── Injection des UTILITAIRES (nouvelle catégorie « utilities ») ──────────────
+// Pièces posables comme les machines (is_machine réutilise toute la logique de pose/
+// footprint/collision/mesh) + drapeau is_utility (onglet de palette dédié). Footprint
+// dérivé de real_size_m (bbox mesh). Survit aux régénérations (lit planner_utilities.json).
+const CELL_M = 5.12, LEVEL_M = 3.84;
+const fpCells = m => Math.max(1, Math.ceil((m || CELL_M) / CELL_M - 0.15));
+const hLevels = m => Math.max(1, Math.ceil((m || LEVEL_M) / LEVEL_M));
+let utilWired = 0;
+UTILITIES.forEach((u, i) => {
+  const rs = u.real_size_m || { w: 2, d: 2, h: 2 };
+  pieces.push({
+    id: u.id,
+    faction_id: 'placeables', faction_label: 'placeables',
+    category: 'utilities', group: u.group || 'Utility',
+    label_fr: u.label_fr, label_en: u.label_en,
+    dimensions: { w: fpCells(rs.w), d: fpCells(rs.d), h: hLevels(rs.h), shape: 'square' },
+    real_size_m: rs,
+    placement_rules: { snap_target: 'cell', footprint_shape: 'square' },
+    menu_order: 90000000 + i,
+    icon_path: null, mesh_path: null,
+    is_machine: true,   // réutilise pose/footprint/collision/mesh des placeables
+    is_utility: true,   // onglet de palette « Utilitaires »
+    sockets: [],
+    mesh: u.mesh || null,
+    power: u.power || 0, water_capacity: u.water_capacity || 0,
+  });
+  utilWired++;
 });
 
 const result = {
@@ -150,3 +213,5 @@ console.log(`  sockets centraux pilier promus (No_Cost→Foundation_Edge) : ${pr
 console.log(`  sockets rambarde inclinée normalisés (→Sideways) : ${promotedRailingSockets}`);
 console.log(`  mesh machines/véhicules câblés : ${mvMeshWired}`);
 console.log(`  sockets courbes désactivés sur sols arrondis : ${deactivatedFloorCurved}`);
+console.log(`  axes w/d inversés corrigés (footprint centré) : ${swappedAxes}`);
+console.log(`  utilitaires injectés (cat. utilities)         : ${utilWired}`);

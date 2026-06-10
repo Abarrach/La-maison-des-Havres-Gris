@@ -1,0 +1,1223 @@
+{
+  "_source": "Données de coûts compilées par TroubleChute — https://tools.tcno.co/dune (Dune: Awakening Base Calculator). Réutilisées avec crédit. Les coûts sont des faits du jeu.",
+  "_extracted_at": "2026-06-10",
+  "_note": "functional: nom→{resources(matériau:qté), power(+prod/−conso), waterProd, fuel}. buildings: set→{defaultResource, items{souscat{pièce: qté_de_defaultResource | {matériau:qté}}}}.",
+  "materials": [
+    "Advanced Machinery",
+    "Advanced Particulate Filter",
+    "Advanced Servoks",
+    "Agave Seeds",
+    "Aluminum Ingot",
+    "Armor Plating",
+    "Calibrated Servok",
+    "Carbide Scraps",
+    "Cobalt Paste",
+    "Complex Machinery",
+    "Copper Ingot",
+    "Diamondine Dust",
+    "Duraluminum Ingot",
+    "Fluid Efficient Industrial Pump",
+    "Fuel Cell",
+    "Granite Stone",
+    "Holtzman Actuator",
+    "Hydraulic Piston",
+    "Improved Holtzman Actuator",
+    "Industrial Pump",
+    "Industrial-grade Lubricant",
+    "Iron Ingot",
+    "Irradiated Slag",
+    "Low-grade Lubricant",
+    "Makeshift Filter",
+    "Military Power Regulator",
+    "Overclocked Power Regulator",
+    "Particle Capacitor",
+    "Particulate Filter",
+    "Plant Fiber",
+    "Plastanium Ingot",
+    "Plasteel Composite Armor Plating",
+    "Plastone",
+    "Precision Range Finder",
+    "Range Finder",
+    "Ray Amplifier",
+    "Salvaged Metal",
+    "Silicone Block",
+    "Spice Melange",
+    "Spice-infused Aluminum Dust",
+    "Spice-infused Copper Dust",
+    "Spice-infused Duraluminum Dust",
+    "Spice-infused Fuel Cell",
+    "Spice-infused Iron Dust",
+    "Spice-infused Plastanium Dust",
+    "Spice-infused Steel Dust",
+    "Standard Filter",
+    "Steel Ingot",
+    "Thermo-Responsive Ray Amplifier",
+    "Thermoelectric Cooler",
+    "Tri-Forged Hydraulic Piston",
+    "Water"
+  ],
+  "functional": {
+    "Sub-Fief Console": {
+      "name": "Sub-Fief Console",
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": -15
+    },
+    "Advanced Sub-Fief Console": {
+      "name": "Advanced Sub-Fief Console",
+      "resources": {
+        "Salvaged Metal": 40
+      },
+      "power": -15
+    },
+    "Fuel-Powered Generator": {
+      "name": "Fuel-Powered Generator",
+      "resources": {
+        "Salvaged Metal": 45
+      },
+      "power": 75,
+      "fuel": {
+        "Fuel Cell": 1
+      }
+    },
+    "Wind Turbine Omnidirectional": {
+      "name": "Wind Turbine Omnidirectional",
+      "resources": {
+        "Steel Ingot": 45,
+        "Cobalt Paste": 65,
+        "Calibrated Servok": 20
+      },
+      "power": 150,
+      "fuel": {
+        "Low-grade Lubricant": 1
+      }
+    },
+    "Wind Turbine Directional": {
+      "name": "Wind Turbine Directional",
+      "resources": {
+        "Duraluminum Ingot": 120,
+        "Cobalt Paste": 160,
+        "Calibrated Servok": 50,
+        "Spice Melange": 3
+      },
+      "power": 350,
+      "fuel": {
+        "Industrial-grade Lubricant": 0.6666666666666666
+      }
+    },
+    "Spice-Powered Generator": {
+      "name": "Spice-Powered Generator",
+      "resources": {
+        "Plastanium Ingot": 430,
+        "Silicone Block": 180,
+        "Spice Melange": 270,
+        "Complex Machinery": 100,
+        "Cobalt Paste": 300,
+        "Advanced Machinery": 40
+      },
+      "power": 1000,
+      "fuel": {
+        "Spice-infused Fuel Cell": 0.6666666666666666
+      }
+    },
+    "Repair Station": {
+      "name": "Repair Station",
+      "resources": {
+        "Iron Ingot": 40
+      },
+      "power": -20
+    },
+    "Recycler": {
+      "name": "Recycler",
+      "resources": {
+        "Copper Ingot": 30
+      },
+      "power": -15
+    },
+    "Windtrap": {
+      "name": "Windtrap",
+      "resources": {
+        "Steel Ingot": 90,
+        "Silicone Block": 30,
+        "Calibrated Servok": 20
+      },
+      "power": -75,
+      "waterProd": 1.75
+    },
+    "Large Windtrap": {
+      "name": "Large Windtrap",
+      "resources": {
+        "Silicone Block": 250,
+        "Calibrated Servok": 70,
+        "Spice Melange": 5,
+        "Duraluminum Ingot": 240
+      },
+      "power": -135,
+      "waterProd": 1.4
+    },
+    "Pentashield Surface Vertical": {
+      "name": "Pentashield Surface Vertical",
+      "resources": {
+        "Steel Ingot": 2,
+        "Cobalt Paste": 20,
+        "Calibrated Servok": 6
+      },
+      "power": -6
+    },
+    "Pentashield Surface Horizontal": {
+      "name": "Pentashield Surface Horizontal",
+      "resources": {
+        "Steel Ingot": 2,
+        "Cobalt Paste": 20,
+        "Calibrated Servok": 6
+      },
+      "power": -3
+    },
+    "Fabricator": {
+      "name": "Fabricator",
+      "resources": {
+        "Salvaged Metal": 75
+      },
+      "power": -10
+    },
+    "Garment Fabricator": {
+      "name": "Garment Fabricator",
+      "resources": {
+        "Steel Ingot": 40,
+        "Complex Machinery": 30
+      },
+      "power": -40
+    },
+    "Advanced Garment Fabricator": {
+      "name": "Advanced Garment Fabricator",
+      "resources": {
+        "Plastanium Ingot": 140,
+        "Silicone Block": 180,
+        "Complex Machinery": 100,
+        "Spice Melange": 45,
+        "Cobalt Paste": 150,
+        "Armor Plating": 115
+      },
+      "power": -150
+    },
+    "Survival Fabricator": {
+      "name": "Survival Fabricator",
+      "resources": {
+        "Steel Ingot": 40,
+        "Complex Machinery": 30
+      },
+      "power": -40
+    },
+    "Advanced Survival Fabricator": {
+      "name": "Advanced Survival Fabricator",
+      "resources": {
+        "Silicone Block": 180,
+        "Complex Machinery": 100,
+        "Spice Melange": 45,
+        "Cobalt Paste": 150,
+        "Plastanium Ingot": 140,
+        "Thermoelectric Cooler": 30
+      },
+      "power": -150
+    },
+    "Weapons Fabricator": {
+      "name": "Weapons Fabricator",
+      "resources": {
+        "Steel Ingot": 40,
+        "Complex Machinery": 30
+      },
+      "power": -40
+    },
+    "Advanced Weapons Fabricator": {
+      "name": "Advanced Weapons Fabricator",
+      "resources": {
+        "Plastanium Ingot": 140,
+        "Silicone Block": 180,
+        "Complex Machinery": 100,
+        "Spice Melange": 45,
+        "Cobalt Paste": 150,
+        "Military Power Regulator": 40
+      },
+      "power": -150
+    },
+    "Vehicles Fabricator": {
+      "name": "Vehicles Fabricator",
+      "resources": {
+        "Steel Ingot": 40,
+        "Complex Machinery": 30
+      },
+      "power": -40
+    },
+    "Advanced Vehicles Fabricator": {
+      "name": "Advanced Vehicles Fabricator",
+      "resources": {
+        "Plastanium Ingot": 140,
+        "Silicone Block": 180,
+        "Complex Machinery": 100,
+        "Spice Melange": 45,
+        "Cobalt Paste": 150,
+        "Industrial Pump": 50
+      },
+      "power": -150
+    },
+    "Blood Purifier": {
+      "name": "Blood Purifier",
+      "resources": {
+        "Salvaged Metal": 70
+      },
+      "power": -10
+    },
+    "Improved Blood Purifier": {
+      "name": "Improved Blood Purifier",
+      "resources": {
+        "Iron Ingot": 50,
+        "Silicone Block": 16,
+        "Complex Machinery": 20
+      },
+      "power": -35
+    },
+    "Small Ore Refinery": {
+      "name": "Small Ore Refinery",
+      "resources": {
+        "Salvaged Metal": 90
+      },
+      "power": -15
+    },
+    "Medium Ore Refinery": {
+      "name": "Medium Ore Refinery",
+      "resources": {
+        "Steel Ingot": 125,
+        "Cobalt Paste": 60,
+        "Complex Machinery": 50
+      },
+      "power": -45
+    },
+    "Large Ore Refinery": {
+      "name": "Large Ore Refinery",
+      "resources": {
+        "Plastanium Ingot": 380,
+        "Silicone Block": 540,
+        "Spice Melange": 400,
+        "Complex Machinery": 200,
+        "Cobalt Paste": 745,
+        "Advanced Machinery": 40
+      },
+      "power": -350
+    },
+    "Small Chemical Refinery": {
+      "name": "Small Chemical Refinery",
+      "resources": {
+        "Copper Ingot": 45
+      },
+      "power": -15
+    },
+    "Medium Chemical Refinery": {
+      "name": "Medium Chemical Refinery",
+      "resources": {
+        "Silicone Block": 90,
+        "Complex Machinery": 50,
+        "Spice Melange": 35,
+        "Duraluminum Ingot": 150
+      },
+      "power": -350
+    },
+    "Spice Refinery": {
+      "name": "Spice Refinery",
+      "resources": {
+        "Silicone Block": 130,
+        "Cobalt Paste": 80,
+        "Complex Machinery": 70,
+        "Duraluminum Ingot": 160
+      },
+      "power": -200
+    },
+    "Medium Spice Refinery": {
+      "name": "Medium Spice Refinery",
+      "resources": {
+        "Plastanium Ingot": 285,
+        "Silicone Block": 225,
+        "Spice Melange": 135,
+        "Complex Machinery": 100,
+        "Cobalt Paste": 190
+      },
+      "power": -350
+    },
+    "Large Spice Refinery": {
+      "name": "Large Spice Refinery",
+      "resources": {
+        "Plastanium Ingot": 950,
+        "Silicone Block": 1080,
+        "Spice Melange": 1000,
+        "Complex Machinery": 350,
+        "Cobalt Paste": 1110,
+        "Advanced Machinery": 55
+      },
+      "power": -500
+    },
+    "Fremen Deathstill": {
+      "name": "Fremen Deathstill",
+      "resources": {
+        "Steel Ingot": 60,
+        "Silicone Block": 28,
+        "Complex Machinery": 32
+      },
+      "power": -200,
+      "waterProd": 6.944444444444445
+    },
+    "Advanced Fremen Deathstill": {
+      "name": "Advanced Fremen Deathstill",
+      "resources": {
+        "Silicone Block": 170,
+        "Complex Machinery": 70,
+        "Duraluminum Ingot": 240
+      },
+      "power": -350,
+      "waterProd": 15
+    },
+    "Small Storage Container": {
+      "name": "Small Storage Container",
+      "resources": {
+        "Salvaged Metal": 35
+      }
+    },
+    "Chest": {
+      "name": "Chest",
+      "resources": {
+        "Iron Ingot": 20
+      }
+    },
+    "Storage Container": {
+      "name": "Storage Container",
+      "resources": {
+        "Silicone Block": 8,
+        "Aluminum Ingot": 45
+      }
+    },
+    "Medium Storage Container": {
+      "name": "Medium Storage Container",
+      "resources": {
+        "Plastanium Ingot": 70,
+        "Silicone Block": 14,
+        "Spice Melange": 4
+      }
+    },
+    "Water Cistern": {
+      "name": "Water Cistern",
+      "resources": {
+        "Copper Ingot": 25
+      }
+    },
+    "Medium Water Cistern": {
+      "name": "Medium Water Cistern",
+      "resources": {
+        "Steel Ingot": 60,
+        "Silicone Block": 30
+      }
+    },
+    "Large Water Cistern": {
+      "name": "Large Water Cistern",
+      "resources": {
+        "Duraluminum Ingot": 150,
+        "Silicone Block": 160,
+        "Industrial Pump": 25
+      }
+    }
+  },
+  "buildings": {
+    "CHOAM Shelter": {
+      "subcategories": [
+        "All",
+        "Structural",
+        "Walls",
+        "Wedge Walls",
+        "Roofs",
+        "Inclines",
+        "Special"
+      ],
+      "defaultResource": "Granite Stone",
+      "items": {
+        "Structural": {
+          "Center Column": 8,
+          "Corner Column": 8,
+          "Foundation": 12,
+          "Pillar Bottom": 8,
+          "Pillar Middle": 8,
+          "Pillar Top": 8,
+          "Rounded Foundation": 12,
+          "Triangle Foundation": 12
+        },
+        "Walls": {
+          "Door": 5,
+          "Half Rounded Wall": 8,
+          "Half Wall": 8,
+          "Passageway": 8,
+          "Rounded Wall": 8,
+          "Rounded Wall 2": 8,
+          "Rounded Window": 8,
+          "Rounded Window 2": 8,
+          "Wall": 8,
+          "Wall 2": 8,
+          "Wall 3": 8,
+          "Wide Door": 16,
+          "Window": 8
+        },
+        "Wedge Walls": {
+          "Half Triangle Wall Bottom Left": 8,
+          "Half Triangle Wall Bottom Right": 8,
+          "Half Triangle Wall Top Left": 8,
+          "Half Triangle Wall Top Right": 8,
+          "Triangle Wall Bottom Left": 8,
+          "Triangle Wall Bottom Right": 8,
+          "Triangle Wall Top Left": 8,
+          "Triangle Wall Top Right": 8
+        },
+        "Roofs": {
+          "Angled Roof": 8,
+          "Angled Roof Corner": 8,
+          "Angled Roof Inwards Corner": 8,
+          "Floor": 8,
+          "Hatch": 5,
+          "Roof Cover Left": 8,
+          "Roof Cover Right": 8,
+          "Rooftop": 8,
+          "Rooftop 2": 8,
+          "Rounded Floor": 8,
+          "Rounded Inward Floor": 8,
+          "Rounded Inward Rooftop": 8,
+          "Rounded Roof": 8,
+          "Rounded Rooftop": 8,
+          "Triangle Floor": 8,
+          "Triangle Roof Bottom": 8,
+          "Triangle Roof Top": 8,
+          "Triangle Rooftop": 8
+        },
+        "Inclines": {
+          "Half Ramp": 8,
+          "Half Ramp Corner": 8,
+          "Half Ramp Inwards Corner": 8,
+          "Half Stairs": 8,
+          "Half Stairs Corner": 8,
+          "Half Stairs Inwards Corner": 8,
+          "Ramp": 8,
+          "Ramp Corner": 8,
+          "Ramp Inwards Corner": 8,
+          "Stairs": 8,
+          "Stairs Corner": 8,
+          "Stairs Inwards Corner": 8
+        },
+        "Special": {
+          "Half Incline Railing": 8,
+          "Incline Railing": 8,
+          "Ladder": 8,
+          "Railing": 8,
+          "Railing Gate": 8,
+          "Rounded Railing": 8
+        }
+      }
+    },
+    "Atreides Stronghold": {
+      "subcategories": [
+        "All",
+        "Structural",
+        "Walls",
+        "Wedge Walls",
+        "Roofs",
+        "Inclines",
+        "Special"
+      ],
+      "defaultResource": "Plastone",
+      "items": {
+        "Structural": {
+          "Center Column": 12,
+          "Corner Column": 12,
+          "Foundation": 18,
+          "Pillar Bottom": 12,
+          "Pillar Middle": 12,
+          "Pillar Top": 12,
+          "Rounded Foundation": 18,
+          "Triangle Foundation": 18
+        },
+        "Walls": {
+          "Caladan Palace Bookshelf Wall": 8,
+          "Caladan Palace Passageway": 8,
+          "Caladan Palace Rounded Wall": 8,
+          "Caladan Palace Wall": 8,
+          "Caladan Palace Window": 8,
+          "Door": 10,
+          "Half Rounded Wall": 12,
+          "Half Wall": 12,
+          "Passageway": 12,
+          "Prudence Door": 12,
+          "Rounded Wall": 12,
+          "Rounded Wall 2": 12,
+          "Rounded Window": 12,
+          "Tall Door": 10,
+          "Wall": 12,
+          "Wall 2": 12,
+          "Wall 3": 12,
+          "Wall 4": 12,
+          "Wide Door": 25,
+          "Wide Passageway": 25,
+          "Window": 12,
+          "Window 2": 12,
+          "Window 3": 12,
+          "Window 4": 12
+        },
+        "Wedge Walls": {
+          "Half Triangle Wall Bottom Left": 12,
+          "Half Triangle Wall Bottom Right": 12,
+          "Half Triangle Wall Top Left": 12,
+          "Half Triangle Wall Top Right": 12,
+          "Triangle Wall Bottom Left": 12,
+          "Triangle Wall Bottom Right": 12,
+          "Triangle Wall Top Left": 12,
+          "Triangle Wall Top Right": 12
+        },
+        "Roofs": {
+          "Angled Roof": 12,
+          "Angled Roof Corner": 12,
+          "Angled Roof Inwards Corner": 12,
+          "Caladan Palace Ceiling": {
+            "Granite Stone": 8
+          },
+          "Caladan Palace Floor": {
+            "Granite Stone": 8
+          },
+          "Caladan Palace Rounded Floor": {
+            "Granite Stone": 8
+          },
+          "Floor": 12,
+          "Hatch": 10,
+          "Roof Cover Bottom Left": 12,
+          "Roof Cover Bottom Right": 12,
+          "Roof Cover Top Left": 12,
+          "Roof Cover Top Right": 12,
+          "Rooftop": 12,
+          "Rooftop 2": 12,
+          "Rounded Floor": 12,
+          "Rounded Inward Floor": 12,
+          "Rounded Inward Rooftop": 12,
+          "Rounded Roof": 12,
+          "Rounded Rooftop": 12,
+          "Triangle Floor": 12,
+          "Triangle Roof Bottom": 12,
+          "Triangle Roof Top": 12,
+          "Triangle Rooftop": 12
+        },
+        "Inclines": {
+          "Half Ramp": 12,
+          "Half Ramp Corner": 12,
+          "Half Ramp Inwards Corner": 12,
+          "Half Stairs": 12,
+          "Half Stairs Corner": 12,
+          "Half Stairs Inwards Corner": 12,
+          "Ramp": 12,
+          "Ramp Corner": 12,
+          "Ramp Inwards Corner": 12,
+          "Stairs": 12,
+          "Stairs Corner": 12,
+          "Stairs Inwards Corner": 12
+        },
+        "Special": {
+          "Half Incline Railing": 12,
+          "Incline Railing": 12,
+          "Ladder": 12,
+          "Large Gate": 12,
+          "Railing": 12,
+          "Railing Gate": 12,
+          "Rounded Railing": 12,
+          "Wide Floor Triangle Left": 12,
+          "Wide Floor Triangle Right": 12,
+          "Wide Ramp": 12,
+          "Wide Ramp Edge Left": 12,
+          "Wide Ramp Edge Right": 12,
+          "Wide Stairs": 12,
+          "Wide Wall Incline Left": 12,
+          "Wide Wall Incline Right": 12,
+          "Wide Wall Triangle Top Left": 12,
+          "Wide Wall Triangle Top Right": 12
+        }
+      }
+    },
+    "Harkonnen Stronghold": {
+      "subcategories": [
+        "All",
+        "Structural",
+        "Walls",
+        "Wedge Walls",
+        "Roofs",
+        "Inclines",
+        "Special"
+      ],
+      "defaultResource": "Granite Stone",
+      "items": {
+        "Structural": {
+          "Center Column": 12,
+          "Corner Column": 12,
+          "Foundation": 18,
+          "Pillar Bottom": 12,
+          "Pillar Middle": 12,
+          "Pillar Top": 12,
+          "Rounded Foundation": 18,
+          "Triangle Foundation": 18
+        },
+        "Walls": {
+          "Door": 10,
+          "Half Rounded Wall": 12,
+          "Half Wall": 12,
+          "Passageway": 12,
+          "Prudence Door": 12,
+          "Rounded Wall": 12,
+          "Rounded Wall 2": 12,
+          "Rounded Wall 3": 12,
+          "Rounded Window": 12,
+          "Tall Door": 10,
+          "Wall": 12,
+          "Wall 2": 12,
+          "Wall 3": 12,
+          "Wall 4": 12,
+          "Wide Door": 25,
+          "Window": 12
+        },
+        "Wedge Walls": {
+          "Half Triangle Wall Bottom Left": 12,
+          "Half Triangle Wall Bottom Right": 12,
+          "Half Triangle Wall Top Left": 12,
+          "Half Triangle Wall Top Right": 12,
+          "Triangle Wall Bottom Left": 12,
+          "Triangle Wall Bottom Right": 12,
+          "Triangle Wall Top Left": 12,
+          "Triangle Wall Top Right": 12
+        },
+        "Roofs": {
+          "Angled Roof Corner": 12,
+          "Angled Roof Inwards Corner": 12,
+          "Angled Roof Round Corner": 12,
+          "Curved Roof": 12,
+          "Curved Roof 2": 12,
+          "Floor": 12,
+          "Hatch": 10,
+          "Roof Cover Left": 12,
+          "Roof Cover Right": 12,
+          "Rooftop": 12,
+          "Rooftop 2": 12,
+          "Rounded Floor": 12,
+          "Rounded Inward Floor": 12,
+          "Rounded Inward Rooftop": 12,
+          "Rounded Rooftop": 12,
+          "Triangle Floor": 12,
+          "Triangle Roof Bottom": 12,
+          "Triangle Roof Top": 12,
+          "Triangle Rooftop": 12
+        },
+        "Inclines": {
+          "Half Ramp": 12,
+          "Half Ramp Corner": 12,
+          "Half Ramp Inwards Corner": 12,
+          "Half Stairs": 12,
+          "Half Stairs Corner": 12,
+          "Half Stairs Inwards Corner": 12,
+          "Ramp": 12,
+          "Ramp Corner": 12,
+          "Ramp Inwards Corner": 12,
+          "Stairs": 12,
+          "Stairs Corner": 12,
+          "Stairs Inwards Corner": 12
+        },
+        "Special": {
+          "Half Incline Railing": 12,
+          "Incline Railing": 12,
+          "Ladder": 12,
+          "Large Gate": 12,
+          "Railing": 12,
+          "Railing Gate": 12,
+          "Rounded Railing": 12,
+          "Tall Ramp": 12,
+          "Tall Ramp Corner": 12,
+          "Tall Triangle Wall Left": 12,
+          "Tall Triangle Wall Right": 12,
+          "Tall Triangle Wall Top Left": 12,
+          "Tall Triangle Wall Top Right": 12
+        }
+      }
+    },
+    "CHOAM Facility": {
+      "subcategories": [
+        "All",
+        "Structural",
+        "Walls",
+        "Wedge Walls",
+        "Roofs",
+        "Inclines",
+        "Special"
+      ],
+      "defaultResource": "Granite Stone",
+      "items": {
+        "Structural": {
+          "Observer Column 2": 10,
+          "Observer Foundation Round Corner": 15,
+          "Observer Pillar Bottom": 10,
+          "Observer Pillar Middle": 10,
+          "Observer Pillar Top": 10,
+          "Center Column": 10,
+          "Corner Column": 10,
+          "Foundation": 15,
+          "Observer Column": 10,
+          "Observer Foundation": 15,
+          "Pillar Bottom": 10,
+          "Pillar Middle": 10,
+          "Pillar Top": 10,
+          "Rounded Foundation": 15,
+          "Triangle Foundation": 15
+        },
+        "Walls": {
+          "Observer Half Wall": 10,
+          "Observer Round Wall": 10,
+          "Observer Round Wall Window": 10,
+          "Observer Wall 2": 10,
+          "Door": 7,
+          "Half Rounded Wall": 10,
+          "Half Wall": 10,
+          "Observer Passageway": 10,
+          "Observer Wall": 10,
+          "Observer Window": 10,
+          "Passageway": 10,
+          "Prudence Door": 10,
+          "Rounded Wall": 10,
+          "Rounded Wall 2": 10,
+          "Rounded Window": 10,
+          "Rounded Window 2": 10,
+          "Wall": 10,
+          "Wall 2": 10,
+          "Wide Door": 20,
+          "Window": 10,
+          "Window 2": 10
+        },
+        "Wedge Walls": {
+          "Observer Half Triangle Bottom Left": 10,
+          "Observer Half Triangle Bottom Right": 10,
+          "Observer Half Triangle Top Left": 10,
+          "Observer Half Triangle Top Right": 10,
+          "Observer Triangle Bottom Left": 10,
+          "Observer Triangle Bottom Right": 10,
+          "Observer Triangle Top Left": 10,
+          "Observer Triangle Top Right": 10,
+          "Half Triangle Wall Bottom Left": 10,
+          "Half Triangle Wall Bottom Right": 10,
+          "Half Triangle Wall Top Left": 10,
+          "Half Triangle Wall Top Right": 10,
+          "Triangle Wall Bottom Left": 10,
+          "Triangle Wall Bottom Right": 10,
+          "Triangle Wall Top Left": 10,
+          "Triangle Wall Top Right": 10
+        },
+        "Roofs": {
+          "Observer inverted Roof Corner": 10,
+          "Observer Roof Corner": 10,
+          "Observer Rooftop": 10,
+          "Observer Round Floor": 10,
+          "Angled Roof": 10,
+          "Angled Roof Corner": 10,
+          "Angled Roof Inwards Corner": 10,
+          "Floor": 10,
+          "Hatch": 7,
+          "Observer Floor": 10,
+          "Observer Roof Half": 10,
+          "Observer Round Roof Corner": 10,
+          "Roof Cover Left": 10,
+          "Roof Cover Right": 10,
+          "Rooftop": 10,
+          "Rooftop 2": 10,
+          "Rounded Floor": 10,
+          "Rounded Inward Floor": 10,
+          "Rounded Inward Rooftop": 10,
+          "Rounded Roof": 10,
+          "Rounded Rooftop": 10,
+          "Triangle Floor": 10,
+          "Triangle Roof Bottom": 10,
+          "Triangle Roof Top": 10,
+          "Triangle Rooftop": 10
+        },
+        "Inclines": {
+          "Observer Stairs Corner": 10,
+          "Observer Stairs Corner Inverted": 10,
+          "Half Ramp": 10,
+          "Half Ramp Corner": 10,
+          "Half Ramp Inwards Corner": 10,
+          "Half Stairs": 10,
+          "Half Stairs Corner": 10,
+          "Half Stairs Inwards Corner": 10,
+          "Observer Stairs": 10,
+          "Ramp": 10,
+          "Ramp Corner": 10,
+          "Ramp Inwards Corner": 10,
+          "Stairs": 10,
+          "Stairs Corner": 10,
+          "Stairs Inwards Corner": 10
+        },
+        "Special": {
+          "Observer Inclined Railing": 10,
+          "Observer Ladder": 10,
+          "Observer Railing 1": 10,
+          "Observer Railing Gate": 10,
+          "Observer Railing Round Corner": 10,
+          "Half Incline Railing": 10,
+          "Incline Railing": 10,
+          "Ladder": 10,
+          "Railing": 10,
+          "Railing Gate": 10,
+          "Rounded Railing": 10
+        }
+      }
+    },
+    "Decorations": {
+      "subcategories": [
+        "All",
+        "Lighting",
+        "Furniture",
+        "Deco",
+        "Wall Deco",
+        "Ornamental",
+        "Misc"
+      ],
+      "defaultResource": "Granite Stone",
+      "items": {
+        "Lighting": {
+          "Atreides Ceiling Light": {
+            "Salvaged Metal": 25,
+            "Agave Seeds": 5
+          },
+          "Atreides Chandelier": {
+            "Salvaged Metal": 25,
+            "Agave Seeds": 5
+          },
+          "Atreides Floor Light": {
+            "Salvaged Metal": 25
+          },
+          "Atreides Glowglobe": {
+            "Salvaged Metal": 25
+          },
+          "Atreides Short Standing Light": {
+            "Salvaged Metal": 25
+          },
+          "Atreides Suspensor Lamp": {
+            "Salvaged Metal": 25
+          },
+          "Atreides Tall Standing Light": {
+            "Salvaged Metal": 25
+          },
+          "Atreides Wall Light": {
+            "Salvaged Metal": 25
+          },
+          "CHOAM Ceiling Light": {
+            "Salvaged Metal": 25,
+            "Agave Seeds": 5
+          },
+          "CHOAM Floor Light": {
+            "Salvaged Metal": 25
+          },
+          "CHOAM Large Ceiling Light": {
+            "Salvaged Metal": 25,
+            "Agave Seeds": 5
+          },
+          "CHOAM Short Standing Light": {
+            "Salvaged Metal": 25
+          },
+          "CHOAM Suspensor Lamp": {
+            "Salvaged Metal": 25
+          },
+          "CHOAM Tall Standing Light": {
+            "Salvaged Metal": 25
+          },
+          "CHOAM Wall Light": {
+            "Salvaged Metal": 25
+          },
+          "Dune Man's Work Light": {
+            "Salvaged Metal": 25
+          },
+          "Fremkit Suspensor Lamp": {
+            "Salvaged Metal": 25
+          },
+          "Harkonnen Ceiling Light": {
+            "Salvaged Metal": 25,
+            "Agave Seeds": 5
+          },
+          "Harkonnen Curved Light": {
+            "Salvaged Metal": 25
+          },
+          "Harkonnen Glowglobe": {
+            "Salvaged Metal": 25
+          },
+          "Harkonnen Large Ceiling Light": {
+            "Salvaged Metal": 25,
+            "Agave Seeds": 5
+          },
+          "Harkonnen Standing Light": {
+            "Salvaged Metal": 25
+          },
+          "Harkonnen Wall Light": {
+            "Salvaged Metal": 25
+          }
+        },
+        "Furniture": {
+          "Atreides Armed Chair": 50,
+          "Atreides Armless Chair": 50,
+          "Atreides Bed": 50,
+          "Atreides Bench": 50,
+          "Atreides Bench Inside Corner": 50,
+          "Atreides Bench Outside Corner": 50,
+          "Atreides Bookshelf": 50,
+          "Atreides Commode": 50,
+          "Atreides Desk": 50,
+          "Atreides Dining Table": 50,
+          "Atreides Side Table": 50,
+          "Atreides Wall Partition": 50,
+          "Atreides Wardrobe": 50,
+          "Caladan Bed": 50,
+          "Caladan Bench": 50,
+          "Caladan Cabinet": 50,
+          "Caladan Chair": 50,
+          "Caladan Desk": 50,
+          "Caladan Dresser": 50,
+          "Caladan Table": 50,
+          "CHOAM Backless Chair": 50,
+          "CHOAM Bed": 50,
+          "CHOAM Bookshelf": 50,
+          "CHOAM Chair": 50,
+          "CHOAM Couch": 50,
+          "CHOAM Couch Bend Left": 50,
+          "CHOAM Couch Bend Right": 50,
+          "CHOAM Couch Inside Corner": 50,
+          "CHOAM Couch Outside Corner": 50,
+          "CHOAM Desk": 50
+        },
+        "Deco": {
+          "Atreides Carpet": {
+            "Plant Fiber": 50
+          },
+          "Atreides Carpet 2": {
+            "Plant Fiber": 50
+          },
+          "Atreides Small Flagpole": 50,
+          "Caladan Carpet": {
+            "Plant Fiber": 50
+          },
+          "Caladan Small Carpet": {
+            "Plant Fiber": 50
+          },
+          "CHOAM Oval Carpet": {
+            "Plant Fiber": 50
+          },
+          "CHOAM Rectangular Carpet": {
+            "Plant Fiber": 50
+          },
+          "Desert Mechanic Bike Components": 100,
+          "Desert Mechanic Dismantled Sandbike": 50,
+          "Desert Mechanic Sandbike Track": 50,
+          "Dune Man Mechanic's Kit": 50,
+          "Harkonnen Five Circle Carpet": {
+            "Plant Fiber": 50
+          },
+          "Harkonnen Three Circle Carpet": {
+            "Plant Fiber": 50
+          },
+          "Jail Drinking Fountain": 50,
+          "Kaitain Birdhouse": 50,
+          "Kaitain Bush Planter": 100,
+          "Kaitain Bush Planter Corner": 100,
+          "Kaitain Flower Bed": 100,
+          "Kaitain Flowerbed Corner": 100,
+          "Kaitain Large Fountain": 100,
+          "Kaitain Tree Planter": 100,
+          "Kaitain Tree Planter Corner": 100,
+          "Kulon Statue": 50,
+          "Sandworm Statue": 100,
+          "Strategy Carpet": {
+            "Plant Fiber": 50
+          },
+          "Strategy Table": {
+            "Plant Fiber": 100
+          },
+          "Terrarium of Muad’dib": {
+            "Plant Fiber": 50
+          }
+        },
+        "Wall Deco": {
+          "Atreides Banner": {
+            "Plastone": 50,
+            "Agave Seeds": 15
+          },
+          "Atreides Fish Artwork": {
+            "Plastone": 50,
+            "Agave Seeds": 15
+          },
+          "Atreides Leto's Seal": 50,
+          "Atreides Wall-Mounted Plate": 50,
+          "Caladan Bullfighter Painting": 50,
+          "Caladan Mural": 50,
+          "Caladan Wall Panel": 50,
+          "CHOAM Abstract Sculpture": 8,
+          "CHOAM Banner": {
+            "Plastone": 50,
+            "Agave Seeds": 15
+          },
+          "CHOAM Outpost Relief": {
+            "Plastone": 50,
+            "Agave Seeds": 15
+          },
+          "Desert Mechanic Sign": 50,
+          "Harkonnen Banner": {
+            "Plastone": 50,
+            "Agave Seeds": 15
+          },
+          "Harkonnen Wall Sculpture": {
+            "Plastone": 50,
+            "Agave Seeds": 15
+          },
+          "Harkonnen Wall Symbol": 50,
+          "Memorial Plaque": 50,
+          "Mural: A Memory of Pain": 50,
+          "Mural: Arrakis Rising": 50,
+          "Mural: Call to Adventure": 50,
+          "Sandbike Engraving": 50,
+          "Shaddam IV Portraits (Atreides Frame)": 50,
+          "Shaddam IV Portraits (Harkonnen Frame)": 50
+        },
+        "Ornamental": {
+          "Atreides Book Row": 25,
+          "Atreides Book Stack": 25,
+          "Atreides Carafe": {
+            "Plastone": 25
+          },
+          "Atreides Dining Plate": {
+            "Plastone": 25
+          },
+          "Atreides Drinking Glass": {
+            "Plastone": 25
+          },
+          "Atreides Icon": 25,
+          "Atreides Leaning Books": 25,
+          "Atreides Medium Light Vase": 25,
+          "Atreides Rice Bowl": {
+            "Plastone": 25
+          },
+          "Atreides Serving Plate": {
+            "Plastone": 25
+          },
+          "Atreides Short Dark Vase": 25,
+          "Atreides Short Light Vase": 25,
+          "Atreides Spice Jar": {
+            "Plastone": 25
+          },
+          "Atreides Tall Dark Vase": 25,
+          "Atreides Tall Light Vase": 25,
+          "Caladan Bullfighter Statue": 25,
+          "Caladan Carafe": 25,
+          "Caladan Cushion": 25,
+          "Caladan Decorative Box": 25,
+          "Caladan Dining Plate": 25,
+          "Caladan Drinking Glass": 25,
+          "Caladan Platter": 25,
+          "Caladan Tall Drinking Glass": 25,
+          "Caladan Vase": 25,
+          "Caladan Wine Bottle": 25,
+          "Chiroptera Statue": 25,
+          "CHOAM Book Row": 25,
+          "CHOAM Book Stack": 25,
+          "CHOAM Carafe": {
+            "Plastone": 25
+          },
+          "CHOAM Cup": {
+            "Plastone": 25
+          },
+          "CHOAM Dining Plate": {
+            "Plastone": 25
+          },
+          "CHOAM Icon": 25,
+          "CHOAM Mug": {
+            "Plastone": 25
+          },
+          "CHOAM Serving Plate": {
+            "Plastone": 25
+          },
+          "CHOAM Short Book Row": 25,
+          "CHOAM Short Orange Vase": 25,
+          "CHOAM Short White Vase": 25,
+          "CHOAM Spice Jar": {
+            "Plastone": 25
+          },
+          "CHOAM Tall Orange Vase": 25,
+          "CHOAM Tall White Vase": 25,
+          "CHOAM Tureen": {
+            "Plastone": 25
+          },
+          "CHOAM Urn": 25,
+          "Fremkit Board Game": 25,
+          "Fremkit Stove": 25,
+          "Gunner Dismantled Scattergun": 25,
+          "Harkonnen Book Row": 25,
+          "Harkonnen Book Stack": 25,
+          "Harkonnen Carafe": {
+            "Plastone": 25
+          },
+          "Harkonnen Cup": {
+            "Plastone": 25
+          },
+          "Harkonnen Dinner Plate": {
+            "Plastone": 25
+          },
+          "Harkonnen Icon": 25,
+          "Harkonnen Serving Plate": {
+            "Plastone": 25
+          },
+          "Harkonnen Short Book Row": 25,
+          "Harkonnen Short Totem": 25,
+          "Harkonnen Short Vase": 25,
+          "Harkonnen Spice Jar": {
+            "Plastone": 25
+          },
+          "Harkonnen Suspensor Cup": {
+            "Plastone": 25
+          },
+          "Harkonnen Tall Totem": 25,
+          "Harkonnen Tall Vase": 25,
+          "Harkonnen Tureen": {
+            "Plastone": 25
+          },
+          "Harkonnen Turret Statue": 25,
+          "Harkonnen Urn": 25,
+          "Inert Research Module": 25,
+          "Kaitain Cheops Board": 25,
+          "Kaitain Small Fountain": 25,
+          "Muad'Dib Statue": 25,
+          "Strategy Atreides Miniature": 25,
+          "Strategy Flag Miniature": 25,
+          "Strategy Harkonnen Miniature": 25,
+          "Strategy Harvester Miniature": 25,
+          "Strategy Sandbike Miniature": 25,
+          "Strategy Spice Blow Miniature": 25,
+          "Strategy Tank Miniature": 25,
+          "Strategy Thopter Miniature": 25,
+          "Strategy Transport Thopter Miniature": 25,
+          "Strategy Worm Miniature": 25
+        },
+        "Misc": {
+          "Atreides Caladan Solido": 25,
+          "Atreides Castle Solido": 25,
+          "Atreides Emblem Solido": 25,
+          "Caladan Bonsai Solido": 25,
+          "Caladan Windchimes": 50,
+          "CHOAM Plant Solido": {
+            "Plastone": 25
+          },
+          "Harkonnen Giedi Prime Solido": {
+            "Plastone": 25
+          },
+          "Strategy Room Sign": 25,
+          "Treadwheel Solido": 25
+        }
+      }
+    }
+  }
+}

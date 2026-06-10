@@ -11,8 +11,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 // ?v= : cache-busting. Bump à chaque modif des modules pour forcer le rechargement
 // (sinon le navigateur sert l'ancienne version mise en cache).
-import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot33buildplane';
-import { createMeshFactory } from './planner_mesh.js?v=lot33buildplane';
+import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot37utils';
+import { createMeshFactory } from './planner_mesh.js?v=lot37utils';
 
 // ============================================================
 // MOTEUR — bascule ancien (géométrie+grille) / nouveau (sockets+meshes réels)
@@ -243,18 +243,21 @@ function pushHistory(undoFn, redoFn) {
   } else {
     state.histFront++;
   }
+  bpRefreshSummary();   // synthèse à jour si le panneau est ouvert
 }
 function undoAction() {
   if (state.histFront < 0) return;
   state.history[state.histFront].undo();
   state.histFront--;
   bpSetDirty(true);
+  bpRefreshSummary();
 }
 function redoAction() {
   if (state.histFront >= state.history.length - 1) return;
   state.histFront++;
   state.history[state.histFront].redo();
   bpSetDirty(true);
+  bpRefreshSummary();
 }
 
 // Réinjecte un item précédemment supprimé (pour undo place / redo remove)
@@ -285,6 +288,7 @@ async function init() {
     setText(dom.pieceCount, 'Erreur de chargement');
     return;
   }
+  await loadCosts();   // coûts matériaux (planner_costs.json) — non bloquant si absent
 
   setupScene();
   setupCameras();
@@ -329,7 +333,7 @@ const EXCLUDED_PIECE_IDS = new Set([
 ]);
 
 async function loadCatalog() {
-  const url = ENGINE === 'sockets' ? 'planner_pieces.json?v=lot33buildplane' : PIECES_JSON_URL;
+  const url = ENGINE === 'sockets' ? 'planner_pieces.json?v=lot37utils' : PIECES_JSON_URL;
   const resp = await fetch(url);
   if (!resp.ok) throw new Error('pieces ' + resp.status);
   const piecesData = await resp.json();
@@ -4415,6 +4419,7 @@ function passesFactionFilter(p) {
  * - tout le reste  → 'structures'
  */
 function pieceTabOf(p) {
+  if (p.is_utility) return 'utilities';   // utilitaires : onglet dédié (avant is_machine)
   if (p.is_vehicle) return 'vehicles';
   if (p.is_machine) return 'machines';
   return 'structures';
@@ -4424,6 +4429,7 @@ function pieceTabOf(p) {
 const TAB_CATEGORIES = {
   structures: new Set(['foundations','walls','windows','floors','roofs_flat','roofs','doors','stairs','structures','railings']),
   machines:   new Set(['refineries','fabricators']),
+  utilities:  new Set(['utilities']),
   vehicles:   new Set(['vehicles']),
 };
 
@@ -4608,6 +4614,8 @@ function initToolbar() {
     toggleSolidView();
   });
   document.getElementById('tool-stability')?.addEventListener('click', toggleStabilityMode);
+  document.getElementById('tool-summary')?.addEventListener('click', () => toggleSummary());
+  document.getElementById('bp-summary-close')?.addEventListener('click', () => toggleSummary(false));
 }
 
 /** Bascule entre vue normale (verre transparent, visibilité par étage)
@@ -6145,4 +6153,198 @@ window.__bp = {
   serialize() { return bpSerializePlanData(); },
   applyPlan(d) { return bpApplyPlanData(d); },
   inClaim(x, y) { return socketInClaim(x, y); },
+  summary() { return computeSummary(); },
 };
+
+// ============================================================
+// SYNTHÈSE DU PLAN — quantités par catégorie/type, coût en matériaux,
+// bilan énergie/eau. Coûts : planner_costs.json (dataset compilé par
+// TroubleChute — tools.tcno.co/dune, réutilisé avec crédit ; les coûts
+// sont des faits du jeu). Pont : faction → set tcno + label_en → pièce.
+// ============================================================
+const SUMMARY = { costs: null, open: false, costIndex: null, buildIndex: null };
+
+function bpNorm(s) {
+  return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/\s+/g, ' ').trim();
+}
+
+// faction_id du catalogue → set de bâtiment tcno (4 couverts ; les autres
+// — choam_lvl2, smugglers, watershippers — n'ont pas de coût tcno → « — »).
+const FACTION_TO_SET = {
+  atreides: 'Atreides Stronghold',
+  harkonnen: 'Harkonnen Stronghold',
+  choam_shelter: 'CHOAM Shelter',
+  choam: 'CHOAM Facility',
+};
+
+const CAT_FR = {
+  foundations: 'Fondations', walls: 'Murs', floors: 'Sols', roofs: 'Toits',
+  roofs_flat: 'Toits plats', doors: 'Portes', windows: 'Fenêtres',
+  stairs: 'Escaliers & rampes', railings: 'Rambardes', structures: 'Structures',
+  fabricators: 'Fabricateurs', refineries: 'Raffineries', vehicles: 'Véhicules',
+  utilities: 'Utilitaires', extra: 'Divers',
+};
+const CAT_ORDER = ['foundations', 'walls', 'windows', 'doors', 'floors', 'roofs',
+  'roofs_flat', 'stairs', 'railings', 'structures', 'fabricators', 'refineries',
+  'utilities', 'vehicles', 'extra'];
+
+// Noms FR des matériaux (repli sur l'anglais tcno si absent).
+const MATERIAL_FR = {
+  'Advanced Machinery': 'Machinerie avancée',
+  'Agave Seeds': "Graines d'agave",
+  'Aluminum Ingot': "Lingot d'aluminium",
+  'Armor Plating': 'Plaque de blindage',
+  'Calibrated Servok': 'Servok calibré',
+  'Cobalt Paste': 'Pâte de cobalt',
+  'Complex Machinery': 'Machinerie complexe',
+  'Copper Ingot': 'Lingot de cuivre',
+  'Duraluminum Ingot': 'Lingot de duraluminium',
+  'Granite Stone': 'Pierre de granit',
+  'Industrial Pump': 'Pompe industrielle',
+  'Iron Ingot': 'Lingot de fer',
+  'Military Power Regulator': "Régulateur d'énergie militaire",
+  'Plant Fiber': 'Fibre végétale',
+  'Plastanium Ingot': 'Lingot de plastanium',
+  'Plastone': 'Plastone',
+  'Salvaged Metal': 'Métal de récupération',
+  'Silicone Block': 'Bloc de silicone',
+  'Spice Melange': "Mélange d'Épice",
+  'Steel Ingot': "Lingot d'acier",
+  'Thermoelectric Cooler': 'Refroidisseur thermoélectrique',
+};
+
+async function loadCosts() {
+  try {
+    const r = await fetch('planner_costs.json?v=lot37utils');
+    if (!r.ok) return;
+    SUMMARY.costs = await r.json();
+    SUMMARY.costIndex = new Map();
+    for (const [name, v] of Object.entries(SUMMARY.costs.functional || {})) {
+      SUMMARY.costIndex.set(bpNorm(name), v);
+    }
+    SUMMARY.buildIndex = {};
+    for (const [set, data] of Object.entries(SUMMARY.costs.buildings || {})) {
+      const m = new Map();
+      const def = data.defaultResource;
+      for (const sub of Object.values(data.items || {})) {
+        for (const [piece, val] of Object.entries(sub)) {
+          m.set(bpNorm(piece), (typeof val === 'number') ? { [def]: val } : val);
+        }
+      }
+      SUMMARY.buildIndex[set] = m;
+    }
+  } catch (e) { console.warn('[summary] coûts non chargés', e); }
+}
+
+// Alias label_en (catalogue) → nom tcno, pour les rares écarts de nommage.
+const COST_ALIAS = {
+  'advanced vehicle fabricator': 'advanced vehicles fabricator',
+};
+
+// Coût matériaux + énergie/eau d'une pièce, ou null si inconnu.
+function resolvePieceCost(piece) {
+  if (!SUMMARY.costs) return null;
+  const en0 = bpNorm(piece.label_en || piece.label_fr);
+  const en = COST_ALIAS[en0] || en0;
+  const f = SUMMARY.costIndex.get(en);
+  if (f) return { resources: f.resources || {}, power: f.power || 0, waterProd: f.waterProd || 0 };
+  const set = FACTION_TO_SET[piece.faction_id];
+  if (set && SUMMARY.buildIndex[set]) {
+    const res = SUMMARY.buildIndex[set].get(en);
+    if (res) return { resources: res, power: 0, waterProd: 0 };
+  }
+  return null;
+}
+
+function computeSummary() {
+  const items = state.plan.floors.flatMap(f => f.items);
+  const byCat = {};        // cat -> { total, types: Map(label -> count) }
+  const materials = {};    // matériau -> quantité
+  let powerProd = 0, powerCons = 0, waterProd = 0, unknownCost = 0, total = 0;
+  for (const it of items) {
+    const piece = state.piecesById.get(it.piece_id);
+    if (!piece) continue;
+    total++;
+    const cat = getEffectiveCategory(piece);
+    const c = byCat[cat] || (byCat[cat] = { total: 0, types: new Map() });
+    c.total++;
+    const tname = piece.label_fr || piece.id;
+    c.types.set(tname, (c.types.get(tname) || 0) + 1);
+    const cost = resolvePieceCost(piece);
+    if (cost) {
+      for (const [m, q] of Object.entries(cost.resources)) materials[m] = (materials[m] || 0) + q;
+      if (cost.power > 0) powerProd += cost.power; else powerCons += -cost.power;
+      waterProd += cost.waterProd || 0;
+    } else if (cat !== 'vehicles') {
+      unknownCost++;   // véhicules : pas de coût matériau attendu → non comptés en « inconnu »
+    }
+  }
+  const floors = state.plan.floors.filter(f => f.items.length).length;
+  return { total, floors, byCat, materials, powerProd, powerCons, waterProd, unknownCost };
+}
+
+function renderSummary() {
+  const body = document.getElementById('bp-summary-body');
+  if (!body) return;
+  const s = computeSummary();
+  const esc = t => String(t).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  if (!s.total) {
+    body.innerHTML = '<div class="bp-summary-empty">Aucune pièce posée.<br>Pose des éléments pour voir la synthèse.</div>';
+    return;
+  }
+  let h = '';
+  // ── Vue d'ensemble ──
+  const net = s.powerProd - s.powerCons;
+  h += '<div class="bp-summary-overview">'
+     + `<div class="bp-sum-kpi"><span>${s.total}</span>pièces</div>`
+     + `<div class="bp-sum-kpi"><span>${s.floors}</span>étage${s.floors > 1 ? 's' : ''}</div>`
+     + `<div class="bp-sum-kpi"><span class="${net >= 0 ? 'ok' : 'warn'}">${net >= 0 ? '+' : ''}${net}</span>énergie nette</div>`
+     + (s.waterProd ? `<div class="bp-sum-kpi"><span class="ok">${(+s.waterProd.toFixed(2))}</span>eau/h</div>` : '')
+     + '</div>';
+  if (s.powerProd || s.powerCons)
+    h += `<div class="bp-sum-energy">⚡ Production ${s.powerProd} · Consommation ${s.powerCons}</div>`;
+
+  // ── Par catégorie (repliable) ──
+  h += '<div class="bp-summary-sec-title">Par catégorie</div>';
+  const cats = Object.keys(s.byCat).sort((a, b) => CAT_ORDER.indexOf(a) - CAT_ORDER.indexOf(b));
+  for (const cat of cats) {
+    const c = s.byCat[cat];
+    const types = [...c.types.entries()].sort((a, b) => b[1] - a[1]);
+    h += '<details class="bp-sum-cat"><summary>'
+       + `<span class="bp-sum-cat-name">${esc(CAT_FR[cat] || cat)}</span>`
+       + `<span class="bp-sum-cat-count">${c.total}</span></summary>`
+       + '<div class="bp-sum-types">'
+       + types.map(([n, q]) => `<div class="bp-sum-type"><span>${esc(n)}</span><b>${q}</b></div>`).join('')
+       + '</div></details>';
+  }
+
+  // ── Matériaux ──
+  const mats = Object.entries(s.materials).sort((a, b) => b[1] - a[1]);
+  h += '<div class="bp-summary-sec-title">Matériaux'
+     + (s.unknownCost ? ` <span class="bp-sum-warn-inline">(${s.unknownCost} pièce${s.unknownCost > 1 ? 's' : ''} sans coût connu)</span>` : '')
+     + '</div>';
+  if (mats.length) {
+    h += '<div class="bp-sum-mats">'
+       + mats.map(([m, q]) => `<div class="bp-sum-mat"><span>${esc(MATERIAL_FR[m] || m)}</span><b>${q}</b></div>`).join('')
+       + '</div>';
+  } else {
+    h += '<div class="bp-summary-empty" style="padding:8px">Aucun coût matériau disponible pour ces pièces.</div>';
+  }
+
+  // ── Crédit ──
+  h += '<div class="bp-summary-credit">Coûts : données compilées par '
+     + '<a href="https://tools.tcno.co/dune" target="_blank" rel="noopener">TroubleChute (tcno.co)</a></div>';
+  body.innerHTML = h;
+}
+
+function toggleSummary(force) {
+  SUMMARY.open = (force === undefined) ? !SUMMARY.open : !!force;
+  const panel = document.getElementById('bp-summary');
+  const btn = document.getElementById('tool-summary');
+  if (panel) panel.hidden = !SUMMARY.open;
+  if (btn) btn.classList.toggle('active', SUMMARY.open);
+  if (SUMMARY.open) renderSummary();
+}
+// Rafraîchit la synthèse si le panneau est ouvert (appelé après chaque mutation).
+function bpRefreshSummary() { if (SUMMARY.open) renderSummary(); }

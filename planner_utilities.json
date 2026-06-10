@@ -1,0 +1,315 @@
+{
+  "_source": "Utilitaires (placeables fonctionnels) — DT_PlaceableData_Functional (FModel). real_size_m = bbox du mesh .glb. Coûts dans planner_costs.json (tcno).",
+  "_generated_at": "2026-06-10",
+  "count": 22,
+  "utilities": [
+    {
+      "id": "WindTurbineOmnidirectional_Placeable",
+      "group": "WindTurbine",
+      "label_fr": "Éolienne omnidirectionnelle",
+      "label_en": "Wind Turbine Omnidirectional",
+      "mesh": "SM_Env_Prop_Choam_Windturbine_Omnidirectional_01",
+      "real_size_m": {
+        "w": 2.35,
+        "h": 7.32,
+        "d": 2
+      },
+      "power": 150,
+      "water_capacity": 1000
+    },
+    {
+      "id": "WindTurbineDirectional_Placeable",
+      "group": "WindTurbine",
+      "label_fr": "Éolienne directionnelle",
+      "label_en": "Wind Turbine Directional",
+      "mesh": "SM_Env_Prop_Choam_Windturbine_Directional_01",
+      "real_size_m": {
+        "w": 4.1,
+        "h": 6.76,
+        "d": 3.66
+      },
+      "power": 350,
+      "water_capacity": 1000
+    },
+    {
+      "id": "Windtrap_Placeable",
+      "group": "Windtrap",
+      "label_fr": "Piège à vent",
+      "label_en": "Windtrap",
+      "mesh": "SM_Env_Prop_Choam_Windtrap_Directional_01",
+      "real_size_m": {
+        "w": 4.2,
+        "h": 4.28,
+        "d": 4.43
+      },
+      "power": -75,
+      "water_capacity": 500
+    },
+    {
+      "id": "LargeWindtrap_Placeable",
+      "group": "Windtrap",
+      "label_fr": "Grand piège à vent",
+      "label_en": "Large Windtrap",
+      "mesh": "SM_Env_Prop_Choam_Windtrap_Omnidirectional_01",
+      "real_size_m": {
+        "w": 8.72,
+        "h": 5.38,
+        "d": 8.38
+      },
+      "power": -135,
+      "water_capacity": 500
+    },
+    {
+      "id": "Generator_Placeable",
+      "group": "Generator",
+      "label_fr": "Générateur à carburant",
+      "label_en": "Fuel-Powered Generator",
+      "mesh": "SM_Env_Prop_Choam_PowerGenerator",
+      "real_size_m": {
+        "w": 5.19,
+        "h": 1.71,
+        "d": 2.16
+      },
+      "power": 75,
+      "water_capacity": 1000
+    },
+    {
+      "id": "SpiceGenerator_Placeable",
+      "group": "Generator",
+      "label_fr": "Générateur à épice",
+      "label_en": "Spice-Powered Generator",
+      "mesh": "SM_Env_Prop_Choam_PowerGenerator_SpiceRefined",
+      "real_size_m": {
+        "w": 5.91,
+        "h": 5.34,
+        "d": 2.49
+      },
+      "power": 1000,
+      "water_capacity": 1000
+    },
+    {
+      "id": "WaterCistern_Placeable",
+      "group": "WaterCistern",
+      "label_fr": "Citerne à eau",
+      "label_en": "Water Cistern",
+      "mesh": "SM_Env_Prop_Choam_WaterCistern_Small_01",
+      "real_size_m": {
+        "w": 0.89,
+        "h": 1.35,
+        "d": 1.28
+      },
+      "power": 0,
+      "water_capacity": 5000
+    },
+    {
+      "id": "MediumWaterCistern_Placeable",
+      "group": "WaterCistern",
+      "label_fr": "Citerne à eau de taille moyenne",
+      "label_en": "Medium Water Cistern",
+      "mesh": "SM_Env_Prop_Choam_InsulatedCistern_Medium",
+      "real_size_m": {
+        "w": 1.9,
+        "h": 2.54,
+        "d": 2.09
+      },
+      "power": 0,
+      "water_capacity": 25000
+    },
+    {
+      "id": "LargeWaterCistern_Placeable",
+      "group": "WaterCistern",
+      "label_fr": "Grande citerne à eau",
+      "label_en": "Large Water Cistern",
+      "mesh": "SM_Env_Prop_Choam_WaterCistern_Large",
+      "real_size_m": {
+        "w": 3.75,
+        "h": 3.83,
+        "d": 3.32
+      },
+      "power": 0,
+      "water_capacity": 100000
+    },
+    {
+      "id": "SmallInsulatedCistern_Placeable",
+      "group": "WaterCistern",
+      "label_fr": "Petite citerne isolée",
+      "label_en": "Small Insulated Cistern",
+      "mesh": "SM_Env_Prop_Choam_InsulatedCistern_Medium",
+      "real_size_m": {
+        "w": 1.9,
+        "h": 2.54,
+        "d": 2.09
+      },
+      "power": 0,
+      "water_capacity": 2500
+    },
+    {
+      "id": "MediumInsulatedCistern_Placeable",
+      "group": "WaterCistern",
+      "label_fr": "Citerne isolée de taille moyenne",
+      "label_en": "Medium Insulated Cistern",
+      "mesh": "SM_Env_Prop_Choam_InsulatedCistern_Medium",
+      "real_size_m": {
+        "w": 1.9,
+        "h": 2.54,
+        "d": 2.09
+      },
+      "power": 0,
+      "water_capacity": 7500
+    },
+    {
+      "id": "GenericContainer_Placeable",
+      "group": "Storage",
+      "label_fr": "Coffre",
+      "label_en": "Chest",
+      "mesh": "SM_Env_Prop_Choam_StorageContainer_Small",
+      "real_size_m": {
+        "w": 1.5,
+        "h": 0.5,
+        "d": 0.75
+      },
+      "power": 0,
+      "water_capacity": 1000
+    },
+    {
+      "id": "SpiceSilo_Placeable",
+      "group": "Storage",
+      "label_fr": "Petit contenant de stockage",
+      "label_en": "Small Storage Container",
+      "mesh": "SM_Env_Prop_Neut_Crate_Spice_01_A",
+      "real_size_m": {
+        "w": 0.99,
+        "h": 0.95,
+        "d": 1.31
+      },
+      "power": 0,
+      "water_capacity": 1000
+    },
+    {
+      "id": "MediumStorageContainer_Placeable",
+      "group": "Storage",
+      "label_fr": "Contenant de stockage de taille moyenne",
+      "label_en": "Medium Storage Container",
+      "mesh": "SM_Env_Prop_Choam_StorageContainer_Medium",
+      "real_size_m": {
+        "w": 3.04,
+        "h": 3.04,
+        "d": 4.11
+      },
+      "power": 0,
+      "water_capacity": 1000
+    },
+    {
+      "id": "StorageContainer_Placeable",
+      "group": "Storage",
+      "label_fr": "Contenant de stockage",
+      "label_en": "Storage Container",
+      "mesh": "SM_Env_Prop_Choam_StorageContainer_Medium_02_Assemble",
+      "real_size_m": {
+        "w": 1.38,
+        "h": 1.28,
+        "d": 1.29
+      },
+      "power": 0,
+      "water_capacity": 1000
+    },
+    {
+      "id": "ModdingStation_Placeable",
+      "group": "ModdingStation",
+      "label_fr": "Atelier d'augmentation",
+      "label_en": "Augmentation Station",
+      "mesh": "SM_Player_Prop_Choam_ModdingStation",
+      "real_size_m": {
+        "w": 2.94,
+        "h": 1.22,
+        "d": 1.6
+      },
+      "power": -50,
+      "water_capacity": 1000
+    },
+    {
+      "id": "RepairStation_Placeable",
+      "group": "RepairStation",
+      "label_fr": "Atelier de réparation",
+      "label_en": "Repair Station",
+      "mesh": "SM_Env_Prop_Choam_RepairStation",
+      "real_size_m": {
+        "w": 3.71,
+        "h": 2.84,
+        "d": 2.45
+      },
+      "power": -20,
+      "water_capacity": 1000
+    },
+    {
+      "id": "Recycler_Placeable",
+      "group": "Recycler",
+      "label_fr": "Recycleur",
+      "label_en": "Recycler",
+      "mesh": "SM_Env_Prop_Choam_Recycler",
+      "real_size_m": {
+        "w": 2.99,
+        "h": 1.92,
+        "d": 3.04
+      },
+      "power": -15,
+      "water_capacity": 1000
+    },
+    {
+      "id": "BloodWaterExtractor_Placeable",
+      "group": "BloodPurifier",
+      "label_fr": "Purificateur de sang",
+      "label_en": "Blood Purifier",
+      "mesh": "SM_Env_Prop_Choam_BloodPurifier_M_Case",
+      "real_size_m": {
+        "w": 2.62,
+        "h": 2.3,
+        "d": 2.65
+      },
+      "power": -10,
+      "water_capacity": 1000
+    },
+    {
+      "id": "BloodWaterExtractionAdvanced_Placeable",
+      "group": "BloodPurifier",
+      "label_fr": "Purificateur de sang amélioré",
+      "label_en": "Improved Blood Purifier",
+      "mesh": "SM_Env_Prop_Choam_BloodPurifier_Advanced",
+      "real_size_m": {
+        "w": 5.14,
+        "h": 2.96,
+        "d": 2.65
+      },
+      "power": -35,
+      "water_capacity": 1000
+    },
+    {
+      "id": "Deathstill_Placeable",
+      "group": "Deathstill",
+      "label_fr": "Distille de mort fremen élaboré",
+      "label_en": "Advanced Fremen Deathstill",
+      "mesh": "SM_Env_Prop_Frem_Deathstill_T5",
+      "real_size_m": {
+        "w": 3.8,
+        "h": 1.27,
+        "d": 1.55
+      },
+      "power": -350,
+      "water_capacity": 500
+    },
+    {
+      "id": "Fremen_Deathstill_Placeable",
+      "group": "Deathstill",
+      "label_fr": "Distille de mort fremen",
+      "label_en": "Fremen Deathstill",
+      "mesh": "SM_Env_Prop_Frem_Deathstill",
+      "real_size_m": {
+        "w": 3.49,
+        "h": 1.27,
+        "d": 1.55
+      },
+      "power": -200,
+      "water_capacity": 500
+    }
+  ]
+}

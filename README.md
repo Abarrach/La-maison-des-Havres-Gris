@@ -49,13 +49,17 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 - Légende visible sur la carte du Désert Profond
 - Un joueur peut avoir une base dans chaque instance (max 2)
 
-#### Désert Profond — Carte dynamique et champs d'épice
-- **`dd_map_update.php`** recompose `deep_desert.jpg` chaque semaine en assemblant les 64 tuiles (8×8) téléchargées depuis le CDN de gaming.tools
-- Le tileset tourne sur un cycle de 12 semaines basé sur un seed hebdomadaire (seed de référence = 12 au 13 mai 2026)
-- **`dd_proxy.php`** interroge l'API acteurs de gaming.tools (seed=0 = semaine courante) pour récupérer les positions des champs d'épice en temps réel
-- Les marqueurs de champs d'épice sont projetés sur la carte via `gameToLeaflet()` (coordonnées monde gaming.tools → pixels Leaflet)
-- Chaque tooltip de champ indique la **cellule de la grille** (ex. F5) pour faciliter la localisation
-- La carte est versionnée côté client (`?v=<seed>`) pour invalider le cache navigateur automatiquement à chaque rotation de tileset
+#### Désert Profond — Carte dynamique, champs d'épice et POI
+- **`dd_seed.php`** détecte le **seed actif réel** de la semaine en lisant la page `dune.gaming.tools/deep-desert` (lien préchargé `seed=N` / `deepdesert_1_NN.d.json`). ⚠ Les numéros de seed de l'API gaming.tools ne sont PAS des compteurs hebdomadaires séquentiels (seeds vides intercalés), donc aucune formule de date ne peut les retrouver : seule la page source fait foi. Cache 30 min. Helper partagé par le proxy et le composeur de carte.
+- **`dd_map_update.php`** recompose `deep_desert.jpg` chaque semaine en assemblant les 64 tuiles (8×8) du tileset `deepdesert_1_NN` (NN = seed actif via `dd_seed.php`)
+- **`dd_proxy.php`** interroge, sur le **même seed actif**, deux sources gaming.tools côté serveur (cache 4h, invalidé au changement de seed) :
+  - API acteurs (`seed=N`) → zones PVP/PVE, champs d'épice (L/M/S), filons titane/stravidium **regroupés en champs** (clustering serveur, badge = nb de nœuds)
+  - données carte (`deepdesert_1_NN.d.json`, format « flatted » décodé en PHP) → **grottes, labos (stations de test), épaves**
+  - ⚠ Correctif : avant, le proxy interrogeait `seed=0` (une vieille semaine figée) → l'épice avait toujours 1-3 semaines de retard
+- Côté client, **barre de filtres à icônes** (façon method.gg) : chaque couche se masque/affiche, état mémorisé (localStorage). Visibles par défaut : grands champs d'épice + gros champs titane/stravidium
+- Les marqueurs sont projetés via `gameToLeaflet()` (coordonnées monde gaming.tools → pixels Leaflet), validé contre le `gridCell` officiel de gaming.tools
+- Chaque tooltip indique la **cellule de la grille** (ex. F5) et le nom du POI le cas échéant
+- La carte est versionnée côté client (`?v=<seed>`) pour invalider le cache navigateur à chaque rotation de tileset
 
 ### Simulateur de Talents
 - Arbre de compétences interactif avec allocation de points
@@ -460,8 +464,9 @@ DuneMap/
 ├── api.php               # Données de groupe
 ├── account_api.php       # API compte joueur (avatar, profil, stats, historique)
 ├── migration_api.php     # Réservations de migration (validation, refus, entraide)
+├── dd_seed.php           # Détection du seed Deep Desert actif (page gaming.tools) — partagé
 ├── dd_map_update.php     # Composition de deep_desert.jpg depuis les tuiles CDN gaming.tools
-├── dd_proxy.php          # Proxy serveur vers l'API acteurs de gaming.tools (champs d'épice)
+├── dd_proxy.php          # Proxy serveur : épice (L/M/S) + filons + POI (grottes/labos/épaves)
 │
 # Collecte & archivage (sur le serveur, hors DuneMap/)
 # /home/dune/dune_logger_all.py   # Scrape gaming.tools toutes les heures → /srv/dune-map/dune_counts.csv

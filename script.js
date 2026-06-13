@@ -45,9 +45,13 @@ const DD_WORLD_H = DD_WORLD_MAX_Y - DD_WORLD_MIN_Y; // 2438400
 const DD_IMG_W   = 6144;
 const DD_IMG_H   = 6120;
 
-// Référence seed acteurs : seed 12 = semaine du 13 mai 2026 (API acteurs)
-const DD_REF_SEED = 12;
-const DD_REF_DATE = new Date('2026-05-13T03:00:00Z');
+// Référence compteur hebdo, ALIGNÉE sur un vrai reset (mardi 05:00 Paris = 03:00
+// UTC en été). Semaine du 9 juin 2026 = compteur 16 → 16 % 12 = seed 4 (vérifié
+// contre la page gaming.tools). Le %12 (cf. currentActorSeed) donne le seed actif.
+// ⚠ L'ancienne réf (13 mai) tombait un mercredi → bascule 1 jour trop tard après
+// chaque reset du mardi (épice de la semaine précédente pendant ~1 jour).
+const DD_REF_SEED = 16;
+const DD_REF_DATE = new Date('2026-06-09T03:00:00Z');
 
 function gameToLeaflet(gx, gy) {
   // transformType:"flipVertical" → lat = MAX_Y - gy (Y inversé pour l'affichage)
@@ -62,43 +66,173 @@ function estimateDDSeed() {
   return Math.max(1, DD_REF_SEED + weeks);
 }
 
-// Filtre les acteurs bruts → { zones, resources }
-function processActors(seed, actors) {
-  const zones = [], resources = [];
-  for (const a of actors) {
-    if (a.type === 'BP_SecurityZone_C') {
-      zones.push({
-        zoneType: a.metadata?.Type ?? 'Unknown',
-        bounds:   a.metadata?.Bounds ?? [],
-        cx: a.x, cy: a.y
-      });
-    } else if (a.map_marker_id === 'spicefieldlarge') {
-      resources.push({ markerId: a.map_marker_id, x: a.x, y: a.y });
-    }
-  }
-  return { seed, zones, resources };
+// Seed acteurs de la SEMAINE EN COURS = compteur hebdo modulo 12 (rotation
+// gaming.tools sur 12 variantes). Vérifié : estimateDDSeed()=16 → 16%12=4, soit
+// exactement le seed annoncé par la page gaming.tools. ⚠ L'ancien bug : le fetch
+// essayait seed=0 (une vieille semaine figée) au lieu de est%12.
+function currentActorSeed() {
+  return ((estimateDDSeed() % 12) + 12) % 12;
 }
 
-// Fetch direct depuis le navigateur (fallback si le proxy PHP est indisponible)
+// Coordonnées monde → cellule A1..I9 (validé contre le gridCell officiel)
+function ddCell(x, y) {
+  const lng = (x - DD_WORLD_MIN_X) / DD_WORLD_W * DD_IMG_W;
+  const lat = (DD_WORLD_MAX_Y - y) / DD_WORLD_H * DD_IMG_H;
+  const r = Math.min(8, Math.floor(lat / (DD_IMG_H / 9)));
+  const c = Math.min(9, Math.floor(lng / (DD_IMG_W / 9)) + 1);
+  return 'ABCDEFGHI'[r] + c;
+}
+
+// Regroupe des nœuds (filons) en concentrations (greedy, rayon fixe) →
+// centroïdes + count. Le rayon ≈ demi-cellule pour capturer un « champ » entier
+// sans le scinder aux bords (mieux qu'une grille fixe).
+function ddClusterPts(pts, radius = 150000) {
+  const used = new Array(pts.length).fill(false);
+  const r2 = radius * radius;
+  const out = [];
+  for (let i = 0; i < pts.length; i++) {
+    if (used[i]) continue;
+    const cx = pts[i].x, cy = pts[i].y;
+    let sx = 0, sy = 0, n = 0;
+    for (let j = i; j < pts.length; j++) {
+      if (used[j]) continue;
+      const dx = pts[j].x - cx, dy = pts[j].y - cy;
+      if (dx * dx + dy * dy <= r2) { used[j] = true; sx += pts[j].x; sy += pts[j].y; n++; }
+    }
+    const x = sx / n, y = sy / n;
+    out.push({ x, y, cell: ddCell(x, y), count: n });
+  }
+  return out;
+}
+
+// Décodeur du format « flatted » de gaming.tools (.d.json : grand tableau plat
+// où chaque valeur de champ est un INDEX vers une autre entrée). `skip` = clés
+// à ne pas développer (parentMarkers, lourd et inutile ici).
+function ddFlatResolve(flat, i, skip, depth = 0) {
+  if (depth > 14) return null;
+  if (typeof i !== 'number') return i;
+  const v = flat[i];
+  if (Array.isArray(v)) return v.map(r => ddFlatResolve(flat, r, skip, depth + 1));
+  if (v && typeof v === 'object') {
+    const o = {};
+    for (const k in v) o[k] = skip.includes(k) ? null : ddFlatResolve(flat, v[k], skip, depth + 1);
+    return o;
+  }
+  return v;
+}
+
+// Acteurs bruts → couches (zones, épice L/M/S, filons regroupés)
+function processActors(seed, actors) {
+  const zones = [];
+  const spiceL = [], spiceM = [], spiceS = [], tiPts = [], stPts = [];
+  for (const a of actors) {
+    const mk = a.map_marker_id;
+    if (a.type === 'BP_SecurityZone_C') {
+      zones.push({ zoneType: a.metadata?.Type ?? 'Unknown', bounds: a.metadata?.Bounds ?? [], cx: a.x, cy: a.y });
+    } else if (mk === 'spicefieldlarge')  spiceL.push({ x: a.x, y: a.y, cell: ddCell(a.x, a.y) });
+    else if (mk === 'spicefieldmedium')   spiceM.push({ x: a.x, y: a.y, cell: ddCell(a.x, a.y) });
+    else if (mk === 'spicefieldsmall')    spiceS.push({ x: a.x, y: a.y, cell: ddCell(a.x, a.y) });
+    else if (mk === 'titaniumore')        tiPts.push({ x: a.x, y: a.y });
+    else if (mk === 'stravidiumore')      stPts.push({ x: a.x, y: a.y });
+  }
+  return {
+    seed, zones,
+    layers: {
+      spice_large: spiceL, spice_medium: spiceM, spice_small: spiceS,
+      titanium: ddClusterPts(tiPts), stravidium: ddClusterPts(stPts),
+      cave: [], ecolab: [], shipwreck: [],
+    },
+  };
+}
+
+// POI (grottes/labos/épaves) depuis le .d.json gaming.tools — best-effort
+let _ddPoiCache = {};
+async function fetchDDPois(nn) {
+  if (_ddPoiCache[nn]) return _ddPoiCache[nn];
+  const world = 'deepdesert_1_' + String(nn).padStart(2, '0');
+  try {
+    const r = await fetch(`https://cdn-hosted.gaming.tools/dune/data/en/maps/${world}.d.json`);
+    if (!r.ok) return null;
+    const flat = await r.json();
+    if (!Array.isArray(flat) || !flat[0]) return null;
+    const root = ddFlatResolve(flat, 0, []);
+    const locs = root.locations || [];
+    const RANK = { Basic: 1, Rare: 2, UltraRare: 3 };
+    const out = { cave: [], ecolab: [], shipwreck: [] };
+    const sites = {};  // clé « nom|cellule » → site
+    const keyOf = (name, gridCell) => (name || '') + '|' + (gridCell || '');
+
+    // 1) SITES depuis les marqueurs (dédup nom+cellule : des grottes différentes
+    //    partagent le même nom, ex. « Forgotten Cave » → ne PAS fusionner).
+    //    `notable` = hasNotableLoot du marqueur = ce qui fait grossir l'icône
+    //    chez gaming.tools (vérifié : 6 grottes A1 A5 A8 C3 C7 I5).
+    for (const l of locs) {
+      if ((l.locationType || '') !== 'marker') continue;
+      if (!out[l.iconId]) continue;            // uniquement grottes/labos/épaves
+      const loc = l.location;
+      if (!loc || typeof loc !== 'object') continue;
+      const key = keyOf(l.name, l.gridCell);
+      let s = sites[key];
+      if (!s) {
+        s = sites[key] = {
+          iconId: l.iconId, x: loc.x, y: loc.y,
+          cell: ddCell(loc.x, loc.y), name: l.name || '',
+          notable: false, tier: 0, unique: false, rarity: 0, _loot: {},
+        };
+      }
+      if (l.hasNotableLoot) s.notable = true;
+    }
+
+    // 2) LOOT depuis les coffres, rattaché au site parent (nom+cellule)
+    for (const l of locs) {
+      if ((l.locationType || '') !== 'lootContainer') continue;
+      const lt = l.lootTable || '';
+      const isUnique = /Unique/.test(lt);
+      const m = lt.match(/(UltraRare|Rare|Basic)_(Cave|Ecolab|Shipwreck)/);
+      const tier = m ? RANK[m[1]] : 0;
+      const lbl = isUnique ? 'Schéma unique' : (tier === 3 ? 'Coffre ultra-rare' : null);
+      for (const p of (l.parentMarkers || [])) {
+        if (!p || !p.name) continue;
+        const s = sites[keyOf(p.name, p.gridCell)];
+        if (!s) continue;                      // le parent doit exister comme marqueur
+        if (tier > s.tier) s.tier = tier;
+        if (isUnique) s.unique = true;
+        if (lbl) s._loot[lbl] = true;
+      }
+    }
+
+    // rarity ≥ 3 = ★ pépite (coffre Unique OU palier UltraRare)
+    for (const s of Object.values(sites)) {
+      s.rarity = (s.unique || s.tier >= 3) ? 3 : s.tier;
+      s.loot = Object.keys(s._loot);
+      delete s._loot;
+      out[s.iconId].push(s);
+    }
+    _ddPoiCache[nn] = out;
+    return out;
+  } catch { return null; }
+}
+
+// Fetch direct navigateur (NON bloqué par Cloudflare, contrairement au serveur).
+// Source principale : le serveur (proxy PHP) est bloqué par Cloudflare en 403,
+// donc on récupère tout côté client avec le bon seed (= semaine en cours).
 async function fetchActorsDirect() {
-  const est = estimateDDSeed();
-  // seed=0 = données semaine courante (toujours frais), puis seeds numérotés en fallback
-  for (const seed of [0, est, est - 1, est + 1]) {
-    if (seed !== 0 && seed < 1) continue;
+  const nn = currentActorSeed();
+  let data = null;
+  // nn = semaine en cours ; seed=0 = repli ultime si nn échoue totalement
+  for (const seed of [nn, 0]) {
     try {
-      const r = await fetch(
-        `https://dune-api-v2.gaming.tools/actors?world=deepdesert_1&seed=${seed}`
-      );
+      const r = await fetch(`https://dune-api-v2.gaming.tools/actors?world=deepdesert_1&seed=${seed}`);
       if (!r.ok) continue;
       const actors = await r.json();
-      if (Array.isArray(actors) && actors.length > 100) {
-        // seed=0 = semaine courante → on utilise le seed estimé pour l'affichage
-        const displaySeed = seed === 0 ? est : seed;
-        return processActors(displaySeed, actors);
-      }
-    } catch { /* CORS ou réseau, on essaie le suivant */ }
+      if (Array.isArray(actors) && actors.length > 100) { data = processActors(nn, actors); break; }
+    } catch { /* réseau, on essaie le suivant */ }
   }
-  return null;
+  if (!data) return null;
+  // POI (best-effort : n'empêche pas l'affichage de l'épice si indisponible)
+  const pois = await fetchDDPois(nn);
+  if (pois) Object.assign(data.layers, pois);
+  return data;
 }
 
 let ddZoneLayer    = null;
@@ -367,6 +501,7 @@ async function loadMapLayer(mapId) {
   if (mapId === 'deep_desert') {
     if (ddGridLayer) { map.removeLayer(ddGridLayer); ddGridLayer = null; }
     ddGridLayer = createDDGrid().addTo(map);
+    buildDDFilterBar();            // barre visible immédiatement (comptes ajoutés au chargement)
     if (!ddOverlayShown) loadDDOverlay();
   }
 }
@@ -374,34 +509,82 @@ async function loadMapLayer(mapId) {
 function updateSietchUI(mapId) {
   const sietchContainer = document.getElementById('sietch-selector-container');
   const ddLegend = document.getElementById('dd-legend');
+  const ddFilters = document.getElementById('dd-filter-bar');
   if (sietchContainer) sietchContainer.style.display = (mapId === 'hagga') ? 'flex' : 'none';
   if (ddLegend) ddLegend.style.display = (mapId === 'deep_desert') ? 'flex' : 'none';
+  if (ddFilters) ddFilters.style.display = (mapId === 'deep_desert') ? 'flex' : 'none';
 }
 
-// Icons épice — icônes officielles du jeu (CDN gaming.tools, accessibles depuis les navigateurs)
+// === COUCHES FILTRABLES (style method.gg) ===================================
+// Icônes officielles du jeu (CDN gaming.tools, accessibles depuis les navigateurs)
 const CDN_ICONS = 'https://cdn-hosted.gaming.tools/dune/images/map-icons';
-const SPICE_ICONS = {
-  spicefieldlarge: L.icon({
-    iconUrl:      `${CDN_ICONS}/spicefieldlarge.webp`,
-    iconSize:     [44, 44],
-    iconAnchor:   [22, 22],
-    popupAnchor:  [0, -22]
-  }),
-  spicefieldmedium: L.icon({
-    iconUrl:      `${CDN_ICONS}/spicefieldmedium.webp`,
-    iconSize:     [28, 28],
-    iconAnchor:   [14, 14],
-    popupAnchor:  [0, -14]
-  }),
-  spicefieldsmall: L.icon({
-    iconUrl:      `${CDN_ICONS}/spicefieldsmall.webp`,
-    iconSize:     [18, 18],
-    iconAnchor:   [9, 9],
-    popupAnchor:  [0, -9]
-  }),
-};
 
-// Rendu commun zones + épices à partir des données traitées
+// Couches affichables sur la Deep Desert. `on` = visible par défaut à l'ouverture.
+// `cluster` = filons regroupés en concentrations ; `threshold` = ne garder que les
+// concentrations de plus de N nœuds. `rare` = grottes/labos/épaves dont les
+// rares/ultra-rares sont mis en avant (anneau coloré + ★).
+const DD_LAYERS = [
+  { id: 'spice_large',  label: "Grand champ d'épice",   icon: 'spicefieldlarge',  size: 64, on: true  },
+  { id: 'spice_medium', label: "Champ d'épice moyen",   icon: 'spicefieldmedium', size: 24, on: false },
+  { id: 'titanium',     label: 'Titane (grosse concentration > 70)',     icon: 'titaniumore',   size: 54, on: true, cluster: true, threshold: 70 },
+  { id: 'stravidium',   label: 'Stravidium (grosse concentration > 70)', icon: 'stravidiumore', size: 54, on: true, cluster: true, threshold: 70 },
+  { id: 'ecolab',       label: 'Labos (pépites surlignées)', icon: 'ecolab',     size: 52, on: true,  rare: true },
+  { id: 'cave',         label: 'Grottes (pépites surlignées)', icon: 'cave',   size: 52, on: false, rare: true },
+  { id: 'shipwreck',    label: 'Épaves (pépites surlignées)',  icon: 'shipwreck', size: 54, on: false, rare: true },
+];
+
+let ddLayerGroups  = {};   // id → L.layerGroup
+let ddLayerVisible = null;  // id → bool (persisté)
+let _ddLastData    = null;  // dernières données rendues (pour re-render filtre global)
+let ddStarredOnly  = (() => { try { return localStorage.getItem('ddStarredOnly') === '1'; } catch { return false; } })();
+
+function loadDDFilterState() {
+  if (ddLayerVisible) return ddLayerVisible;
+  ddLayerVisible = {};
+  let saved = {};
+  // Clé versionnée (V2) : ignore l'ancien état sauvegardé pour appliquer les
+  // nouveaux défauts (épice large + titane + stravidium + labos).
+  try { saved = JSON.parse(localStorage.getItem('ddFiltersV2') || '{}'); } catch {}
+  for (const L0 of DD_LAYERS) {
+    ddLayerVisible[L0.id] = (L0.id in saved) ? !!saved[L0.id] : L0.on;
+  }
+  return ddLayerVisible;
+}
+function saveDDFilterState() {
+  try { localStorage.setItem('ddFiltersV2', JSON.stringify(ddLayerVisible)); } catch {}
+}
+
+// Icône d'un marqueur : pastille de comptage (concentration de filons),
+// anneau doré pour un site notable (★ si coffre Unique/UltraRare) ou icône simple.
+function ddMakeIcon(layer, item) {
+  const url = `${CDN_ICONS}/${layer.icon}.webp`;
+  let   s   = layer.size;
+  const count  = item.count  || 1;
+  const rarity = item.rarity || 0;
+  if (layer.cluster && count > 1) {
+    return L.divIcon({
+      className: 'dd-cluster-icon',
+      html: `<img src="${url}" width="${s}" height="${s}"><span class="dd-cluster-badge">${count}</span>`,
+      iconSize:   [s, s],
+      iconAnchor: [s / 2, s / 2],
+    });
+  }
+  if (rarity >= 3) {  // site mis en avant : anneau doré + ★
+    const col = '#f3c44f';
+    return L.divIcon({
+      className: 'dd-rare-icon',
+      html: `<span class="dd-rare-ring" style="border-color:${col};box-shadow:0 0 8px ${col}"><img src="${url}" width="${s - 8}" height="${s - 8}"><span class="dd-rare-star">★</span></span>`,
+      iconSize:   [s, s],
+      iconAnchor: [s / 2, s / 2],
+    });
+  }
+  // POI ordinaire (ni pépite ni notable) : plus petit. Un site `notable`
+  // (hasNotableLoot) garde la pleine taille → effet « gros icône » de gaming.tools.
+  if (layer.rare && !item.notable) s = Math.round(s * 0.6);
+  return L.icon({ iconUrl: url, iconSize: [s, s], iconAnchor: [s / 2, s / 2], popupAnchor: [0, -s / 2] });
+}
+
+// Rendu zones PVP/PVE + toutes les couches de marqueurs à partir des données proxy
 function renderDDData(data) {
   if (ddZoneLayer) map.removeLayer(ddZoneLayer);
   ddZoneLayer = L.layerGroup();
@@ -410,15 +593,10 @@ function renderDDData(data) {
     NullSec:  { color: '#cc2222', fillColor: '#cc2222', fillOpacity: 0.18, weight: 1.5, opacity: 0.7 },
     Security: { color: '#2255cc', fillColor: '#2255cc', fillOpacity: 0.12, weight: 1,   opacity: 0.5 },
   };
-  const ZONE_LABELS  = { NullSec: '⚔ PVP (NullSec)', Security: '🛡 PVE (Security)' };
-  const SPICE_LABELS = {
-    spicefieldlarge:  '🌀 Grand champ d\'épice',
-    spicefieldmedium: '🟠 Champ d\'épice moyen',
-    spicefieldsmall:  '🟡 Petit champ d\'épice',
-  };
+  const ZONE_LABELS = { NullSec: '⚔ PVP (NullSec)', Security: '🛡 PVE (Security)' };
 
   let zoneCount = 0;
-  for (const zone of data.zones) {
+  for (const zone of (data.zones || [])) {
     if (!zone.bounds || zone.bounds.length < 2) continue;
     const pts  = zone.bounds.map(b => gameToLeaflet(b.x, b.y));
     const lats = pts.map(p => p.lat);
@@ -430,25 +608,95 @@ function renderDDData(data) {
       .addTo(ddZoneLayer);
     zoneCount++;
   }
+  ddZoneLayer.addTo(map);
 
-  let spiceCount = 0;
-  for (const r of data.resources) {
-    const icon = SPICE_ICONS[r.markerId];
-    if (!icon) continue;
-    const pos  = gameToLeaflet(r.x, r.y);
-    const rowI = Math.min(8, Math.floor(pos.lat / (DD_IMG_H / 9)));
-    const col  = Math.min(9, Math.floor(pos.lng / (DD_IMG_W / 9)) + 1);
-    const cell = 'ABCDEFGHI'[rowI] + col;
-    const label = (SPICE_LABELS[r.markerId] || r.markerId) + ` — cellule ${cell}`;
-    L.marker(pos, { icon, zIndexOffset: 10 })
-      .bindTooltip(label, { sticky: true, className: 'dd-zone-tooltip' })
-      .addTo(ddZoneLayer);
-    spiceCount++;
+  // Couches de marqueurs (épice, filons, POI) — rétro-compat : si pas de
+  // `layers`, on retombe sur l'ancien `resources` (= grands champs d'épice).
+  _ddLastData   = data;
+  const visible = loadDDFilterState();
+  const layers  = data.layers || { spice_large: (data.resources || []).map(r => ({ x: r.x, y: r.y })) };
+  const counts  = {};
+
+  for (const L0 of DD_LAYERS) {
+    if (ddLayerGroups[L0.id]) { map.removeLayer(ddLayerGroups[L0.id]); }
+    const grp  = L.layerGroup();
+    let list   = layers[L0.id] || [];
+    // Filons : ne garder que les grosses concentrations (> threshold nœuds)
+    if (L0.threshold) list = list.filter(it => (it.count || 1) > L0.threshold);
+    // Filtre global « pépites uniquement » : sur les POI, ne garder que les ★
+    if (ddStarredOnly && L0.rare) list = list.filter(it => (it.rarity || 0) >= 3);
+    counts[L0.id] = list.length;
+    for (const it of list) {
+      const pos   = gameToLeaflet(it.x, it.y);
+      const cell  = it.cell || 'ABCDEFGHI'[Math.min(8, Math.floor(pos.lat / (DD_IMG_H / 9)))] + Math.min(9, Math.floor(pos.lng / (DD_IMG_W / 9)) + 1);
+      const cnt   = it.count || 1;
+      const rar   = it.rarity || 0;
+      // estompé uniquement si POI ordinaire (ni pépite ★ ni notable « gros »)
+      const faded = L0.rare && rar < 3 && !it.notable;
+      let label   = L0.label;
+      if (L0.cluster && cnt > 1) label += ` — ${cnt} nœuds`;
+      if (rar >= 3) label += ' — ★ ' + ((it.loot && it.loot.length) ? it.loot.join(' + ') : 'loot rare');
+      else if (it.notable) label += ' — site notable';
+      if (it.name) label += ` — ${it.name}`;
+      label += ` — cellule ${cell}`;
+      L.marker(pos, { icon: ddMakeIcon(L0, it), opacity: faded ? 0.78 : 1, zIndexOffset: rar >= 3 ? 20 : (it.notable ? 15 : (L0.cluster ? 5 : 10)) })
+        .bindTooltip(label, { sticky: true, className: 'dd-zone-tooltip' })
+        .addTo(grp);
+    }
+    ddLayerGroups[L0.id] = grp;
+    // Le filtre ★ ne fait que RESTREINDRE les catégories déjà affichées (il
+    // n'en force aucune) : si seules les grottes sont actives, ★ ne montre que
+    // les grottes étoilées, pas toutes les catégories.
+    if (visible[L0.id]) grp.addTo(map);
   }
 
-  ddZoneLayer.addTo(map);
+  buildDDFilterBar(counts);
   ddOverlayShown = true;
-  return { zoneCount, spiceCount };
+  return { zoneCount, counts };
+}
+
+// Re-rendu des couches POI sans refetch (bascule du filtre global)
+function ddRerender() {
+  if (_ddLastData) renderDDData(_ddLastData);
+}
+
+// Barre de filtres à icônes (boutons ronds cliquables, façon method.gg)
+function buildDDFilterBar(counts) {
+  const bar = document.getElementById('dd-filter-bar');
+  if (!bar) return;
+  bar.innerHTML = '';
+  const visible = loadDDFilterState();
+  for (const L0 of DD_LAYERS) {
+    const n   = counts ? (counts[L0.id] || 0) : 0;
+    const btn = document.createElement('button');
+    btn.className = 'dd-filter-btn' + (visible[L0.id] ? ' active' : '');
+    btn.title = `${L0.label}${n ? ' (' + n + ')' : ''}`;
+    btn.innerHTML = `<img src="${CDN_ICONS}/${L0.icon}.webp" alt="">`;
+    btn.addEventListener('click', () => {
+      visible[L0.id] = !visible[L0.id];
+      const grp = ddLayerGroups[L0.id];
+      if (grp) { visible[L0.id] ? grp.addTo(map) : map.removeLayer(grp); }
+      btn.classList.toggle('active', visible[L0.id]);
+      saveDDFilterState();
+    });
+    bar.appendChild(btn);
+  }
+
+  // Bouton global « pépites uniquement » (★) : ne laisse que les sites à loot
+  // ultra-rare/unique, toutes catégories de POI confondues.
+  const starBtn = document.createElement('button');
+  starBtn.className = 'dd-filter-btn dd-filter-star' + (ddStarredOnly ? ' active' : '');
+  starBtn.title = 'Pépites uniquement (sites à loot ultra-rare / schéma unique)';
+  starBtn.innerHTML = '<span style="font-size:22px;line-height:1;color:#f3c44f">★</span>';
+  starBtn.addEventListener('click', () => {
+    ddStarredOnly = !ddStarredOnly;
+    try { localStorage.setItem('ddStarredOnly', ddStarredOnly ? '1' : '0'); } catch {}
+    starBtn.classList.toggle('active', ddStarredOnly);
+    ddRerender();
+  });
+  bar.appendChild(starBtn);
+
+  bar.style.display = 'flex';
 }
 
 async function loadDDOverlay() {
@@ -456,21 +704,23 @@ async function loadDDOverlay() {
   if (statusEl) statusEl.textContent = '⏳ Chargement des zones…';
 
   let data = null;
-  let fromCache = false;
+  let fromProxy = false;
 
-  // ── 1. Proxy PHP (fetch server-side, cache 4h, pas de CORS) ─────────────
-  try {
-    const r = await fetch('dd_proxy.php');
-    if (r.ok) {
-      const json = await r.json();
-      if (!json.error && json.zones) { data = json; fromCache = true; }
-    }
-  } catch { /* proxy indisponible */ }
+  // ── 1. Fetch direct navigateur (PRINCIPAL) ───────────────────────────────
+  // Le serveur (proxy PHP) est bloqué par Cloudflare (403). Le navigateur, lui,
+  // passe : on récupère donc tout côté client avec le bon seed (semaine en cours).
+  data = await fetchActorsDirect();
 
-  // ── 2. Fallback : fetch direct navigateur (si proxy PHP hors ligne) ───────
+  // ── 2. Repli : proxy PHP (sert un cache s'il a pu en constituer un) ───────
   if (!data) {
-    if (statusEl) statusEl.textContent = '⏳ Connexion directe à l\'API…';
-    data = await fetchActorsDirect();
+    if (statusEl) statusEl.textContent = '⏳ Tentative via le serveur…';
+    try {
+      const r = await fetch('dd_proxy.php');
+      if (r.ok) {
+        const json = await r.json();
+        if (!json.error && (json.layers || json.zones)) { data = json; fromProxy = true; }
+      }
+    } catch { /* proxy indisponible */ }
   }
 
   if (!data) {
@@ -480,15 +730,12 @@ async function loadDDOverlay() {
   }
 
   window._ddCurrentSeed = data.seed;
-  const { zoneCount, spiceCount } = renderDDData(data);
+  const { zoneCount, counts } = renderDDData(data);
   if (statusEl) {
-    const src        = fromCache ? '📦 proxy' : '🌐 direct';
-    const currentEst = estimateDDSeed();
-    const stale      = data.seed > 0 && data.seed < currentEst;
-    const staleTxt   = stale ? ' ⚠ données semaine précédente' : '';
-    statusEl.textContent = `${stale ? '⚠' : '✅'} Seed #${data.seed}${staleTxt} — ${zoneCount} zones · ${spiceCount} champs (${src})`;
-    if (stale) statusEl.style.color = '#e8a000';
-    else       statusEl.style.color = '';
+    const src      = fromProxy ? '📦 proxy' : '🌐 direct';
+    const nbSpice  = (counts && counts.spice_large) || 0;
+    statusEl.textContent = `✅ Seed #${data.seed} — ${zoneCount} zones · ${nbSpice} grands champs (${src})`;
+    statusEl.style.color = '';
   }
 }
 

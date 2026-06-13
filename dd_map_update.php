@@ -5,9 +5,15 @@
  * Grille zoom-3 : 8×8 tuiles (x:0-7, y:0-7)
  * CDN    : https://cdn-hosted.gaming.tools/dune/map-tiles/{world}/3/{x}_{y}.webp
  *
- * Détection automatique du tileset hebdomadaire :
- *   essaie deepdesert_1_NN (seed courant puis _00 à _20)
- *   jusqu'à trouver un tileset valide.
+ * Tileset hebdomadaire : deepdesert_1_NN où NN = (compteur hebdo) mod 12.
+ * Le compteur part d'une référence calibrée (semaine du 13 mai 2026). Cette
+ * formule modulo 12 donne le bon tileset chaque semaine — c'est le MÊME calcul
+ * que côté client pour l'épice (`currentActorSeed()` = est%12), donc l'image et
+ * les marqueurs restent synchronisés.
+ *
+ * ⚠ On NE scrape PAS gaming.tools ici : Cloudflare bloque les requêtes curl du
+ * serveur (403). Les TUILES .webp, elles, passent (règle Cloudflare plus souple
+ * sur les images) — c'est pourquoi la composition de l'image fonctionne.
  *
  * Usage : php dd_map_update.php
  * Cron  : 30 5 * * 2   www-data php /srv/dune-map/v2/dd_map_update.php
@@ -18,16 +24,18 @@ $LOG_FILE = __DIR__ . '/dd_map_update.log';
 $X_MAX    = 7;
 $Y_MAX    = 7;
 
-// ── Référence seed ───────────────────────────────────────────────────────────
-// Seed 12 = semaine du 13 mai 2026 (mardi 05h Paris)
-// Formule tileset : deepdesert_1_NN où NN = seed mod 12 (12 variantes cycliques)
-$REF_SEED = 12;
-$REF_DT   = new DateTime('2026-05-13 05:00:00', new DateTimeZone('Europe/Paris'));
+// ── Seed hebdo (auto-suffisant, sans réseau) ─────────────────────────────────
+// Réf : compteur 16 = semaine du 9 juin 2026 (mardi 05h Paris) → 16 mod 12 = 4.
+$REF_COUNT = 16;
+$REF_DT    = new DateTime('2026-06-09 05:00:00', new DateTimeZone('Europe/Paris'));
 
-function currentSeed(int $ref, DateTime $refDt): int {
+function dd_week_count(int $ref, DateTime $refDt): int {
     $now  = new DateTime('now', new DateTimeZone('Europe/Paris'));
     $diff = $now->getTimestamp() - $refDt->getTimestamp();
-    return max(1, $ref + (int) floor($diff / (7 * 24 * 3600)));
+    return $ref + (int) floor($diff / (7 * 24 * 3600));
+}
+function dd_seed_world(int $count): string {
+    return 'deepdesert_1_' . str_pad((string) ((($count % 12) + 12) % 12), 2, '0', STR_PAD_LEFT);
 }
 
 // ── Logger ───────────────────────────────────────────────────────────────────
@@ -54,21 +62,12 @@ function fetch_url(string $url): array {
     return ['status' => $status, 'body' => $body ?: ''];
 }
 
-// ── Calculer le tileset depuis le seed ────────────────────────────────────────
-// 12 variantes de terrain cycliques (deepdesert_1_00 à deepdesert_1_11)
-// Formule : NN = seed mod 12
-// Vérifié : seed 11 → _11, seed 12 → _00, seed 13 → _01, etc.
-function seedToWorld(int $seed): string {
-    $nn = str_pad($seed % 12, 2, '0', STR_PAD_LEFT);
-    return "deepdesert_1_{$nn}";
-}
-
 // ════════════════════════════════════════════════════════════════════════════
 log_msg('══ Démarrage mise à jour carte Deep Desert ══');
 
-$seed  = currentSeed($REF_SEED, $REF_DT);
-$world = seedToWorld($seed);
-log_msg("Seed courant : {$seed} → tileset : {$world} (seed mod 12 = " . ($seed % 12) . ")");
+$count = dd_week_count($REF_COUNT, $REF_DT);  // compteur hebdo
+$world = dd_seed_world($count);                // deepdesert_1_NN (NN = count mod 12)
+log_msg("Compteur hebdo : {$count} → tileset : {$world} (mod 12 = " . ((($count % 12) + 12) % 12) . ")");
 
 $CDN_BASE = "https://cdn-hosted.gaming.tools/dune/map-tiles/{$world}/3";
 

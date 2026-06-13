@@ -476,10 +476,15 @@ async function loadMapLayer(mapId) {
 
   if (currentLayer) { map.removeLayer(currentLayer); currentLayer = null; }
 
-  // Retirer l'overlay DD et la grille si on quitte la Deep Desert
+  // Retirer l'overlay DD, la grille ET les couches de marqueurs (épice, filons,
+  // POI) si on quitte la Deep Desert — sinon ils restent affichés sur Hagga.
   if (mapId !== 'deep_desert') {
     if (ddZoneLayer)  { map.removeLayer(ddZoneLayer);  ddZoneLayer = null; }
     if (ddGridLayer)  { map.removeLayer(ddGridLayer);  ddGridLayer = null; }
+    for (const id in ddLayerGroups) {
+      if (ddLayerGroups[id]) map.removeLayer(ddLayerGroups[id]);
+    }
+    ddLayerGroups = {};
     ddOverlayShown = false;
   }
 

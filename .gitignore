@@ -10,6 +10,12 @@ migration_data.json
 # Secret webhook Discord (NE JAMAIS COMMITER)
 discord_webhook.txt
 
+# Secrets Retours de soirée — clé Gemini + token (NE JAMAIS COMMITER ; voir epice/config.example.php)
+epice/config.php
+
+# Données runtime des retours de soirée (recréé par data-api.php)
+epice/data/debriefs.json
+
 # Meshes du jeu extraits via FModel (lourd ~357Mo + assets Funcom) — déploiement WinSCP séparé
 models/
 *.glb

@@ -1237,8 +1237,9 @@ async function createSoiree() {
 async function closeSoiree() {
   if (!(await uiConfirm('Les joueurs ne pourront plus envoyer ni modifier leur retour.', { title:'Clôturer la soirée ?', okLabel:'Clôturer', danger:true }))) return;
   try {
-    await apiPost('close_soiree',{},true);
-    renderAdmin();
+    const res = await apiPost('close_soiree',{},true);
+    if (res.ok) renderAdmin();
+    else await uiAlert(res.error || 'Erreur lors de la clôture.', { title:'Erreur' });
   } catch { await uiAlert('Erreur de connexion.', { title:'Erreur' }); }
 }
 

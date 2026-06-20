@@ -35,13 +35,17 @@ function read_data(): array {
 }
 
 function write_data(array $data): void {
-    $fp = fopen(DATA_FILE, 'c+');
+    $fp = @fopen(DATA_FILE, 'c+');
+    if (!$fp) out(false, [], "Écriture impossible : droits insuffisants sur data/debriefs.json (le serveur web — www-data — doit pouvoir écrire le fichier).");
+    $ok = false;
     if (flock($fp, LOCK_EX)) {
         ftruncate($fp, 0); rewind($fp);
-        fwrite($fp, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        $ok = fwrite($fp, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) !== false;
+        fflush($fp);
         flock($fp, LOCK_UN);
     }
     fclose($fp);
+    if (!$ok) out(false, [], "Écriture impossible dans data/debriefs.json (droits serveur).");
 }
 
 function out(bool $ok, array $payload = [], string $err = ''): void {

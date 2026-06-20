@@ -1,11 +1,9 @@
 <?php
+require_once __DIR__ . '/auth_epice.php'; // session + helpers de droits
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, X-App-Token');
+header('Access-Control-Allow-Headers: Content-Type');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit(0); }
-
-require_once 'config.php';
 
 $action = $_GET['action'] ?? '';
 
@@ -13,16 +11,13 @@ $action = $_GET['action'] ?? '';
 $raw   = file_get_contents('php://input');
 $input = json_decode($raw, true) ?? [];
 
-// Token : accepté depuis le header OU depuis le body (contournement filtre Apache)
-$admin_actions = ['list', 'new_soiree', 'close_soiree', 'save_assign', 'save_analyse', 'history', 'sortie_detail', 'delete_sortie'];
-if (in_array($action, $admin_actions)) {
-    $token = $_SERVER['mhg_2026_recolte_epice_xK9p'] ?? $input['_token'] ?? $_GET['_t'] ?? '';
-    if ($token !== APP_SECRET) {
-        http_response_code(403);
-        echo json_encode(['ok' => false, 'error' => 'Accès non autorisé']);
-        exit;
-    }
-}
+// --- Contrôle d'accès serveur (basé sur la session du site, plus de token en dur) ---
+$organize_actions = ['list', 'new_soiree', 'close_soiree', 'save_assign', 'save_analyse', 'history', 'sortie_detail', 'delete_sortie'];
+$member_actions   = ['init', 'get_assign', 'my_debrief', 'save_debrief', 'public_history', 'public_sortie', 'me'];
+$admin_only       = ['get_orga', 'set_orga'];
+if      (in_array($action, $admin_only, true))       epice_require_admin();
+elseif  (in_array($action, $organize_actions, true)) epice_require_organize();
+elseif  (in_array($action, $member_actions, true))   epice_require_login();
 
 $data_dir = __DIR__ . '/data';
 if (!is_dir($data_dir)) mkdir($data_dir, 0755, true);
@@ -164,7 +159,7 @@ switch ($action) {
         $id       = 'sortie_' . time();
         $date     = trim($input['date'] ?? date('Y-m-d'));
         $zone     = trim($input['zone'] ?? '');
-        $nouvelle = ['id'=>$id,'date'=>$date,'titre'=>$titre,'zone'=>$zone,'statut'=>'ouverte','debriefs'=>[]];
+        $nouvelle = ['id'=>$id,'date'=>$date,'titre'=>$titre,'zone'=>$zone,'statut'=>'ouverte','debriefs'=>[],'createur'=>epice_user()];
         $d = read_data();
         foreach ($d['sorties'] as &$s) { if ($s['statut']==='ouverte') $s['statut']='archivée'; }
         $d['sorties'][]     = $nouvelle;
@@ -264,6 +259,7 @@ switch ($action) {
                 'note_moy' => $nb ? round(array_sum(array_column($s['debriefs'],'note')) / $nb, 1) : null,
                 'a_compo'  => !empty($s['assignation']),
                 'a_analyse'=> !empty($s['analyse']['texte'] ?? ''),
+                'createur' => $s['createur'] ?? '',
             ];
         }, $d['sorties']);
         out(true, ['sorties' => array_reverse($resume)]);
@@ -282,15 +278,37 @@ switch ($action) {
         $sid = trim($input['sid'] ?? ($_GET['sid'] ?? ''));
         if (!$sid) out(false, [], 'ID manquant');
         $d = read_data();
-        $before = count($d['sorties']);
+        $target = null;
+        foreach ($d['sorties'] as $s) { if (($s['id'] ?? '') === $sid) { $target = $s; break; } }
+        if (!$target) out(false, [], 'Sortie introuvable');
+        // Un organisateur ne supprime QUE ses propres sorties ; l'admin peut tout supprimer
+        if (epice_role() !== 'admin' && strcasecmp($target['createur'] ?? '', epice_user() ?? '') !== 0)
+            out(false, [], 'Tu ne peux supprimer que les sorties que tu as créées.');
         $d['sorties'] = array_values(array_filter($d['sorties'], function($s) use ($sid) {
             return ($s['id'] ?? '') !== $sid;
         }));
-        if (count($d['sorties']) === $before) out(false, [], 'Sortie introuvable');
         // Si on supprime la sortie active, on désactive
         if (($d['soiree_active']['id'] ?? null) === $sid) $d['soiree_active'] = null;
         write_data($d);
         out(true, ['message' => 'Sortie supprimée']);
+
+    // Identité + droits de l'utilisateur courant (pour l'UI)
+    case 'me':
+        out(true, ['user' => epice_user(), 'role' => epice_role(), 'can_organize' => epice_can_organize()]);
+
+    // Liste des organisateurs (admin)
+    case 'get_orga':
+        out(true, ['organizers' => epice_organizers()]);
+
+    // Définir la liste des organisateurs (admin)
+    case 'set_orga':
+        $list = $input['organizers'] ?? [];
+        if (!is_array($list)) out(false, [], 'Format invalide');
+        $clean = [];
+        foreach ($list as $n) { $n = trim((string)$n); if ($n !== '' && !in_array($n, $clean, true)) $clean[] = $n; }
+        $ok = @file_put_contents(__DIR__ . '/data/organizers.json', json_encode($clean, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) !== false;
+        if (!$ok) out(false, [], "Écriture impossible (droits sur data/organizers.json).");
+        out(true, ['organizers' => $clean, 'message' => 'Organisateurs enregistrés']);
 
     default:
         out(false, [], 'Action inconnue : ' . htmlspecialchars($action));

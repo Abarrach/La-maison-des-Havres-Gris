@@ -386,7 +386,7 @@
     <button class="nav-tab active" onclick="switchView('orga',event)">Organisation</button>
     <button class="nav-tab" onclick="switchView('sop',event)">Manuel de combat</button>
     <button class="nav-tab" onclick="switchView('joueur',event)">Retour joueur</button>
-    <button class="nav-tab" onclick="switchView('admin',event)">Admin</button>
+    <button class="nav-tab" id="tab-admin" onclick="switchView('admin',event)">Admin</button>
   </div>
 </nav>
 
@@ -676,6 +676,7 @@
       <button class="subtab active" onclick="switchAdminTab('retours',event)">Retours</button>
       <button class="subtab" onclick="switchAdminTab('assign',event)">Assignation</button>
       <button class="subtab" onclick="switchAdminTab('histo',event)">Historique</button>
+      <button class="subtab" id="subtab-orga" onclick="switchAdminTab('orga',event)" style="display:none">Organisateurs</button>
     </div>
 
     <!-- SOUS-VUE RETOURS -->
@@ -714,6 +715,17 @@
     <!-- SOUS-VUE HISTORIQUE -->
     <div id="atab-histo" class="atab">
       <div id="histo-list"><div class="empty">Chargement…</div></div>
+    </div>
+
+    <!-- SOUS-VUE ORGANISATEURS (admins) -->
+    <div id="atab-orga" class="atab">
+      <div class="section-label">Organisateurs autorisés</div>
+      <div class="assign-hint">Un pseudo par ligne. Ces membres (en plus des admins du site) peuvent créer/clôturer des sorties, éditer la compo et lancer l'analyse. Le pseudo doit correspondre à l'identifiant de connexion.</div>
+      <textarea id="orga-list-ta" style="width:100%;min-height:160px" placeholder="Abarrach&#10;Lefou&#10;…"></textarea>
+      <div style="display:flex;gap:.5rem;margin-top:.6rem;align-items:center">
+        <button class="btn btn-accent" onclick="saveOrgaList()">💾 Enregistrer</button>
+        <span id="orga-list-note" style="font-size:.72rem;color:var(--text-faint)"></span>
+      </div>
     </div>
 
   </div>
@@ -820,10 +832,14 @@ async function apiPost(action, body, withToken = false) {
 // ============================================================
 // PIN ADMIN
 // ============================================================
-let adminUnlocked = false, pendingTab = null;
+let meInfo = { user:null, role:'', can_organize:false };
+let adminUnlocked = false, pendingTab = null; // (PIN désactivé — droits gérés côté serveur)
 
 function switchView(name, e) {
-  if (name === 'admin' && !adminUnlocked) { pendingTab = e?.currentTarget ?? null; showPinModal(); return; }
+  if (name === 'admin' && !meInfo.can_organize) {
+    uiAlert('Cet onglet est réservé aux organisateurs.', { title:'Accès restreint' });
+    return;
+  }
   _switch(name, e?.currentTarget ?? null);
 }
 function _switch(name, tab) {
@@ -1306,6 +1322,30 @@ function switchAdminTab(tab, e) {
   e.currentTarget.classList.add('active');
   if (tab === 'assign') loadAssignBuilder();
   if (tab === 'histo')  loadHistory();
+  if (tab === 'orga')   loadOrgaList();
+}
+
+// Gestion de la liste des organisateurs (admins)
+async function loadOrgaList() {
+  const ta = document.getElementById('orga-list-ta');
+  ta.value = 'Chargement…'; ta.disabled = true;
+  try {
+    const r = await apiGet('get_orga');
+    ta.value = (r.ok && Array.isArray(r.organizers)) ? r.organizers.join('\n') : '';
+  } catch { ta.value = ''; }
+  ta.disabled = false;
+}
+async function saveOrgaList() {
+  const ta = document.getElementById('orga-list-ta');
+  const note = document.getElementById('orga-list-note');
+  const list = ta.value.split('\n').map(s => s.trim()).filter(Boolean);
+  note.textContent = 'Enregistrement…';
+  try {
+    const r = await apiPost('set_orga', { organizers: list }, true);
+    if (r.ok) { note.textContent = '✓ ' + (r.message || 'Enregistré'); ta.value = (r.organizers || []).join('\n'); }
+    else note.textContent = 'Erreur : ' + r.error;
+    setTimeout(() => note.textContent = '', 3000);
+  } catch { note.textContent = 'Erreur de connexion.'; }
 }
 
 // ============================================================
@@ -1636,7 +1676,7 @@ async function loadHistory() {
             <span class="histo-badge histo-badge-nb">${s.nb} retour${s.nb>1?'s':''}</span>
             ${s.a_compo?'<span class="histo-badge histo-badge-nb">compo ✓</span>':''}
             ${s.a_analyse?'<span class="histo-badge histo-badge-note">analyse ✓</span>':''}
-            <button class="btn-mini btn-mini-del" onclick="event.stopPropagation();deleteSortie('${s.id}')" title="Supprimer cette sortie">✕</button>
+            ${(meInfo.role==='admin' || (s.createur && meInfo.user && String(s.createur).toLowerCase()===String(meInfo.user).toLowerCase())) ? `<button class="btn-mini btn-mini-del" onclick="event.stopPropagation();deleteSortie('${s.id}')" title="Supprimer cette sortie">✕</button>` : ''}
           </div>
         </div>
       </div>`).join('');
@@ -1706,7 +1746,17 @@ function escAttr(s) { if (!s) return ''; return s.replace(/&/g,'&amp;').replace(
 // ============================================================
 // INIT
 // ============================================================
-renderOrga();
+(async function init() {
+  try {
+    const m = await apiGet('me');
+    if (m && m.ok) meInfo = { user:m.user, role:m.role, can_organize:!!m.can_organize };
+  } catch {}
+  const at = document.getElementById('tab-admin');
+  if (at && !meInfo.can_organize) at.style.display = 'none'; // onglet Admin masqué aux non-organisateurs
+  const so = document.getElementById('subtab-orga');
+  if (so && meInfo.role === 'admin') so.style.display = ''; // gestion des organisateurs réservée aux admins
+  renderOrga();
+})();
 </script>
 </script>
 </body>

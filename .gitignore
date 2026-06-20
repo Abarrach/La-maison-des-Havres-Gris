@@ -15,6 +15,7 @@ epice/config.php
 
 # Données runtime des retours de soirée (recréé par data-api.php)
 epice/data/debriefs.json
+epice/data/organizers.json
 
 # Meshes du jeu extraits via FModel (lourd ~357Mo + assets Funcom) — déploiement WinSCP séparé
 models/

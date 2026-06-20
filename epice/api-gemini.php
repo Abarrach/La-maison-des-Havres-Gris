@@ -2,26 +2,26 @@
 // api-gemini.php — proxy sécurisé vers l'API Gemini
 // La clé API n'est JAMAIS exposée côté client
 
+require_once __DIR__ . '/auth_epice.php'; // session + droits
+
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type, X-App-Token');
+header('Access-Control-Allow-Headers: Content-Type');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { exit(0); }
 
+// Réservé aux organisateurs (analyse IA)
+if (!epice_can_organize()) {
+    http_response_code(403);
+    echo json_encode(['error' => 'Réservé aux organisateurs.']);
+    exit;
+}
+
 // --- Config ---
-require_once 'config.php'; // ou '../config.php' si config est hors webroot
+require_once 'config.php'; // clé Gemini (hors Git)
 
 $input  = json_decode(file_get_contents('php://input'), true);
 $prompt = trim($input['prompt'] ?? '');
-
-// Token : header OU body (contournement filtre Apache)
-$token = $_SERVER['mhg_2026_recolte_epice_xK9p'] ?? $input['_token'] ?? '';
-if ($token !== APP_SECRET) {
-    http_response_code(403);
-    echo json_encode(['error' => 'Accès non autorisé']);
-    exit;
-}
 
 // Le prompt est déjà lu plus haut
 

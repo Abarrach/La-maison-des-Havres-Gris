@@ -15,10 +15,11 @@ const mapConfig = {
 };
 
 const SIETCHS = [
-  'Sietch Abbir', 'Sietch Alraab', 'Sietch Barkan', 'Sietch Coanua', 'Sietch Fajr',
-  'Sietch Gara Kulon', 'Sietch Hajar', 'Sietch Jacurutu', 'Sietch Kathib', 'Sietch Legg',
-  'Sietch Makab', 'Sietch Nadir', 'Sietch Ramal', 'Sietch Rifana', 'Sietch Sandrat',
-  'Sietch Saajid', 'Sietch Tabr', 'Sietch Tharwa', 'Sietch Umbu', 'Sietch Yaracuwan'
+  'Sietch Abbir', 'Sietch al-Mut', 'Sietch Alraab', 'Sietch Barkan', 'Sietch Coanua', 'Sietch Eaqrab',
+  'Sietch Fajr', 'Sietch Gara Kulon', 'Sietch Hajar', 'Sietch Jacurutu', 'Sietch Kathib',
+  'Sietch Khafash', 'Sietch Legg', 'Sietch Makab', 'Sietch Nadir', 'Sietch Rajifiri', 'Sietch Ramal',
+  'Sietch Rifana', 'Sietch Sandrat', 'Sietch Saajid', 'Sietch Ta\'lab', 'Sietch Tabr', 'Sietch Tharwa',
+  'Sietch Umbu', 'Sietch Yaracuwan'
 ];
 
 // === GLOBALES ===

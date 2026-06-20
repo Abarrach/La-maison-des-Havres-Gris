@@ -732,20 +732,6 @@
 </div>
 
 
-<!-- MODAL PIN -->
-<div class="modal-overlay" id="pin-modal">
-  <div class="modal" style="max-width:300px;text-align:center">
-    <div style="font-size:1.4rem;margin-bottom:.75rem">🔒</div>
-    <h2 style="margin-bottom:.4rem">Accès Admin</h2>
-    <p style="font-size:.75rem;color:var(--text-muted);margin-bottom:1.1rem">Code requis</p>
-    <input type="password" id="pin-input" placeholder="••••" style="text-align:center;font-size:1.2rem;letter-spacing:.3em;margin-bottom:.5rem" onkeydown="if(event.key==='Enter')submitPin()">
-    <div id="pin-error" style="display:none;color:#C05040;font-size:.75rem;margin-bottom:.5rem">Code incorrect</div>
-    <div class="modal-actions" style="justify-content:center">
-      <button class="btn btn-ghost" onclick="closePinModal()">Annuler</button>
-      <button class="btn btn-accent" onclick="submitPin()">Valider</button>
-    </div>
-  </div>
-</div>
 
 <!-- MODAL nouvelle soirée -->
 <div class="modal-overlay" id="modal">
@@ -774,8 +760,6 @@
 // ============================================================
 // CONFIG
 // ============================================================
-const ADMIN_PIN  = '2025';           // ← change ce code
-const APP_SECRET = 'mhg_2026_recolte_epice_xK9p'; // ← même valeur que config.php
 const API        = 'data-api.php';
 const API_IA     = 'api-gemini.php';
 
@@ -819,8 +803,7 @@ async function apiGet(action) {
   const res = await fetch(`${API}?action=${action}`);
   return res.json();
 }
-async function apiPost(action, body, withToken = false) {
-  if (withToken) body._token = APP_SECRET;  // token dans le body, pas le header
+async function apiPost(action, body) {
   const res = await fetch(`${API}?action=${action}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -833,7 +816,6 @@ async function apiPost(action, body, withToken = false) {
 // PIN ADMIN
 // ============================================================
 let meInfo = { user:null, role:'', can_organize:false };
-let adminUnlocked = false, pendingTab = null; // (PIN désactivé — droits gérés côté serveur)
 
 function switchView(name, e) {
   if (name === 'admin' && !meInfo.can_organize) {
@@ -851,13 +833,6 @@ function _switch(name, tab) {
   if (name === 'joueur') renderJoueur();
   if (name === 'orga')   renderOrga();
   if (name === 'admin')  renderAdmin();
-}
-function showPinModal() { document.getElementById('pin-input').value=''; document.getElementById('pin-error').style.display='none'; document.getElementById('pin-modal').classList.add('open'); setTimeout(()=>document.getElementById('pin-input').focus(),80); }
-function closePinModal() { document.getElementById('pin-modal').classList.remove('open'); }
-function submitPin() {
-  if (document.getElementById('pin-input').value.trim() === ADMIN_PIN) {
-    adminUnlocked = true; closePinModal(); _switch('admin', pendingTab);
-  } else { document.getElementById('pin-error').style.display='block'; document.getElementById('pin-input').value=''; document.getElementById('pin-input').focus(); }
 }
 
 // ============================================================
@@ -1042,7 +1017,7 @@ async function renderAdmin() {
 
   let sortie;
   try {
-    const res = await fetch(`${API}?action=list&_t=${encodeURIComponent(APP_SECRET)}`);
+    const res = await fetch(`${API}?action=list`);
     const data = await res.json();
     if (!data.ok) {
       document.getElementById('a-titre').textContent='Aucune soirée active';
@@ -1163,7 +1138,7 @@ async function analyzeIA() {
   // Récupérer les données fraîches
   let dbs=[], nb=0;
   try {
-    const res=await fetch(`${API}?action=list&_t=${encodeURIComponent(APP_SECRET)}`);
+    const res=await fetch(`${API}?action=list`);
     const data=await res.json();
     if (!data.ok||!data.sortie?.debriefs?.length) { out.textContent='Aucun retour à analyser.'; btn.disabled=false; btn.textContent='Analyser avec Claude'; return; }
     dbs=data.sortie.debriefs; nb=dbs.length;
@@ -1215,14 +1190,14 @@ Idées, nuances ou tensions exprimées dans les commentaires libres qui n'appara
 Sois direct et précis, sans flatterie ni formule de politesse. Appuie chaque affirmation sur les données. Environ 250–300 mots.`;
 
   try {
-    const r=await fetch(API_IA,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt, _token: APP_SECRET})});
+    const r=await fetch(API_IA,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt})});
     const j=await r.json();
     if (j.synthese) {
       out.innerHTML = mdToHtml(j.synthese);
       currentAnalyseExists = true;
       const note = document.getElementById('a-ia-note');
       let saved = false, saveErr = '';
-      try { const sr = await apiPost('save_analyse', { analyse: j.synthese }, true); saved = !!(sr && sr.ok); if (!saved) saveErr = (sr && sr.error) || 'réponse inattendue'; }
+      try { const sr = await apiPost('save_analyse', { analyse: j.synthese }); saved = !!(sr && sr.ok); if (!saved) saveErr = (sr && sr.error) || 'réponse inattendue'; }
       catch (e) { saveErr = 'connexion'; }
       if (saved) {
         note.style.color = '';
@@ -1247,7 +1222,7 @@ async function createSoiree() {
   if (!titre) { await uiAlert('Le titre est obligatoire.', { title:'Champ manquant' }); return; }
   const btn=document.querySelector('#modal .btn-accent'); btn.disabled=true; btn.textContent='Création…';
   try {
-    const res=await apiPost('new_soiree',{titre,zone:document.getElementById('m-zone').value.trim(),date:document.getElementById('m-date').value},true);
+    const res=await apiPost('new_soiree',{titre,zone:document.getElementById('m-zone').value.trim(),date:document.getElementById('m-date').value});
     if (!res.ok) { await uiAlert('Erreur : '+res.error, { title:'Erreur' }); }
     else { closeModal(); renderAdmin(); }
   } catch { await uiAlert('Erreur de connexion.', { title:'Erreur' }); }
@@ -1257,14 +1232,13 @@ async function createSoiree() {
 async function closeSoiree() {
   if (!(await uiConfirm('Les joueurs ne pourront plus envoyer ni modifier leur retour.', { title:'Clôturer la soirée ?', okLabel:'Clôturer', danger:true }))) return;
   try {
-    const res = await apiPost('close_soiree',{},true);
+    const res = await apiPost('close_soiree',{});
     if (res.ok) renderAdmin();
     else await uiAlert(res.error || 'Erreur lors de la clôture.', { title:'Erreur' });
   } catch { await uiAlert('Erreur de connexion.', { title:'Erreur' }); }
 }
 
 document.getElementById('modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closeModal();});
-document.getElementById('pin-modal').addEventListener('click',e=>{if(e.target===e.currentTarget)closePinModal();});
 
 function esc(s){if(!s)return'';return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
 
@@ -1341,7 +1315,7 @@ async function saveOrgaList() {
   const list = ta.value.split('\n').map(s => s.trim()).filter(Boolean);
   note.textContent = 'Enregistrement…';
   try {
-    const r = await apiPost('set_orga', { organizers: list }, true);
+    const r = await apiPost('set_orga', { organizers: list });
     if (r.ok) { note.textContent = '✓ ' + (r.message || 'Enregistré'); ta.value = (r.organizers || []).join('\n'); }
     else note.textContent = 'Erreur : ' + r.error;
     setTimeout(() => note.textContent = '', 3000);
@@ -1355,7 +1329,7 @@ async function loadAssignBuilder() {
   const box = document.getElementById('assign-builder');
   box.innerHTML = '<div class="empty">Chargement…</div>';
   try {
-    const res = await fetch(`${API}?action=list&_t=${encodeURIComponent(APP_SECRET)}`);
+    const res = await fetch(`${API}?action=list`);
     const data = await res.json();
     const actions = document.getElementById('assign-actions');
     // Édition possible UNIQUEMENT si une soirée est OUVERTE (protège les compos clôturées)
@@ -1496,7 +1470,7 @@ async function saveAssign() {
   const note = document.getElementById('assign-save-note');
   note.textContent = 'Enregistrement…';
   try {
-    const res = await apiPost('save_assign', { assignation: cleanCompo(currentCompo) }, true);
+    const res = await apiPost('save_assign', { assignation: cleanCompo(currentCompo) });
     note.textContent = res.ok ? '✓ Compo enregistrée' : ('Erreur : ' + res.error);
     setTimeout(() => note.textContent = '', 3000);
   } catch { note.textContent = 'Erreur de connexion.'; }
@@ -1663,7 +1637,7 @@ async function loadHistory() {
   const box = document.getElementById('histo-list');
   box.innerHTML = '<div class="empty">Chargement…</div>';
   try {
-    const res = await fetch(`${API}?action=history&_t=${encodeURIComponent(APP_SECRET)}`);
+    const res = await fetch(`${API}?action=history`);
     const data = await res.json();
     if (!data.ok || !data.sorties.length) { box.innerHTML = '<div class="empty">Aucune sortie enregistrée.</div>'; return; }
     box.innerHTML = data.sorties.map(s => `
@@ -1687,7 +1661,7 @@ async function loadHistory() {
 async function deleteSortie(sid) {
   if (!(await uiConfirm('Supprimer définitivement cette sortie et tous ses retours ? Action irréversible.', { title:'Supprimer la sortie', okLabel:'Supprimer', danger:true }))) return;
   try {
-    const r = await apiPost('delete_sortie', { sid }, true);
+    const r = await apiPost('delete_sortie', { sid });
     if (r.ok) { loadHistory(); }
     else await uiAlert(r.error || 'Erreur lors de la suppression.', { title:'Erreur' });
   } catch { await uiAlert('Erreur de connexion.', { title:'Erreur' }); }
@@ -1697,7 +1671,7 @@ async function openHistoDetail(sid) {
   const box = document.getElementById('histo-list');
   box.innerHTML = '<div class="empty">Chargement…</div>';
   try {
-    const res = await fetch(`${API}?action=sortie_detail&sid=${encodeURIComponent(sid)}&_t=${encodeURIComponent(APP_SECRET)}`);
+    const res = await fetch(`${API}?action=sortie_detail&sid=${encodeURIComponent(sid)}`);
     const data = await res.json();
     if (!data.ok) { box.innerHTML = '<div class="empty">Sortie introuvable.</div>'; return; }
     const s = data.sortie;

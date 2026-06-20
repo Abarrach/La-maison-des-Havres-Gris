@@ -211,6 +211,9 @@
     .orga-name.vide { color:var(--text-faint); font-weight:400; font-style:italic; }
     .orga-binome-tag { display:inline-block; font-size:.62rem; background:var(--accent-glow); border:1px solid var(--accent-dim); color:var(--accent); padding:.1rem .4rem; border-radius:2px; margin-right:.5rem; font-weight:700; }
     .orga-empty { text-align:center; padding:3rem 1rem; color:var(--text-muted); font-size:.9rem; line-height:1.7; }
+    .orga-picker { display:flex; align-items:center; gap:.65rem; flex-wrap:wrap; margin-bottom:1.25rem; }
+    .orga-picker label { font-size:.7rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--text-muted); }
+    .orga-picker select { flex:1; min-width:220px; max-width:480px; }
 
     /* ASSIGNATION — groupe à distance + groupes en jeu */
     .assign-hint { font-size:.7rem; color:var(--text-faint); font-style:italic; margin-bottom:.7rem; line-height:1.5; }
@@ -701,8 +704,9 @@
     <!-- SOUS-VUE ASSIGNATION -->
     <div id="atab-assign" class="atab">
       <div id="assign-builder"></div>
-      <div style="display:flex;gap:.5rem;margin-top:1rem;flex-wrap:wrap">
+      <div id="assign-actions" style="display:flex;gap:.5rem;margin-top:1rem;flex-wrap:wrap">
         <button class="btn btn-accent" onclick="saveAssign()">💾 Enregistrer la compo</button>
+        <button class="btn btn-danger" onclick="resetCompo()">↺ Réinitialiser</button>
         <span id="assign-save-note" style="font-size:.72rem;color:var(--text-faint);align-self:center"></span>
       </div>
     </div>
@@ -1313,8 +1317,16 @@ async function loadAssignBuilder() {
   try {
     const res = await fetch(`${API}?action=list&_t=${encodeURIComponent(APP_SECRET)}`);
     const data = await res.json();
-    if (!data.ok) { box.innerHTML = '<div class="empty">Crée d\'abord une soirée.</div>'; return; }
-    currentCompo = normalizeCompo((data.sortie && data.sortie.assignation) ? data.sortie.assignation : emptyCompo());
+    const actions = document.getElementById('assign-actions');
+    // Édition possible UNIQUEMENT si une soirée est OUVERTE (protège les compos clôturées)
+    if (!data.ok || !data.sortie || data.sortie.statut !== 'ouverte') {
+      currentCompo = null;
+      if (actions) actions.style.display = 'none';
+      box.innerHTML = '<div class="empty">Aucune soirée ouverte.<br>Crée ou ouvre une soirée pour préparer la compo.<br><span style="font-size:.78rem">(les compos des sorties clôturées se consultent dans l\'Historique)</span></div>';
+      return;
+    }
+    if (actions) actions.style.display = 'flex';
+    currentCompo = normalizeCompo(data.sortie.assignation ? data.sortie.assignation : emptyCompo());
     renderAssignBuilder();
   } catch { box.innerHTML = '<div class="empty">Erreur de connexion.</div>'; }
 }
@@ -1450,6 +1462,14 @@ async function saveAssign() {
   } catch { note.textContent = 'Erreur de connexion.'; }
 }
 
+// Vide la compo en cours (rôles + groupes) et l'enregistre
+async function resetCompo() {
+  if (!(await uiConfirm('Vider tous les rôles et groupes de la compo en cours ? La compo vide sera enregistrée.', { title:'Réinitialiser la compo', okLabel:'Réinitialiser', danger:true }))) return;
+  currentCompo = emptyCompo();
+  renderAssignBuilder();
+  saveAssign();
+}
+
 // ============================================================
 // VUE ORGANISATION (joueur, lecture seule)
 // ============================================================
@@ -1460,26 +1480,53 @@ async function renderOrga() {
   content.innerHTML = '';
 
   try {
-    const res = await fetch(`${API}?action=get_assign`);
+    const res = await fetch(`${API}?action=public_history`);
     const data = await res.json();
-    if (!data.ok) {
-      document.getElementById('orga-titre').textContent = 'Aucune soirée active';
+    if (!data.ok || !data.sorties.length) {
+      document.getElementById('orga-titre').textContent = 'Organisation';
       document.getElementById('orga-sub').textContent = '';
       content.innerHTML = '<div class="orga-empty">Aucune sortie organisée pour le moment.<br>L\'organisateur n\'a pas encore créé de soirée.</div>';
       return;
     }
-    document.getElementById('orga-titre').textContent = data.soiree.titre;
-    document.getElementById('orga-sub').textContent = data.soiree.date + (data.soiree.zone ? ' — ' + data.soiree.zone : '');
+    document.getElementById('orga-titre').textContent = 'Organisation des raids';
+    const open = data.sorties.find(s => s.statut === 'ouverte');
+    document.getElementById('orga-sub').textContent = open ? 'Raid en préparation affiché ci-dessous' : 'Sélectionne un raid pour voir sa composition';
 
-    if (!data.assignation) {
-      content.innerHTML = '<div class="orga-empty">La composition n\'a pas encore été définie.<br>Reviens un peu avant la sortie.</div>';
-      return;
-    }
-    content.innerHTML = renderCompoReadonly(data.assignation);
+    // Menu déroulant (reste lisible quel que soit le nombre de raids)
+    let h = `<div class="orga-picker"><label for="orga-select">Voir un raid :</label>
+      <select id="orga-select" onchange="showOrgaSortie(this.value)">
+        <option value="">— Sélectionne un raid —</option>`;
+    data.sorties.forEach(s => {
+      const lbl = `${s.titre} — ${s.date}${s.statut === 'ouverte' ? ' (en préparation)' : ''}`;
+      h += `<option value="${escAttr(s.id)}"${open && s.id === open.id ? ' selected' : ''}>${esc(lbl)}</option>`;
+    });
+    h += `</select></div><div id="orga-compo"></div>`;
+    content.innerHTML = h;
+
+    // Affichage auto UNIQUEMENT s'il y a un raid en préparation ; sinon page vide
+    if (open) showOrgaSortie(open.id);
   } catch {
     document.getElementById('orga-titre').textContent = 'Erreur';
     content.innerHTML = '<div class="orga-empty">Impossible de joindre le serveur.</div>';
   }
+}
+
+// Affiche la compo d'un raid donné (vue publique, compo seule). sid vide → page vide.
+async function showOrgaSortie(sid) {
+  const box = document.getElementById('orga-compo');
+  if (!box) return;
+  if (!sid) { box.innerHTML = ''; return; }
+  box.innerHTML = '<div class="orga-empty">Chargement…</div>';
+  try {
+    const res = await fetch(`${API}?action=public_sortie&sid=${encodeURIComponent(sid)}`);
+    const data = await res.json();
+    if (!data.ok) { box.innerHTML = '<div class="orga-empty">Sortie introuvable.</div>'; return; }
+    const meta = data.soiree.date + (data.soiree.zone ? ' — ' + data.soiree.zone : '') + (data.soiree.statut !== 'ouverte' ? ' · clôturée' : '');
+    let h = `<div class="orga-header"><div class="orga-title">${esc(data.soiree.titre)}</div><div class="orga-sub">${esc(meta)}</div></div>`;
+    h += data.assignation ? renderCompoReadonly(data.assignation)
+                          : '<div class="orga-empty">Composition non définie pour ce raid.</div>';
+    box.innerHTML = h;
+  } catch { box.innerHTML = '<div class="orga-empty">Erreur de connexion.</div>'; }
 }
 
 function orgaName(v) { return v && v.trim() ? `<span class="orga-name">${esc(v)}</span>` : '<span class="orga-name vide">— non assigné —</span>'; }
@@ -1589,10 +1636,21 @@ async function loadHistory() {
             <span class="histo-badge histo-badge-nb">${s.nb} retour${s.nb>1?'s':''}</span>
             ${s.a_compo?'<span class="histo-badge histo-badge-nb">compo ✓</span>':''}
             ${s.a_analyse?'<span class="histo-badge histo-badge-note">analyse ✓</span>':''}
+            <button class="btn-mini btn-mini-del" onclick="event.stopPropagation();deleteSortie('${s.id}')" title="Supprimer cette sortie">✕</button>
           </div>
         </div>
       </div>`).join('');
   } catch { box.innerHTML = '<div class="empty">Erreur de connexion.</div>'; }
+}
+
+// Supprime une sortie (admin — historique)
+async function deleteSortie(sid) {
+  if (!(await uiConfirm('Supprimer définitivement cette sortie et tous ses retours ? Action irréversible.', { title:'Supprimer la sortie', okLabel:'Supprimer', danger:true }))) return;
+  try {
+    const r = await apiPost('delete_sortie', { sid }, true);
+    if (r.ok) { loadHistory(); }
+    else await uiAlert(r.error || 'Erreur lors de la suppression.', { title:'Erreur' });
+  } catch { await uiAlert('Erreur de connexion.', { title:'Erreur' }); }
 }
 
 async function openHistoDetail(sid) {

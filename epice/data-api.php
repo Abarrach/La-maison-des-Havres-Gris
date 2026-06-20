@@ -14,7 +14,7 @@ $raw   = file_get_contents('php://input');
 $input = json_decode($raw, true) ?? [];
 
 // Token : accepté depuis le header OU depuis le body (contournement filtre Apache)
-$admin_actions = ['list', 'new_soiree', 'close_soiree', 'save_assign', 'save_analyse', 'history', 'sortie_detail'];
+$admin_actions = ['list', 'new_soiree', 'close_soiree', 'save_assign', 'save_analyse', 'history', 'sortie_detail', 'delete_sortie'];
 if (in_array($action, $admin_actions)) {
     $token = $_SERVER['mhg_2026_recolte_epice_xK9p'] ?? $input['_token'] ?? $_GET['_t'] ?? '';
     if ($token !== APP_SECRET) {
@@ -179,11 +179,12 @@ switch ($action) {
         write_data($d);
         out(true, ['message' => 'Soirée clôturée']);
 
-    // Sauvegarder l'assignation des rôles (admin)
+    // Sauvegarder l'assignation des rôles (admin) — UNIQUEMENT si soirée ouverte (protège les compos clôturées)
     case 'save_assign':
         $d  = read_data();
-        $id = $d['soiree_active']['id'] ?? null;
-        if (!$id) out(false, [], 'Aucune soirée active');
+        $a  = $d['soiree_active'] ?? null;
+        $id = $a['id'] ?? null;
+        if (!$id || ($a['statut'] ?? '') !== 'ouverte') out(false, [], 'Aucune soirée ouverte — modification de compo impossible.');
         foreach ($d['sorties'] as &$s) {
             if ($s['id'] === $id) { $s['assignation'] = $input['assignation'] ?? []; break; }
         }
@@ -203,11 +204,12 @@ switch ($action) {
         write_data($d);
         out(true, ['message' => 'Analyse enregistrée']);
 
-    // Lire l'assignation de la soirée active (public — vue joueur)
+    // Lire l'assignation de la soirée active (public — vue joueur). UNIQUEMENT si ouverte.
     case 'get_assign':
         $d  = read_data();
-        $id = $d['soiree_active']['id'] ?? null;
-        if (!$id) out(false, [], 'Aucune soirée active');
+        $a  = $d['soiree_active'] ?? null;
+        $id = $a['id'] ?? null;
+        if (!$id || ($a['statut'] ?? '') !== 'ouverte') out(false, [], 'Aucune soirée active');
         foreach ($d['sorties'] as $s) {
             if ($s['id'] === $id) {
                 out(true, [
@@ -217,6 +219,35 @@ switch ($action) {
             }
         }
         out(false, [], 'Soirée introuvable');
+
+    // Historique PUBLIC (vue joueur) — liste assainie : AUCUN retour, note ni analyse
+    case 'public_history':
+        $d = read_data();
+        $resume = array_map(function($s) {
+            return [
+                'id'      => $s['id'],
+                'date'    => $s['date'],
+                'titre'   => $s['titre'],
+                'zone'    => $s['zone'] ?? '',
+                'statut'  => $s['statut'],
+                'a_compo' => !empty($s['assignation']),
+            ];
+        }, $d['sorties']);
+        out(true, ['sorties' => array_reverse($resume)]);
+
+    // Compo PUBLIQUE d'une sortie donnée (vue joueur) — compo seule, JAMAIS les retours/analyse
+    case 'public_sortie':
+        $sid = $_GET['sid'] ?? '';
+        $d   = read_data();
+        foreach ($d['sorties'] as $s) {
+            if ($s['id'] === $sid) {
+                out(true, [
+                    'soiree'      => ['titre'=>$s['titre'],'date'=>$s['date'],'zone'=>$s['zone'],'statut'=>$s['statut']],
+                    'assignation' => $s['assignation'] ?? null
+                ]);
+            }
+        }
+        out(false, [], 'Sortie introuvable');
 
     // Liste résumée de toutes les sorties (admin — historique)
     case 'history':
@@ -245,6 +276,21 @@ switch ($action) {
             if ($s['id'] === $sid) out(true, ['sortie' => $s]);
         }
         out(false, [], 'Sortie introuvable');
+
+    // Supprimer une sortie (admin — nettoyage / tests)
+    case 'delete_sortie':
+        $sid = trim($input['sid'] ?? ($_GET['sid'] ?? ''));
+        if (!$sid) out(false, [], 'ID manquant');
+        $d = read_data();
+        $before = count($d['sorties']);
+        $d['sorties'] = array_values(array_filter($d['sorties'], function($s) use ($sid) {
+            return ($s['id'] ?? '') !== $sid;
+        }));
+        if (count($d['sorties']) === $before) out(false, [], 'Sortie introuvable');
+        // Si on supprime la sortie active, on désactive
+        if (($d['soiree_active']['id'] ?? null) === $sid) $d['soiree_active'] = null;
+        write_data($d);
+        out(true, ['message' => 'Sortie supprimée']);
 
     default:
         out(false, [], 'Action inconnue : ' . htmlspecialchars($action));

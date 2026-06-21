@@ -21,8 +21,8 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 ## Fonctionnalités
 
 ### Menu Principal (`menu.html`)
-- Grille **2 rangées × 3 tuiles** (CSS Grid), responsive : 2 colonnes sur tablette, 1 sur mobile
-- 6 destinations : Cartographie, Métiers, Missions, Migration, Chroniques, Œil du Mentat
+- Grille de tuiles (CSS Grid), responsive : 2 colonnes sur tablette, 1 sur mobile
+- 8 destinations : Cartographie, Métiers, Missions, Migration, Chroniques, Œil du Mentat, Constructeur de Base, Retours de Soirée
 - Widget compte joueur et déconnexion accessibles depuis le menu
 
 ### Carte Interactive
@@ -34,7 +34,7 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 - Panneau d'administration pour approuver, modifier ou supprimer des bases
 
 #### Hagga — Gestion multi-sietchs
-- Liste fixe de **20 sietchs** (serveur Galacia)
+- Liste fixe de **25 sietchs** (serveur Galacia)
 - Sélecteur de sietch au-dessus de la carte pour filtrer la vue
 - **Boutons rapides** apparaissant uniquement pour les sietchs qui ont au moins une base
 - Bouton **Tous** en tête de barre : affiche toutes les bases d'un coup avec le total des joueurs
@@ -399,6 +399,18 @@ node import_building_data.js
 
 ---
 
+### Retours de Soirée — Épice (`epice/debrief.html`)
+Outil de **préparation, débrief et analyse** des sorties de récolte d'épice en zone PvP (doctrine 100 % aérienne, « personne au sol »). Quatre onglets : **Organisation**, **Manuel de combat**, **Retour joueur**, **Admin**.
+
+- **Organisation** (tout membre connecté) : menu déroulant des raids (page vide par défaut, auto-affichage du raid en préparation s'il existe) → composition en **lecture seule**. Distingue **« sur le terrain »** (rôles + placement, passagers Faucon compris) et **« groupes en jeu »** (groupes de **max 4** = ce que chacun voit sur la carte). Boussole cardinale pour la Défense, badges CS/CDR/CP. Un raid clôturé n'apparaît plus comme actif mais reste consultable.
+- **Manuel de combat** : doctrine de guilde (règles aériennes, DEADZONE, format des callouts, manœuvre Faucon, scénarios JAUNE / ORANGE / ROUGE, fiches de rôle).
+- **Retour joueur** : le joueur **choisit son pseudo** dans la liste des participants, note la soirée (cristaux + 4 axes) et coche points positifs / points noirs. **Un seul retour par pseudo, modifiable tant que la soirée n'est pas clôturée.**
+- **Admin (organisateurs)** : composition d'équipes (commandement, récolte, **défense cardinale ± Faucon**, groupe à distance non plafonné, **groupes en jeu** pré-remplissables), cycle de vie de la sortie (créer / clôturer / supprimer / réinitialiser la compo), synthèse des retours (moyennes par axe, points forts/faibles) et **analyse IA** (proxy `api-gemini.php` → Gemini) au format structuré, **sauvegardée et consultable** dans l'historique.
+- **Rôles** (auth serveur par session — voir *Authentification*) : *consultation* = membre connecté ; *organiser* = **admin OU organisateur** (pseudo listé dans `epice/data/organizers.json`, géré par les admins via le sous-onglet « Organisateurs ») ; un organisateur ne peut supprimer que **ses propres** sorties.
+- Stockage JSON (`epice/data/debriefs.json`) ; clé Gemini hors Git (`epice/config.php`) ; protection compo : édition possible uniquement si une soirée est ouverte.
+
+---
+
 ### Mon Compte (`account.html`)
 - **Widget compte joueur** présent dans toutes les pages : cercle avatar + pseudo, clic → page compte
 - Avatar personnalisable : grille de presets + upload personnel (redimensionné 200×200 px côté serveur via PHP GD, crop centré automatique)
@@ -417,6 +429,7 @@ node import_building_data.js
 - Gestion des utilisateurs (création, suppression, changement de rôle) via le panneau admin
 - L'administrateur principal (`Abarrach`) ne peut pas être rétrogradé
 - **Toutes les pages sont protégées** par `auth-guard.js` — tout accès direct sans session active redirige vers `index.html#login`
+- **Auth serveur (épice)** : les endpoints de l'outil *Retours de Soirée* vérifient la session PHP **côté serveur** (`epice/auth_epice.php`), pas seulement le garde client. Rôle **organisateur** = admin OU pseudo dans `epice/data/organizers.json`
 - La déconnexion efface la session localStorage et redirige vers la page de connexion
 
 ---
@@ -484,6 +497,14 @@ DuneMap/
 ├── tools/                # Scripts d'outillage (génération de données, Node.js)
 │   └── build_enriched_pieces.js  # Génère base_pieces_v2.json à partir des exports FModel
 │
+├── epice/                # Outil « Retours de Soirée »
+│   ├── debrief.html      # UI (Organisation / Manuel de combat / Retour joueur / Admin)
+│   ├── data-api.php      # CRUD sorties / retours / compo / analyse (stockage JSON)
+│   ├── api-gemini.php    # Proxy IA (analyse) → Gemini
+│   ├── auth_epice.php    # Auth serveur partagée (session + rôle organisateur)
+│   ├── config.example.php # Modèle de config (clé Gemini) — config.php hors Git
+│   └── data/             # debriefs.json + organizers.json (runtime, hors Git)
+│
 ├── avatars/              # Avatars presets + uploads joueurs (préfixe u_pseudo_)
 ├── uploads/              # Images des demandes de craft
 ├── images/               # Ressources statiques (404_bg.jpg, etc.)
@@ -522,6 +543,13 @@ chmod 775 avatars/ uploads/
 > ```
 > 0 * * * *  /home/dune/.venvs/dune_logger_env/bin/python /home/dune/dune_logger_all.py >> /home/dune/data/dune_logger_cron.log 2>&1
 > 0 3 * * 1  /home/dune/.venvs/dune_logger_env/bin/python /home/dune/dune_archiver.py >> /home/dune/data/archiver.log 2>&1
+> ```
+
+> [!IMPORTANT]
+> Outil **Retours de Soirée** (`epice/`) : copier `epice/config.example.php` → `epice/config.php` (clé Gemini, hors Git). `epice/data/` doit être inscriptible par PHP (`chmod 664 epice/data/*.json`, dossier `775`, propriétaire `dune:www-data`). Bloquer l'accès web direct au dossier de données dans la conf nginx :
+> ```nginx
+> location ^~ /epice/data/    { deny all; }
+> location ^~ /v2/epice/data/ { deny all; }
 > ```
 
 Accéder ensuite à `index.html` via le navigateur.

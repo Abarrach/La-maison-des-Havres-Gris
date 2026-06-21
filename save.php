@@ -349,15 +349,31 @@ switch ($action) {
 
     case 'getSettings':
         $settingsFile = __DIR__ . '/settings.json';
-        if (!file_exists($settingsFile)) writeJson($settingsFile, ['analytics_public' => false]);
-        echo json_encode(readJson($settingsFile));
+        if (!file_exists($settingsFile)) writeJson($settingsFile, ['pages' => new stdClass()]);
+        $settings = readJson($settingsFile);
+        if (!isset($settings['pages']) || !is_array($settings['pages'])) $settings['pages'] = [];
+
+        // Migration : ancien booléen analytics_public -> pages.analytics
+        // (true = ouvert à tous, false = restreint admin -> masqué pour les joueurs)
+        if (array_key_exists('analytics_public', $settings)) {
+            if (!isset($settings['pages']['analytics'])) {
+                $settings['pages']['analytics'] = $settings['analytics_public'] ? 'open' : 'hidden';
+            }
+            unset($settings['analytics_public']);
+            writeJson($settingsFile, $settings);
+        }
+
+        // Toujours renvoyer "pages" comme objet (et non tableau vide [])
+        if (empty($settings['pages'])) $settings['pages'] = new stdClass();
+        echo json_encode($settings);
         exit;
 
-    case 'updateSetting':
+    case 'updatePage':
         $adminUser = trim($data['adminUser'] ?? '');
         $key       = trim($data['key']       ?? '');
-        $value     = $data['value'] ?? null;
-        if ($adminUser === '' || $key === '' || $value === null) jerr("missing_data");
+        $status    = trim($data['status']    ?? '');
+        if ($adminUser === '' || $key === '') jerr("missing_data");
+        if (!in_array($status, ['open', 'hidden', 'wip'], true)) jerr("bad_status");
 
         // Vérification côté serveur : l'appelant doit être admin
         $usersFile = __DIR__ . '/users_SECURE_9x.json';
@@ -368,13 +384,11 @@ switch ($action) {
         }
         if ($callerRole !== 'admin') jerr("not_authorized", 403);
 
-        // Clés autorisées
-        $allowedKeys = ['analytics_public'];
-        if (!in_array($key, $allowedKeys)) jerr("unknown_key");
-
         $settingsFile = __DIR__ . '/settings.json';
         $settings = readJson($settingsFile);
-        $settings[$key] = (bool)$value;
+        if (!isset($settings['pages']) || !is_array($settings['pages'])) $settings['pages'] = [];
+        $settings['pages'][$key] = $status;
+        unset($settings['analytics_public']); // nettoyage post-migration
         if (!writeJson($settingsFile, $settings)) jerr("write_error", 500);
         echo json_encode(['ok' => true]);
         exit;

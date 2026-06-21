@@ -146,6 +146,42 @@
             transform: translateY(-3px); /* Le bouton monte légèrement */
         }
 
+        /* === CARTE « EN TRAVAUX » (joueurs) === */
+        .card-wip { cursor: default; }
+        .card-wip:hover {
+            transform: none;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.8);
+            border-color: #3d2b16;
+        }
+        .card-wip .card-content { opacity: 0.5; }
+        .card-wip .card-image { border-bottom-color: #7c5e2a; }
+        /* Image affichée quand en_travaux.png est absent : on grise la vignette d'origine */
+        .card-wip .card-image.wip-fallback { filter: grayscale(1) brightness(0.45); }
+
+        /* Rubans d'angle (joueurs : en travaux ; admins : en travaux / masquée) */
+        .wip-ribbon, .hidden-ribbon {
+            position: absolute; top: 14px; right: -38px;
+            transform: rotate(45deg);
+            font-weight: bold; font-size: 0.7em;
+            padding: 5px 44px; z-index: 4; letter-spacing: 1px; text-transform: uppercase;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+        }
+        .wip-ribbon    { background: linear-gradient(180deg, #c9912f 0%, #a9772a 100%); color: #1a1007; }
+        .hidden-ribbon { background: linear-gradient(180deg, #9a4a3a 0%, #6e2f24 100%); color: #f6e3c4; }
+
+        /* === INDICATEUR ADMIN « MASQUÉE » (la tuile reste cliquable) === */
+        .card-admin-hidden .card-image { filter: grayscale(0.85) brightness(0.5); transition: filter 0.3s; }
+        .card-admin-hidden:hover .card-image { filter: grayscale(0.4) brightness(0.7); }
+        .img-wrap { position: relative; line-height: 0; }
+        .hidden-eye {
+            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+            pointer-events: none; z-index: 3;
+        }
+        .hidden-eye svg {
+            width: 46px; height: 46px; fill: #cda434; opacity: 0.92;
+            filter: drop-shadow(0 2px 5px rgba(0,0,0,0.85));
+        }
+
         /* Le flex-wrap réduit le nombre de cartes par ligne automatiquement quand l'écran
            rétrécit (la dernière ligne reste centrée) — pas besoin de paliers de colonnes. */
 
@@ -175,100 +211,11 @@
 
     <div class="cards-top-spacer"></div>
 
-    <div class="cards-container">
-        
-        <a href="map.html" class="card">
-            <img src="cartes.jpg" onerror="this.src='intro.jpg'" alt="Cartographie" class="card-image">
-            <div class="card-content">
-                <div class="card-title">
-                    <svg class="icon" viewBox="0 0 24 24"><path d="M20.5 3l-.16.03L15 5.1 9 3 3.36 4.9c-.21.07-.36.25-.36.48V20.5c0 .28.22.5.5.5l.16-.03L9 18.9l6 2.1 5.64-1.9c.21-.07.36-.25.36-.48V3.5c0-.28-.22-.5-.5-.5zM15 19l-6-2.11V5l6 2.11V19z"/></svg>
-                    Cartographie
-                </div>
-                <div class="card-desc">Accès aux bases, ressources et stratégie territoriale.</div>
-            </div>
-        </a>
-
-        <a href="skills.html" class="card">
-            <img src="metiers.jpg" onerror="this.src='intro.jpg'" alt="Métiers" class="card-image">
-            <div class="card-content">
-                <div class="card-title">
-                    <svg class="icon" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.58 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-                    Métiers
-                </div>
-                <div class="card-desc">Simulateur de talents, optimisations et commandes de craft.</div>
-            </div>
-        </a>
-
-        <a href="planner.html" class="card">
-            <img src="missions.jpg" onerror="this.src='intro.jpg'" alt="Missions" class="card-image">
-            <div class="card-content">
-                <div class="card-title">
-                    <svg class="icon" viewBox="0 0 24 24"><path d="M6.92 5c.96 0 1.63.74 2.18 1.66l-2.4 2.4L4.85 7.21C5.23 5.92 6.09 5 6.92 5zM4.17 11.23l1.87-1.87 5.16 5.16L19.1 6.62c.4-.41.41-1.07 0-1.48l-1.3-1.31c-.41-.42-1.07-.42-1.48 0L9.43 10.72 7.11 8.4c.48-1.55 1.57-2.99 3.19-3.79 1.48-.73 3.69-.64 5.37 1.05l1.31 1.31c1.68 1.68 1.76 3.88 1.04 5.36-.81 1.64-2.26 2.74-3.82 3.22l-2.31-2.31-6.72 6.72c-.39.39-1.02.39-1.41 0l-2.83-2.83c-.39-.39-.39-1.02 0-1.41l3.24-4.49z"/></svg>
-                    Missions
-                </div>
-                <div class="card-desc">Planificateur de soirées Landsraad et gestion des groupes.</div>
-            </div>
-        </a>
-
-        <a href="migration.html" class="card">
-            <img src="migration.png" onerror="this.src='intro.jpg'" alt="Migration" class="card-image">
-            <div class="card-content">
-                <div class="card-title">
-                    <svg class="icon" viewBox="0 0 24 24"><path d="M21 3L3 10.53v.98l6.84 2.65L12.48 21h.98L21 3z"/></svg>
-                    Migration
-                </div>
-                <div class="card-desc">Coordinateur de déplacement de guilde vers Icarus — réservation et validation des sietchs.</div>
-            </div>
-        </a>
-
-        <a href="dune_chronologie.html" class="card">
-            <img src="menu_histoire.jpg" onerror="this.src='intro.jpg'" alt="Histoire" class="card-image">
-            <div class="card-content">
-                <div class="card-title">
-                    <svg class="icon" viewBox="0 0 24 24"><path d="M21 5c-1.11-.35-2.33-.5-3.5-.5-1.95 0-4.05.4-5.5 1.5-1.45-1.1-3.55-1.5-5.5-1.5S2.45 4.9 1 6v14.65c0 .25.25.5.5.5.1 0 .15-.05.25-.05C3.1 20.45 5.05 20 6.5 20c1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.3 4.75 1.05.1.05.15.05.25.05.25 0 .5-.25.5-.5V6c-.6-.45-1.25-.75-2-1zM21 18.5c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V8c1.35-.85 3.8-1.5 5.5-1.5 1.2 0 2.4.15 3.5.5v11.5z"/></svg>
-                    Chroniques
-                </div>
-                <div class="card-desc">Quinze mille ans d'histoire de l'univers de Dune (A. Odoardi).</div>
-            </div>
-        </a>
-
-        <a href="dune_analytics.html" class="card" id="card-analytics">
-            <img src="analytics.jpg" onerror="this.src='intro.jpg'" alt="Télémétrie" class="card-image">
-            <div class="card-content">
-                <div class="card-title">
-                    <svg class="icon" viewBox="0 0 24 24"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
-                    Œil du Mentat
-                </div>
-                <div class="card-desc">Télémétrie des mondes — population, sietches dominants et fluctuations temporelles.</div>
-            </div>
-        </a>
-
-        <a href="base_planner.html" class="card" id="card-base-planner">
-            <img src="planner.jpg" onerror="this.src='intro.jpg'" alt="Constructeur de Base" class="card-image">
-            <div class="card-content">
-                <div class="card-title">
-                    <svg class="icon" viewBox="0 0 24 24"><path d="M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3zm0 2.7l5 4.5V18h-2v-6H9v6H7v-7.8l5-4.5z"/></svg>
-                    Constructeur de Base
-                </div>
-                <div class="card-desc">Planifiez vos bases en 3D avant de bâtir in-game — pièces dataminées, claim multi-étages, partage de plans.</div>
-            </div>
-        </a>
-
-        <a href="epice/debrief.html" class="card" id="card-debrief">
-            <img src="debrief.jpg" onerror="this.src='intro.jpg'" alt="Retours de Soirée" class="card-image">
-            <div class="card-content">
-                <div class="card-title">
-                    <svg class="icon" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3h2v2h-2V6zm0 4h2v8h-2v-8zm-4-4h2v2H8V6zm0 4h2v8H8v-8zm-1 8H6V6h1v12zm9 0V6h2v12h-2z"/></svg>
-                    Activité Guilde
-                </div>
-                <div class="card-desc">Composition des équipes, débrief joueur, Tactique et synthèse des soirées épice.</div>
-            </div>
-        </a>
-
-    </div>
+    <div class="cards-container" id="cards-container"></div>
 
     <button class="logout-btn" onclick="logout()">Déconnexion</button>
 
+<script src="pages.js"></script>
 <script>
 function logout() {
     localStorage.removeItem("user");
@@ -276,19 +223,74 @@ function logout() {
     window.location.href = "index.html";
 }
 
-// Masque/grise la tuile analytiques si non accessible pour cet utilisateur
-(async function() {
-    const role = localStorage.getItem('role');
-    if (role === 'admin') return;
+// Échappe le texte injecté dans le HTML des cartes (titres/descriptions du registre)
+function esc(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+// Rendu du menu à partir du registre pages.js + état d'accès défini par les admins.
+// Admin : toutes les tuiles, cliquables (avec un badge indiquant l'état vu par les joueurs).
+// Joueur : open = normale ; hidden = absente ; wip = grisée, non cliquable, image « en travaux ».
+(async function renderMenu() {
+    const isAdmin = localStorage.getItem('role') === 'admin';
+    let pages = {};
     try {
         const r = await fetch('save.php', { method:'POST', headers:{'Content-Type':'application/json'},
             body: JSON.stringify({ action: 'getSettings' }) });
         const s = await r.json();
-        if (!s.analytics_public) {
-            const card = document.getElementById('card-analytics');
-            card.style.display = 'none';
-        }
+        pages = (s && s.pages) || {};
     } catch(e) {}
+
+    // Icône « œil barré » pour signaler aux admins une tuile masquée
+    const EYE_OFF = '<svg viewBox="0 0 24 24"><path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/></svg>';
+
+    const contentBlock = p => `
+        <div class="card-content">
+            <div class="card-title"><svg class="icon" viewBox="0 0 24 24">${p.icon}</svg>${esc(p.title)}</div>
+            <div class="card-desc">${esc(p.desc)}</div>
+        </div>`;
+
+    const wipImg = p => `<img src="en_travaux.png" onerror="this.onerror=null;this.src='${esc(p.img)}';this.classList.add('wip-fallback')" alt="${esc(p.title)}" class="card-image">`;
+
+    const inner = p => `
+        <img src="${esc(p.img)}" onerror="this.src='intro.jpg'" alt="${esc(p.title)}" class="card-image">${contentBlock(p)}`;
+
+    const html = (window.MENU_PAGES || []).map(p => {
+        const status = pages[p.key] || 'open';
+
+        // Admin : tout reste cliquable, mais masquée/en travaux sont signalées visuellement.
+        if (isAdmin) {
+            if (status === 'wip') {
+                return `<a href="${esc(p.href)}" class="card" data-page="${esc(p.key)}" title="En travaux (visible par toi seul·e)">
+                    <div class="wip-ribbon">En travaux</div>
+                    ${wipImg(p)}${contentBlock(p)}
+                </a>`;
+            }
+            if (status === 'hidden') {
+                return `<a href="${esc(p.href)}" class="card card-admin-hidden" data-page="${esc(p.key)}" title="Masquée pour les joueurs (visible par toi seul·e)">
+                    <div class="hidden-ribbon">Masquée</div>
+                    <div class="img-wrap">
+                        <img src="${esc(p.img)}" onerror="this.src='intro.jpg'" alt="${esc(p.title)}" class="card-image">
+                        <div class="hidden-eye">${EYE_OFF}</div>
+                    </div>
+                    ${contentBlock(p)}
+                </a>`;
+            }
+            return `<a href="${esc(p.href)}" class="card" data-page="${esc(p.key)}">${inner(p)}</a>`;
+        }
+
+        // Joueur
+        if (status === 'hidden') return '';
+        if (status === 'wip') {
+            return `<div class="card card-wip" data-page="${esc(p.key)}" title="En travaux">
+                <div class="wip-ribbon">En travaux</div>
+                ${wipImg(p)}${contentBlock(p)}
+            </div>`;
+        }
+        return `<a href="${esc(p.href)}" class="card" data-page="${esc(p.key)}">${inner(p)}</a>`;
+    }).join('');
+
+    document.getElementById('cards-container').innerHTML = html;
 })();
 </script>
 </body>

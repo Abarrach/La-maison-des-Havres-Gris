@@ -220,32 +220,7 @@
 </head>
 <body>
 <script src="auth-guard.js"></script>
-<script>
-(async function() {
-    const role = localStorage.getItem('role');
-    if (role === 'admin') return; // admin : accès immédiat
-    try {
-        const r = await fetch('save.php', { method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({ action: 'getSettings' }) });
-        const s = await r.json();
-        if (!s.analytics_public) {
-            document.body.innerHTML = `
-            <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;
-                height:100vh;background:#0a0603;color:#cda434;font-family:'Segoe UI',sans-serif;gap:20px;text-align:center;padding:20px;">
-                <div style="font-size:2.5rem;">🔒</div>
-                <div style="font-size:1.2rem;font-weight:600;text-transform:uppercase;letter-spacing:2px;">Accès restreint</div>
-                <div style="color:#888;font-size:0.9rem;">Cette section est réservée aux administrateurs.</div>
-                <a href="menu.html" style="margin-top:10px;padding:10px 28px;background:linear-gradient(to bottom,#a67c33,#6b4a25);
-                    border:1px solid #d4a23b;border-radius:4px;color:#1a1007;font-weight:bold;
-                    text-decoration:none;text-transform:uppercase;font-size:12px;">← Retour au menu</a>
-            </div>`;
-        }
-    } catch(e) {
-        // En cas d'erreur réseau, bloquer par sécurité
-        window.location.replace('menu.html');
-    }
-})();
-</script>
+<script src="page-guard.js" data-page="analytics"></script>
 
 <header>
     <div class="logo">

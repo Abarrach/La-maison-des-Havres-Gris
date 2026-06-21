@@ -21,8 +21,10 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 ## Fonctionnalités
 
 ### Menu Principal (`menu.html`)
-- Grille de tuiles (CSS Grid), responsive : 2 colonnes sur tablette, 1 sur mobile
+- Grille de tuiles (flex-wrap), responsive : la dernière ligne reste centrée, 1 colonne sur mobile
 - 8 destinations : Cartographie, Métiers, Missions, Migration, Chroniques, Œil du Mentat, Constructeur de Base, Retours de Soirée
+- **Tuiles générées depuis le registre central `pages.js`** — ajouter une page = une seule entrée, elle apparaît automatiquement dans le menu **et** dans la gestion des accès (Mon Compte)
+- **Accès par tuile** (défini par les admins, voir Mon Compte) : *active* (visible/cliquable), *pas active* (masquée pour les joueurs), *en travaux* (grisée + image `en_travaux.png` + non cliquable). Les admins voient et accèdent à tout en permanence, mais les tuiles non standard sont **signalées visuellement** : *en travaux* → ruban + image `en_travaux.png` ; *masquée* → vignette désaturée, icône œil barré et ruban « Masquée »
 - Widget compte joueur et déconnexion accessibles depuis le menu
 
 ### Carte Interactive
@@ -105,10 +107,9 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 - Référence historique et narrative pour les joueurs
 
 ### Télémétrie des Mondes (`dune_analytics.html`)
-- **Accès restreint par défaut** : visible uniquement par les administrateurs
-- L'admin peut ouvrir l'accès aux membres via le toggle **📊 Analytiques membres** dans le panneau ⚙️ de la carte (🔒 Restreint / ✅ Ouvert) — vérifié côté serveur
-- La tuile est masquée sur le menu pour les membres non autorisés
-- Le flag est persisté dans `settings.json` (doit être en `664` sur le serveur)
+- **Accès géré comme toutes les autres tuiles** depuis **Mon Compte > Gestion des pages** (clé `analytics`) : *active* / *pas active* / *en travaux*. L'ancien toggle « 📊 Analytiques membres » du panneau ⚙️ de la carte a été retiré ; l'ancien flag booléen `analytics_public` est migré automatiquement vers `pages.analytics` au premier appel de `getSettings`
+- La tuile est masquée (ou grisée) sur le menu pour les joueurs selon l'état choisi ; l'accès direct par URL est bloqué par `page-guard.js`
+- L'état est persisté dans `settings.json` → `pages.analytics` (le fichier doit être en `664` sur le serveur)
 - Chargement automatique du fichier `dune_counts.csv` (ou import manuel par glisser-déposer)
 - **Disclaimer** : bandeau précisant que les données proviennent de Gaming Tools, couvrent uniquement les **serveurs européens** (guilde française) et les joueurs présents dans Hagga Basin (hors Deep Desert)
 - KPIs : monde le plus peuplé, pic d'affluence (d'un monde), sietch dominant, **tendance** (évolution sur la fenêtre courante vs la même durée précédente, calculée sur le **total** de connectés, label dynamique)
@@ -419,6 +420,7 @@ Outil de **préparation, débrief et analyse** des sorties de récolte d'épice 
 - Changement de mot de passe sécurisé
 - **Stats** : bases placées, destinations signalées, rang
 - **Historique commandes** : tuiles dépliantes « Commandes passées » (avec statut : en attente / en cours / terminé) et « Services rendus » (demandes fulfillées par le joueur)
+- **Gestion des pages (admin uniquement)** : section listant toutes les tuiles du registre `pages.js`, chacune réglable sur *Active* / *Pas active* / *En travaux*. L'état est stocké dans `settings.json` (`pages.<clé>`) via `save.php` (action `updatePage`, validation admin côté serveur). Chaque page applique son état à l'accès direct par URL grâce à `page-guard.js` (les joueurs sont bloqués sur une page *pas active* ou *en travaux*, les admins jamais)
 
 ---
 
@@ -471,6 +473,8 @@ DuneMap/
 ├── migration.js          # Logique de migration (validation, refus, Discord)
 ├── base_planner.js       # Logique 3D du Constructeur de Base (Three.js, moteur sockets, ~6150 lignes)
 ├── auth-guard.js         # Protection des pages (redirection login si non connecté)
+├── pages.js              # Registre central des tuiles du menu (clé, lien, image, icône, titre) — source unique
+├── page-guard.js         # Garde d'accès par page (bloque hidden/wip pour les joueurs ; admin = accès total)
 │
 ├── save.php              # API principale (bases, utilisateurs, craft, commandes)
 ├── auth.php              # Authentification

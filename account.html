@@ -219,11 +219,33 @@
     .order-meta  { color: #5a4a2a; font-size: 0.72em; margin-top: 3px; }
     .order-empty { color: #555; font-size: 0.82em; text-align: center; padding: 20px; }
 
+    /* === GESTION DES PAGES (admin) === */
+    .pg-intro { color: #888; font-size: 0.8em; margin: -8px 0 18px; line-height: 1.5; }
+    .pg-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 11px 0; border-bottom: 1px solid #1e1208;
+    }
+    .pg-row:last-child { border-bottom: none; }
+    .pg-name { color: #f5deb3; font-size: 0.9em; }
+    .pg-states { display: flex; gap: 6px; flex-shrink: 0; }
+    .pg-state-btn {
+      background: #1a0f05; border: 1px solid #3d2b16; color: #888;
+      font-size: 0.72em; padding: 6px 11px; border-radius: 3px; cursor: pointer;
+      text-transform: uppercase; letter-spacing: .5px; transition: all .15s; white-space: nowrap;
+    }
+    .pg-state-btn:hover { border-color: #7c5e2a; color: #ccc; }
+    .pg-state-btn.active { border-color: #cda434; color: #cda434; background: rgba(205,164,52,0.12); font-weight: bold; }
+    .pg-state-btn.active[data-state="hidden"] { border-color: #a83b3b; color: #ff8888; background: rgba(168,59,59,0.12); }
+    .pg-state-btn.active[data-state="wip"]    { border-color: #c9912f; color: #e0a93c; background: rgba(201,145,47,0.12); }
+
     @media(max-width: 500px) {
       .stats-grid { grid-template-columns: 1fr 1fr; }
       .stat-card:last-child { grid-column: span 2; }
       .av-grid { grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); }
       .av-item { width: 60px; height: 60px; }
+      .pg-row { flex-direction: column; align-items: flex-start; gap: 8px; }
+      .pg-states { width: 100%; }
+      .pg-state-btn { flex: 1; text-align: center; }
     }
   </style>
 </head>
@@ -320,6 +342,19 @@
     <div class="msg-err" id="pwd-err"></div>
   </div>
 
+  <!-- Gestion des pages (admin uniquement) -->
+  <div class="section" id="pages-admin-section" style="display:none;">
+    <div class="section-title">Gestion des pages</div>
+    <p class="pg-intro">
+      Définissez la visibilité de chaque tuile du menu pour les joueurs.<br>
+      <strong style="color:#cda434;">Active</strong> : visible et accessible.
+      <strong style="color:#ff8888;">Pas active</strong> : n'apparaît pas.
+      <strong style="color:#e0a93c;">En travaux</strong> : grisée et non cliquable.<br>
+      Les administrateurs voient et accèdent à tout, en permanence.
+    </p>
+    <div id="pages-admin-list"><div class="order-empty">Chargement…</div></div>
+  </div>
+
 </div>
 
 <!-- ====== MODAL AVATAR PICKER ====== -->
@@ -366,6 +401,7 @@
   </div>
 </div>
 
+<script src="pages.js"></script>
 <script>
 const currentUser = localStorage.getItem("user") || "";
 let currentAvatarPath = "";
@@ -649,10 +685,56 @@ function renderOrderPanel(which) {
   }).join("");
 }
 
+// ====== GESTION DES PAGES (admin) ======
+const PG_STATES = [["open", "Active"], ["hidden", "Pas active"], ["wip", "En travaux"]];
+
+async function loadPagesAdmin() {
+  if (localStorage.getItem("role") !== "admin") return;
+  const section = document.getElementById("pages-admin-section");
+  section.style.display = "block";
+
+  let pages = {};
+  try {
+    const res = await fetch("save.php", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ action: "getSettings" }) });
+    const s = await res.json();
+    pages = (s && s.pages) || {};
+  } catch(e) {}
+
+  const list = document.getElementById("pages-admin-list");
+  const reg = window.MENU_PAGES || [];
+  if (!reg.length) { list.innerHTML = '<div class="order-empty">Aucune page enregistrée.</div>'; return; }
+
+  list.innerHTML = reg.map(p => {
+    const cur = pages[p.key] || "open";
+    const btns = PG_STATES.map(([v, l]) =>
+      `<button class="pg-state-btn${v === cur ? " active" : ""}" data-state="${v}" onclick="setPageState('${p.key}','${v}',this)">${l}</button>`
+    ).join("");
+    return `<div class="pg-row"><span class="pg-name">${p.title}</span><div class="pg-states">${btns}</div></div>`;
+  }).join("");
+}
+
+async function setPageState(key, state, btn) {
+  const group = btn.parentNode;
+  const prev = group.querySelector(".pg-state-btn.active");
+  if (prev === btn) return;
+  group.querySelectorAll(".pg-state-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  try {
+    const res = await fetch("save.php", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ action: "updatePage", adminUser: currentUser, key, status: state }) });
+    const j = await res.json();
+    if (!j.ok) throw new Error(j.error || "Erreur serveur");
+  } catch(e) {
+    group.querySelectorAll(".pg-state-btn").forEach(b => b.classList.remove("active"));
+    if (prev) prev.classList.add("active");
+    alert("Échec de l'enregistrement : " + e.message);
+  }
+}
+
 initPage();
 loadStats();
 loadProfile();
 loadOrderHistory();
+loadPagesAdmin();
 </script>
 </body>
 </html>

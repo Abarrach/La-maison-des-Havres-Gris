@@ -410,6 +410,16 @@ Outil de **préparation, débrief et analyse** des sorties de récolte d'épice 
 - **Rôles** (auth serveur par session — voir *Authentification*) : *consultation* = membre connecté ; *organiser* = **admin OU organisateur** (pseudo listé dans `epice/data/organizers.json`, géré par les admins via le sous-onglet « Organisateurs ») ; un organisateur ne peut supprimer que **ses propres** sorties.
 - Stockage JSON (`epice/data/debriefs.json`) ; clé Gemini hors Git (`epice/config.php`) ; protection compo : édition possible uniquement si une soirée est ouverte.
 
+#### Bot Sorties Discord (`epice/discord_sortie.php`)
+Créer une sortie épice **directement depuis Discord** et gérer les inscriptions par poste, synchronisées avec l'outil ci-dessus (même `debriefs.json`).
+- **Architecture** : endpoint HTTP d'**interactions Discord** en pur PHP (aucun démon/bot permanent). Discord POST sur `epice/discord_sortie.php`, signature **Ed25519 vérifiée** (`sodium`) à chaque requête. Le bot apparaît « hors ligne » dans Discord, c'est normal (pas de connexion gateway).
+- **Types de sortie** : la commande `/sortie creer` propose un **type** (menu natif) : **Épice** (la seule liée au site), **Labo**, **Farm divers**, **Landsraad**. Épice utilise l'inscription **par poste** ; les autres types un **RSVP simple** (Présent / Peut-être / Absent) pour jauger l'intérêt.
+- **Flux** : `/sortie creer` → choix du type → formulaire (titre, date & heure, zone, **durée en heures**, description) → encart doré (bannière par type). Inscription épice via **menu déroulant de postes** (Moissonneur, Transporteur, Défenseur CaC, Pilote Ornithoptère, Présent) + boutons **❓ Peut-être / ✖️ Absent / Me désinscrire**. Le roster se met à jour en direct (`UPDATE_MESSAGE`). Le compteur `X inscrits` ne compte que les présents ; la durée s'affiche dans l'encart (`⏱️`).
+- **Gestion** : boutons **✏️ Modifier** (rouvre le formulaire pré-rempli → met à jour l'encart) et **🗑️ Supprimer** (confirmation → retire l'activité du store + supprime son message Discord), **réservés au créateur ET au staff** (Administrateur / Gérer le serveur / Gérer les messages / Expulser / Bannir / Modérer les membres). Les boutons sont visibles par tous (Discord ne sait pas masquer par utilisateur) mais un membre sans droit reçoit un refus privé.
+- **Données** : une sortie **épice** est ajoutée à `debriefs.json` (`source='discord'`, `type='epice'`, `signups[]` = `{id,name,poste,statut,ts}`) et devient la soirée active. Les **autres types** vont dans `epice/data/discord_sorties.json` (store séparé, gitignoré) et **ne touchent pas** au débrief. Côté `debrief.html`, l'Assignation propose les inscrits Discord via un **menu déroulant maison** (aux couleurs du site, filtrage à la frappe + navigation clavier) sur tous les champs de rôle ; un joueur **déjà placé n'est plus proposé ailleurs** (anti-doublon) ; saisie manuelle toujours possible. L'interface `debrief.html` est habillée façon **Dune Awakening** (cadres à équerres dorées, en-tête orné + devise, séparateurs en losange, titres Cinzel, champs à accent doré).
+- **Config** : `epice/discord_sortie_config.php` (**gitignoré** — `bot_token` secret ; `app_id`/`public_key` publics ; `guild_id` optionnel). Gabarit = `discord_sortie_config.example.php`.
+- **Mise en place** : `discord_register.php` (déclare la commande `/sortie`, à lancer une fois) ; `discord_probe.php` (sonde de diagnostic : sodium/cURL/config/droits — à supprimer après). Nécessite **HTTPS** sur le domaine (Let's Encrypt) car Discord refuse les URL `http`. URL d'interactions à déclarer dans le portail Discord (General Information → Interactions Endpoint URL).
+
 ---
 
 ### Mon Compte (`account.html`)
@@ -507,6 +517,10 @@ DuneMap/
 │   ├── api-gemini.php    # Proxy IA (analyse) → Gemini
 │   ├── auth_epice.php    # Auth serveur partagée (session + rôle organisateur)
 │   ├── config.example.php # Modèle de config (clé Gemini) — config.php hors Git
+│   ├── discord_sortie.php # Bot Sorties : endpoint interactions Discord (Ed25519)
+│   ├── discord_register.php # Déclare la commande /sortie (à lancer une fois)
+│   ├── discord_probe.php  # Sonde diagnostic (sodium/cURL/config) — à supprimer après
+│   ├── discord_sortie_config.example.php # Gabarit (bot_token) — config hors Git
 │   └── data/             # debriefs.json + organizers.json (runtime, hors Git)
 │
 ├── avatars/              # Avatars presets + uploads joueurs (préfixe u_pseudo_)

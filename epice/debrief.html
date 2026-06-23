@@ -65,6 +65,56 @@
     input:focus, textarea:focus { border-color:var(--accent-dim); }
     textarea { min-height:72px; line-height:1.55; }
 
+    /* Menu déroulant maison des inscrits (autocomplétion des rôles) */
+    .roster-pop { position:fixed; z-index:300; background:var(--surface-2); border:1px solid var(--accent-dim); border-radius:2px; max-height:230px; overflow-y:auto; box-shadow:0 10px 30px rgba(0,0,0,.55); display:none; }
+    .roster-pop.show { display:block; }
+    .roster-opt { display:flex; align-items:center; gap:.6rem; padding:.5rem .8rem; font-size:.85rem; color:var(--text); cursor:pointer; border-bottom:1px solid rgba(60,44,20,.4); }
+    .roster-opt:last-child { border-bottom:none; }
+    .roster-opt:hover, .roster-opt.active { background:var(--accent-glow); color:var(--accent); }
+    .roster-opt .ro-tag { margin-left:auto; font-size:.6rem; letter-spacing:.08em; text-transform:uppercase; color:var(--text-muted); border:1px solid var(--border); border-radius:2px; padding:.05rem .35rem; }
+    .roster-pop-empty { padding:.5rem .8rem; font-size:.78rem; color:var(--text-faint); font-style:italic; }
+    .roster-pop::-webkit-scrollbar { width:8px; }
+    .roster-pop::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
+
+    /* ============ HABILLAGE DUNE AWAKENING ============ */
+    /* Bande impériale sous la barre de nav : devise + filet à losanges */
+    .da-motto { text-align:center; font-size:.56rem; letter-spacing:.36em; text-transform:uppercase; color:var(--accent-dim); margin:.9rem 0 .15rem; }
+    .da-rule { display:flex; align-items:center; gap:.65rem; max-width:520px; margin:0 auto .2rem; padding:0 1.25rem; }
+    .da-rule .ln { height:1px; flex:1; background:linear-gradient(90deg,transparent,var(--accent-dim) 30%,var(--accent-dim) 70%,transparent); }
+    .da-rule .dia { color:var(--accent); font-size:.7rem; letter-spacing:.25em; }
+
+    /* En-tête : nom de guilde plus marqué + crest, séparateurs en losange */
+    .guild-name { font-size:.92rem !important; letter-spacing:.3em !important; }
+    .guild-name::before { content:"✦"; color:var(--accent); margin-right:.5rem; font-size:.85em; }
+    .nav-div { width:auto !important; height:auto !important; background:none !important; color:var(--accent-dim); display:flex; align-items:center; }
+    .nav-div::before { content:"◆"; font-size:.5rem; }
+
+    /* Onglet actif : petit losange doré sous l'onglet */
+    .nav-tab.active { position:relative; }
+    .nav-tab.active::after { content:""; position:absolute; left:50%; bottom:-6px; transform:translateX(-50%) rotate(45deg); width:6px; height:6px; background:var(--accent); }
+
+    /* Panneaux à cadre orné : équerres dorées aux 4 coins (pur CSS, 8 dégradés sur ::after) */
+    .block, .assign-group { position:relative; }
+    .block::after, .assign-group::after {
+      content:""; position:absolute; inset:-1px; pointer-events:none;
+      background:
+        linear-gradient(var(--accent),var(--accent)) left top/13px 2px no-repeat,
+        linear-gradient(var(--accent),var(--accent)) left top/2px 13px no-repeat,
+        linear-gradient(var(--accent),var(--accent)) right top/13px 2px no-repeat,
+        linear-gradient(var(--accent),var(--accent)) right top/2px 13px no-repeat,
+        linear-gradient(var(--accent),var(--accent)) left bottom/13px 2px no-repeat,
+        linear-gradient(var(--accent),var(--accent)) left bottom/2px 13px no-repeat,
+        linear-gradient(var(--accent),var(--accent)) right bottom/13px 2px no-repeat,
+        linear-gradient(var(--accent),var(--accent)) right bottom/2px 13px no-repeat;
+    }
+
+    /* Titres de section en Cinzel doré */
+    .block-label, .assign-group-title { font-family:'Cinzel',serif !important; }
+
+    /* Champs de saisie : barre d'accent dorée à gauche, vive au focus */
+    input[type="text"], input[type="password"], textarea, .pil-nom, .pil-pass, .roster-input { border-left:2px solid var(--accent-dim) !important; }
+    input[type="text"]:focus, input[type="password"]:focus, textarea:focus, .pil-nom:focus, .pil-pass:focus, .roster-input:focus { border-left-color:var(--accent) !important; }
+
     select {
       width:100%; background:var(--surface-2); border:1px solid var(--border); border-radius:2px;
       padding:.68rem .9rem; font-family:'Inter',sans-serif; font-size:.88rem; color:var(--text);
@@ -390,6 +440,10 @@
     <button class="nav-tab" id="tab-admin" onclick="switchView('admin',event)">Admin</button>
   </div>
 </nav>
+
+<!-- Bande impériale Dune Awakening -->
+<div class="da-motto">Unité · Discipline · Loyauté</div>
+<div class="da-rule"><span class="ln"></span><span class="dia">◇ ◆ ◇</span><span class="ln"></span></div>
 
 <!-- ===== VUE JOUEUR ===== -->
 <div id="view-joueur" class="view">
@@ -1286,6 +1340,7 @@ function normalizeCompo(c) {
 }
 
 let currentCompo = null;
+let currentSignups = []; // inscrits Discord de la sortie active (pour l'autocomplétion des rôles)
 
 // ============================================================
 // SOUS-ONGLETS ADMIN
@@ -1342,6 +1397,7 @@ async function loadAssignBuilder() {
     }
     if (actions) actions.style.display = 'flex';
     currentCompo = normalizeCompo(data.sortie.assignation ? data.sortie.assignation : emptyCompo());
+    currentSignups = Array.isArray(data.sortie.signups) ? data.sortie.signups : [];
     renderAssignBuilder();
   } catch { box.innerHTML = '<div class="empty">Erreur de connexion.</div>'; }
 }
@@ -1355,9 +1411,9 @@ function renderAssignBuilder() {
   h += `<div class="assign-group">
     <div class="assign-group-head"><span class="assign-group-title">⭐ Commandement</span></div>
     <div class="assign-hint">Saisis le même pseudo que dans son rôle (Transporteur, un cardinal…) pour que le badge CS/CDR/CP s'affiche dans l'Organisation.</div>
-    <div class="assign-slot"><span class="assign-slot-label">Chef de Sortie (CS)</span><input list="roster-dl" value="${escAttr(c.commandement.cs)}" oninput="currentCompo.commandement.cs=this.value"></div>
-    <div class="assign-slot"><span class="assign-slot-label">Chef Défense (CDR)</span><input list="roster-dl" value="${escAttr(c.commandement.cdr)}" oninput="currentCompo.commandement.cdr=this.value"></div>
-    <div class="assign-slot"><span class="assign-slot-label">Chef Patrouille (CP)</span><input list="roster-dl" value="${escAttr(c.commandement.cp)}" oninput="currentCompo.commandement.cp=this.value"></div>
+    <div class="assign-slot"><span class="assign-slot-label">Chef de Sortie (CS)</span><input class="roster-input" value="${escAttr(c.commandement.cs)}" oninput="currentCompo.commandement.cs=this.value"></div>
+    <div class="assign-slot"><span class="assign-slot-label">Chef Défense (CDR)</span><input class="roster-input" value="${escAttr(c.commandement.cdr)}" oninput="currentCompo.commandement.cdr=this.value"></div>
+    <div class="assign-slot"><span class="assign-slot-label">Chef Patrouille (CP)</span><input class="roster-input" value="${escAttr(c.commandement.cp)}" oninput="currentCompo.commandement.cp=this.value"></div>
   </div>`;
 
   // Groupes Récolte (dynamique)
@@ -1367,9 +1423,9 @@ function renderAssignBuilder() {
         <span class="assign-group-title">🟡 Groupe Récolte ${c.recolte.length > 1 ? (i+1) : ''}</span>
         ${c.recolte.length > 1 ? `<button class="btn-mini btn-mini-del" onclick="removeRecolte(${i})">✕ Retirer</button>` : ''}
       </div>
-      <div class="assign-slot"><span class="assign-slot-label">Transporteur</span><input value="${escAttr(g.transporteur)}" oninput="currentCompo.recolte[${i}].transporteur=this.value"></div>
-      <div class="assign-slot"><span class="assign-slot-label">Moissonneur</span><input value="${escAttr(g.moissonneur)}" oninput="currentCompo.recolte[${i}].moissonneur=this.value"></div>
-      <div class="assign-slot"><span class="assign-slot-label">Défenseur CAC</span><input value="${escAttr(g.defenseur_cac)}" oninput="currentCompo.recolte[${i}].defenseur_cac=this.value"></div>
+      <div class="assign-slot"><span class="assign-slot-label">Transporteur</span><input class="roster-input" value="${escAttr(g.transporteur)}" oninput="currentCompo.recolte[${i}].transporteur=this.value"></div>
+      <div class="assign-slot"><span class="assign-slot-label">Moissonneur</span><input class="roster-input" value="${escAttr(g.moissonneur)}" oninput="currentCompo.recolte[${i}].moissonneur=this.value"></div>
+      <div class="assign-slot"><span class="assign-slot-label">Défenseur CAC</span><input class="roster-input" value="${escAttr(g.defenseur_cac)}" oninput="currentCompo.recolte[${i}].defenseur_cac=this.value"></div>
     </div>`;
   });
   h += `<button class="btn-mini btn-mini-add" onclick="addRecolte()" style="margin-bottom:.85rem">+ Ajouter un groupe récolte</button>`;
@@ -1382,9 +1438,9 @@ function renderAssignBuilder() {
     const dd = c.defense[k];
     h += `<div class="assign-def">
       <span class="assign-slot-label">${lbl}</span>
-      <input class="pil-nom" value="${escAttr(dd.nom)}" oninput="currentCompo.defense.${k}.nom=this.value">
+      <input class="pil-nom roster-input" value="${escAttr(dd.nom)}" oninput="currentCompo.defense.${k}.nom=this.value">
       <button class="btn-faucon ${dd.faucon ? 'on' : ''}" onclick="toggleDefFaucon('${k}')" title="Désigner conducteur Faucon">✈ Faucon</button>
-      ${dd.faucon ? `<input class="pil-pass" placeholder="Passager (sur l'aile, non groupé)" value="${escAttr(dd.passager)}" oninput="currentCompo.defense.${k}.passager=this.value">` : ''}
+      ${dd.faucon ? `<input class="pil-pass roster-input" placeholder="Passager (sur l'aile, non groupé)" value="${escAttr(dd.passager)}" oninput="currentCompo.defense.${k}.passager=this.value">` : ''}
     </div>`;
   });
   h += `</div>`;
@@ -1395,10 +1451,10 @@ function renderAssignBuilder() {
     <div class="assign-hint">Seuls les pilotes comptent dans le groupe en jeu. Le passager d'un conducteur Faucon est sur l'aile — il n'est pas groupé.</div>`;
   c.distance.pilotes.forEach((p, i) => {
     h += `<div class="assign-pilote">
-      <input class="pil-nom" placeholder="Pilote ${i+1}" value="${escAttr(p.nom)}" oninput="currentCompo.distance.pilotes[${i}].nom=this.value">
+      <input class="pil-nom roster-input" placeholder="Pilote ${i+1}" value="${escAttr(p.nom)}" oninput="currentCompo.distance.pilotes[${i}].nom=this.value">
       <button class="btn-faucon ${p.faucon ? 'on' : ''}" onclick="toggleFaucon(${i})" title="Désigner conducteur Faucon">✈ Faucon</button>
       ${c.distance.pilotes.length > 1 ? `<button class="btn-mini btn-mini-del" onclick="removePilote(${i})">✕</button>` : '<span></span>'}
-      ${p.faucon ? `<input class="pil-pass" placeholder="Passager (sur l'aile, non groupé)" value="${escAttr(p.passager)}" oninput="currentCompo.distance.pilotes[${i}].passager=this.value">` : ''}
+      ${p.faucon ? `<input class="pil-pass roster-input" placeholder="Passager (sur l'aile, non groupé)" value="${escAttr(p.passager)}" oninput="currentCompo.distance.pilotes[${i}].passager=this.value">` : ''}
     </div>`;
   });
   h += `<button class="btn-mini btn-mini-add" onclick="addPilote()">+ Ajouter un pilote</button>`;
@@ -1410,14 +1466,13 @@ function renderAssignBuilder() {
       <span class="assign-group-title">🗺 Groupes en jeu (carte)</span>
       <button class="btn-mini btn-mini-add" onclick="prefillIngame()">⟳ Pré-remplir depuis les rôles</button>
     </div>
-    <div class="assign-hint">Max 4 par groupe. C'est ce que chaque joueur voit sur la carte (on ne voit que son propre groupe). Autocomplétion depuis les noms déjà saisis.</div>
-    <datalist id="roster-dl">${rosterNames(c).map(n => `<option value="${escAttr(n)}">`).join('')}</datalist>`;
+    <div class="assign-hint">Max 4 par groupe. C'est ce que chaque joueur voit sur la carte (on ne voit que son propre groupe). Les inscrits Discord non encore placés sont proposés.</div>`;
   c.ingame.forEach((g, gi) => {
     h += `<div class="ingame-card">
       <div class="ingame-head"><span class="ingame-title">Groupe ${gi+1}</span><button class="btn-mini btn-mini-del" onclick="removeIngame(${gi})">✕</button></div>
       <div class="ingame-slots">`;
     for (let s = 0; s < 4; s++) {
-      h += `<input list="roster-dl" placeholder="—" value="${escAttr((g.membres||[])[s] || '')}" oninput="setIngameMember(${gi},${s},this.value)">`;
+      h += `<input class="roster-input" placeholder="—" value="${escAttr((g.membres||[])[s] || '')}" oninput="setIngameMember(${gi},${s},this.value)">`;
     }
     h += `</div></div>`;
   });
@@ -1439,11 +1494,112 @@ function setIngameMember(gi, s, v) { const m = currentCompo.ingame[gi].membres; 
 // Liste dédupliquée de tous les joueurs nommés (récolte + défense + pilotes/passagers distance)
 function rosterNames(c) {
   const out = [];
+  // Inscrits Discord (hors « absent ») en premier, pour proposer directement ceux qui viennent.
+  (currentSignups || []).forEach(s => { if ((s.statut || 'present') !== 'absent' && s.name && s.name.trim()) out.push(s.name.trim()); });
   (c.recolte || []).forEach(g => ['transporteur','moissonneur','defenseur_cac'].forEach(k => { if (g[k] && g[k].trim()) out.push(g[k].trim()); }));
   ['nord','sud','est','ouest'].forEach(k => { const d = c.defense && c.defense[k]; if (d) { if (d.nom && d.nom.trim()) out.push(d.nom.trim()); if (d.passager && d.passager.trim()) out.push(d.passager.trim()); } });
   ((c.distance && c.distance.pilotes) || []).forEach(p => { if (p.nom && p.nom.trim()) out.push(p.nom.trim()); if (p.passager && p.passager.trim()) out.push(p.passager.trim()); });
   return [...new Set(out)];
 }
+
+// --- Menu déroulant maison des inscrits (style site + anti-doublon) ---
+// Remplace le <datalist> natif (non stylable) : propose les inscrits Discord
+// NON encore placés dans la compo, filtre à la frappe, clavier ↑/↓/Entrée.
+const rosterPop = (function () {
+  let pop = null, input = null, suppress = false, active = -1, hideTimer = null;
+  const POSTE_SHORT = { moissonneur:'Moiss.', transporteur:'Transp.', defenseur_cac:'CAC', pilote_orni:'Orni', present:'Présent' };
+
+  function ensure() {
+    if (pop) return pop;
+    pop = document.createElement('div');
+    pop.className = 'roster-pop';
+    document.body.appendChild(pop);
+    pop.addEventListener('mousedown', e => {
+      const o = e.target.closest('.roster-opt');
+      if (o) { e.preventDefault(); choose(o.dataset.name); } // preventDefault = garde le focus, pas de blur
+    });
+    return pop;
+  }
+
+  // Tous les pseudos déjà posés dans la compo (pour ne pas les reproposer ailleurs).
+  function usedNames() {
+    const c = currentCompo || {}, out = [];
+    ['cs','cdr','cp'].forEach(k => { const v = c.commandement && c.commandement[k]; if (v && v.trim()) out.push(v.trim().toLowerCase()); });
+    (c.recolte || []).forEach(g => ['transporteur','moissonneur','defenseur_cac'].forEach(k => { if (g[k] && g[k].trim()) out.push(g[k].trim().toLowerCase()); }));
+    ['nord','sud','est','ouest'].forEach(k => { const d = c.defense && c.defense[k]; if (d) { if (d.nom && d.nom.trim()) out.push(d.nom.trim().toLowerCase()); if (d.passager && d.passager.trim()) out.push(d.passager.trim().toLowerCase()); } });
+    ((c.distance && c.distance.pilotes) || []).forEach(p => { if (p.nom && p.nom.trim()) out.push(p.nom.trim().toLowerCase()); if (p.passager && p.passager.trim()) out.push(p.passager.trim().toLowerCase()); });
+    (c.ingame || []).forEach(g => (g.membres || []).forEach(m => { if (m && m.trim()) out.push(m.trim().toLowerCase()); }));
+    return new Set(out);
+  }
+
+  function candidates(curVal) {
+    const used = usedNames(), curL = (curVal || '').trim().toLowerCase(), seen = new Set(), list = [];
+    (currentSignups || []).forEach(s => {
+      if ((s.statut || 'present') === 'absent') return;           // les absents ne sont pas proposés
+      const n = (s.name || '').trim(); if (!n) return;
+      const nl = n.toLowerCase();
+      if (seen.has(nl)) return; seen.add(nl);
+      if (used.has(nl) && nl !== curL) return;                    // déjà placé ailleurs → masqué
+      list.push({ name: n, poste: s.poste || '' });
+    });
+    return list;
+  }
+
+  function render() {
+    const p = ensure();
+    let list = candidates(input.value);
+    const f = (input.value || '').trim().toLowerCase();
+    // Si le champ contient déjà un nom complet valide, on montre TOUS les dispos (pour re-choisir) ;
+    // sinon on filtre sur le texte tapé.
+    const exact = list.some(o => o.name.toLowerCase() === f);
+    if (f && !exact) list = list.filter(o => o.name.toLowerCase().includes(f));
+    active = -1;
+    p.innerHTML = list.map(o => `<div class="roster-opt" data-name="${escAttr(o.name)}"><span>${esc(o.name)}</span>${o.poste && POSTE_SHORT[o.poste] ? `<span class="ro-tag">${POSTE_SHORT[o.poste]}</span>` : ''}</div>`).join('');
+    return list.length;
+  }
+
+  function place() {
+    const r = input.getBoundingClientRect(), p = ensure();
+    p.style.left = r.left + 'px'; p.style.top = (r.bottom + 3) + 'px'; p.style.width = r.width + 'px';
+  }
+
+  function open(inp) {
+    if (suppress) return;
+    clearTimeout(hideTimer);             // annule un masquage différé (passage d'un champ à l'autre)
+    input = inp;
+    if (!render()) { hide(); return; }   // rien à proposer (ex: pas d'inscrits) → pas de menu
+    place(); ensure().classList.add('show');
+  }
+  function hide() { if (pop) pop.classList.remove('show'); active = -1; }
+  function scheduleHide() { clearTimeout(hideTimer); hideTimer = setTimeout(hide, 120); }
+  function choose(name) {
+    if (!input) return;
+    input.value = name;
+    suppress = true; input.dispatchEvent(new Event('input', { bubbles: true })); suppress = false; // met à jour currentCompo via l'oninput inline
+    hide();
+  }
+
+  document.addEventListener('focusin',  e => { if (e.target.matches && e.target.matches('.roster-input')) open(e.target); });
+  document.addEventListener('input',    e => { if (e.target.matches && e.target.matches('.roster-input')) open(e.target); });
+  document.addEventListener('focusout', e => { if (e.target.matches && e.target.matches('.roster-input')) scheduleHide(); });
+  document.addEventListener('keydown',  e => {
+    if (!pop || !pop.classList.contains('show')) return;
+    const els = [...pop.querySelectorAll('.roster-opt')];
+    if (e.key === 'Escape') { hide(); }
+    else if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && els.length) {
+      e.preventDefault();
+      active = (active + (e.key === 'ArrowDown' ? 1 : -1) + els.length) % els.length;
+      els.forEach((x, i) => x.classList.toggle('active', i === active));
+      els[active].scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter' && active >= 0 && els[active]) {
+      e.preventDefault(); choose(els[active].dataset.name);
+    }
+  });
+  window.addEventListener('scroll', hide, true);
+  window.addEventListener('resize', hide);
+
+  return { open, hide };
+})();
 
 function padTo4(a) { const b = a.slice(0,4); while (b.length < 4) b.push(''); return b; }
 

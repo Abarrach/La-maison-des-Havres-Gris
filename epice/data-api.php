@@ -12,7 +12,7 @@ $raw   = file_get_contents('php://input');
 $input = json_decode($raw, true) ?? [];
 
 // --- Contrôle d'accès serveur (basé sur la session du site, plus de token en dur) ---
-$organize_actions = ['list', 'new_soiree', 'close_soiree', 'save_assign', 'save_analyse', 'history', 'sortie_detail', 'delete_sortie'];
+$organize_actions = ['list', 'open_sorties', 'new_soiree', 'close_soiree', 'reopen_sortie', 'save_assign', 'save_analyse', 'history', 'sortie_detail', 'delete_sortie'];
 $member_actions   = ['init', 'get_assign', 'my_debrief', 'save_debrief', 'public_history', 'public_sortie', 'me'];
 $admin_only       = ['get_orga', 'set_orga'];
 if      (in_array($action, $admin_only, true))       epice_require_admin();
@@ -145,13 +145,43 @@ switch ($action) {
         write_data($d);
         out(true, ['message' => $updated ? 'Retour mis à jour' : 'Retour enregistré', 'updated' => $updated]);
 
+    // Charge UNE sortie pour l'assignation. ?sid=<id> ciblé, sinon la sortie active.
+    // Un organisateur ne peut charger que ses propres sorties (l'admin, toutes).
     case 'list':
-        $d  = read_data();
-        $id = $d['soiree_active']['id'] ?? null;
+        $d   = read_data();
+        $sid = trim($_GET['sid'] ?? ($input['sid'] ?? ''));
+        $id  = $sid !== '' ? $sid : ($d['soiree_active']['id'] ?? null);
         if (!$id) out(false, [], 'Aucune soirée active');
         $sortie = null;
-        foreach ($d['sorties'] as $s) { if ($s['id'] === $id) { $sortie = $s; break; } }
+        foreach ($d['sorties'] as $s) { if (($s['id'] ?? '') === $id) { $sortie = $s; break; } }
+        if (!$sortie) out(false, [], 'Sortie introuvable');
+        // Contrôle de propriété UNIQUEMENT pour un accès CIBLÉ (?sid=) : empêche un
+        // organisateur de charger la sortie d'un autre. La sortie « vedette » (sans
+        // sid) reste visible de tout organisateur (en-tête admin / synthèse retours).
+        if ($sid !== '' && !epice_owns_sortie($sortie))
+            out(false, [], 'Réservé au créateur de la sortie.');
         out(true, ['sortie' => $sortie]);
+
+    // Sorties OUVERTES assignables : admin = toutes ; organisateur = uniquement les siennes.
+    case 'open_sorties':
+        $d   = read_data();
+        $adm = (epice_role() === 'admin');
+        $activeId = $d['soiree_active']['id'] ?? null;
+        $list = [];
+        foreach ($d['sorties'] as $s) {
+            if (($s['statut'] ?? '') !== 'ouverte') continue;
+            $mine = epice_is_creator($s);
+            if (!$adm && !$mine) continue;
+            $list[] = [
+                'id'       => $s['id'] ?? '',
+                'titre'    => $s['titre'] ?? '',
+                'date'     => $s['date'] ?? '',
+                'createur' => $s['createur'] ?? '',
+                'mine'     => $mine,
+                'active'   => (($s['id'] ?? null) === $activeId),
+            ];
+        }
+        out(true, ['sorties' => $list, 'active_id' => $activeId]);
 
     case 'new_soiree':
         $titre = trim($input['titre'] ?? '');
@@ -161,28 +191,52 @@ switch ($action) {
         $zone     = trim($input['zone'] ?? '');
         $nouvelle = ['id'=>$id,'date'=>$date,'titre'=>$titre,'zone'=>$zone,'statut'=>'ouverte','debriefs'=>[],'createur'=>epice_user()];
         $d = read_data();
-        foreach ($d['sorties'] as &$s) { if ($s['statut']==='ouverte') $s['statut']='archivée'; }
+        // Multi-sorties : on N'ARCHIVE PLUS les autres (plusieurs ouvertes en parallèle).
         $d['sorties'][]     = $nouvelle;
         $d['soiree_active'] = ['id'=>$id,'date'=>$date,'titre'=>$titre,'zone'=>$zone,'statut'=>'ouverte'];
         write_data($d);
         out(true, ['soiree' => $nouvelle]);
 
+    // Clôture UNE sortie. ?sid ciblé, sinon la sortie active. Organisateur = les siennes seulement.
     case 'close_soiree':
-        $d = read_data();
-        foreach ($d['sorties'] as &$s) { if ($s['statut']==='ouverte') $s['statut']='archivée'; }
-        if ($d['soiree_active']) $d['soiree_active']['statut'] = 'archivée';
-        write_data($d);
-        out(true, ['message' => 'Soirée clôturée']);
-
-    // Sauvegarder l'assignation des rôles (admin) — UNIQUEMENT si soirée ouverte (protège les compos clôturées)
-    case 'save_assign':
-        $d  = read_data();
-        $a  = $d['soiree_active'] ?? null;
-        $id = $a['id'] ?? null;
-        if (!$id || ($a['statut'] ?? '') !== 'ouverte') out(false, [], 'Aucune soirée ouverte — modification de compo impossible.');
-        foreach ($d['sorties'] as &$s) {
-            if ($s['id'] === $id) { $s['assignation'] = $input['assignation'] ?? []; break; }
+        $d   = read_data();
+        $sid = trim($input['sid'] ?? ($_GET['sid'] ?? ''));
+        if ($sid === '') $sid = $d['soiree_active']['id'] ?? '';
+        if ($sid === '') out(false, [], 'Aucune sortie à clôturer.');
+        $target = null;
+        foreach ($d['sorties'] as $s) { if (($s['id'] ?? '') === $sid) { $target = $s; break; } }
+        if (!$target) out(false, [], 'Sortie introuvable.');
+        if (!epice_owns_sortie($target))
+            out(false, [], 'Tu ne peux clôturer que tes propres sorties.');
+        foreach ($d['sorties'] as &$s) { if (($s['id'] ?? '') === $sid) $s['statut'] = 'archivée'; }
+        unset($s);
+        // Si on clôture la sortie "vedette", on désigne la plus récente encore ouverte (ou rien).
+        if (($d['soiree_active']['id'] ?? null) === $sid) {
+            $d['soiree_active'] = null;
+            foreach (array_reverse($d['sorties']) as $s) {
+                if (($s['statut'] ?? '') === 'ouverte') {
+                    $d['soiree_active'] = ['id'=>$s['id'],'date'=>$s['date'] ?? '','titre'=>$s['titre'] ?? '','zone'=>$s['zone'] ?? '','statut'=>'ouverte'];
+                    break;
+                }
+            }
         }
+        write_data($d);
+        out(true, ['message' => 'Sortie clôturée']);
+
+    // Sauvegarder l'assignation des rôles. ?sid ciblé, sinon active. Ouverte + (admin OU créateur).
+    case 'save_assign':
+        $d   = read_data();
+        $sid = trim($input['sid'] ?? '');
+        if ($sid === '') $sid = $d['soiree_active']['id'] ?? '';
+        $target = null;
+        foreach ($d['sorties'] as $s) { if (($s['id'] ?? '') === $sid) { $target = $s; break; } }
+        if (!$target || ($target['statut'] ?? '') !== 'ouverte') out(false, [], 'Sortie introuvable ou non ouverte — modification impossible.');
+        if (!epice_owns_sortie($target))
+            out(false, [], 'Tu ne peux modifier que la compo de tes propres sorties.');
+        foreach ($d['sorties'] as &$s) {
+            if (($s['id'] ?? '') === $sid) { $s['assignation'] = $input['assignation'] ?? []; break; }
+        }
+        unset($s);
         write_data($d);
         out(true, ['message' => 'Assignation enregistrée']);
 
@@ -273,6 +327,23 @@ switch ($action) {
         }
         out(false, [], 'Sortie introuvable');
 
+    // Rouvrir une sortie archivée : elle redevient OUVERTE et la sortie « vedette »
+    // (assignation + retours possibles). Admin = toutes ; organisateur = les siennes.
+    case 'reopen_sortie':
+        $sid = trim($input['sid'] ?? ($_GET['sid'] ?? ''));
+        if ($sid === '') out(false, [], 'ID manquant');
+        $d = read_data();
+        $target = null;
+        foreach ($d['sorties'] as $s) { if (($s['id'] ?? '') === $sid) { $target = $s; break; } }
+        if (!$target) out(false, [], 'Sortie introuvable');
+        if (!epice_owns_sortie($target))
+            out(false, [], 'Tu ne peux rouvrir que tes propres sorties.');
+        foreach ($d['sorties'] as &$s) { if (($s['id'] ?? '') === $sid) $s['statut'] = 'ouverte'; }
+        unset($s);
+        $d['soiree_active'] = ['id'=>$target['id'],'date'=>$target['date'] ?? '','titre'=>$target['titre'] ?? '','zone'=>$target['zone'] ?? '','statut'=>'ouverte'];
+        write_data($d);
+        out(true, ['message' => 'Sortie rouverte']);
+
     // Supprimer une sortie (admin — nettoyage / tests)
     case 'delete_sortie':
         $sid = trim($input['sid'] ?? ($_GET['sid'] ?? ''));
@@ -282,7 +353,7 @@ switch ($action) {
         foreach ($d['sorties'] as $s) { if (($s['id'] ?? '') === $sid) { $target = $s; break; } }
         if (!$target) out(false, [], 'Sortie introuvable');
         // Un organisateur ne supprime QUE ses propres sorties ; l'admin peut tout supprimer
-        if (epice_role() !== 'admin' && strcasecmp($target['createur'] ?? '', epice_user() ?? '') !== 0)
+        if (!epice_owns_sortie($target))
             out(false, [], 'Tu ne peux supprimer que les sorties que tu as créées.');
         $d['sorties'] = array_values(array_filter($d['sorties'], function($s) use ($sid) {
             return ($s['id'] ?? '') !== $sid;

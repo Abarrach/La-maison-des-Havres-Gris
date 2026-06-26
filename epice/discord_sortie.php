@@ -50,7 +50,7 @@ const POSTE_ICON = [
 //  'postes' => true  : inscription par poste (menu déroulant). false : RSVP Présent/Peut-être/Absent.
 const SORTIE_TYPES = [
     'epice'     => ['label' => 'Épice',       'icon' => '🏜️', 'site' => true,  'postes' => true],
-    'labo'      => ['label' => 'Labo',        'icon' => '🧪', 'site' => false, 'postes' => false],
+    'labo'      => ['label' => 'Labos-Donjons', 'icon' => '🧪', 'site' => false, 'postes' => false],
     'farm'      => ['label' => 'Farm divers', 'icon' => '🔁', 'site' => false, 'postes' => false],
     'landsraad' => ['label' => 'Landsraad',   'icon' => '🏛️', 'site' => false, 'postes' => false],
 ];
@@ -219,10 +219,9 @@ function handle_create($body, $stype = 'epice') {
     ];
 
     if (sortie_type($stype)['site']) {
-        // ÉPICE : intégré à l'Activité Guilde → devient la soirée active (archive l'ancienne).
+        // ÉPICE : intégré à l'Activité Guilde. Multi-sorties : on N'ARCHIVE PLUS les
+        // autres ouvertes (plusieurs en parallèle) ; cette sortie devient la "vedette".
         $d = read_data();
-        foreach ($d['sorties'] as &$s) { if (($s['statut'] ?? '') === 'ouverte') $s['statut'] = 'archivée'; }
-        unset($s);
         $d['sorties'][]     = $sortie;
         $d['soiree_active'] = ['id'=>$sortie['id'],'date'=>$date,'titre'=>$titre,'zone'=>$sortie['zone'],'statut'=>'ouverte'];
         write_data($d);
@@ -365,6 +364,12 @@ function handle_edit_save($body, $sid) {
     if (!$sortie)                    respond_message("Cette activité n'existe plus.", true);
     if (!can_manage($body, $sortie)) respond_message("✋ Réservé à l'organisateur, aux modérateurs et aux admins.", true);
 
+    // Date/heure AVANT modification (pour détecter un changement → MP aux inscrits)
+    // + auteur de la modif (qu'on n'avertit pas lui-même).
+    $oldDate  = $sortie['date']  ?? '';
+    $oldHeure = $sortie['heure'] ?? '';
+    $editorId = interaction_user($body)['id'];
+
     $v = modal_values($body);
     $titre = trim($v['titre'] ?? '');
     if ($titre === '') respond_message("Le titre est obligatoire.", true);
@@ -389,8 +394,91 @@ function handle_edit_save($body, $sid) {
         write_data($d);
     }
 
+    // On répond à Discord (rafraîchit l'encart) AVANT d'envoyer les MP → on reste sous la limite de 3 s.
     echo json_encode(['type' => 7, 'data' => build_sortie_message($updated)]);
+
+    // MP aux inscrits si la DATE et/ou l'HEURE a changé — envoi en arrière-plan.
+    if ($oldDate !== $date || $oldHeure !== $heure) {
+        if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
+        notify_when_change($updated, $oldDate, $oldHeure, $editorId);
+    }
     exit;
+}
+
+// ============================================================
+//  NOTIFICATION MP — changement de date/heure d'une activité
+// ============================================================
+
+// Ouvre (ou récupère) le canal MP avec un utilisateur. Renvoie l'id du canal ou ''.
+function dm_open_channel($userId) {
+    global $CFG;
+    if (!$userId || empty($CFG['bot_token']) || !function_exists('curl_init')) return '';
+    $ch = curl_init('https://discord.com/api/v10/users/@me/channels');
+    curl_setopt_array($ch, [
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => json_encode(['recipient_id' => (string)$userId]),
+        CURLOPT_HTTPHEADER     => ['Authorization: Bot ' . $CFG['bot_token'], 'Content-Type: application/json'],
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CONNECTTIMEOUT => 3,
+        CURLOPT_TIMEOUT        => 5,
+    ]);
+    $resp = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    if ($code < 200 || $code >= 300) { dlog("dm_open_channel échec uid={$userId} HTTP {$code}"); return ''; }
+    $j = json_decode($resp, true);
+    return $j['id'] ?? '';
+}
+
+// Envoie un MP texte à un utilisateur. Silencieux : un échec (MP fermés, blocage…) est juste journalisé.
+function dm_send($userId, $content) {
+    global $CFG;
+    $chan = dm_open_channel($userId);
+    if (!$chan) return false;
+    $ch = curl_init("https://discord.com/api/v10/channels/{$chan}/messages");
+    curl_setopt_array($ch, [
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => json_encode(['content' => $content], JSON_UNESCAPED_UNICODE),
+        CURLOPT_HTTPHEADER     => ['Authorization: Bot ' . $CFG['bot_token'], 'Content-Type: application/json'],
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CONNECTTIMEOUT => 3,
+        CURLOPT_TIMEOUT        => 5,
+    ]);
+    $code = (curl_exec($ch) !== false) ? curl_getinfo($ch, CURLINFO_HTTP_CODE) : 0;
+    curl_close($ch);
+    if ($code < 200 || $code >= 300) { dlog("dm_send échec uid={$userId} HTTP {$code}"); return false; }
+    return true;
+}
+
+// Prévient par MP les inscrits d'un changement de date/heure.
+// Message différencié selon le statut (présent / peut-être / absent).
+// N'envoie rien à l'auteur de la modif. Un seul MP par personne.
+function notify_when_change($sortie, $oldDate, $oldHeure, $editorId) {
+    $titre   = $sortie['titre'] ?? 'la sortie';
+    $icon    = sortie_type($sortie['type'] ?? 'epice')['icon'] ?? '📌';
+    $newWhen = fmt_when($sortie);
+    $oldWhen = fmt_when(['date' => $oldDate, 'heure' => $oldHeure]);
+
+    $head = "{$icon} **L'activité « {$titre} » a été modifiée.**\n"
+          . "📅 Nouvelle date/heure : **{$newWhen}**"
+          . ($oldWhen !== '' ? "  _(avant : {$oldWhen})_" : '') . "\n\n";
+
+    $tail = [
+        'present' => "Tu étais inscrit comme **✅ Présent** : vérifie que le nouveau créneau te convient toujours !",
+        'maybe'   => "Tu avais répondu **❓ Peut-être** : le créneau a changé, n'hésite pas à confirmer ou décliner.",
+        'absent'  => "Tu avais indiqué **✖️ Absent** : le créneau a changé, celui-ci t'arrange peut-être mieux ?",
+    ];
+
+    $seen = [];
+    foreach ($sortie['signups'] ?? [] as $su) {
+        $uid = (string)($su['id'] ?? '');
+        if ($uid === '' || $uid === (string)$editorId || isset($seen[$uid])) continue;
+        $seen[$uid] = true;
+        $statut = $su['statut'] ?? 'present';
+        if (!isset($tail[$statut])) $statut = 'present';
+        dm_send($uid, $head . $tail[$statut]);
+        usleep(200000); // ~5 MP/s : sous la limite de Discord
+    }
 }
 
 // Étape 1 — demande de CONFIRMATION (éphémère, visible du seul créateur). Réservé au créateur.
@@ -403,11 +491,17 @@ function handle_delete($body, $sid) {
     // car l'éphémère qui suit n'aura plus accès au message de l'activité.
     $ch  = $body['channel_id'] ?? '';
     $mid = $body['message']['id'] ?? '';
+    // Une sortie liée au site (épice) conserve ses données → message adapté.
+    $isSite  = sortie_type($sortie['type'] ?? 'epice')['site'];
+    $titre   = $sortie['titre'] ?? '';
+    $content = $isSite
+        ? "🗑️ Retirer le post de **{$titre}** du canal ?\nLes données du raid (retours, compo, analyse) **restent conservées sur le site**."
+        : "🗑️ Supprimer définitivement l'activité **{$titre}** ?\nCette action est irréversible.";
     echo json_encode(['type' => 4, 'data' => [
         'flags'   => 64, // éphémère
-        'content' => "🗑️ Supprimer définitivement l'activité **" . ($sortie['titre'] ?? '') . "** ?\nCette action est irréversible.",
+        'content' => $content,
         'components' => [['type' => 1, 'components' => [
-            ['type' => 2, 'style' => 4, 'label' => 'Confirmer la suppression', 'emoji' => ['name' => '🗑️'], 'custom_id' => "delok:{$sid}:{$ch}:{$mid}"],
+            ['type' => 2, 'style' => 4, 'label' => ($isSite ? 'Retirer le post' : 'Confirmer la suppression'), 'emoji' => ['name' => '🗑️'], 'custom_id' => "delok:{$sid}:{$ch}:{$mid}"],
         ]]],
     ]]);
     exit;
@@ -423,22 +517,33 @@ function handle_delete_confirm($body, $args) {
     // L'éphémère n'est visible que du créateur ; on revérifie quand même si la sortie existe encore.
     if ($sortie && !can_manage($body, $sortie)) respond_update("✋ Réservé à l'organisateur, aux modérateurs et aux admins.");
 
-    delete_sortie_by_id($sid);
+    $res = delete_sortie_by_id($sid);
     discord_delete_message_api($ch, $mid); // le bot supprime son propre message d'activité
-    respond_update("🗑️ Activité supprimée.");
+    respond_update($res === 'kept'
+        ? "🗑️ Post retiré du canal. Les données du raid (retours, compo, analyse) sont **conservées sur le site**."
+        : "🗑️ Activité supprimée.");
 }
 
-// Retire la sortie du bon store + désactive la soirée si c'était l'active.
+// Suppression depuis le bouton 🗑️ Discord.
+//  - ÉPICE (débriefs.json, liée au site) : on CONSERVE les données du raid
+//    (retours, compo, analyse, historique). On marque seulement le post comme
+//    retiré (discord.cleaned) pour que le nettoyage auto ne le reprenne pas.
+//    → retourne 'kept'. La suppression réelle se fait depuis le site (admin).
+//  - Autres types (store Discord séparé = simple jauge d'intérêt) : suppression
+//    complète de la fiche. → retourne 'removed'.
 function delete_sortie_by_id($id) {
-    $d = read_data(); $n = count($d['sorties']);
-    $d['sorties'] = array_values(array_filter($d['sorties'], function ($s) use ($id) { return ($s['id'] ?? '') !== $id; }));
-    if (count($d['sorties']) !== $n) {
-        if (($d['soiree_active']['id'] ?? null) === $id) $d['soiree_active'] = null;
-        write_data($d); return true;
+    $d = read_data();
+    foreach ($d['sorties'] as &$s) {
+        if (($s['id'] ?? '') === $id) {
+            $s['discord']['cleaned'] = true; // post retiré, données conservées
+            write_data($d);
+            return 'kept';
+        }
     }
-    $ds = read_dstore(); $n2 = count($ds['sorties']);
+    unset($s);
+    $ds = read_dstore(); $n = count($ds['sorties']);
     $ds['sorties'] = array_values(array_filter($ds['sorties'], function ($s) use ($id) { return ($s['id'] ?? '') !== $id; }));
-    if (count($ds['sorties']) !== $n2) { write_dstore($ds); return true; }
+    if (count($ds['sorties']) !== $n) { write_dstore($ds); return 'removed'; }
     return false;
 }
 

@@ -72,9 +72,24 @@
     .roster-opt:last-child { border-bottom:none; }
     .roster-opt:hover, .roster-opt.active { background:var(--accent-glow); color:var(--accent); }
     .roster-opt .ro-tag { margin-left:auto; font-size:.6rem; letter-spacing:.08em; text-transform:uppercase; color:var(--text-muted); border:1px solid var(--border); border-radius:2px; padding:.05rem .35rem; }
+    /* Inscrits « peut-être » (❓ sur Discord) : en orange + badge, pour ne pas les affecter comme s'ils étaient sûrs. */
+    .roster-opt.ro-maybe { color:#e0902e; }
+    .roster-opt.ro-maybe:hover, .roster-opt.ro-maybe.active { background:rgba(224,144,46,.14); color:#f2a747; }
+    .roster-opt .ro-tag.ro-maybe-tag { color:#e0902e; border-color:#9a6420; }
     .roster-pop-empty { padding:.5rem .8rem; font-size:.78rem; color:var(--text-faint); font-style:italic; }
     .roster-pop::-webkit-scrollbar { width:8px; }
     .roster-pop::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
+    /* Sélecteur d'organisateurs (cases à cocher depuis les comptes connus) */
+    .orga-filter { width:100%; padding:.45rem .7rem; margin-bottom:.5rem; background:var(--surface-2); border:1px solid var(--border); border-radius:2px; color:var(--text); font-size:.85rem; box-sizing:border-box; }
+    .orga-picker { max-height:320px; overflow-y:auto; border:1px solid var(--border); border-radius:2px; background:var(--surface-2); }
+    .orga-opt { display:flex; align-items:center; gap:.6rem; padding:.45rem .7rem; font-size:.85rem; color:var(--text); cursor:pointer; border-bottom:1px solid rgba(60,44,20,.4); }
+    .orga-opt:last-child { border-bottom:none; }
+    .orga-opt:hover { background:var(--accent-glow); }
+    .orga-opt input { accent-color:var(--accent); cursor:pointer; }
+    .orga-badge { margin-left:auto; font-size:.58rem; letter-spacing:.06em; text-transform:uppercase; border-radius:2px; padding:.05rem .35rem; border:1px solid var(--border); color:var(--text-muted); }
+    .orga-badge-admin { color:var(--accent); border-color:var(--accent-dim); }
+    .orga-badge-warn { color:#e0902e; border-color:#9a6420; }
+    .orga-empty2 { padding:.6rem .7rem; font-size:.78rem; color:var(--text-faint); font-style:italic; }
 
     /* ============ HABILLAGE DUNE AWAKENING ============ */
     /* Bande impériale sous la barre de nav : devise + filet à losanges */
@@ -247,6 +262,7 @@
     .btn-mini { padding:.35rem .7rem; border-radius:2px; font-size:.65rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; cursor:pointer; border:1px solid; transition:opacity .15s; font-family:'Inter',sans-serif; }
     .btn-mini-add { background:transparent; border-color:var(--accent-dim); color:var(--accent); }
     .btn-mini-del { background:transparent; border-color:#6A2218; color:#C05040; padding:.35rem .55rem; }
+    .btn-mini-reopen { background:transparent; border-color:#3A7A4A; color:#5AB06A; }
     .btn-mini:hover { opacity:.75; }
 
     /* ORGANISATION (vue joueur) */
@@ -759,6 +775,11 @@
 
     <!-- SOUS-VUE ASSIGNATION -->
     <div id="atab-assign" class="atab">
+      <div id="assign-sortie-bar" style="display:none;align-items:center;gap:.6rem;margin-bottom:1rem;flex-wrap:wrap">
+        <span class="assign-slot-label">Sortie à assigner :</span>
+        <select id="assign-sortie-sel" class="orga-filter" style="max-width:520px;margin-bottom:0;width:auto" onchange="onAssignSortieChange()"></select>
+        <button class="btn btn-danger" id="assign-close-btn" onclick="closeSelectedSortie()" style="margin-left:auto">Clôturer cette sortie</button>
+      </div>
       <div id="assign-builder"></div>
       <div id="assign-actions" style="display:flex;gap:.5rem;margin-top:1rem;flex-wrap:wrap">
         <button class="btn btn-accent" onclick="saveAssign()">💾 Enregistrer la compo</button>
@@ -775,8 +796,9 @@
     <!-- SOUS-VUE ORGANISATEURS (admins) -->
     <div id="atab-orga" class="atab">
       <div class="section-label">Organisateurs autorisés</div>
-      <div class="assign-hint">Un pseudo par ligne. Ces membres (en plus des admins du site) peuvent créer/clôturer des sorties, éditer la compo et lancer l'analyse. Le pseudo doit correspondre à l'identifiant de connexion.</div>
-      <textarea id="orga-list-ta" style="width:100%;min-height:160px" placeholder="Abarrach&#10;Lefou&#10;…"></textarea>
+      <div class="assign-hint">Coche les membres qui peuvent (en plus des admins) créer/clôturer des sorties, éditer la compo et lancer l'analyse. La liste vient des comptes connus du site — plus de saisie manuelle, donc plus de fautes de frappe. <em>Les admins du site sont organisateurs d'office, cochés ou non.</em></div>
+      <input type="text" id="orga-filter" class="orga-filter" placeholder="🔎 Filtrer un pseudo…" oninput="renderOrgaPicker()">
+      <div id="orga-picker" class="orga-picker"></div>
       <div style="display:flex;gap:.5rem;margin-top:.6rem;align-items:center">
         <button class="btn btn-accent" onclick="saveOrgaList()">💾 Enregistrer</button>
         <span id="orga-list-note" style="font-size:.72rem;color:var(--text-faint)"></span>
@@ -1355,25 +1377,65 @@ function switchAdminTab(tab, e) {
   if (tab === 'orga')   loadOrgaList();
 }
 
-// Gestion de la liste des organisateurs (admins)
+// Gestion de la liste des organisateurs (admins) — sélecteur depuis les comptes connus
+let orgaAccounts = [];          // [{ user, role, known }]
+let orgaSelected = new Set();   // pseudos sélectionnés (en minuscule)
+
 async function loadOrgaList() {
-  const ta = document.getElementById('orga-list-ta');
-  ta.value = 'Chargement…'; ta.disabled = true;
+  const picker = document.getElementById('orga-picker');
+  if (picker) picker.innerHTML = '<div class="orga-empty2">Chargement…</div>';
+
+  // En parallèle : organisateurs actuels (data-api) + comptes connus (get_users.php, admin)
+  let organizers = [], accounts = [];
+  try { const r = await apiGet('get_orga'); if (r.ok && Array.isArray(r.organizers)) organizers = r.organizers; } catch {}
   try {
-    const r = await apiGet('get_orga');
-    ta.value = (r.ok && Array.isArray(r.organizers)) ? r.organizers.join('\n') : '';
-  } catch { ta.value = ''; }
-  ta.disabled = false;
+    const res = await fetch('../get_users.php', { credentials: 'same-origin' });
+    const j = await res.json();
+    if (Array.isArray(j)) accounts = j;
+  } catch {}
+
+  // Fusion : comptes connus + organisateurs « hors liste » (pour ne jamais les perdre)
+  const map = new Map();
+  accounts.forEach(a => { if (a && a.user) map.set(a.user.toLowerCase(), { user: a.user, role: a.role || 'user', known: true }); });
+  organizers.forEach(o => { const k = (o || '').trim().toLowerCase(); if (k && !map.has(k)) map.set(k, { user: o.trim(), role: '', known: false }); });
+
+  orgaAccounts = [...map.values()].sort((a, b) => a.user.localeCompare(b.user, 'fr', { sensitivity: 'base' }));
+  orgaSelected = new Set(organizers.map(o => (o || '').trim().toLowerCase()).filter(Boolean));
+  renderOrgaPicker();
 }
+
+function renderOrgaPicker() {
+  const picker = document.getElementById('orga-picker');
+  if (!picker) return;
+  const f = (document.getElementById('orga-filter').value || '').trim().toLowerCase();
+  const list = orgaAccounts.filter(a => !f || a.user.toLowerCase().includes(f));
+  if (!list.length) { picker.innerHTML = '<div class="orga-empty2">Aucun compte ne correspond.</div>'; return; }
+  picker.innerHTML = list.map(a => {
+    const k = a.user.toLowerCase(), checked = orgaSelected.has(k) ? 'checked' : '';
+    const badge = a.role === 'admin' ? '<span class="orga-badge orga-badge-admin">admin · d\'office</span>'
+                : (!a.known ? '<span class="orga-badge orga-badge-warn">hors liste</span>' : '');
+    return `<label class="orga-opt"><input type="checkbox" data-user="${escAttr(a.user)}" ${checked} onchange="toggleOrga(this)"><span>${esc(a.user)}</span>${badge}</label>`;
+  }).join('');
+}
+
+function toggleOrga(cb) {
+  const k = (cb.getAttribute('data-user') || '').toLowerCase();
+  if (cb.checked) orgaSelected.add(k); else orgaSelected.delete(k);
+}
+
 async function saveOrgaList() {
-  const ta = document.getElementById('orga-list-ta');
   const note = document.getElementById('orga-list-note');
-  const list = ta.value.split('\n').map(s => s.trim()).filter(Boolean);
+  // On ressort les pseudos avec leur casse d'origine
+  const byLower = new Map(orgaAccounts.map(a => [a.user.toLowerCase(), a.user]));
+  const list = [...orgaSelected].map(k => byLower.get(k) || k);
   note.textContent = 'Enregistrement…';
   try {
     const r = await apiPost('set_orga', { organizers: list });
-    if (r.ok) { note.textContent = '✓ ' + (r.message || 'Enregistré'); ta.value = (r.organizers || []).join('\n'); }
-    else note.textContent = 'Erreur : ' + r.error;
+    if (r.ok) {
+      note.textContent = '✓ ' + (r.message || 'Enregistré');
+      orgaSelected = new Set((r.organizers || []).map(o => (o || '').trim().toLowerCase()).filter(Boolean));
+      renderOrgaPicker();
+    } else note.textContent = 'Erreur : ' + r.error;
     setTimeout(() => note.textContent = '', 3000);
   } catch { note.textContent = 'Erreur de connexion.'; }
 }
@@ -1381,25 +1443,82 @@ async function saveOrgaList() {
 // ============================================================
 // BUILDER D'ASSIGNATION (admin)
 // ============================================================
+let assignSorties = [];        // [{id,titre,date,createur,mine,active}] — sorties ouvertes assignables
+let currentAssignSid = null;   // sortie en cours d'édition
+
 async function loadAssignBuilder() {
   const box = document.getElementById('assign-builder');
+  const bar = document.getElementById('assign-sortie-bar');
+  const sel = document.getElementById('assign-sortie-sel');
+  const actions = document.getElementById('assign-actions');
+  box.innerHTML = '<div class="empty">Chargement…</div>';
+
+  // 1) Sorties ouvertes assignables (filtrées SERVEUR : admin = toutes, organisateur = les siennes)
+  try {
+    const r = await apiGet('open_sorties');
+    assignSorties = (r.ok && Array.isArray(r.sorties)) ? r.sorties : [];
+  } catch { assignSorties = []; }
+
+  if (!assignSorties.length) {
+    if (bar) bar.style.display = 'none';
+    if (actions) actions.style.display = 'none';
+    currentAssignSid = null; currentCompo = null;
+    box.innerHTML = '<div class="empty">Aucune sortie ouverte à assigner.<br>Crée une soirée (ou attends qu\'une te soit attribuée).<br><span style="font-size:.78rem">(les compos clôturées se consultent dans l\'Historique)</span></div>';
+    return;
+  }
+
+  // 2) Sélection courante : on conserve si toujours valide, sinon la "vedette", sinon la 1re
+  if (!currentAssignSid || !assignSorties.some(s => s.id === currentAssignSid)) {
+    const active = assignSorties.find(s => s.active);
+    currentAssignSid = active ? active.id : assignSorties[0].id;
+  }
+
+  // 3) Barre toujours visible (même 1 sortie) pour garder le bouton « Clôturer cette sortie »
+  if (bar) bar.style.display = 'flex';
+  if (sel) sel.innerHTML = assignSorties.map(s =>
+    `<option value="${escAttr(s.id)}" ${s.id === currentAssignSid ? 'selected' : ''}>${esc(s.titre)} — ${esc(s.date)}${s.mine ? '' : ' · ' + esc(s.createur)}</option>`).join('');
+
+  await loadAssignSortie(currentAssignSid);
+}
+
+// Charge la compo + les inscrits d'une sortie précise pour édition.
+async function loadAssignSortie(sid) {
+  const box = document.getElementById('assign-builder');
+  const actions = document.getElementById('assign-actions');
   box.innerHTML = '<div class="empty">Chargement…</div>';
   try {
-    const res = await fetch(`${API}?action=list`);
+    const res = await fetch(`${API}?action=list&sid=${encodeURIComponent(sid)}`);
     const data = await res.json();
-    const actions = document.getElementById('assign-actions');
-    // Édition possible UNIQUEMENT si une soirée est OUVERTE (protège les compos clôturées)
     if (!data.ok || !data.sortie || data.sortie.statut !== 'ouverte') {
       currentCompo = null;
       if (actions) actions.style.display = 'none';
-      box.innerHTML = '<div class="empty">Aucune soirée ouverte.<br>Crée ou ouvre une soirée pour préparer la compo.<br><span style="font-size:.78rem">(les compos des sorties clôturées se consultent dans l\'Historique)</span></div>';
+      box.innerHTML = '<div class="empty">' + (data.error ? esc(data.error) : 'Sortie indisponible.') + '</div>';
       return;
     }
     if (actions) actions.style.display = 'flex';
+    currentAssignSid = sid;
     currentCompo = normalizeCompo(data.sortie.assignation ? data.sortie.assignation : emptyCompo());
     currentSignups = Array.isArray(data.sortie.signups) ? data.sortie.signups : [];
     renderAssignBuilder();
   } catch { box.innerHTML = '<div class="empty">Erreur de connexion.</div>'; }
+}
+
+function onAssignSortieChange() {
+  const sel = document.getElementById('assign-sortie-sel');
+  if (sel && sel.value) loadAssignSortie(sel.value);
+}
+
+// Clôture la sortie actuellement sélectionnée (admin OU son créateur).
+async function closeSelectedSortie() {
+  if (!currentAssignSid) return;
+  const cur = assignSorties.find(s => s.id === currentAssignSid);
+  const name = cur ? cur.titre : 'cette sortie';
+  if (!(await uiConfirm(`Clôturer « ${name} » ? Elle passe en historique ; les retours restent consultables.`, { title: 'Clôturer la sortie', okLabel: 'Clôturer', danger: true }))) return;
+  try {
+    const r = await apiPost('close_soiree', { sid: currentAssignSid });
+    if (r.ok) { currentAssignSid = null; await loadAssignBuilder(); }
+    else uiAlert('Erreur : ' + r.error);
+  } catch { uiAlert('Erreur de connexion.'); }
 }
 
 function renderAssignBuilder() {
@@ -1540,7 +1659,7 @@ const rosterPop = (function () {
       const nl = n.toLowerCase();
       if (seen.has(nl)) return; seen.add(nl);
       if (used.has(nl) && nl !== curL) return;                    // déjà placé ailleurs → masqué
-      list.push({ name: n, poste: s.poste || '' });
+      list.push({ name: n, poste: s.poste || '', statut: (s.statut || 'present') });
     });
     return list;
   }
@@ -1554,7 +1673,13 @@ const rosterPop = (function () {
     const exact = list.some(o => o.name.toLowerCase() === f);
     if (f && !exact) list = list.filter(o => o.name.toLowerCase().includes(f));
     active = -1;
-    p.innerHTML = list.map(o => `<div class="roster-opt" data-name="${escAttr(o.name)}"><span>${esc(o.name)}</span>${o.poste && POSTE_SHORT[o.poste] ? `<span class="ro-tag">${POSTE_SHORT[o.poste]}</span>` : ''}</div>`).join('');
+    p.innerHTML = list.map(o => {
+      const maybe = o.statut === 'maybe';
+      const posteTag = (o.poste && POSTE_SHORT[o.poste]) ? `<span class="ro-tag">${POSTE_SHORT[o.poste]}</span>` : '';
+      // « peut-être » → badge ❓ orange (priorité d'affichage sur le poste).
+      const tag = maybe ? `<span class="ro-tag ro-maybe-tag">❓ Peut-être</span>` : posteTag;
+      return `<div class="roster-opt${maybe ? ' ro-maybe' : ''}" data-name="${escAttr(o.name)}"><span>${esc(o.name)}</span>${tag}</div>`;
+    }).join('');
     return list.length;
   }
 
@@ -1595,7 +1720,12 @@ const rosterPop = (function () {
       e.preventDefault(); choose(els[active].dataset.name);
     }
   });
-  window.addEventListener('scroll', hide, true);
+  // On masque le menu quand la PAGE défile, mais PAS quand on scrolle DANS le menu
+  // (sinon impossible d'atteindre les options du bas à la molette).
+  window.addEventListener('scroll', function (e) {
+    if (pop && e.target && e.target.nodeType === 1 && pop.contains(e.target)) return;
+    hide();
+  }, true);
   window.addEventListener('resize', hide);
 
   return { open, hide };
@@ -1625,9 +1755,10 @@ function cleanCompo(c) {
 
 async function saveAssign() {
   const note = document.getElementById('assign-save-note');
+  if (!currentAssignSid) { note.textContent = 'Aucune sortie sélectionnée.'; return; }
   note.textContent = 'Enregistrement…';
   try {
-    const res = await apiPost('save_assign', { assignation: cleanCompo(currentCompo) });
+    const res = await apiPost('save_assign', { sid: currentAssignSid, assignation: cleanCompo(currentCompo) });
     note.textContent = res.ok ? '✓ Compo enregistrée' : ('Erreur : ' + res.error);
     setTimeout(() => note.textContent = '', 3000);
   } catch { note.textContent = 'Erreur de connexion.'; }
@@ -1807,11 +1938,21 @@ async function loadHistory() {
             <span class="histo-badge histo-badge-nb">${s.nb} retour${s.nb>1?'s':''}</span>
             ${s.a_compo?'<span class="histo-badge histo-badge-nb">compo ✓</span>':''}
             ${s.a_analyse?'<span class="histo-badge histo-badge-note">analyse ✓</span>':''}
-            ${(meInfo.role==='admin' || (s.createur && meInfo.user && String(s.createur).toLowerCase()===String(meInfo.user).toLowerCase())) ? `<button class="btn-mini btn-mini-del" onclick="event.stopPropagation();deleteSortie('${s.id}')" title="Supprimer cette sortie">✕</button>` : ''}
+            ${(meInfo.role==='admin' || (s.createur && meInfo.user && String(s.createur).toLowerCase()===String(meInfo.user).toLowerCase())) ? `${s.statut!=='ouverte' ? `<button class="btn-mini btn-mini-reopen" onclick="event.stopPropagation();reopenSortie('${s.id}')" title="Rouvrir cette sortie (la rend active)">↻ Rouvrir</button>` : ''}<button class="btn-mini btn-mini-del" onclick="event.stopPropagation();deleteSortie('${s.id}')" title="Supprimer cette sortie">✕</button>` : ''}
           </div>
         </div>
       </div>`).join('');
   } catch { box.innerHTML = '<div class="empty">Erreur de connexion.</div>'; }
+}
+
+// Rouvre une sortie archivée (admin OU créateur) → redevient ouverte + active
+async function reopenSortie(sid) {
+  if (!(await uiConfirm('Rouvrir cette sortie ? Elle redevient la sortie active : assignation et retours joueurs redeviennent possibles.', { title:'Rouvrir la sortie', okLabel:'Rouvrir' }))) return;
+  try {
+    const r = await apiPost('reopen_sortie', { sid });
+    if (r.ok) { loadHistory(); renderAdmin(); }
+    else await uiAlert(r.error || 'Erreur lors de la réouverture.', { title:'Erreur' });
+  } catch { await uiAlert('Erreur de connexion.', { title:'Erreur' }); }
 }
 
 // Supprime une sortie (admin — historique)

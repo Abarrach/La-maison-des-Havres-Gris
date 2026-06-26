@@ -10,6 +10,9 @@ migration_data.json
 # Secret webhook Discord (NE JAMAIS COMMITER)
 discord_webhook.txt
 
+# Secret OAuth2 "Login Discord" — client_secret + bot_token (NE JAMAIS COMMITER ; voir discord_oauth_config.example.php)
+discord_oauth_config.php
+
 # Secrets Retours de soirée — clé Gemini + token (NE JAMAIS COMMITER ; voir epice/config.example.php)
 epice/config.php
 

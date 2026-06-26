@@ -42,7 +42,7 @@ $commands = [[
             'required'    => true,
             'choices'     => [
                 ['name' => 'Épice (liée au site)', 'value' => 'epice'],
-                ['name' => 'Labo',                 'value' => 'labo'],
+                ['name' => 'Labos-Donjons',        'value' => 'labo'],
                 ['name' => 'Farm divers',          'value' => 'farm'],
                 ['name' => 'Landsraad',            'value' => 'landsraad'],
             ],

@@ -407,7 +407,8 @@ Outil de **préparation, débrief et analyse** des sorties de récolte d'épice 
 - **Manuel de combat** : doctrine de guilde (règles aériennes, DEADZONE, format des callouts, manœuvre Faucon, scénarios JAUNE / ORANGE / ROUGE, fiches de rôle).
 - **Retour joueur** : le joueur **choisit son pseudo** dans la liste des participants, note la soirée (cristaux + 4 axes) et coche points positifs / points noirs. **Un seul retour par pseudo, modifiable tant que la soirée n'est pas clôturée.**
 - **Admin (organisateurs)** : composition d'équipes (commandement, récolte, **défense cardinale ± Faucon**, groupe à distance non plafonné, **groupes en jeu** pré-remplissables), cycle de vie de la sortie (créer / clôturer / supprimer / réinitialiser la compo), synthèse des retours (moyennes par axe, points forts/faibles) et **analyse IA** (proxy `api-gemini.php` → Gemini) au format structuré, **sauvegardée et consultable** dans l'historique.
-- **Rôles** (auth serveur par session — voir *Authentification*) : *consultation* = membre connecté ; *organiser* = **admin OU organisateur** (pseudo listé dans `epice/data/organizers.json`, géré par les admins via le sous-onglet « Organisateurs ») ; un organisateur ne peut supprimer que **ses propres** sorties.
+- **Multi-sorties en parallèle** : plusieurs sorties peuvent être **ouvertes en même temps** (la création n'archive plus les autres). L'onglet **Assignation** a un **sélecteur de sortie** (`open_sorties`) : l'**admin** voit/assigne **toutes** les sorties ouvertes, un **organisateur** uniquement **les siennes**. `list` / `save_assign` / `close_soiree` ciblent une sortie par `sid` (vérif ouverture + créateur côté serveur). Clôture **par sortie** (bouton « Clôturer cette sortie » dans l'Assignation ; le bouton d'en-tête clôture la sortie « vedette » = `soiree_active`). **Réouverture** (`reopen_sortie`) : bouton **« ↻ Rouvrir »** sur une sortie archivée de l'Historique → elle redevient *ouverte* et *vedette* (assignation + retours de nouveau possibles), admin = toutes, organisateur = les siennes — évite toute édition manuelle de `debriefs.json`. Le **Retour joueur** reste sur la sortie vedette (la plus récente non clôturée).
+- **Rôles** (auth serveur par session — voir *Authentification*) : *consultation* = membre connecté ; *organiser* = **admin OU organisateur** (pseudo listé dans `epice/data/organizers.json`, géré par les admins via le sous-onglet « Organisateurs » — **sélecteur de comptes connus**, plus de saisie libre) ; un organisateur ne peut **assigner / clôturer / supprimer** que **ses propres** sorties.
 - Stockage JSON (`epice/data/debriefs.json`) ; clé Gemini hors Git (`epice/config.php`) ; protection compo : édition possible uniquement si une soirée est ouverte.
 
 #### Bot Sorties Discord (`epice/discord_sortie.php`)
@@ -415,8 +416,10 @@ Créer une sortie épice **directement depuis Discord** et gérer les inscriptio
 - **Architecture** : endpoint HTTP d'**interactions Discord** en pur PHP (aucun démon/bot permanent). Discord POST sur `epice/discord_sortie.php`, signature **Ed25519 vérifiée** (`sodium`) à chaque requête. Le bot apparaît « hors ligne » dans Discord, c'est normal (pas de connexion gateway).
 - **Types de sortie** : la commande `/sortie creer` propose un **type** (menu natif) : **Épice** (la seule liée au site), **Labo**, **Farm divers**, **Landsraad**. Épice utilise l'inscription **par poste** ; les autres types un **RSVP simple** (Présent / Peut-être / Absent) pour jauger l'intérêt.
 - **Flux** : `/sortie creer` → choix du type → formulaire (titre, date & heure, zone, **durée en heures**, description) → encart doré (bannière par type). Inscription épice via **menu déroulant de postes** (Moissonneur, Transporteur, Défenseur CaC, Pilote Ornithoptère, Présent) + boutons **❓ Peut-être / ✖️ Absent / Me désinscrire**. Le roster se met à jour en direct (`UPDATE_MESSAGE`). Le compteur `X inscrits` ne compte que les présents ; la durée s'affiche dans l'encart (`⏱️`).
-- **Gestion** : boutons **✏️ Modifier** (rouvre le formulaire pré-rempli → met à jour l'encart) et **🗑️ Supprimer** (confirmation → retire l'activité du store + supprime son message Discord), **réservés au créateur ET au staff** (Administrateur / Gérer le serveur / Gérer les messages / Expulser / Bannir / Modérer les membres). Les boutons sont visibles par tous (Discord ne sait pas masquer par utilisateur) mais un membre sans droit reçoit un refus privé.
-- **Données** : une sortie **épice** est ajoutée à `debriefs.json` (`source='discord'`, `type='epice'`, `signups[]` = `{id,name,poste,statut,ts}`) et devient la soirée active. Les **autres types** vont dans `epice/data/discord_sorties.json` (store séparé, gitignoré) et **ne touchent pas** au débrief. Côté `debrief.html`, l'Assignation propose les inscrits Discord via un **menu déroulant maison** (aux couleurs du site, filtrage à la frappe + navigation clavier) sur tous les champs de rôle ; un joueur **déjà placé n'est plus proposé ailleurs** (anti-doublon) ; saisie manuelle toujours possible. L'interface `debrief.html` est habillée façon **Dune Awakening** (cadres à équerres dorées, en-tête orné + devise, séparateurs en losange, titres Cinzel, champs à accent doré).
+- **Gestion** : boutons **✏️ Modifier** (rouvre le formulaire pré-rempli → met à jour l'encart) et **🗑️ Supprimer**, **réservés au créateur ET au staff** (Administrateur / Gérer le serveur / Gérer les messages / Expulser / Bannir / Modérer les membres). Les boutons sont visibles par tous (Discord ne sait pas masquer par utilisateur) mais un membre sans droit reçoit un refus privé. **Suppression différenciée** : pour une sortie **épice** (liée au site), 🗑️ retire **uniquement le post Discord** et **conserve les données du raid** (retours, compo, analyse, historique) — la suppression réelle se fait depuis le site ; pour les **autres types** (store Discord séparé), la fiche est supprimée entièrement.
+- **Notification MP en cas de changement de date/heure** : si une modification change la **date et/ou l'heure**, le bot prévient **par message privé** tous les inscrits, avec un texte **différencié selon le statut** (présent / peut-être / absent). L'**auteur** de la modif n'est pas notifié (admins/modos peuvent aussi éditer). Les MP partent **en arrière-plan** (`fastcgi_finish_request` après la réponse Discord, pour rester sous la limite de 3 s) via l'API REST du bot (`POST /users/@me/channels` puis message) ; un échec (MP fermés, blocage) est silencieux et journalisé. Aucun re-`register` nécessaire (changement de comportement, pas de structure).
+- **Suppression automatique du post** (`discord_sortie_cleanup.php`, **cron**) : pour désencombrer le canal, le message d'une sortie est supprimé **1h après la fin** (`fin = date+heure + durée` ; durée absente → 4h présumées). Seul le **message Discord** est retiré ; les **données** (débriefs épice, historique) sont conservées. Le bot stocke le `message_id` de l'encart (récupéré à la création via `…/@original`, et au 1er clic d'inscription pour les sorties existantes). Script **CLI uniquement** (`--dry` pour simuler), lancé par cron toutes les ~15 min. Une sortie sans heure exploitable n'est jamais auto-supprimée. Idempotent (flag `discord.cleaned`).
+- **Données** : une sortie **épice** est ajoutée à `debriefs.json` (`source='discord'`, `type='epice'`, `signups[]` = `{id,name,poste,statut,ts}`) et devient la soirée active. Les **autres types** vont dans `epice/data/discord_sorties.json` (store séparé, gitignoré) et **ne touchent pas** au débrief. Côté `debrief.html`, l'Assignation propose les inscrits Discord via un **menu déroulant maison** (aux couleurs du site, filtrage à la frappe + navigation clavier) sur tous les champs de rôle ; un joueur **déjà placé n'est plus proposé ailleurs** (anti-doublon) ; saisie manuelle toujours possible. Les inscrits **« ❓ Peut-être »** sont affichés **en orange + badge** (pour ne pas les affecter comme s'ils étaient sûrs) ; les **« absents »** ne sont pas proposés. L'interface `debrief.html` est habillée façon **Dune Awakening** (cadres à équerres dorées, en-tête orné + devise, séparateurs en losange, titres Cinzel, champs à accent doré).
 - **Config** : `epice/discord_sortie_config.php` (**gitignoré** — `bot_token` secret ; `app_id`/`public_key` publics ; `guild_id` optionnel). Gabarit = `discord_sortie_config.example.php`.
 - **Mise en place** : `discord_register.php` (déclare la commande `/sortie`, à lancer une fois) ; `discord_probe.php` (sonde de diagnostic : sodium/cURL/config/droits — à supprimer après). Nécessite **HTTPS** sur le domaine (Let's Encrypt) car Discord refuse les URL `http`. URL d'interactions à déclarer dans le portail Discord (General Information → Interactions Endpoint URL).
 
@@ -436,13 +439,28 @@ Créer une sortie épice **directement depuis Discord** et gérer les inscriptio
 
 ## Authentification et Rôles
 
-- Inscription et connexion sécurisées
-- Deux niveaux d'accès : **Joueur** et **Administrateur**
-- Gestion des utilisateurs (création, suppression, changement de rôle) via le panneau admin
-- L'administrateur principal (`Abarrach`) ne peut pas être rétrogradé
-- **Toutes les pages sont protégées** par `auth-guard.js` — tout accès direct sans session active redirige vers `index.html#login`
-- **Auth serveur (épice)** : les endpoints de l'outil *Retours de Soirée* vérifient la session PHP **côté serveur** (`epice/auth_epice.php`), pas seulement le garde client. Rôle **organisateur** = admin OU pseudo dans `epice/data/organizers.json`
-- La déconnexion efface la session localStorage et redirige vers la page de connexion
+### Connexion via Discord (OAuth2) — méthode principale
+
+L'accès au portail se fait en **« Se connecter avec Discord »** : pas de mot de passe à gérer, et l'accès est **réservé aux membres de la guilde** (sortie de la guilde = accès perdu). On réutilise l'application Discord du bot *Sorties* (`epice/`).
+
+- **Flux** (`discord_login.php` → `discord_callback.php`, lib partagée `discord_oauth.php`) : redirection vers Discord (scope `identify`, `state` anti-CSRF, `prompt=none` pour ne montrer l'écran d'autorisation qu'**une fois** par membre) → retour → vérification de l'appartenance à la guilde **via le bot** (`GET /guilds/{id}/members/{uid}`) → session PHP + `localStorage`.
+- **Filtrage par rôle Discord** (`access_role_ids`) : seuls les porteurs des rôles autorisés (ex. *Dune*, *Dune Pause*) entrent ; les invités / membres d'un autre jeu sont refusés.
+- **Admin dérivé d'un rôle Discord** (`admin_role_ids`, ex. *Admins* / *Modos*) : recalculé à chaque connexion. `Abarrach` reste admin en dur. Un rôle admin donne aussi l'accès.
+- **Enforcement continu** (`session_check.php`, appelé par `auth-guard.js`) : à chaque navigation, si la dernière vérif date de plus de `recheck_seconds` (~15 min), le serveur revérifie l'appartenance + le rôle. **Quitter la guilde ou perdre le rôle = session détruite immédiatement**, même session ouverte. C'est aussi une vraie protection **serveur** (le `localStorage` seul était falsifiable).
+- **Mapping pseudo** (`import_discord_map.php`, outil admin) : un CSV `id_discord ; pseudo_site` pré-lie chaque ID Discord à un compte existant (champ `discord_id` dans `users_SECURE_9x.json`) → chacun se connecte avec Discord **sans perdre ses données** (bases, avatar, demandes…). Un membre absent du CSV se voit créer un compte neuf à sa 1re connexion.
+- **Config** : `discord_oauth_config.php` (**gitignoré** : `client_secret` + `bot_token`) ; gabarit = `discord_oauth_config.example.php`. Nécessite **HTTPS** + la Redirect URI déclarée dans le portail Discord.
+
+### Accès par mot de passe (page cachée, repli)
+
+- `login.html` (non liée depuis l'accueil) reste fonctionnelle via `auth.php` : comptes à mot de passe dans `users_SECURE_9x.json` (sessions sans `discord_id`, non revérifiées par Discord). Sert notamment à l'amorçage admin (`Abarrach`) avant l'import du mapping.
+- `register.html` (création de compte mot de passe) reste disponible mais hors du parcours principal.
+
+### Communs
+
+- Deux niveaux d'accès : **Joueur** et **Administrateur** ; `Abarrach` ne peut pas être rétrogradé.
+- **Toutes les pages** sont protégées par `auth-guard.js` (garde client instantané + validation serveur via `session_check.php`).
+- **Auth serveur (épice)** : les endpoints de *Retours de Soirée* vérifient la session PHP **côté serveur** (`epice/auth_epice.php`). Rôle **organisateur** = admin OU pseudo dans `epice/data/organizers.json`.
+- La déconnexion efface la session `localStorage` et redirige vers la page de connexion (ne révoque pas l'autorisation Discord).
 
 ---
 
@@ -482,12 +500,18 @@ DuneMap/
 ├── planner.js            # Planificateur d'événements
 ├── migration.js          # Logique de migration (validation, refus, Discord)
 ├── base_planner.js       # Logique 3D du Constructeur de Base (Three.js, moteur sockets, ~6150 lignes)
-├── auth-guard.js         # Protection des pages (redirection login si non connecté)
+├── auth-guard.js         # Protection des pages (garde client + validation serveur session_check.php)
 ├── pages.js              # Registre central des tuiles du menu (clé, lien, image, icône, titre) — source unique
 ├── page-guard.js         # Garde d'accès par page (bloque hidden/wip pour les joueurs ; admin = accès total)
 │
 ├── save.php              # API principale (bases, utilisateurs, craft, commandes)
-├── auth.php              # Authentification
+├── auth.php              # Authentification par mot de passe (page cachée login.html)
+├── discord_oauth.php     # Lib partagée OAuth2 Discord (config, API, mapping, session)
+├── discord_login.php     # Départ « Se connecter avec Discord » (state CSRF, prompt=none)
+├── discord_callback.php  # Retour Discord → vérif guilde/rôle → session → menu
+├── session_check.php     # Revérif périodique d'appartenance (appelé par auth-guard.js)
+├── import_discord_map.php # Outil admin : pré-charge le mapping CSV id_discord↔pseudo_site
+├── discord_oauth_config.example.php # Gabarit OAuth — discord_oauth_config.php hors Git
 ├── api.php               # Données de groupe
 ├── account_api.php       # API compte joueur (avatar, profil, stats, historique)
 ├── migration_api.php     # Réservations de migration (validation, refus, entraide)
@@ -569,6 +593,13 @@ chmod 775 avatars/ uploads/
 > location ^~ /epice/data/    { deny all; }
 > location ^~ /v2/epice/data/ { deny all; }
 > ```
+> **Purge des posts de sortie** (`discord_sortie_cleanup.php`) : ajouter un cron (utilisateur `dune`) — supprime le message Discord d'une sortie 1h après sa fin (données conservées). Tester d'abord avec `--dry`.
+> ```
+> */15 * * * * php /srv/dune-map/epice/discord_sortie_cleanup.php >> /home/dune/data/sortie_cleanup.log 2>&1
+> ```
+
+> [!IMPORTANT]
+> **Connexion Discord** (`discord_oauth_config.php`, hors Git) : copier `discord_oauth_config.example.php` → `discord_oauth_config.php` et renseigner `client_secret` + `bot_token` (le même que le bot Sorties). Déclarer la **Redirect URI** dans le portail Discord (OAuth2 → Redirects) à l'identique de `redirect_uri` (ex. `https://havresgris.ddns.net/discord_callback.php`). Le fichier `users_SECURE_9x.json` doit être `dune:www-data` en `664` (PHP écrit le mapping ; WinSCP doit pouvoir l'éditer). Amorçage : se connecter en admin via `login.html` (mot de passe), puis lancer l'import du mapping via `import_discord_map.php` **avant** d'ouvrir l'accès aux membres (sinon comptes-doublons). Procédure complète et bascule `/v2/` → racine : voir `DEPLOY_DISCORD_AUTH.md`.
 
 Accéder ensuite à `index.html` via le navigateur.
 

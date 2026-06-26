@@ -29,6 +29,22 @@ function epice_can_organize(): bool {
     return false;
 }
 
+// Le membre courant est-il le CRÉATEUR de cette sortie ?
+// Gère les DEUX identités : pseudo du site (champ `createur`) ET id Discord
+// (sorties créées via le bot, dont `createur` = nom Discord ≠ pseudo du site).
+function epice_is_creator(array $sortie): bool {
+    $me = epice_user() ?? '';
+    if ($me !== '' && strcasecmp((string)($sortie['createur'] ?? ''), $me) === 0) return true;
+    $myDiscord = $_SESSION['discord_id'] ?? '';
+    if ($myDiscord !== '' && (string)($sortie['discord']['user_id'] ?? '') === (string)$myDiscord) return true;
+    return false;
+}
+
+// Peut gérer cette sortie (assigner / clôturer / rouvrir / supprimer) = admin OU créateur.
+function epice_owns_sortie(array $sortie): bool {
+    return epice_role() === 'admin' || epice_is_creator($sortie);
+}
+
 function epice_deny(string $msg): void {
     http_response_code(403);
     echo json_encode(['ok' => false, 'error' => $msg], JSON_UNESCAPED_UNICODE);

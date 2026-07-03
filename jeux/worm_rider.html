@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Worm Rider — Hub Jeux</title>
+<link rel="stylesheet" href="../style.css">
+<style>
+:root {
+    --bg: #0a0402;
+    --gold: #cda434;
+    --text: #f5deb3;
+    --muted: #7c5e2a;
+}
+html, body {
+    overflow: hidden; height: 100%; margin: 0;
+    touch-action: none; -webkit-tap-highlight-color: transparent;
+    user-select: none; -webkit-user-select: none;
+}
+body {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: var(--bg); font-family: 'Segoe UI', system-ui, sans-serif;
+    color: var(--text);
+}
+#game-wrapper {
+    position: relative; z-index: 1;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+canvas {
+    border: 1px solid #3d2b16; border-radius: 8px;
+    box-shadow: 0 0 60px rgba(205,164,52,0.08), 0 0 120px rgba(180,120,30,0.04);
+    cursor: crosshair; display: block;
+}
+.game-header {
+    display: flex; align-items: center; gap: 14px;
+    width: 100%; max-width: 800px; padding: 10px 16px; box-sizing: border-box;
+    background: rgba(0,0,0,0.4); border: 1px solid #3d2b16; border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.35);
+}
+.game-header .back-link {
+    color: var(--gold); text-decoration: none; font-weight: bold; font-size: 0.82em;
+    border: 1px solid #7c5e2a; border-radius: 4px; padding: 6px 14px;
+    background: linear-gradient(180deg, #2a1a0b, #1a0f05);
+    transition: all 0.2s; white-space: nowrap;
+}
+.game-header .back-link:hover { background: var(--gold); color: #000; border-color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.4); }
+.game-header .game-title {
+    font-size: 1.15em; font-weight: bold; color: var(--gold);
+    text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 10px rgba(205,164,52,0.3);
+}
+.score-live { font-size: 1.25em; color: #ffcc00; font-weight: bold; margin-left: auto; }
+
+#leaderboard {
+    position: absolute; right: -240px; top: 0; width: 220px;
+    background: rgba(10,5,2,0.92); border: 1px solid #3d2b16;
+    border-radius: 8px; padding: 16px 14px; font-size: 0.78em;
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+}
+#leaderboard h3 {
+    margin: 0 0 12px; color: var(--gold); font-size: 0.95em;
+    text-align: center; text-transform: uppercase; letter-spacing: 2px;
+}
+#lb-list { list-style: none; padding: 0; margin: 0; }
+#lb-list li {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 0; border-bottom: 1px solid rgba(61,43,22,0.4);
+}
+#lb-list li .rank { color: var(--muted); width: 26px; font-size: 0.9em; }
+#lb-list li .name { flex: 1; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#lb-list li .pts { color: #ffcc00; font-weight: bold; min-width: 44px; text-align: right; }
+#lb-list li.me .name { color: var(--gold); }
+.controls-hint { font-size: 0.72em; color: var(--muted); text-align: center; opacity: 0.7; }
+
+/* Responsive */
+@media (max-width: 900px) {
+    #leaderboard { position: static; width: 90vw; max-width: 500px; margin-top: 6px; }
+}
+@media (max-width: 820px) {
+    canvas { width: 95vw !important; height: auto !important; }
+}
+</style>
+</head>
+<body>
+<script src="../auth-guard.js"></script>
+<div id="game-wrapper">
+    <div class="game-header">
+        <a href="hub.html" class="back-link">&larr; Hub Jeux</a>
+        <span class="game-title">🐛 Worm Rider</span>
+        <span class="score-live" id="score-display">0</span>
+    </div>
+    <canvas id="game" width="800" height="400"></canvas>
+    <div class="controls-hint">
+        [Souris / Flèches] Diriger &nbsp;&bull;&nbsp; [Maintenir Espace / Clic] Boost &nbsp;&bull;&nbsp; L'épice fait grandir le ver
+    </div>
+    <div id="leaderboard">
+        <h3>🏆 Classement</h3>
+        <ul id="lb-list"><li style="color:var(--muted)">Chargement…</li></ul>
+    </div>
+</div>
+
+<script>
+(function () {
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = 800, H = 400;
+const GAME_ID = 'worm_rider';
+
+// ---- Delta-time ----
+const TARGET_FPS = 60, FRAME_DUR = 1000 / TARGET_FPS;
+let lastTime = 0, accumulator = 0;
+
+// ---- État ----
+let worm, obstacles, spiceItems, particles, floatingTexts;
+let distance, spiceCount, bestScore, gameState, frameCount;
+let gameSpeed, startTime, scoreSecret;
+let shakeTimer = 0, shakeIntensity = 0;
+let milestone = 0, finalScore = 0;
+let targetY = H / 2; // position cible souris/clavier
+let mouseActive = false;
+let boosting = false, boostWanted = false, boostMeter = 100;
+let combo = 0, comboTimer = 0, closeCallBonus = 0;
+
+// ---- Physique ----
+const HEAD_X           = 200;   // position X fixe de la tête à l'écran
+const WORM_SPACING     = 9;     // espacement resserré pour que le ver max tienne à l'écran
+const WORM_SEGMENTS_BASE = 10;   // longueur de départ
+const WORM_SEGMENTS_MAX  = Math.floor(HEAD_X / WORM_SPACING); // le ver au max reste visible en entier
+const SPICE_PER_GROWTH   = 2;    // +1 anneau tous les N épices
+const WORM_HEAD_R     = 16;
+const WORM_SEG_R      = 13;
+const WORM_TAIL_R     = 6;
+const HEAD_SMOOTH     = 0.16;
+const BASE_SPEED      = 3;
+const MAX_SPEED       = 7;
+const SPEED_ACCEL     = 0.0006;
+const MARGIN_TOP      = 30;
+const MARGIN_BOT      = 30;
+const HIT_PAD         = 8;
+
+// ---- Boost (risque/récompense) ----
+const BOOST_MULT      = 1.9;
+const BOOST_MIN_USE   = 15;   // seuil mini de jauge pour déclencher un boost
+const BOOST_DRAIN     = 1.3;  // /tick pendant le boost
+const BOOST_REGEN     = 0.45; // /tick au repos
+
+// ---- Close call (esquive serrée) ----
+const CLOSE_CALL_MARGIN = 16;
+
+// ---- Couleurs ----
+const C = {
+    skyTop: '#5C3317', skyMid: '#8B5E3C', skyBot: '#C9972F',
+    sand: '#D2A64A', sandDark: '#A07828', sandLine: '#B8862D',
+    wormBody: '#8B6A3E', wormLight: '#A88050', wormDark: '#5C4020',
+    wormMouth: '#C44', wormTeeth: '#DEB887',
+    rock: '#4A3520', rockLight: '#6B5030',
+    spice: '#FFD700', gold: '#FFCC00', red: '#C44', white: '#F5DEB3',
+};
+
+// ============================================================
+//  SONS
+// ============================================================
+let audioCtx = null;
+function aud() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; }
+
+function sndRumble() {
+    const a = aud(), t = a.currentTime;
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(40, t); o.frequency.exponentialRampToValueAtTime(25, t + 0.15);
+    g.gain.setValueAtTime(0.04, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+    o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + 0.15);
+}
+function sndSpice() {
+    const a = aud(), t = a.currentTime;
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(880, t); o.frequency.setValueAtTime(1100, t+0.04); o.frequency.setValueAtTime(1320, t+0.08);
+    g.gain.setValueAtTime(0.08, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.15);
+    o.connect(g); g.connect(a.destination); o.start(t); o.stop(t+0.15);
+}
+function sndMilestone() {
+    const a = aud(), t = a.currentTime;
+    [523, 659, 784, 1047].forEach((f, i) => {
+        const o = a.createOscillator(), g = a.createGain();
+        o.type = 'sine'; o.frequency.setValueAtTime(f, t+i*0.08);
+        g.gain.setValueAtTime(0.08, t+i*0.08); g.gain.exponentialRampToValueAtTime(0.001, t+i*0.08+0.15);
+        o.connect(g); g.connect(a.destination); o.start(t+i*0.08); o.stop(t+i*0.08+0.15);
+    });
+}
+function sndCrash() {
+    const a = aud(), t = a.currentTime;
+    const buf = a.createBuffer(1, a.sampleRate * 0.3, a.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random()*2-1)*Math.pow(1-i/d.length,2);
+    const src = a.createBufferSource(), g = a.createGain();
+    src.buffer = buf; g.gain.setValueAtTime(0.25, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.3);
+    src.connect(g); g.connect(a.destination); src.start(t);
+    const o = a.createOscillator(), g2 = a.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(100, t); o.frequency.exponentialRampToValueAtTime(30, t+0.25);
+    g2.gain.setValueAtTime(0.15, t); g2.gain.exponentialRampToValueAtTime(0.001, t+0.25);
+    o.connect(g2); g2.connect(a.destination); o.start(t); o.stop(t+0.25);
+}
+function sndDive() {
+    const a = aud(), t = a.currentTime;
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = 'triangle'; o.frequency.setValueAtTime(300, t); o.frequency.exponentialRampToValueAtTime(80, t+0.2);
+    g.gain.setValueAtTime(0.06, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.25);
+    o.connect(g); g.connect(a.destination); o.start(t); o.stop(t+0.25);
+}
+function sndBoost() {
+    const a = aud(), t = a.currentTime;
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = 'sawtooth'; o.frequency.setValueAtTime(200, t); o.frequency.exponentialRampToValueAtTime(650, t+0.2);
+    g.gain.setValueAtTime(0.08, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.3);
+    o.connect(g); g.connect(a.destination); o.start(t); o.stop(t+0.3);
+}
+function sndCloseCall() {
+    const a = aud(), t = a.currentTime;
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = 'sawtooth'; o.frequency.setValueAtTime(600, t); o.frequency.exponentialRampToValueAtTime(900, t+0.06);
+    g.gain.setValueAtTime(0.06, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.1);
+    o.connect(g); g.connect(a.destination); o.start(t); o.stop(t+0.1);
+}
+
+// ============================================================
+//  PARALLAX
+// ============================================================
+let bgDunes = [];
+function generateBg() {
+    bgDunes = [];
+    for (let i = 0; i < 20; i++)
+        bgDunes.push({ x: i * 80, y: H - 40 + Math.sin(i * 0.7) * 12, sp: 80 });
+}
+
+// ============================================================
+//  WORM
+// ============================================================
+// La tête ne bouge jamais en X à l'écran (c'est le monde qui défile vers
+// elle) — donc chaque anneau garde un décalage X fixe derrière la tête,
+// exactement comme le reste du décor. Seul le Y doit "suivre avec retard" :
+// on garde un historique du Y de la tête indexé par la distance de
+// défilement du jeu (et non le déplacement réel de la tête, qui est
+// presque nul), et chaque anneau relit le Y d'il y a i*WORM_SPACING de
+// distance parcourue. Ça retrace l'ondulation réelle sans jamais se tasser.
+const TRAIL_STEP = 2; // unités de distance entre deux points enregistrés
+const TRAIL_MAX_LEN = Math.ceil((WORM_SEGMENTS_MAX * WORM_SPACING + 20) / TRAIL_STEP);
+let trail = [];
+
+function seedTrail(y) {
+    trail = [];
+    for (let i = 0; i < TRAIL_MAX_LEN; i++) trail.push({ d: -i * TRAIL_STEP, y });
+}
+function pushTrail(d, y) {
+    const last = trail[0];
+    if (!last || d - last.d >= TRAIL_STEP) trail.unshift({ d, y });
+    if (trail.length > TRAIL_MAX_LEN) trail.length = TRAIL_MAX_LEN;
+}
+function yAtTravelDistance(targetD) {
+    if (!trail.length) return worm.headY;
+    if (targetD >= trail[0].d) return trail[0].y;
+    for (let i = 0; i < trail.length - 1; i++) {
+        const a = trail[i], b = trail[i + 1]; // a.d > b.d (plus récent -> plus ancien)
+        if (targetD <= a.d && targetD >= b.d) {
+            const span = a.d - b.d || 1;
+            const t = (targetD - b.d) / span;
+            return b.y + (a.y - b.y) * t;
+        }
+    }
+    return trail[trail.length - 1].y;
+}
+
+function createWorm() {
+    const segs = [];
+    for (let i = 0; i < WORM_SEGMENTS_BASE; i++) {
+        segs.push({ x: HEAD_X - i * WORM_SPACING, y: H / 2 });
+    }
+    seedTrail(H / 2);
+    return { segs, headY: H / 2, invincible: 0 };
+}
+
+function segRadius(i) {
+    if (i === 0) return WORM_HEAD_R;
+    const total = worm.segs.length;
+    const t = total > 1 ? i / (total - 1) : 0;
+    return WORM_SEG_R * (1 - t * 0.55) + WORM_TAIL_R * t;
+}
+
+// Le ver grandit avec l'épice collectée : un corps plus long est plus dur
+// à faufiler dans les passages, ça remplace la difficulté qui manquait.
+function maybeGrowWorm() {
+    const targetLen = Math.min(WORM_SEGMENTS_MAX, WORM_SEGMENTS_BASE + Math.floor(spiceCount / SPICE_PER_GROWTH));
+    while (worm.segs.length < targetLen) {
+        const tail = worm.segs[worm.segs.length - 1];
+        worm.segs.push({ x: tail.x, y: tail.y });
+    }
+}
+
+// ============================================================
+//  OBSTACLES
+// ============================================================
+let nextObstacle = 0;
+
+function spawnObstacle() {
+    const minGap = Math.max(38, 100 - distance / 220);
+    nextObstacle = frameCount + minGap + Math.random() * 40;
+
+    const dm = Math.floor(distance / 10);
+    const r = Math.random();
+
+    if (r < 0.45) {
+        // Rochers avec passage (haut ou bas)
+        const gapSize = Math.max(80, 140 - dm * 0.07);
+        const gapY = MARGIN_TOP + gapSize / 2 + Math.random() * (H - MARGIN_TOP - MARGIN_BOT - gapSize);
+        obstacles.push({
+            type: 'pillars', x: W + 20,
+            gapY, gapSize,
+            w: 35 + Math.random() * 15,
+            passed: false, closeCalled: false,
+        });
+    } else if (r < 0.7) {
+        // Rocher isolé (position aléatoire)
+        const ry = MARGIN_TOP + 30 + Math.random() * (H - MARGIN_TOP - MARGIN_BOT - 60);
+        const rw = 30 + Math.random() * 25;
+        const rh = 30 + Math.random() * 25;
+        obstacles.push({
+            type: 'rock', x: W + 20,
+            y: ry - rh / 2, w: rw, h: rh,
+            passed: false, closeCalled: false,
+        });
+    } else if (r < 0.85 && dm > 300) {
+        // Thoptère Harkonnen (se déplace aussi verticalement)
+        obstacles.push({
+            type: 'thopter', x: W + 40,
+            y: MARGIN_TOP + 30 + Math.random() * (H - MARGIN_TOP - MARGIN_BOT - 60),
+            w: 40, h: 18,
+            vy: (Math.random() < 0.5 ? 1 : -1) * (0.5 + Math.random()),
+            phase: Math.random() * Math.PI * 2,
+            passed: false, closeCalled: false,
+        });
+    } else {
+        // Geyser de sable (colonne montante depuis le bas)
+        const gw = 20 + Math.random() * 15;
+        const gh = 80 + Math.random() * 100;
+        obstacles.push({
+            type: 'geyser', x: W + 20,
+            y: H - gh, w: gw, h: gh,
+            passed: false, closeCalled: false, phase: Math.random() * Math.PI * 2,
+        });
+    }
+}
+
+function spawnSpice() {
+    if (Math.random() > 0.5) return;
+    const count = 3 + Math.floor(Math.random() * 5);
+    const baseY = MARGIN_TOP + 40 + Math.random() * (H - MARGIN_TOP - MARGIN_BOT - 80);
+    const pattern = Math.random();
+    for (let i = 0; i < count; i++) {
+        let sx = W + 50 + i * 26;
+        let sy;
+        if (pattern < 0.33) sy = baseY; // ligne
+        else if (pattern < 0.66) sy = baseY - Math.sin(i / count * Math.PI) * 50; // arc
+        else sy = baseY + (Math.random() - 0.5) * 60; // dispersé
+        spiceItems.push({ x: sx, y: sy, collected: false, sparkle: Math.random() * Math.PI * 2 });
+    }
+}
+
+// ============================================================
+//  PARTICLES
+// ============================================================
+function spawnSand(x, y, count) {
+    for (let i = 0; i < count; i++)
+        particles.push({
+            x: x + (Math.random()-0.5)*10, y: y + (Math.random()-0.5)*6,
+            vx: (Math.random()-0.5)*3, vy: (Math.random()-0.5)*3,
+            life: 15 + Math.random() * 12, size: 1.5 + Math.random() * 2.5,
+            color: Math.random() < 0.5 ? 'rgba(180,150,100,' : 'rgba(210,180,120,',
+        });
+}
+function addFloatingText(text, x, y, color) {
+    floatingTexts.push({ text, x, y, vy: -1.5, life: 50, color, alpha: 1 });
+}
+
+// ============================================================
+//  RESET
+// ============================================================
+function reset() {
+    worm = createWorm();
+    obstacles = []; spiceItems = []; particles = []; floatingTexts = [];
+    distance = 0; spiceCount = 0; frameCount = 0;
+    gameSpeed = BASE_SPEED; nextObstacle = 90; milestone = 0;
+    shakeTimer = 0; finalScore = 0;
+    boosting = false; boostWanted = false; boostMeter = 100;
+    combo = 0; comboTimer = 0; closeCallBonus = 0;
+    startTime = Date.now();
+    targetY = H / 2;
+    generateBg();
+    updateScoreDisplay();
+}
+
+function totalScore() { return Math.floor(distance / 8) + spiceCount * 5 + closeCallBonus; }
+function updateScoreDisplay() { document.getElementById('score-display').textContent = totalScore(); }
+
+// ============================================================
+//  DRAWING
+// ============================================================
+function drawSky() {
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, C.skyTop); g.addColorStop(0.6, C.skyMid); g.addColorStop(1, C.skyBot);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+    // Soleil
+    ctx.fillStyle = 'rgba(255,200,60,0.2)';
+    ctx.beginPath(); ctx.arc(650, 55, 45, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,215,0,0.5)';
+    ctx.beginPath(); ctx.arc(650, 55, 20, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#FFD700';
+    ctx.beginPath(); ctx.arc(650, 55, 10, 0, Math.PI*2); ctx.fill();
+
+    // Dunes de fond
+    for (const d of bgDunes) {
+        d.x -= gameSpeed * 0.2;
+        if (d.x < -100) d.x += bgDunes.length * d.sp;
+    }
+    ctx.fillStyle = C.sandLine;
+    ctx.beginPath(); ctx.moveTo(0, H);
+    for (const d of bgDunes)
+        ctx.quadraticCurveTo(d.x, d.y, d.x + d.sp / 2, d.y + Math.sin(d.x * 0.01) * 5);
+    ctx.lineTo(W + 50, H); ctx.closePath(); ctx.fill();
+
+    // Sol
+    ctx.fillStyle = C.sand; ctx.fillRect(0, H - 25, W, 25);
+    ctx.fillStyle = C.sandDark; ctx.fillRect(0, H - 25, W, 2);
+}
+
+function drawObstacle(ob) {
+    if (ob.type === 'pillars') {
+        const topH = ob.gapY - ob.gapSize / 2;
+        const botY = ob.gapY + ob.gapSize / 2;
+        // Pilier haut
+        ctx.fillStyle = C.rock;
+        ctx.fillRect(ob.x, 0, ob.w, topH);
+        ctx.fillStyle = C.rockLight;
+        ctx.fillRect(ob.x, topH - 8, ob.w, 8);
+        // Stalactites
+        for (let i = 0; i < 3; i++) {
+            const sx = ob.x + 5 + i * (ob.w - 10) / 2;
+            ctx.fillStyle = C.rock;
+            ctx.beginPath(); ctx.moveTo(sx-4, topH); ctx.lineTo(sx, topH+8+Math.random()*4); ctx.lineTo(sx+4, topH); ctx.closePath(); ctx.fill();
+        }
+        // Pilier bas
+        ctx.fillStyle = C.rock;
+        ctx.fillRect(ob.x, botY, ob.w, H - botY);
+        ctx.fillStyle = C.rockLight;
+        ctx.fillRect(ob.x, botY, ob.w, 6);
+        // Stalagmites
+        for (let i = 0; i < 3; i++) {
+            const sx = ob.x + 5 + i * (ob.w - 10) / 2;
+            ctx.fillStyle = C.rock;
+            ctx.beginPath(); ctx.moveTo(sx-4, botY); ctx.lineTo(sx, botY-6-Math.random()*4); ctx.lineTo(sx+4, botY); ctx.closePath(); ctx.fill();
+        }
+    } else if (ob.type === 'rock') {
+        ctx.fillStyle = C.rock;
+        ctx.beginPath();
+        ctx.moveTo(ob.x, ob.y + ob.h);
+        ctx.lineTo(ob.x + 3, ob.y + ob.h * 0.2);
+        ctx.lineTo(ob.x + ob.w * 0.4, ob.y);
+        ctx.lineTo(ob.x + ob.w * 0.7, ob.y + ob.h * 0.1);
+        ctx.lineTo(ob.x + ob.w, ob.y + ob.h * 0.3);
+        ctx.lineTo(ob.x + ob.w - 2, ob.y + ob.h);
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = C.rockLight;
+        ctx.beginPath();
+        ctx.moveTo(ob.x + 3, ob.y + ob.h * 0.2);
+        ctx.lineTo(ob.x + ob.w * 0.4, ob.y);
+        ctx.lineTo(ob.x + ob.w * 0.35, ob.y + ob.h * 0.5);
+        ctx.lineTo(ob.x + 3, ob.y + ob.h);
+        ctx.closePath(); ctx.fill();
+    } else if (ob.type === 'thopter') {
+        ob.phase += 0.15;
+        const cx = ob.x + ob.w / 2, cy = ob.y + ob.h / 2;
+        // Fuselage
+        ctx.fillStyle = '#3A2020';
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, ob.w / 2, ob.h / 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // Ailes battantes
+        const wingY = Math.sin(ob.phase) * 8;
+        ctx.strokeStyle = '#5A3030'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(cx - 5, cy); ctx.lineTo(cx - 25, cy + wingY - 5); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx + 5, cy); ctx.lineTo(cx + 25, cy - wingY - 5); ctx.stroke();
+        // Œil rouge
+        ctx.fillStyle = '#FF0000';
+        ctx.beginPath(); ctx.arc(cx + ob.w * 0.3, cy, 2.5, 0, Math.PI * 2); ctx.fill();
+        // Traînée
+        ctx.strokeStyle = 'rgba(100,50,30,0.3)'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(ob.x, cy); ctx.lineTo(ob.x - 15, cy + Math.sin(ob.phase * 2) * 3); ctx.stroke();
+    } else if (ob.type === 'geyser') {
+        ob.phase += 0.05;
+        const intensity = 0.6 + Math.sin(ob.phase) * 0.4;
+        // Colonne de sable
+        const grd = ctx.createLinearGradient(ob.x, ob.y, ob.x, H);
+        grd.addColorStop(0, `rgba(210,180,120,${0.3 * intensity})`);
+        grd.addColorStop(0.5, `rgba(180,150,90,${0.5 * intensity})`);
+        grd.addColorStop(1, C.sand);
+        ctx.fillStyle = grd;
+        ctx.fillRect(ob.x - 3, ob.y, ob.w + 6, ob.h);
+        // Particules au sommet
+        ctx.fillStyle = `rgba(220,190,130,${0.6 * intensity})`;
+        for (let i = 0; i < 4; i++) {
+            const px = ob.x + ob.w / 2 + Math.sin(ob.phase * 3 + i * 2) * (ob.w / 2 + 5);
+            const py = ob.y - 5 + Math.sin(ob.phase * 2 + i) * 8;
+            ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill();
+        }
+    }
+}
+
+function drawSpiceItem(sp) {
+    if (sp.collected) return;
+    sp.sparkle += 0.08;
+    const glow = 0.5 + Math.sin(sp.sparkle) * 0.3;
+    ctx.fillStyle = 'rgba(255,215,0,' + (glow * 0.3) + ')';
+    ctx.beginPath(); ctx.arc(sp.x, sp.y, 10, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = C.spice;
+    ctx.beginPath(); ctx.moveTo(sp.x, sp.y-6); ctx.lineTo(sp.x+5, sp.y); ctx.lineTo(sp.x, sp.y+6); ctx.lineTo(sp.x-5, sp.y); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,' + (glow * 0.5) + ')';
+    ctx.beginPath(); ctx.moveTo(sp.x, sp.y-3); ctx.lineTo(sp.x+2, sp.y); ctx.lineTo(sp.x, sp.y+2); ctx.lineTo(sp.x-2, sp.y); ctx.closePath(); ctx.fill();
+}
+
+function drawWorm() {
+    const segs = worm.segs;
+    // Corps (du dernier au premier pour que la tête soit par-dessus)
+    for (let i = segs.length - 1; i >= 0; i--) {
+        const s = segs[i], r = segRadius(i);
+        const t = i / (segs.length - 1);
+
+        // Ombre au sol
+        ctx.fillStyle = 'rgba(0,0,0,0.08)';
+        ctx.beginPath(); ctx.ellipse(s.x, H - 22, r * 0.7, 3, 0, 0, Math.PI * 2); ctx.fill();
+
+        // Segment
+        const bodyColor = i === 0 ? C.wormDark : (i % 3 === 0 ? C.wormLight : C.wormBody);
+        ctx.fillStyle = bodyColor;
+        ctx.beginPath(); ctx.arc(s.x, s.y, r, 0, Math.PI * 2); ctx.fill();
+
+        // Anneau de détail
+        if (i > 0 && i % 2 === 0) {
+            ctx.strokeStyle = 'rgba(0,0,0,0.15)'; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.arc(s.x, s.y, r * 0.85, 0, Math.PI * 2); ctx.stroke();
+        }
+
+        // Reflet
+        ctx.fillStyle = 'rgba(255,230,180,0.12)';
+        ctx.beginPath(); ctx.arc(s.x - r * 0.2, s.y - r * 0.3, r * 0.4, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // Tête — détails
+    const head = segs[0];
+    const hr = WORM_HEAD_R;
+
+    // Bouche
+    ctx.fillStyle = C.wormMouth;
+    ctx.beginPath(); ctx.arc(head.x + hr * 0.6, head.y, hr * 0.5, 0, Math.PI * 2); ctx.fill();
+
+    // Dents (cercle de dents autour de la bouche)
+    ctx.fillStyle = C.wormTeeth;
+    for (let t = 0; t < 6; t++) {
+        const ang = t * Math.PI / 3 + frameCount * 0.02;
+        const tx = head.x + hr * 0.6 + Math.cos(ang) * hr * 0.4;
+        const ty = head.y + Math.sin(ang) * hr * 0.4;
+        ctx.beginPath(); ctx.arc(tx, ty, 2, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // Yeux (petits, sur les côtés)
+    ctx.fillStyle = '#222';
+    ctx.beginPath(); ctx.arc(head.x + 2, head.y - hr * 0.55, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(head.x + 2, head.y + hr * 0.55, 3, 0, Math.PI * 2); ctx.fill();
+
+    // Rider sur le dos (segment 3)
+    if (gameState === 'playing') {
+        const rs = segs[3];
+        const rr = segRadius(3);
+        // Petit personnage
+        ctx.fillStyle = '#2B1D0E';
+        // Corps
+        ctx.fillRect(rs.x - 4, rs.y - rr - 16, 8, 12);
+        // Tête
+        ctx.beginPath(); ctx.arc(rs.x, rs.y - rr - 20, 5, 0, Math.PI * 2); ctx.fill();
+        // Cape
+        ctx.fillStyle = '#5C4A32';
+        ctx.beginPath();
+        ctx.moveTo(rs.x - 4, rs.y - rr - 14);
+        ctx.lineTo(rs.x - 10, rs.y - rr - 8 + Math.sin(frameCount * 0.15) * 2);
+        ctx.lineTo(rs.x - 4, rs.y - rr - 4);
+        ctx.closePath(); ctx.fill();
+        // Crochets (maker hooks)
+        ctx.strokeStyle = '#A08050'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(rs.x - 3, rs.y - rr - 4); ctx.lineTo(rs.x - 6, rs.y - rr + 4); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(rs.x + 3, rs.y - rr - 4); ctx.lineTo(rs.x + 6, rs.y - rr + 4); ctx.stroke();
+    }
+
+    // Invincibilité flash
+    if (worm.invincible > 0 && Math.floor(worm.invincible / 4) % 2 === 0) {
+        ctx.fillStyle = 'rgba(255,200,50,0.15)';
+        ctx.beginPath(); ctx.arc(head.x, head.y, hr + 8, 0, Math.PI * 2); ctx.fill();
+    }
+}
+
+function drawParticles() {
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx; p.y += p.vy; p.life--;
+        if (p.life <= 0) { particles.splice(i, 1); continue; }
+        ctx.fillStyle = p.color + (p.life / 30) + ')';
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+    }
+}
+
+function drawFloatingTexts() {
+    for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        const ft = floatingTexts[i];
+        ft.y += ft.vy; ft.life--; ft.alpha = Math.min(1, ft.life / 15);
+        if (ft.life <= 0) { floatingTexts.splice(i, 1); continue; }
+        ctx.save(); ctx.globalAlpha = ft.alpha;
+        ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillStyle = ft.color; ctx.fillText(ft.text, ft.x, ft.y);
+        ctx.restore();
+    }
+}
+
+function drawHUD() {
+    ctx.save();
+    ctx.font = '13px sans-serif'; ctx.fillStyle = 'rgba(255,220,180,0.7)';
+    ctx.fillText(Math.floor(distance / 10) + ' m', 15, 22);
+    ctx.fillStyle = C.spice; ctx.fillText('x' + spiceCount, 15, 40);
+    ctx.beginPath(); ctx.moveTo(8,33); ctx.lineTo(12,37); ctx.lineTo(8,41); ctx.lineTo(4,37); ctx.closePath(); ctx.fill();
+    if (combo > 1) { ctx.fillStyle = C.gold; ctx.fillText('x' + combo + ' COMBO', 15, 58); }
+
+    const sp = Math.min(1, (gameSpeed - BASE_SPEED) / (MAX_SPEED - BASE_SPEED));
+    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(W-80, 10, 65, 6);
+    ctx.fillStyle = sp < 0.5 ? C.gold : sp < 0.8 ? '#E88' : C.red;
+    ctx.fillRect(W-80, 10, 65*sp, 6);
+    ctx.font = '9px sans-serif'; ctx.fillStyle = 'rgba(255,220,180,0.5)'; ctx.textAlign = 'right';
+    ctx.fillText('VITESSE', W-15, 28);
+
+    // Jauge de boost
+    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(W-80, 38, 65, 6);
+    ctx.fillStyle = boosting ? '#66ddff' : (boostMeter > BOOST_MIN_USE ? '#3aa0cc' : '#555');
+    ctx.fillRect(W-80, 38, 65 * (boostMeter/100), 6);
+    ctx.fillText('BOOST', W-15, 56);
+    ctx.restore();
+}
+
+function drawMenu() {
+    ctx.fillStyle = 'rgba(10,5,2,0.55)'; ctx.fillRect(0, 0, W, H);
+    ctx.save(); ctx.textAlign = 'center';
+    ctx.font = 'bold 32px sans-serif'; ctx.fillStyle = C.gold;
+    ctx.fillText('WORM RIDER', W/2, H/2-55);
+    ctx.font = '14px sans-serif'; ctx.fillStyle = '#a89060';
+    ctx.fillText('Chevauche Shai-Hulud à travers le désert profond', W/2, H/2-25);
+    ctx.font = '11px sans-serif'; ctx.fillStyle = '#7c5e2a';
+    ctx.fillText('Souris ou ↑↓ pour diriger · Esquive les rochers · Collecte l\'épice', W/2, H/2);
+    ctx.fillText('L\'épice fait grandir le ver (plus dur à faufiler) · Maintiens [Espace] pour un boost', W/2, H/2 + 16);
+    ctx.font = 'bold 18px sans-serif'; ctx.fillStyle = C.white;
+    ctx.fillText('Clique pour commencer', W/2, H/2+35);
+    if (bestScore > 0) { ctx.font = '13px sans-serif'; ctx.fillStyle = '#7c5e2a'; ctx.fillText('Meilleur score : ' + bestScore, W/2, H/2+60); }
+    ctx.restore();
+}
+
+function drawDead() {
+    ctx.fillStyle = 'rgba(10,5,2,0.6)'; ctx.fillRect(0, 0, W, H);
+    ctx.save(); ctx.textAlign = 'center';
+    ctx.font = 'bold 26px sans-serif'; ctx.fillStyle = C.red; ctx.fillText('ÉCRASÉ !', W/2, H/2-55);
+    ctx.font = 'bold 40px sans-serif'; ctx.fillStyle = C.gold; ctx.fillText(finalScore, W/2, H/2-10);
+    ctx.font = '14px sans-serif'; ctx.fillStyle = '#a89060';
+    ctx.fillText(Math.floor(distance/10) + ' m  ·  ' + spiceCount + ' épice', W/2, H/2+15);
+    if (bestScore > 0) ctx.fillText('Record : ' + bestScore, W/2, H/2+38);
+    ctx.font = 'bold 15px sans-serif'; ctx.fillStyle = C.white;
+    ctx.fillText('Clique pour rejouer', W/2, H/2+70);
+    ctx.restore();
+}
+
+// ============================================================
+//  COLLISION
+// ============================================================
+// Un anneau (cx,cy,r) touche-t-il l'obstacle ? Renvoie true en cas de contact.
+function segHitsObstacle(cx, cy, r, ob) {
+    if (ob.type === 'pillars') {
+        const topH = ob.gapY - ob.gapSize / 2;
+        const botY = ob.gapY + ob.gapSize / 2;
+        if (cx + r > ob.x && cx - r < ob.x + ob.w) {
+            if (cy - r < topH || cy + r > botY) return true;
+        }
+        return false;
+    } else if (ob.type === 'rock') {
+        const rx = Math.max(ob.x + 4, Math.min(cx, ob.x + ob.w - 4));
+        const ry = Math.max(ob.y + 4, Math.min(cy, ob.y + ob.h - 4));
+        const dx = cx - rx, dy = cy - ry;
+        return dx * dx + dy * dy < r * r;
+    } else if (ob.type === 'thopter') {
+        const dx = cx - (ob.x + ob.w/2), dy = cy - ob.y;
+        return dx*dx + dy*dy < (r + 14) * (r + 14);
+    } else if (ob.type === 'geyser') {
+        return cx + r > ob.x && cx - r < ob.x + ob.w && cy + r > ob.y;
+    }
+    return false;
+}
+
+// Distance approx. entre l'anneau et l'obstacle, pour détecter les esquives serrées.
+function segNearMiss(cx, cy, ob, margin) {
+    if (ob.type === 'pillars') {
+        const topH = ob.gapY - ob.gapSize / 2;
+        const botY = ob.gapY + ob.gapSize / 2;
+        if (cx + margin > ob.x && cx - margin < ob.x + ob.w) {
+            return (cy - margin < topH) || (cy + margin > botY);
+        }
+        return false;
+    } else if (ob.type === 'rock' || ob.type === 'geyser') {
+        return cx + margin > ob.x && cx - margin < ob.x + ob.w &&
+               cy + margin > ob.y && cy - margin < ob.y + (ob.h || 999);
+    } else if (ob.type === 'thopter') {
+        const dx = cx - (ob.x + ob.w/2), dy = cy - ob.y;
+        return dx*dx + dy*dy < (margin + 14) * (margin + 14);
+    }
+    return false;
+}
+
+function checkCollisions() {
+    if (worm.invincible > 0) return false;
+    const segs = worm.segs;
+
+    for (const ob of obstacles) {
+        let hit = false, nearMissed = false;
+        for (let i = 0; i < segs.length; i++) {
+            const r = segRadius(i) - HIT_PAD;
+            if (segHitsObstacle(segs[i].x, segs[i].y, r, ob)) { hit = true; break; }
+        }
+        if (hit) return true;
+        if (!ob.closeCalled) {
+            nearMissed = segNearMiss(segs[0].x, segs[0].y, ob, WORM_HEAD_R + CLOSE_CALL_MARGIN);
+            if (nearMissed) {
+                ob.closeCalled = true;
+                combo++; comboTimer = 100;
+                const bonus = 8 * Math.min(combo, 5);
+                closeCallBonus += bonus;
+                addFloatingText('FRÔLÉ +' + bonus, segs[0].x, segs[0].y - 24, C.gold);
+                sndCloseCall();
+            }
+        }
+    }
+
+    // Bordures (tête uniquement, le corps peut légèrement mordre le sable)
+    const hr = WORM_HEAD_R - HIT_PAD;
+    const head = segs[0];
+    if (head.y - hr < 0 || head.y + hr > H - 25) return true;
+
+    return false;
+}
+
+// ============================================================
+//  TICK
+// ============================================================
+function tick() {
+    if (gameState === 'dead') { frameCount++; return; }
+    if (gameState !== 'playing') return;
+    frameCount++;
+
+    gameSpeed = Math.min(MAX_SPEED, BASE_SPEED + frameCount * SPEED_ACCEL);
+
+    // Boost (risque/récompense) : maintenir le bouton donne un coup de vitesse
+    // tant que la jauge n'est pas vide — plus de distance/score, mais moins
+    // de temps pour réagir aux obstacles.
+    if (boostWanted && (boosting ? boostMeter > 0 : boostMeter > BOOST_MIN_USE)) {
+        if (!boosting) sndBoost();
+        boosting = true;
+        boostMeter = Math.max(0, boostMeter - BOOST_DRAIN);
+        gameSpeed = Math.min(MAX_SPEED * BOOST_MULT, gameSpeed * BOOST_MULT);
+    } else {
+        boosting = false;
+        boostMeter = Math.min(100, boostMeter + BOOST_REGEN);
+    }
+    distance += gameSpeed;
+
+    if (comboTimer > 0) comboTimer--; else combo = 0;
+
+    // Milestones
+    const dm = Math.floor(distance / 10), nextMs = (milestone + 1) * 500;
+    if (dm >= nextMs) { milestone++; sndMilestone(); addFloatingText(nextMs + ' m !', W/2, H/2-30, C.gold); }
+
+    // Worm head suit la cible avec lissage
+    worm.headY += (targetY - worm.headY) * HEAD_SMOOTH;
+    worm.headY = Math.max(MARGIN_TOP + WORM_HEAD_R, Math.min(H - MARGIN_BOT - WORM_HEAD_R, worm.headY));
+    worm.segs[0].y = worm.headY;
+
+    // Le corps garde un décalage X fixe derrière la tête (comme le reste du
+    // décor qui défile) et relit le Y de la tête à i*WORM_SPACING de
+    // distance parcourue en arrière — donc l'ondulation suit le tracé réel
+    // sans jamais se tasser en colonne.
+    pushTrail(distance, worm.segs[0].y);
+    for (let i = 1; i < worm.segs.length; i++) {
+        worm.segs[i].x = worm.segs[0].x - i * WORM_SPACING;
+        worm.segs[i].y = yAtTravelDistance(distance - i * WORM_SPACING) + Math.sin(frameCount * 0.06 + i * 0.5) * 0.8;
+    }
+
+    // Invincibilité
+    if (worm.invincible > 0) worm.invincible--;
+
+    // Spawn
+    if (frameCount >= nextObstacle) { spawnObstacle(); spawnSpice(); }
+
+    // Move obstacles
+    for (let i = obstacles.length - 1; i >= 0; i--) {
+        const ob = obstacles[i];
+        ob.x -= gameSpeed;
+        if (ob.type === 'thopter') {
+            ob.y += ob.vy;
+            if (ob.y < MARGIN_TOP + 20 || ob.y > H - MARGIN_BOT - 20) ob.vy *= -1;
+        }
+        if (!ob.passed && ob.x + (ob.w || 50) < worm.segs[0].x) ob.passed = true;
+        if (ob.x < -80) obstacles.splice(i, 1);
+    }
+
+    // Spice
+    const hx = worm.segs[0].x, hy = worm.segs[0].y;
+    for (let i = spiceItems.length - 1; i >= 0; i--) {
+        spiceItems[i].x -= gameSpeed;
+        if (!spiceItems[i].collected) {
+            const sp = spiceItems[i];
+            const dx = sp.x - hx, dy = sp.y - hy;
+            if (dx*dx + dy*dy < 500) {
+                sp.collected = true; spiceCount++; sndSpice();
+                addFloatingText('+1', sp.x, sp.y - 10, C.spice);
+                maybeGrowWorm();
+            }
+        }
+        if (spiceItems[i].x < -30) spiceItems.splice(i, 1);
+    }
+
+    // Sand particles from worm movement (plus intenses en boost)
+    if (frameCount % (boosting ? 2 : 4) === 0) {
+        const tail = worm.segs[worm.segs.length - 1];
+        spawnSand(tail.x, tail.y, boosting ? 3 : 1);
+    }
+    if (frameCount % 8 === 0) sndRumble();
+
+    // Collision
+    if (checkCollisions()) {
+        gameState = 'dead'; frameCount = 0; sndCrash();
+        shakeTimer = 15; shakeIntensity = 8;
+        finalScore = totalScore();
+        if (finalScore > 0) {
+            if (finalScore > bestScore) { bestScore = finalScore; localStorage.setItem('wormrider_best', String(finalScore)); }
+            submitScore(finalScore);
+        }
+    } else {
+        updateScoreDisplay();
+    }
+}
+
+// ============================================================
+//  DRAW
+// ============================================================
+function draw() {
+    ctx.save();
+    if (shakeTimer > 0) {
+        shakeTimer--;
+        ctx.translate((Math.random()-0.5)*shakeIntensity, (Math.random()-0.5)*shakeIntensity);
+    }
+    drawSky();
+    for (const ob of obstacles) drawObstacle(ob);
+    for (const sp of spiceItems) drawSpiceItem(sp);
+    drawParticles();
+    if (gameState === 'playing' || gameState === 'dead') drawWorm();
+    drawFloatingTexts();
+    if (gameState === 'playing') drawHUD();
+    if (gameState === 'menu') { drawWorm(); drawMenu(); }
+    if (gameState === 'dead') drawDead();
+    ctx.restore();
+}
+
+// ============================================================
+//  GAME LOOP
+// ============================================================
+function loop(now) {
+    requestAnimationFrame(loop);
+    if (!lastTime) { lastTime = now; return; }
+    const dt = now - lastTime; lastTime = now;
+    accumulator += Math.min(dt, 100);
+    while (accumulator >= FRAME_DUR) { tick(); accumulator -= FRAME_DUR; }
+    draw();
+}
+
+// ============================================================
+//  INPUT
+// ============================================================
+function handleAction() {
+    if (gameState === 'menu') {
+        gameState = 'playing'; reset();
+        if (!scoreSecret) fetchSecret();
+        return;
+    }
+    if (gameState === 'dead') {
+        if (frameCount > 40) { gameState = 'menu'; reset(); }
+        return;
+    }
+}
+
+canvas.addEventListener('pointerdown', function(e) {
+    e.preventDefault();
+    if (gameState === 'playing') { boostWanted = true; return; }
+    handleAction();
+});
+// pointermove/up sur window (pas juste le canvas) : si la souris sort du
+// cadre du jeu on continue de piloter au lieu de figer le ver, et le boost
+// se relâche même si le clic est relâché en dehors du canvas.
+window.addEventListener('pointerup', function() { boostWanted = false; });
+window.addEventListener('pointermove', function(e) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleY = H / rect.height;
+    targetY = Math.max(0, Math.min(H, (e.clientY - rect.top) * scaleY));
+    mouseActive = true;
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.code === 'Space') {
+        e.preventDefault();
+        if (gameState === 'playing') { boostWanted = true; return; }
+        handleAction();
+    }
+    if (e.code === 'ArrowUp' || e.code === 'KeyW') { e.preventDefault(); targetY = Math.max(MARGIN_TOP, targetY - 15); }
+    if (e.code === 'ArrowDown' || e.code === 'KeyS') { e.preventDefault(); targetY = Math.min(H - MARGIN_BOT, targetY + 15); }
+});
+document.addEventListener('keyup', function(e) {
+    if (e.code === 'Space') { boostWanted = false; }
+});
+
+// ============================================================
+//  SCORES API
+// ============================================================
+async function submitScore(s) {
+    if (!scoreSecret) await fetchSecret();
+    if (!scoreSecret) return;
+    const dur = Math.floor((Date.now() - startTime) / 1000);
+    const hash = await sha256(GAME_ID + s + dur + scoreSecret);
+    try {
+        const r = await fetch('scores_api.php', {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'submit', game: GAME_ID, score: s, duration: dur, hash })
+        });
+        const j = await r.json();
+        if (!j.ok) console.warn('[worm_rider] score non enregistré côté serveur :', j.error || 'raison inconnue');
+        if (j.ok && j.new_personal) { bestScore = s; localStorage.setItem('wormrider_best', String(s)); }
+        loadLeaderboard();
+    } catch (e) {}
+}
+async function sha256(msg) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+async function fetchSecret() {
+    try {
+        const r = await fetch('scores_api.php', {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'token', game: GAME_ID })
+        });
+        const j = await r.json();
+        if (j.ok) scoreSecret = j.secret;
+    } catch (e) {}
+}
+async function loadLeaderboard() {
+    try {
+        const r = await fetch('scores_api.php?action=leaderboard&game=' + GAME_ID + '&limit=10', { credentials: 'same-origin' });
+        const j = await r.json();
+        if (!j.ok) return;
+        const me = localStorage.getItem('user') || '';
+        const ul = document.getElementById('lb-list');
+        if (!j.leaderboard.length) { ul.innerHTML = '<li style="color:#7c5e2a">Aucun score</li>'; return; }
+        ul.innerHTML = j.leaderboard.map(function(e, i) {
+            var medals = ['\u{1F947}','\u{1F948}','\u{1F949}'];
+            var rank = medals[i] || (i + 1);
+            var isMe = e.player === me;
+            return '<li class="'+(isMe?'me':'')+'"><span class="rank">'+rank+'</span><span class="name">'+esc(e.player)+'</span><span class="pts">'+e.score+'</span></li>';
+        }).join('');
+    } catch (e) {}
+}
+function esc(s) { return String(s).replace(/[&<>"']/g, function(c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
+// ============================================================
+//  INIT
+// ============================================================
+bestScore = parseInt(localStorage.getItem('wormrider_best') || '0', 10);
+gameState = 'menu'; reset(); loadLeaderboard(); fetchSecret();
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

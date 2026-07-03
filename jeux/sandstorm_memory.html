@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Sandstorm Memory — Hub Jeux</title>
+<link rel="stylesheet" href="../style.css">
+<style>
+:root {
+    --bg: #0a0402;
+    --gold: #cda434;
+    --text: #f5deb3;
+    --muted: #7c5e2a;
+    --card-bg: #1f1106;
+    --card-front-bg: #140a04;
+    --storm-color: rgba(180, 120, 40, 0.6);
+}
+html, body {
+    height: 100%; margin: 0;
+    overflow-x: hidden; overflow-y: auto;
+    touch-action: pan-y;
+    background: var(--bg);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    color: var(--text);
+}
+body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse at 50% 20%, rgba(120,80,20,0.15) 0%, transparent 70%),
+                linear-gradient(180deg, rgba(20,10,0,0.8) 0%, rgba(8,4,2,0.95) 100%);
+    pointer-events: none; z-index: 0;
+}
+#game-wrapper {
+    position: relative; z-index: 1;
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    padding: 20px 10px 40px;
+}
+.game-header {
+    display: flex; align-items: center; gap: 14px;
+    width: 100%; max-width: 640px; padding: 10px 16px; box-sizing: border-box;
+    background: rgba(0,0,0,0.4); border: 1px solid #3d2b16; border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.35);
+}
+.game-header .back-link {
+    color: var(--gold); text-decoration: none; font-weight: bold; font-size: 0.82em;
+    border: 1px solid #7c5e2a; border-radius: 4px; padding: 6px 14px;
+    background: linear-gradient(180deg, #2a1a0b, #1a0f05);
+    transition: all 0.2s; white-space: nowrap;
+}
+.game-header .back-link:hover { background: var(--gold); color: #000; border-color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.4); }
+.game-header .game-title {
+    font-size: 1.1em; font-weight: bold; color: var(--gold);
+    text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 10px rgba(205,164,52,0.3);
+}
+
+/* HUD */
+.hud {
+    display: flex; gap: 20px; align-items: center; justify-content: center;
+    flex-wrap: wrap; font-size: 0.9em;
+    background: rgba(0,0,0,0.3); padding: 8px 18px; border-radius: 8px;
+    backdrop-filter: blur(4px);
+}
+.hud-item { text-align: center; }
+.hud-label { color: var(--muted); font-size: 0.7em; text-transform: uppercase; letter-spacing: 1px; }
+.hud-val { color: var(--gold); font-weight: bold; font-size: 1.3em; }
+.hud-val.lives { color: #ff6644; }
+.hud-val.combo { color: #ff8800; }
+
+/* Board container */
+#board-container {
+    position: relative;
+    margin: 10px 0;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 0 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(205,164,52,0.2);
+    background: rgba(20,10,5,0.3);
+    backdrop-filter: blur(2px);
+}
+#board {
+    display: grid; gap: 10px; justify-content: center; justify-items: center;
+    padding: 20px; perspective: 800px;
+    min-height: 300px;
+}
+
+/* Cartes */
+.card {
+    width: 80px; height: 100px; position: relative; cursor: pointer;
+    transform-style: preserve-3d; transition: transform 0.5s cubic-bezier(0.4,0,0.2,1), box-shadow 0.3s;
+    will-change: transform;
+}
+.card:hover {
+    box-shadow: 0 0 12px rgba(205,164,52,0.3);
+}
+.card.flipped { transform: rotateY(180deg); }
+.card.matched {
+    transform: rotateY(180deg);
+    box-shadow: 0 0 18px rgba(255,215,0,0.6);
+    border-color: var(--gold);
+}
+.card.shake {
+    animation: cardShake 0.5s ease;
+}
+@keyframes cardShake {
+    0%,100% { transform: rotateY(0deg) translateX(0); }
+    20% { transform: rotateY(0deg) translateX(-6px); }
+    40% { transform: rotateY(0deg) translateX(6px); }
+    60% { transform: rotateY(0deg) translateX(-4px); }
+    80% { transform: rotateY(0deg) translateX(4px); }
+}
+.card-face {
+    position: absolute; inset: 0; backface-visibility: hidden; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; flex-direction: column;
+    overflow: hidden;
+}
+.card-back {
+    background: linear-gradient(145deg, #2a1a0b, #120905);
+    border: 2px solid #3d2b16;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+}
+.card-back::after {
+    content: '🌀';
+    font-size: 28px;
+    opacity: 0.25;
+    color: var(--gold);
+}
+.card-back::before {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border: 1px dashed rgba(205,164,52,0.2);
+    border-radius: 4px;
+}
+.card-front {
+    background: radial-gradient(ellipse at center, #1f1106 0%, #0d0602 100%);
+    border: 2px solid #5c4a28;
+    transform: rotateY(180deg);
+    box-shadow: inset 0 0 30px rgba(0,0,0,0.6);
+}
+.card-symbol { font-size: 34px; line-height: 1; text-shadow: 0 0 10px rgba(255,215,0,0.5); }
+.card-name { font-size: 0.55em; color: #a89060; margin-top: 4px; text-align: center; line-height: 1.1; }
+
+/* Tempête canvas */
+#storm-canvas {
+    position: absolute; inset: 0; pointer-events: none; z-index: 10;
+    border-radius: 12px;
+}
+.storm-warning {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    z-index: 20; color: var(--gold); font-size: 1.6em; font-weight: bold;
+    text-shadow: 0 0 20px rgba(255,200,50,0.9);
+    text-align: center; opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; letter-spacing: 2px;
+}
+.storm-warning.visible { opacity: 1; animation: stormPulse 0.8s infinite alternate; }
+@keyframes stormPulse {
+    from { text-shadow: 0 0 20px rgba(255,200,50,0.9); }
+    to { text-shadow: 0 0 35px rgba(255,200,50,1), 0 0 60px rgba(255,160,0,0.6); }
+}
+
+/* Overlays */
+.overlay {
+    position: fixed; inset: 0; z-index: 50;
+    background: rgba(8,4,2,0.9);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; text-align: center;
+    backdrop-filter: blur(5px);
+    animation: fadeIn 0.3s ease;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.overlay h2 { color: var(--gold); font-size: 2em; margin: 0 0 10px; text-shadow: 0 0 15px rgba(205,164,52,0.5); }
+.overlay .sub { color: #a89060; font-size: 0.95em; margin-bottom: 20px; }
+.overlay .score-big { color: var(--gold); font-size: 3em; font-weight: bold; margin: 10px 0; text-shadow: 0 0 20px rgba(255,204,0,0.7); }
+.overlay .detail { color: #7c5e2a; font-size: 0.85em; margin: 4px 0; }
+.overlay button, .overlay .btn {
+    display: inline-block; margin-top: 16px; padding: 12px 36px;
+    background: linear-gradient(180deg, #2a1a0b, #1a0f05);
+    color: var(--gold); border: 1px solid #7c5e2a; border-radius: 6px;
+    font-size: 1em; font-weight: bold; text-transform: uppercase; letter-spacing: 2px;
+    cursor: pointer; text-decoration: none; transition: all 0.3s;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+.overlay button:hover, .overlay .btn:hover {
+    background: linear-gradient(180deg, #3d2610, #2a1a0b); color: #fff;
+    border-color: var(--gold); box-shadow: 0 0 25px rgba(205,164,52,0.4);
+    transform: translateY(-2px);
+}
+
+/* Classement */
+#leaderboard {
+    width: 90%; max-width: 420px; margin-top: 16px;
+    background: rgba(10,5,2,0.92); border: 1px solid #3d2b16;
+    border-radius: 8px; padding: 16px; font-size: 0.8em;
+    backdrop-filter: blur(4px);
+}
+#leaderboard h3 { margin: 0 0 12px; color: var(--gold); font-size: 0.95em; text-align: center; text-transform: uppercase; letter-spacing: 2px; }
+#lb-list { list-style: none; padding: 0; margin: 0; }
+#lb-list li { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid rgba(61,43,22,0.4); }
+#lb-list li .rank { color: var(--muted); width: 26px; }
+#lb-list li .name { flex: 1; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#lb-list li .pts { color: var(--gold); font-weight: bold; min-width: 44px; text-align: right; }
+#lb-list li.me .name { color: var(--gold); }
+
+.controls-hint { font-size: 0.75em; color: var(--muted); text-align: center; }
+
+/* Responsive */
+@media (max-width: 600px) {
+    .card { width: 60px; height: 78px; }
+    .card-symbol { font-size: 24px; }
+    .card-name { font-size: 0.5em; }
+    #board { gap: 6px; padding: 10px; }
+}
+</style>
+</head>
+<body>
+<script src="../auth-guard.js"></script>
+<div id="game-wrapper">
+    <div class="game-header">
+        <a href="hub.html" class="back-link">&larr; Hub Jeux</a>
+        <span class="game-title">🌪️ Sandstorm Memory</span>
+    </div>
+
+    <div class="hud" id="hud" style="display:none">
+        <div class="hud-item"><div class="hud-label">Niveau</div><div class="hud-val" id="hud-level">1</div></div>
+        <div class="hud-item"><div class="hud-label">Score</div><div class="hud-val" id="hud-score">0</div></div>
+        <div class="hud-item"><div class="hud-label">Combo</div><div class="hud-val combo" id="hud-combo">x1</div></div>
+        <div class="hud-item"><div class="hud-label">Vies</div><div class="hud-val lives" id="hud-lives">❤❤❤</div></div>
+        <div class="hud-item"><div class="hud-label">Temps</div><div class="hud-val" id="hud-time">0:00</div></div>
+    </div>
+
+    <div id="board-container">
+        <div id="board"></div>
+        <canvas id="storm-canvas"></canvas>
+        <div class="storm-warning" id="storm-warning">🌪️ TEMPÊTE DE SABLE !</div>
+    </div>
+
+    <div class="controls-hint">Mémorise les symboles, trouve les paires — attention aux tempêtes !</div>
+
+    <div id="leaderboard">
+        <h3>🏆 Classement</h3>
+        <ul id="lb-list"><li style="color:var(--muted)">Chargement…</li></ul>
+    </div>
+</div>
+
+<!-- Overlays -->
+<div class="overlay" id="menu-overlay">
+    <h2>🌪️ Sandstorm Memory</h2>
+    <div class="sub">Mémorise les symboles de Dune — les tempêtes mélangent les cartes !</div>
+    <div class="detail">🃏 Niveaux progressifs · 🌀 Tempêtes de sable · ⚡ Combos</div>
+    <div class="detail">3 vies par niveau · Temps bonus · Symboles cachés</div>
+    <button id="btn-start">Commencer</button>
+</div>
+
+<div class="overlay" id="level-overlay" style="display:none">
+    <h2 id="level-title">Niveau terminé !</h2>
+    <div class="score-big" id="level-score">0</div>
+    <div class="detail" id="level-detail"></div>
+    <button id="btn-next">Niveau suivant</button>
+</div>
+
+<div class="overlay" id="gameover-overlay" style="display:none">
+    <h2>Englouti par la tempête !</h2>
+    <div class="score-big" id="final-score">0</div>
+    <div class="detail" id="final-detail"></div>
+    <button id="btn-retry">Rejouer</button>
+</div>
+
+<script>
+;(function () {
+const GAME_ID = 'sandstorm_memory';
+const board = document.getElementById('board');
+const stormCanvas = document.getElementById('storm-canvas');
+const stormCtx = stormCanvas.getContext('2d');
+const stormWarning = document.getElementById('storm-warning');
+
+// ---- Symboles Dune ----
+const ALL_SYMBOLS = [
+    { icon: '🐛', name: 'Shai-Hulud' },
+    { icon: '🦅', name: 'Ornithoptère' },
+    { icon: '💎', name: 'Épice' },
+    { icon: '🗡️', name: 'Crysknife' },
+    { icon: '🛡️', name: 'Bouclier' },
+    { icon: '👁️', name: 'Œil d\'Ibad' },
+    { icon: '🏜️', name: 'Désert' },
+    { icon: '🌙', name: 'Lune' },
+    { icon: '⚔️', name: 'Combat' },
+    { icon: '🏛️', name: 'Sietch' },
+    { icon: '⚡', name: 'Thumper' },
+    { icon: '🌀', name: 'Coriolis' },
+    { icon: '🧪', name: 'Eau de vie' },
+    { icon: '🎭', name: 'Bene Gesserit' },
+    { icon: '👑', name: 'Empereur' },
+    { icon: '🚀', name: 'Heighliner' },
+];
+
+// ---- Niveaux ----
+const LEVELS = [
+    { cols: 4, rows: 3, pairs: 6,  peekTime: 3000, storm: false },
+    { cols: 4, rows: 4, pairs: 8,  peekTime: 4000, storm: false },
+    { cols: 5, rows: 4, pairs: 10, peekTime: 4500, storm: true, stormAt: 4 },
+    { cols: 6, rows: 4, pairs: 12, peekTime: 5000, storm: true, stormAt: 5 },
+    { cols: 6, rows: 5, pairs: 15, peekTime: 5500, storm: true, stormAt: 4 },
+    { cols: 6, rows: 6, pairs: 18, peekTime: 6000, storm: true, stormAt: 3 },
+];
+
+// ---- État ----
+let score = 0, level = 0, lives = 0, maxLives = 3;
+let gameOver_ = false;
+let cards = [], flipped = [], matched = 0, totalPairs = 0;
+let comboStreak = 0, moveCount = 0;
+let locked = false;
+let levelStartTime = 0, gameStartTime = 0;
+let stormScheduled = false, stormCount = 0, matchesSinceStorm = 0;
+let bestScore = 0, scoreSecret = '';
+let stormParticles = [], stormActive = false, stormAnimFrame = 0;
+
+// ---- Sons ----
+let audioCtx = null;
+function aud() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); return audioCtx; }
+
+function sndFlip() { tone(600, 0.06, 0.06, 'sine', 400); }
+function sndMatch() { [660, 880, 1100].forEach((f,i) => tone(f, 0.12, 0.08, 'sine', f*1.2, i*0.07)); }
+function sndMismatch() { tone(200, 0.15, 0.06, 'square', 100); }
+function sndCombo() { [880,1100,1320,1760].forEach((f,i) => tone(f, 0.1, 0.07, 'sine', f*1.1, i*0.05)); }
+function sndStorm() {
+    const a = aud(), t = a.currentTime;
+    const bufSize = a.sampleRate * 0.8;
+    const buf = a.createBuffer(1, bufSize, a.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < bufSize; i++) d[i] = (Math.random() * 2 - 1) * 0.15 * Math.sin(i / bufSize * Math.PI);
+    const src = a.createBufferSource(), g = a.createGain();
+    src.buffer = buf; g.gain.setValueAtTime(0.12, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.8);
+    const bp = a.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 400; bp.Q.value = 1;
+    src.connect(bp); bp.connect(g); g.connect(a.destination); src.start(t);
+}
+function sndLevelComplete() { [523,659,784,1047,1319].forEach((f,i) => tone(f, 0.2, 0.08, 'sine', f, i*0.1)); }
+function sndGameOver() { [400,350,300,200].forEach((f,i) => tone(f, 0.2, 0.06, 'sawtooth', f*0.8, i*0.15)); }
+
+function tone(freq, dur, vol, type, endFreq, delay) {
+    try {
+        const a = aud(), t = a.currentTime + (delay || 0);
+        const o = a.createOscillator(), g = a.createGain();
+        o.type = type; o.frequency.setValueAtTime(freq, t);
+        if (endFreq) o.frequency.exponentialRampToValueAtTime(endFreq, t+dur);
+        g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t+dur);
+        o.connect(g); g.connect(a.destination);
+        o.start(t); o.stop(t+dur);
+    } catch(e){}
+}
+
+// ---- Utilitaires ----
+function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+}
+
+function getLevelConfig() {
+    if (level < LEVELS.length) return LEVELS[level];
+    return {
+        cols: 6, rows: 6, pairs: 18,
+        peekTime: Math.max(3000, 6000 - (level - LEVELS.length) * 300),
+        storm: true, stormAt: Math.max(2, 4 - Math.floor((level - LEVELS.length) / 2)),
+    };
+}
+
+// ---- Construction du plateau ----
+function buildBoard() {
+    const cfg = getLevelConfig();
+    totalPairs = cfg.pairs;
+    matched = 0; moveCount = 0; comboStreak = 0;
+    maxLives = 3 + Math.floor(Math.max(0, cfg.pairs - 6) / 4);
+    lives = maxLives;
+    matchesSinceStorm = 0; stormCount = 0;
+    flipped = []; locked = false; gameOver_ = false;
+    stormScheduled = cfg.storm;
+
+    const symbols = shuffle([...ALL_SYMBOLS]).slice(0, cfg.pairs);
+    const cardData = shuffle([...symbols, ...symbols]);
+
+    board.style.gridTemplateColumns = `repeat(${cfg.cols}, 80px)`;
+    board.innerHTML = '';
+    cards = [];
+
+    cardData.forEach((sym, i) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+            <div class="card-face card-back"></div>
+            <div class="card-face card-front">
+                <span class="card-symbol">${sym.icon}</span>
+                <span class="card-name">${sym.name}</span>
+            </div>`;
+        card.dataset.index = i;
+        card.dataset.symbolId = sym.name;
+        // On relit l'index dans dataset.index au moment du clic (pas de closure
+        // figée sur i) : après une tempête, les cartes non appariées changent
+        // de position dans le tableau `cards`, et dataset.index est mis à jour
+        // en conséquence — sinon un clic finissait par retourner la mauvaise carte.
+        card.addEventListener('click', () => onCardClick(parseInt(card.dataset.index, 10)));
+        board.appendChild(card);
+        cards.push({ el: card, symbol: sym.name, matched: false });
+    });
+
+    // Resize storm canvas
+    requestAnimationFrame(() => {
+        const rect = board.getBoundingClientRect();
+        stormCanvas.width = rect.width;
+        stormCanvas.height = rect.height;
+        stormCanvas.style.width = rect.width + 'px';
+        stormCanvas.style.height = rect.height + 'px';
+    });
+
+    updateHUD();
+}
+
+// ---- Peek (montrer toutes les cartes) ----
+function peekCards(duration) {
+    locked = true;
+    cards.forEach(c => c.el.classList.add('flipped'));
+    setTimeout(() => {
+        cards.forEach(c => { if (!c.matched) c.el.classList.remove('flipped'); });
+        locked = false;
+        levelStartTime = Date.now();
+    }, duration);
+}
+
+// ---- Clic sur une carte ----
+function onCardClick(idx) {
+    if (locked || gameOver_) return;
+    const card = cards[idx];
+    if (card.matched || card.el.classList.contains('flipped')) return;
+
+    sndFlip();
+    card.el.classList.add('flipped');
+    flipped.push(idx);
+
+    if (flipped.length === 2) {
+        locked = true;
+        moveCount++;
+        const [a, b] = flipped;
+
+        if (cards[a].symbol === cards[b].symbol) {
+            comboStreak++;
+            matched++;
+            matchesSinceStorm++;
+            cards[a].matched = cards[b].matched = true;
+            const comboBonus = Math.min(comboStreak, 5);
+            score += 100 * comboBonus;
+            if (comboStreak >= 3) sndCombo(); else sndMatch();
+
+            setTimeout(() => {
+                cards[a].el.classList.add('matched');
+                cards[b].el.classList.add('matched');
+                flipped = [];
+                locked = false;
+                updateHUD();
+                if (stormScheduled && matchesSinceStorm >= (getLevelConfig().stormAt || 4) && matched < totalPairs) {
+                    triggerStorm();
+                }
+                if (matched >= totalPairs) setTimeout(levelComplete, 400);
+            }, 350);
+        } else {
+            comboStreak = 0;
+            lives--;
+            const isDead = lives <= 0;
+            sndMismatch();
+
+            setTimeout(() => {
+                cards[a].el.classList.add('shake');
+                cards[b].el.classList.add('shake');
+            }, 200);
+
+            setTimeout(() => {
+                cards[a].el.classList.remove('flipped', 'shake');
+                cards[b].el.classList.remove('flipped', 'shake');
+                flipped = [];
+                updateHUD();
+                if (isDead) { locked = true; setTimeout(gameOver, 300); }
+                else locked = false;
+            }, 900);
+        }
+    }
+}
+
+// ---- Tempête de sable ----
+function triggerStorm() {
+    locked = true;
+    matchesSinceStorm = 0;
+    stormCount++;
+    stormWarning.classList.add('visible');
+    sndStorm();
+
+    stormActive = true;
+    stormParticles = [];
+    for (let i = 0; i < 120; i++) {
+        stormParticles.push({
+            x: Math.random() * stormCanvas.width,
+            y: Math.random() * stormCanvas.height,
+            vx: 3 + Math.random() * 5,
+            vy: -1 + Math.random() * 2,
+            size: 1 + Math.random() * 3,
+            alpha: 0.2 + Math.random() * 0.4,
+        });
+    }
+    if (!stormAnimFrame) requestAnimationFrame(animateStorm);
+
+    setTimeout(() => {
+        cards.forEach(c => { if (!c.matched) c.el.classList.remove('flipped'); });
+        // Mélanger les cartes non matchées sans les cloner
+        const unmatched = cards.filter(c => !c.matched);
+        const shuffledUnmatched = shuffle([...unmatched]);
+        // Récupérer tous les éléments DOM actuels
+        const boardEl = board;
+        const allCardEls = Array.from(boardEl.children);
+        // Indices des non matchées
+        const unmatchedIndices = [];
+        allCardEls.forEach((el, i) => {
+            if (!cards[i].matched) unmatchedIndices.push(i);
+        });
+        // Remplacer les éléments dans le DOM : on retire les éléments non matchés,
+        // puis on les réinsère aux mêmes positions mais dans un nouvel ordre.
+        // Pour simplifier, on va retirer tous les éléments, puis reconstruire l'ordre.
+        const fragment = document.createDocumentFragment();
+        const orderedEls = [];
+        for (let i = 0; i < cards.length; i++) {
+            orderedEls.push(cards[i].el);
+        }
+        // On retire tout
+        boardEl.innerHTML = '';
+        // On réorganise les cartes : on prend la liste des éléments non matchés triés aléatoirement,
+        // et on les replace aux indices où ils étaient.
+        const newOrder = [];
+        for (let i = 0; i < cards.length; i++) {
+            if (cards[i].matched) {
+                newOrder.push(cards[i].el);
+            } else {
+                newOrder.push(shuffledUnmatched.shift().el);
+            }
+        }
+        newOrder.forEach(el => boardEl.appendChild(el));
+        // Mettre à jour cards et dataset.index
+        const newCards = [];
+        newOrder.forEach((el, i) => {
+            el.dataset.index = i;
+            const cardObj = cards.find(c => c.el === el);
+            newCards.push(cardObj);
+        });
+        cards = newCards;
+    }, 800);
+
+    setTimeout(() => {
+        stormWarning.classList.remove('visible');
+        stormActive = false;
+        stormCtx.clearRect(0, 0, stormCanvas.width, stormCanvas.height);
+        locked = false;
+    }, 1800);
+}
+
+function animateStorm() {
+    if (!stormActive) {
+        stormAnimFrame = 0;
+        return;
+    }
+    stormCtx.clearRect(0, 0, stormCanvas.width, stormCanvas.height);
+    stormCtx.fillStyle = 'rgba(140,100,30,0.25)';
+    stormCtx.fillRect(0, 0, stormCanvas.width, stormCanvas.height);
+    for (const p of stormParticles) {
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x > stormCanvas.width + 10) p.x = -10;
+        if (p.y < -10) p.y = stormCanvas.height + 10;
+        if (p.y > stormCanvas.height + 10) p.y = -10;
+        stormCtx.fillStyle = `rgba(210,180,120,${p.alpha})`;
+        stormCtx.beginPath();
+        stormCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        stormCtx.fill();
+    }
+    stormAnimFrame = requestAnimationFrame(animateStorm);
+}
+
+// ---- Fin de niveau / Game Over ----
+function levelComplete() {
+    sndLevelComplete();
+    const elapsed = Math.floor((Date.now() - levelStartTime) / 1000);
+    const cfg = getLevelConfig();
+    const timeBonus = Math.max(0, Math.floor(cfg.peekTime / 50) - elapsed * 2);
+    const livesBonus = lives * 50;
+    score += timeBonus + livesBonus;
+
+    document.getElementById('level-title').textContent = `Niveau ${level + 1} terminé !`;
+    document.getElementById('level-score').textContent = score;
+    document.getElementById('level-detail').textContent =
+        `Coups : ${moveCount} · Temps : ${elapsed}s · Bonus : +${timeBonus} (temps) +${livesBonus} (vies)`;
+    document.getElementById('level-overlay').style.display = '';
+    document.getElementById('hud').style.display = 'none';
+}
+
+function gameOver() {
+    if (gameOver_) return;
+    gameOver_ = true;
+    locked = true;
+    sndGameOver();
+    const elapsed = Math.floor((Date.now() - gameStartTime) / 1000);
+    document.getElementById('final-score').textContent = score;
+    document.getElementById('final-detail').textContent =
+        `Niveau ${level + 1} · ${elapsed}s · ${matched}/${totalPairs} paires`;
+    document.getElementById('gameover-overlay').style.display = '';
+    document.getElementById('hud').style.display = 'none';
+    if (score > bestScore) { bestScore = score; localStorage.setItem('sandstorm_best', String(score)); }
+    if (score > 0) submitScore(score);
+}
+
+// ---- HUD ----
+function updateHUD() {
+    document.getElementById('hud-level').textContent = level + 1;
+    document.getElementById('hud-score').textContent = score;
+    document.getElementById('hud-combo').textContent = 'x' + Math.max(1, comboStreak);
+    document.getElementById('hud-combo').style.color = comboStreak >= 3 ? '#ff8800' : '#a89060';
+    document.getElementById('hud-lives').textContent = '❤'.repeat(lives) + '🖤'.repeat(maxLives - lives);
+    const elapsed = Math.floor((Date.now() - (levelStartTime || Date.now())) / 1000);
+    document.getElementById('hud-time').textContent = Math.floor(elapsed/60) + ':' + String(elapsed%60).padStart(2,'0');
+}
+setInterval(() => {
+    if (document.getElementById('hud').style.display !== 'none') updateHUD();
+}, 500);
+
+// ---- Démarrage ----
+function startGame() {
+    score = 0; level = 0; gameStartTime = Date.now();
+    startLevel();
+}
+function startLevel() {
+    document.getElementById('menu-overlay').style.display = 'none';
+    document.getElementById('level-overlay').style.display = 'none';
+    document.getElementById('gameover-overlay').style.display = 'none';
+    document.getElementById('hud').style.display = '';
+    buildBoard();
+    peekCards(getLevelConfig().peekTime);
+}
+function nextLevel() { level++; startLevel(); }
+
+document.getElementById('btn-start').addEventListener('click', startGame);
+document.getElementById('btn-next').addEventListener('click', nextLevel);
+document.getElementById('btn-retry').addEventListener('click', () => {
+    document.getElementById('gameover-overlay').style.display = 'none';
+    document.getElementById('menu-overlay').style.display = '';
+});
+
+// ---- Scores API (inchangé) ----
+async function submitScore(s) {
+    if (!scoreSecret) await fetchSecret();
+    if (!scoreSecret) return;
+    const dur = Math.floor((Date.now() - gameStartTime) / 1000);
+    const hash = await sha256(GAME_ID + s + dur + scoreSecret);
+    try {
+        const r = await fetch('scores_api.php', {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'submit', game: GAME_ID, score: s, duration: dur, hash })
+        });
+        const j = await r.json();
+        if (!j.ok) console.warn('[sandstorm_memory] score non enregistré côté serveur :', j.error || 'raison inconnue');
+        if (j.ok && j.new_personal) { bestScore = s; localStorage.setItem('sandstorm_best', String(s)); }
+        loadLeaderboard();
+    } catch(e) {}
+}
+async function sha256(msg) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+async function fetchSecret() {
+    try {
+        const r = await fetch('scores_api.php', {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'token', game: GAME_ID })
+        });
+        const j = await r.json();
+        if (j.ok) scoreSecret = j.secret;
+    } catch(e) {}
+}
+async function loadLeaderboard() {
+    try {
+        const r = await fetch('scores_api.php?action=leaderboard&game=' + GAME_ID + '&limit=10', { credentials: 'same-origin' });
+        const j = await r.json();
+        if (!j.ok) return;
+        const me = localStorage.getItem('user') || '';
+        const ul = document.getElementById('lb-list');
+        if (!j.leaderboard.length) { ul.innerHTML = '<li style="color:var(--muted)">Aucun score</li>'; return; }
+        ul.innerHTML = j.leaderboard.map((e, i) => {
+            const medals = ['🥇','🥈','🥉'];
+            const rank = medals[i] || (i + 1);
+            const isMe = e.player === me;
+            return `<li class="${isMe?'me':''}"><span class="rank">${rank}</span><span class="name">${esc(e.player)}</span><span class="pts">${e.score}</span></li>`;
+        }).join('');
+    } catch(e) {}
+}
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
+
+// ---- Init ----
+bestScore = parseInt(localStorage.getItem('sandstorm_best') || '0', 10);
+loadLeaderboard(); fetchSecret();
+
+})();
+</script>
+</body>
+</html>

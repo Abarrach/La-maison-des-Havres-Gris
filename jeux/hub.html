@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hub Jeux — Les Havres Gris</title>
+<link rel="stylesheet" href="../style.css">
+<style>
+html { overflow: auto; }
+body {
+    display: flex; flex-direction: column; align-items: center;
+    min-height: 100vh; margin: 0; overflow-y: auto;
+    font-family: 'Segoe UI', sans-serif;
+    background-color: #0a0402;
+    background-image: url('../menu_bg.png');
+    background-size: cover; background-position: center top; background-attachment: fixed;
+}
+body::before { content:''; position:fixed; inset:0; background:rgba(8,4,2,0.65); pointer-events:none; z-index:0; }
+body::after { display: none; }
+
+/* ---- En-tête (même gabarit que les autres outils du site) ----
+   NB: noms de classes préfixés "hub-" pour ne pas entrer en collision avec
+   les règles globales "header" / ".header-controls" de ../style.css
+   (sinon la bande du site, plus fine et en position absolute, gagnait). */
+.hub-topbar {
+    align-self: stretch !important;
+    position: relative !important; z-index: 2001 !important;
+    height: 80px !important; min-height: 80px !important;
+    display: flex !important; align-items: center !important; justify-content: center !important;
+    background: rgba(0,0,0,0.85); border-bottom: 1px solid #5a4a2a;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.7); margin-bottom: 24px;
+}
+.hub-topbar h1 {
+    color: #ffcc00; font-size: 1.6em; text-transform: uppercase;
+    letter-spacing: 3px; margin: 0; text-shadow: 0 0 10px rgba(205,164,52,0.3);
+}
+.hub-topbar-controls {
+    position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
+    display: flex; align-items: center; gap: 12px;
+}
+.hub-btn-menu {
+    background: linear-gradient(180deg, #443311 0%, #221100 100%);
+    border: 1px solid #cda434; color: #cda434; padding: 10px 20px;
+    text-decoration: none; font-size: 0.85em; font-weight: bold; border-radius: 4px;
+    transition: all 0.3s ease; text-transform: uppercase; white-space: nowrap;
+}
+.hub-btn-menu:hover { background: #cda434; color: #000; border-color: #fff; box-shadow: 0 0 10px #fff, 0 0 30px #cda434; }
+
+.hub-container { position: relative; z-index: 1; width: 100%; max-width: 900px; padding: 0 20px 60px; }
+
+.hub-sub { text-align: center; color: #a89060; font-size: 0.95em; margin: 0 0 30px; }
+
+/* ---- Grille de jeux ---- */
+.games-section {
+    background: rgba(10,5,2,0.55); border: 1px solid #3d2b16; border-radius: 6px;
+    padding: 24px 20px; margin-bottom: 30px;
+}
+.games-grid {
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 22px;
+}
+.game-card {
+    background: rgba(10,5,2,0.85); border: 1px solid #3d2b16; border-radius: 6px;
+    width: 260px; overflow: hidden; text-decoration: none;
+    transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+}
+.game-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 15px 40px rgba(205,164,52,0.2);
+    border-color: #cda434;
+}
+.game-thumb {
+    position: relative; width: 100%; height: 150px;
+    border-bottom: 3px solid #cda434;
+    background: linear-gradient(135deg, #2a1a0b, #1a0f05);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 3.5em; overflow: hidden;
+}
+/* Image dédiée (à ajouter dans jeux/img/) : se pose par-dessus l'emoji de
+   secours, et disparaît proprement si le fichier n'existe pas encore. */
+.game-thumb img {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+}
+.game-info { padding: 16px; text-align: center; background: linear-gradient(180deg, #1a1008, #0d0705); }
+.game-info h3 { color: #ffcc00; font-size: 1.1em; margin: 0 0 6px; text-transform: uppercase; letter-spacing: 1px; }
+.game-info p { color: #999; font-size: 0.8em; font-style: italic; margin: 0 0 10px; line-height: 1.4; }
+.game-info .record-line { color: #cda434; font-size: 0.8em; }
+
+/* ---- Classement global ---- */
+.lb-section {
+    background: rgba(10,5,2,0.85); border: 1px solid #3d2b16; border-radius: 6px;
+    padding: 20px 24px; margin-bottom: 30px;
+}
+.lb-section h2 {
+    color: #cda434; font-size: 1.1em; text-transform: uppercase; letter-spacing: 1px;
+    margin: 0 0 14px; text-align: center;
+}
+.lb-tabs { display: flex; justify-content: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.lb-tab {
+    background: transparent; border: 1px solid #3d2b16; color: #a89060;
+    padding: 5px 14px; border-radius: 3px; cursor: pointer; font-size: 0.8em;
+    transition: all 0.2s;
+}
+.lb-tab:hover { border-color: #7c5e2a; color: #f5deb3; }
+.lb-tab.active { background: rgba(205,164,52,0.15); border-color: #cda434; color: #ffcc00; }
+#lb-table { width: 100%; border-collapse: collapse; }
+#lb-table th {
+    color: #7c5e2a; font-size: 0.75em; text-transform: uppercase; letter-spacing: 1px;
+    padding: 6px 8px; border-bottom: 1px solid #3d2b16; text-align: left;
+}
+#lb-table td { padding: 7px 8px; border-bottom: 1px solid rgba(61,43,22,0.4); font-size: 0.85em; }
+#lb-table .rank { color: #7c5e2a; width: 30px; }
+#lb-table .name { color: #f5deb3; }
+#lb-table .game-col { color: #a89060; font-size: 0.8em; }
+#lb-table .pts { color: #ffcc00; font-weight: bold; text-align: right; }
+#lb-table tr.me td { background: rgba(205,164,52,0.06); }
+#lb-table tr.me .name { color: #cda434; }
+
+.back-btn {
+    display: inline-block; position: relative; z-index: 1;
+    background: linear-gradient(180deg, #2a1a0b, #1a0f05);
+    color: #cda434; border: 1px solid #7c5e2a;
+    padding: 12px 40px; text-transform: uppercase; font-weight: bold;
+    cursor: pointer; border-radius: 2px; text-decoration: none;
+    font-size: 0.9em; letter-spacing: 1px; transition: all 0.3s;
+}
+.back-btn:hover { background: linear-gradient(180deg, #3d2610, #2a1a0b); color: #fff; border-color: #cda434; box-shadow: 0 0 15px rgba(205,164,52,0.3); transform: translateY(-2px); }
+
+@media (max-width: 580px) {
+    .hub-container { padding: 15px 10px 40px; }
+    .game-card { width: min(260px, calc(100vw - 30px)); }
+}
+</style>
+</head>
+<body>
+<script src="../auth-guard.js"></script>
+
+<header class="hub-topbar">
+    <h1>🎮 Hub Jeux</h1>
+    <div class="hub-topbar-controls">
+      <a href="../account.html" class="user-account-widget" id="ua-widget">
+        <div class="ua-avatar" id="ua-avatar">?</div>
+        <span class="ua-pseudo" id="ua-pseudo">…</span>
+      </a>
+      <a href="../menu.html" class="hub-btn-menu">Retour Menu</a>
+    </div>
+</header>
+<script>(function(){var u=localStorage.getItem("user")||"?";document.getElementById("ua-pseudo").textContent=u;var av=document.getElementById("ua-avatar");var img=localStorage.getItem("avatar");if(img){var src=/^https?:\/\//.test(img)||img.charAt(0)==='/'?img:'../'+img;av.style.background="transparent";av.innerHTML='<img src="'+src+'" style="width:42px;height:42px;margin:-1px;object-fit:cover;border-radius:50%;">';}else{av.textContent=u.charAt(0).toUpperCase();var h=0;for(var i=0;i<u.length;i++)h=((h<<5)-h)+u.charCodeAt(i);av.style.background="hsl("+(Math.abs(h)%360)+",55%,32%)";}})();</script>
+
+<div class="hub-container">
+    <p class="hub-sub">Mini-jeux de la guilde — scores, records et défis entre membres</p>
+
+    <!-- Grille de jeux -->
+    <div class="games-section">
+    <div class="games-grid" id="games-grid">
+        <a href="orni_flap.html" class="game-card">
+            <div class="game-thumb">🦅<img src="img/thumb_orni_flap.jpg" alt="" onerror="this.remove()"></div>
+            <div class="game-info">
+                <h3>Ornithopter Flap</h3>
+                <p>Pilote ton ornithoptère à travers les canyons d'Arrakis. Évite les rochers !</p>
+                <div class="record-line" id="record-orni_flap">—</div>
+            </div>
+        </a>
+        <a href="spice_runner.html" class="game-card">
+            <div class="game-thumb">🏃<img src="img/thumb_spice_runner.jpg" alt="" onerror="this.remove()"></div>
+            <div class="game-info">
+                <h3>Spice Runner</h3>
+                <p>Cours dans le désert d'Arrakis — esquive les rochers, collecte l'épice, survie au ver !</p>
+                <div class="record-line" id="record-spice_runner">—</div>
+            </div>
+        </a>
+        <a href="sandstorm_memory.html" class="game-card">
+            <div class="game-thumb">🌪️<img src="img/thumb_sandstorm_memory.jpg" alt="" onerror="this.remove()"></div>
+            <div class="game-info">
+                <h3>Sandstorm Memory</h3>
+                <p>Mémorise les symboles de Dune — les tempêtes mélangent les cartes !</p>
+                <div class="record-line" id="record-sandstorm_memory">—</div>
+            </div>
+        </a>
+        <a href="worm_rider.html" class="game-card">
+            <div class="game-thumb">🐛<img src="img/thumb_worm_rider.jpg" alt="" onerror="this.remove()"></div>
+            <div class="game-info">
+                <h3>Worm Rider</h3>
+                <p>Chevauche Shai-Hulud à travers le désert profond — esquive et collecte l'épice !</p>
+                <div class="record-line" id="record-worm_rider">—</div>
+            </div>
+        </a>
+        <!-- Les prochains jeux s'ajoutent ici -->
+    </div>
+    </div>
+
+    <!-- Classement -->
+    <div class="lb-section">
+        <h2>🏆 Classement</h2>
+        <div class="lb-tabs" id="lb-tabs"></div>
+        <table id="lb-table">
+            <thead><tr><th class="rank">#</th><th class="name">Joueur</th><th class="game-col">Jeu</th><th class="pts">Score</th></tr></thead>
+            <tbody id="lb-body"><tr><td colspan="4" style="color:#7c5e2a;text-align:center">Chargement…</td></tr></tbody>
+        </table>
+    </div>
+
+    <div style="text-align:center">
+        <a href="../menu.html" class="back-btn">Retour au portail</a>
+    </div>
+</div>
+
+<script>
+(function () {
+    const me = localStorage.getItem('user') || '';
+    const GAME_NAMES = { orni_flap: 'Ornithopter Flap', spice_runner: 'Spice Runner', sandstorm_memory: 'Sandstorm Memory', worm_rider: 'Worm Rider' };
+    let currentFilter = '';
+
+    function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+    async function loadLeaderboard(gameFilter) {
+        currentFilter = gameFilter || '';
+        const url = 'scores_api.php?action=leaderboard&limit=20' + (currentFilter ? '&game=' + currentFilter : '');
+        try {
+            const r = await fetch(url, { credentials: 'same-origin' });
+            const j = await r.json();
+            if (!j.ok) return;
+            const medals = ['🥇','🥈','🥉'];
+            const tbody = document.getElementById('lb-body');
+            if (!j.leaderboard.length) {
+                tbody.innerHTML = '<tr><td colspan="4" style="color:#7c5e2a;text-align:center">Aucun score encore !</td></tr>';
+                return;
+            }
+            tbody.innerHTML = j.leaderboard.map((e, i) => {
+                const isMe = e.player === me;
+                return `<tr class="${isMe ? 'me' : ''}">
+                    <td class="rank">${medals[i] || (i+1)}</td>
+                    <td class="name">${esc(e.player)}</td>
+                    <td class="game-col">${esc(GAME_NAMES[e.game] || e.game)}</td>
+                    <td class="pts">${e.score}</td>
+                </tr>`;
+            }).join('');
+        } catch (e) {}
+    }
+
+    // Tabs
+    function renderTabs() {
+        const tabs = document.getElementById('lb-tabs');
+        const all = [{ id: '', name: 'Tous' }, { id: 'orni_flap', name: 'Ornithopter Flap' }, { id: 'spice_runner', name: 'Spice Runner' }, { id: 'sandstorm_memory', name: 'Sandstorm Memory' }, { id: 'worm_rider', name: 'Worm Rider' }];
+        tabs.innerHTML = all.map(g =>
+            `<button class="lb-tab ${g.id === currentFilter ? 'active' : ''}" data-game="${g.id}">${esc(g.name)}</button>`
+        ).join('');
+        tabs.querySelectorAll('.lb-tab').forEach(btn => {
+            btn.addEventListener('click', () => {
+                loadLeaderboard(btn.dataset.game);
+                renderTabs();
+            });
+        });
+    }
+
+    // Records sur les cartes
+    async function loadRecords() {
+        for (const gid of ['orni_flap', 'spice_runner', 'sandstorm_memory', 'worm_rider']) {
+            try {
+                const r = await fetch('scores_api.php?action=leaderboard&game=' + gid + '&limit=1', { credentials: 'same-origin' });
+                const j = await r.json();
+                if (j.ok && j.leaderboard.length) {
+                    const e = j.leaderboard[0];
+                    const el = document.getElementById('record-' + gid);
+                    if (el) el.textContent = '🏆 Record : ' + e.score + ' par ' + e.player;
+                }
+            } catch (e) {}
+        }
+    }
+
+    renderTabs();
+    loadLeaderboard('');
+    loadRecords();
+})();
+</script>
+</body>
+</html>

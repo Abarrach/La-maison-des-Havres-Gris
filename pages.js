@@ -81,11 +81,27 @@ window.MENU_PAGES = [
     icon: '<path d="M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3zm0 2.7l5 4.5V18h-2v-6H9v6H7v-7.8l5-4.5z"/>'
   },
   {
+    key: "optimiseur",
+    href: "optimiseur.html",
+    img: "optimiseur.jpg",
+    title: "Optimiseur de Stuff",
+    desc: "Composez et comparez vos builds — armes, armures et augments avec DPS, résistances cumulées et recettes.",
+    icon: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>'
+  },
+  {
     key: "debrief",
     href: "epice/debrief.html",
     img: "debrief.jpg",
     title: "Activité Guilde",
     desc: "Composition des équipes, débrief joueur, Tactique et synthèse des soirées épice.",
     icon: '<path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3h2v2h-2V6zm0 4h2v8h-2v-8zm-4-4h2v2H8V6zm0 4h2v8H8v-8zm-1 8H6V6h1v12zm9 0V6h2v12h-2z"/>'
+  },
+  {
+    key: "jeux",
+    href: "jeux/hub.html",
+    img: "jeux/hub_thumb.jpg",
+    title: "Hub Jeux",
+    desc: "Mini-jeux de guilde — records, classements et défis entre membres.",
+    icon: '<path d="M21.58 16.09l-1.09-7.66A3.996 3.996 0 0016.53 5H7.47a3.996 3.996 0 00-3.96 3.43l-1.09 7.66C2.2 17.63 3.39 19 4.94 19c.68 0 1.32-.27 1.8-.75L9 16h6l2.25 2.25c.48.48 1.13.75 1.8.75 1.56 0 2.75-1.37 2.53-2.91zM11 11H9v2H8v-2H6v-1h2V8h1v2h2v1zm4 2c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm2-3c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z"/>'
   }
 ];

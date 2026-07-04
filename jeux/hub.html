@@ -46,7 +46,7 @@ body::after { display: none; }
 }
 .hub-btn-menu:hover { background: #cda434; color: #000; border-color: #fff; box-shadow: 0 0 10px #fff, 0 0 30px #cda434; }
 
-.hub-container { position: relative; z-index: 1; width: 100%; max-width: 900px; padding: 0 20px 60px; }
+.hub-container { position: relative; z-index: 1; width: 100%; max-width: 1100px; padding: 0 20px 60px; }
 
 .hub-sub { text-align: center; color: #a89060; font-size: 0.95em; margin: 0 0 30px; }
 
@@ -185,6 +185,14 @@ body::after { display: none; }
                 <div class="record-line" id="record-worm_rider">—</div>
             </div>
         </a>
+        <a href="muaddib_rescue.html" class="game-card">
+            <div class="game-thumb">🐭<img src="img/thumb_muaddib_rescue.jpg" alt="" onerror="this.remove()"></div>
+            <div class="game-info">
+                <h3>Muad'Dib Rescue</h3>
+                <p>Sauve les petites souris du désert avant qu'un danger ne les emporte !</p>
+                <div class="record-line" id="record-muaddib_rescue">—</div>
+            </div>
+        </a>
         <!-- Les prochains jeux s'ajoutent ici -->
     </div>
     </div>
@@ -207,7 +215,7 @@ body::after { display: none; }
 <script>
 (function () {
     const me = localStorage.getItem('user') || '';
-    const GAME_NAMES = { orni_flap: 'Ornithopter Flap', spice_runner: 'Spice Runner', sandstorm_memory: 'Sandstorm Memory', worm_rider: 'Worm Rider' };
+    const GAME_NAMES = { orni_flap: 'Ornithopter Flap', spice_runner: 'Spice Runner', sandstorm_memory: 'Sandstorm Memory', worm_rider: 'Worm Rider', muaddib_rescue: "Muad'Dib Rescue" };
     let currentFilter = '';
 
     function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -240,7 +248,7 @@ body::after { display: none; }
     // Tabs
     function renderTabs() {
         const tabs = document.getElementById('lb-tabs');
-        const all = [{ id: '', name: 'Tous' }, { id: 'orni_flap', name: 'Ornithopter Flap' }, { id: 'spice_runner', name: 'Spice Runner' }, { id: 'sandstorm_memory', name: 'Sandstorm Memory' }, { id: 'worm_rider', name: 'Worm Rider' }];
+        const all = [{ id: '', name: 'Tous' }, { id: 'orni_flap', name: 'Ornithopter Flap' }, { id: 'spice_runner', name: 'Spice Runner' }, { id: 'sandstorm_memory', name: 'Sandstorm Memory' }, { id: 'worm_rider', name: 'Worm Rider' }, { id: 'muaddib_rescue', name: "Muad'Dib Rescue" }];
         tabs.innerHTML = all.map(g =>
             `<button class="lb-tab ${g.id === currentFilter ? 'active' : ''}" data-game="${g.id}">${esc(g.name)}</button>`
         ).join('');
@@ -254,7 +262,7 @@ body::after { display: none; }
 
     // Records sur les cartes
     async function loadRecords() {
-        for (const gid of ['orni_flap', 'spice_runner', 'sandstorm_memory', 'worm_rider']) {
+        for (const gid of ['orni_flap', 'spice_runner', 'sandstorm_memory', 'worm_rider', 'muaddib_rescue']) {
             try {
                 const r = await fetch('scores_api.php?action=leaderboard&game=' + gid + '&limit=1', { credentials: 'same-origin' });
                 const j = await r.json();

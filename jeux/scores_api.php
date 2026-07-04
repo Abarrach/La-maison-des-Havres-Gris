@@ -40,6 +40,11 @@ const GAMES = [
         'max_score' => 99999,
         'cooldown'  => 3,
     ],
+    'muaddib_rescue' => [
+        'name'      => "Muad'Dib Rescue",
+        'max_score' => 50000,
+        'cooldown'  => 2,
+    ],
 ];
 
 // ---- Secret pour le hash anti-triche ----
@@ -66,6 +71,33 @@ function read_scores(): array {
     return json_decode(file_get_contents($f), true) ?? [];
 }
 
+// ---- Sauvegardes automatiques ----
+// Déclenchées par le trafic normal (pas besoin de cron sur le serveur) :
+// à chaque écriture, on garde un instantané du jour (jamais écrasé une fois
+// créé) + une copie de la toute dernière version connue. Objectif : si un
+// bug ou une manip malheureuse vide/corrompt scores.json, on peut toujours
+// restaurer un état récent depuis data/backups/.
+function backups_dir(): string {
+    $dir = __DIR__ . '/data/backups';
+    if (!is_dir($dir)) @mkdir($dir, 0775, true);
+    return $dir;
+}
+function backup_scores(array $data): void {
+    $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    $dir = backups_dir();
+
+    $daily = $dir . '/scores_' . date('Y-m-d') . '.json';
+    if (!file_exists($daily)) @file_put_contents($daily, $json);
+    @file_put_contents($dir . '/scores_last.json', $json);
+
+    // Purge : ne garde que les 14 derniers instantanés quotidiens.
+    $files = glob($dir . '/scores_????-??-??.json');
+    if ($files && count($files) > 14) {
+        sort($files);
+        foreach (array_slice($files, 0, count($files) - 14) as $old) @unlink($old);
+    }
+}
+
 // Lit + modifie + réécrit le fichier de scores sous un seul verrou exclusif,
 // pour éviter qu'une écriture concurrente écrase les données d'une autre
 // (deux joueurs qui soumettent en même temps ne doivent jamais se marcher dessus).
@@ -79,7 +111,21 @@ function with_scores_lock(callable $mutator) {
     $data = json_decode($raw, true);
     if (!is_array($data)) $data = [];
 
+    // Sauvegarde l'état AVANT écriture : même si ce qui suit tourne mal,
+    // on ne perd jamais plus que les tout derniers changements.
+    backup_scores($data);
+
     $result = $mutator($data);
+
+    // Garde-fou de diagnostic : une écriture qui viderait complètement un
+    // classement non-vide ne devrait normalement jamais arriver (déjà vu une
+    // fois par le passé) — on la laisse passer mais on la journalise pour
+    // pouvoir enquêter si ça se reproduit.
+    if (!empty($data) && empty($result['data'])) {
+        @file_put_contents(__DIR__ . '/data/scores_wipe_debug.log',
+            date('c') . " ATTENTION: écriture qui vide scores.json (" . count($data) . " -> 0 entrées)\n",
+            FILE_APPEND);
+    }
 
     ftruncate($fp, 0); rewind($fp);
     fwrite($fp, json_encode($result['data'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));

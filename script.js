@@ -1001,10 +1001,8 @@ function createAdminPanel() {
       </select>
     </div>
     <div class="admin-row"><input type="text" id="baseNote" placeholder="Note (ex: Petit gisement)"></div>
-    
+
     <button id="addBaseBtn">Ajouter Base</button>
-    <div style="margin:10px 0; border-top:1px solid #5c4025;"></div>
-    <button id="manageUsersBtn">👥 Gérer Utilisateurs</button>
     <p id="coordDisplay" style="margin-top:10px;font-size:11px;color:#d3b46f;text-align:center;">Cliquez sur la carte...</p>
   `;
   document.body.appendChild(p);
@@ -1028,64 +1026,7 @@ function createAdminPanel() {
       saveBase(n, selectedCoords.lat, selectedCoords.lng, type, note);
     }
   };
-  document.getElementById("manageUsersBtn").onclick = openUserManager;
 }
-
-// === USER MANAGER ===
-let userPanel;
-async function openUserManager() {
-  if(userPanel) { userPanel.remove(); userPanel=null; return; }
-  try {
-      const res = await fetch("get_users.php?ts=" + Date.now());
-      if (!res.ok) throw new Error("Erreur accès (403/404)");
-      const users = await res.json();
-      users.sort((a, b) => {
-          if (a.role === 'admin' && b.role !== 'admin') return -1;
-          if (a.role !== 'admin' && b.role === 'admin') return 1;
-          return a.user.localeCompare(b.user, undefined, { sensitivity: 'base' });
-      });
-      userPanel = document.createElement("div");
-      userPanel.className = "admin-panel visible"; 
-      userPanel.style.right = "340px";
-      userPanel.style.zIndex = "1100";
-      userPanel.innerHTML = `<div style="display:flex;justify-content:space-between;margin-bottom:10px;"><h3 style="margin:0;border:none;">Utilisateurs</h3><button class="small-btn" style="width:20px;background:#a83b3b;" onclick="closeUserManager()">X</button></div>`;
-      if (!users || users.length === 0) {
-          userPanel.innerHTML += "<div style='padding:10px; font-style:italic;'>Aucun utilisateur trouvé ou accès refusé.</div>";
-      } else {
-          users.forEach(u => {
-            const isAdmin = u.role === 'admin';
-            const safe = u.user.replace(/'/g, "\\'");
-            userPanel.innerHTML += `
-              <div class="user-row">
-                <div style="display:flex;justify-content:space-between;font-size:13px;">
-                  <span style="font-weight:bold;color:${isAdmin?'#f3c44f':'#f5deb3'}">${u.user}</span>
-                  <span>${u.role}</span>
-                </div>
-                <div style="display:flex;gap:5px;margin-top:4px;">
-                  <button class="small-btn" onclick="toggleRole('${safe}','${u.role}')" style="flex:1;background:${isAdmin?'#8b6e3b':'#4a6b3b'}">${isAdmin?'Rétrograder':'Promouvoir'}</button>
-                  <button class="small-btn" onclick="deleteUser('${safe}')" style="background:#a83b3b;width:30px;">🗑</button>
-                </div>
-              </div>`;
-          });
-      }
-      document.body.appendChild(userPanel);
-  } catch (e) { console.error(e); alert("Erreur : Impossible de charger la liste des utilisateurs."); }
-}
-
-window.closeUserManager = () => { if(userPanel) userPanel.remove(); userPanel=null; };
-window.toggleRole = async (t, r) => {
-  const nr = r === 'admin' ? 'user' : 'admin';
-  const res = await fetch("save.php", { method:"POST", body:JSON.stringify({action:"updateRole", target:t, role:nr}) });
-  const j = await res.json();
-  if(j.ok) { closeUserManager(); openUserManager(); } else alert(j.error);
-};
-window.deleteUser = async (t) => {
-  showCustomConfirm("ADMIN", "Supprimer l'utilisateur "+t+" ?", async () => {
-      const res = await fetch("save.php", { method:"POST", body:JSON.stringify({action:"deleteUser", target:t}) });
-      const j = await res.json();
-      if(j.ok) { closeUserManager(); openUserManager(); loadMapLayer(currentMapId); } else alert(j.error);
-  });
-};
 
 // === LISTE JOUEURS ===
 async function togglePlayerPanel() {

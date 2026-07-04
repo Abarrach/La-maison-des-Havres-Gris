@@ -219,15 +219,34 @@
     .order-meta  { color: #5a4a2a; font-size: 0.72em; margin-top: 3px; }
     .order-empty { color: #555; font-size: 0.82em; text-align: center; padding: 20px; }
 
+    /* === GESTION DES UTILISATEURS (admin) === */
+    .usr-row {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 10px 0; border-bottom: 1px solid #1e1208;
+    }
+    .usr-row:last-child { border-bottom: none; }
+    .usr-name { font-size: 0.9em; }
+    .usr-chief { color: #888; font-size: 0.85em; font-weight: normal; }
+    .usr-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .usr-btn {
+      background: #1a0f05; border: 1px solid #3d2b16; color: #ccc;
+      font-size: 0.72em; padding: 6px 11px; border-radius: 3px; cursor: pointer;
+      text-transform: uppercase; letter-spacing: .5px; transition: all .15s; white-space: nowrap;
+    }
+    .usr-btn:hover { border-color: #7c5e2a; }
+    .usr-btn-promote { border-color: #3f6b3b; color: #7fce77; }
+    .usr-btn-demote  { border-color: #8b6e3b; color: #e0b96a; }
+    .usr-btn-del     { border-color: #7a2f2f; color: #ff8888; padding: 6px 9px; }
+
     /* === GESTION DES PAGES (admin) === */
     .pg-intro { color: #888; font-size: 0.8em; margin: -8px 0 18px; line-height: 1.5; }
     .pg-row {
-      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      display: grid; grid-template-columns: 190px auto 1fr; align-items: center; gap: 14px;
       padding: 11px 0; border-bottom: 1px solid #1e1208;
     }
     .pg-row:last-child { border-bottom: none; }
     .pg-name { color: #f5deb3; font-size: 0.9em; }
-    .pg-states { display: flex; gap: 6px; flex-shrink: 0; }
+    .pg-states { display: flex; gap: 6px; }
     .pg-state-btn {
       background: #1a0f05; border: 1px solid #3d2b16; color: #888;
       font-size: 0.72em; padding: 6px 11px; border-radius: 3px; cursor: pointer;
@@ -238,14 +257,42 @@
     .pg-state-btn.active[data-state="hidden"] { border-color: #a83b3b; color: #ff8888; background: rgba(168,59,59,0.12); }
     .pg-state-btn.active[data-state="wip"]    { border-color: #c9912f; color: #e0a93c; background: rgba(201,145,47,0.12); }
 
+    /* Accès nominatif par page (exceptions sur page hidden/wip) */
+    .pg-access { position: relative; flex-shrink: 0; justify-self: end; }
+    .pg-access-btn {
+      background: #1a0f05; border: 1px solid #3d2b16; color: #888;
+      font-size: 0.72em; padding: 6px 11px; border-radius: 3px; cursor: pointer;
+      white-space: nowrap; transition: all .15s;
+    }
+    .pg-access-btn:hover { border-color: #7c5e2a; color: #ccc; }
+    .pg-access-btn.has-users { border-color: #cda434; color: #cda434; }
+    .pg-access-menu {
+      display: none; position: absolute; right: 0; top: calc(100% + 6px); z-index: 20;
+      background: #120b05; border: 1px solid #3d2b16; border-radius: 5px;
+      padding: 10px; min-width: 220px; max-height: 240px; overflow-y: auto;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+    .pg-access-menu.open { display: block; }
+    .pg-access-item { display: flex; align-items: center; gap: 7px; padding: 4px 2px; font-size: 0.82em; color: #d9c48f; }
+    .pg-access-item input { accent-color: #cda434; }
+    .pg-access-empty { color: #666; font-size: 0.8em; padding: 6px 2px; }
+    .pg-access-save {
+      margin-top: 8px; width: 100%; background: linear-gradient(to bottom,#a67c33,#6b4a25);
+      border: 1px solid #d4a23b; border-radius: 3px; color: #1a1007; font-weight: bold;
+      text-transform: uppercase; font-size: 0.72em; padding: 7px; cursor: pointer;
+    }
+
     @media(max-width: 500px) {
       .stats-grid { grid-template-columns: 1fr 1fr; }
       .stat-card:last-child { grid-column: span 2; }
       .av-grid { grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); }
       .av-item { width: 60px; height: 60px; }
-      .pg-row { flex-direction: column; align-items: flex-start; gap: 8px; }
+      .pg-row { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
       .pg-states { width: 100%; }
       .pg-state-btn { flex: 1; text-align: center; }
+      .pg-access { width: 100%; justify-self: stretch; }
+      .pg-access-btn { width: 100%; }
+      .pg-access-menu { left: 0; right: 0; min-width: 0; }
     }
   </style>
 </head>
@@ -310,20 +357,8 @@
     <div id="list-fulfilled"><div class="order-empty">Chargement…</div></div>
   </div>
 
-  <!-- Discord -->
-  <div class="section">
-    <div class="section-title">Profil Discord</div>
-    <div class="form-row">
-      <label>Pseudo Discord</label>
-      <input type="text" id="discord-input" placeholder="Ex: paul_atreides" maxlength="64">
-    </div>
-    <button class="btn-save" onclick="saveDiscord()">Enregistrer</button>
-    <div class="msg-ok" id="discord-ok">Discord mis à jour ✓</div>
-    <div class="msg-err" id="discord-err"></div>
-  </div>
-
-  <!-- Mot de passe -->
-  <div class="section">
+  <!-- Mot de passe (compte sans lien Discord uniquement) -->
+  <div class="section" id="pwd-section" style="display:none;">
     <div class="section-title">Changer le mot de passe</div>
     <div class="form-row">
       <label>Mot de passe actuel</label>
@@ -342,6 +377,17 @@
     <div class="msg-err" id="pwd-err"></div>
   </div>
 
+  <!-- Gestion des utilisateurs (admin uniquement) -->
+  <div class="section" id="users-admin-section" style="display:none;">
+    <div class="section-title">Gestion des utilisateurs</div>
+    <p class="pg-intro">
+      Promouvoir un joueur en <strong style="color:#cda434;">admin</strong> reste effectif même sans le
+      rôle Discord requis. Le responsable du site et le chef de guilde ne peuvent être
+      ni rétrogradés ni supprimés par un autre admin.
+    </p>
+    <div id="users-admin-list"><div class="order-empty">Chargement…</div></div>
+  </div>
+
   <!-- Gestion des pages (admin uniquement) -->
   <div class="section" id="pages-admin-section" style="display:none;">
     <div class="section-title">Gestion des pages</div>
@@ -350,7 +396,9 @@
       <strong style="color:#cda434;">Active</strong> : visible et accessible.
       <strong style="color:#ff8888;">Pas active</strong> : n'apparaît pas.
       <strong style="color:#e0a93c;">En travaux</strong> : grisée et non cliquable.<br>
-      Les administrateurs voient et accèdent à tout, en permanence.
+      Les administrateurs voient et accèdent à tout, en permanence.<br>
+      Le bouton <strong>👤 Accès</strong> permet de donner l'accès à une page non active à des joueurs précis
+      (ils reçoivent un MP Discord avec le lien).
     </p>
     <div id="pages-admin-list"><div class="order-empty">Chargement…</div></div>
   </div>
@@ -453,7 +501,9 @@ async function loadProfile() {
     const res  = await fetch("account_api.php?action=getProfile&user=" + encodeURIComponent(currentUser));
     const data = await res.json();
     if (data.ok) {
-      document.getElementById("discord-input").value = data.discord || "";
+      // Le mot de passe n'a de sens que pour un compte SANS lien Discord
+      // (tout le reste passe par la connexion Discord désormais).
+      if (!data.hasDiscordId) document.getElementById("pwd-section").style.display = "block";
       if (data.avatar) {
         currentAvatarPath = data.avatar;
         localStorage.setItem("avatar", data.avatar);
@@ -469,15 +519,6 @@ function showMsg(okId, errId, ok, msg) {
   errEl.style.display = !ok ? "block" : "none";
   if (!ok) errEl.textContent = msg;
   setTimeout(() => { okEl.style.display = "none"; errEl.style.display = "none"; }, 4000);
-}
-
-async function saveDiscord() {
-  const discord = document.getElementById("discord-input").value.trim();
-  try {
-    const res  = await fetch("account_api.php", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({action:"saveProfile", user:currentUser, discord}) });
-    const data = await res.json();
-    showMsg("discord-ok", "discord-err", data.ok, data.error || "Erreur serveur");
-  } catch(e) { showMsg("discord-ok", "discord-err", false, "Erreur réseau"); }
 }
 
 async function changePassword() {
@@ -687,19 +728,91 @@ function renderOrderPanel(which) {
 
 // ====== GESTION DES PAGES (admin) ======
 const PG_STATES = [["open", "Active"], ["hidden", "Pas active"], ["wip", "En travaux"]];
+let PG_ALL_USERS = [];   // pseudos connus (hors responsable du site), pour le menu d'accès
+let PG_ACCESS = {};      // key -> [pseudo, ...] déjà chargé depuis getSettings
 
-async function loadPagesAdmin() {
+function pgBasePath() {
+  // Racine du site pour CET environnement (racine ou /v2/) : dérivée du
+  // chemin de account.html lui-même pour rester correct sous /v2/.
+  return window.location.pathname.replace(/account\.html.*$/, "");
+}
+
+let ALL_USERS_FULL = []; // {user, role, discord_id,...} — chargé une fois, partagé entre les 2 sections admin
+
+async function loadAdminSections() {
   if (localStorage.getItem("role") !== "admin") return;
-  const section = document.getElementById("pages-admin-section");
-  section.style.display = "block";
+  document.getElementById("users-admin-section").style.display = "block";
+  document.getElementById("pages-admin-section").style.display = "block";
 
   let pages = {};
   try {
-    const res = await fetch("save.php", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ action: "getSettings" }) });
-    const s = await res.json();
+    const [settingsRes, usersRes] = await Promise.all([
+      fetch("save.php", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ action: "getSettings" }) }),
+      fetch("get_users.php?ts=" + Date.now())
+    ]);
+    const s = await settingsRes.json();
     pages = (s && s.pages) || {};
+    PG_ACCESS = (s && s.pages_access) || {};
+    ALL_USERS_FULL = (await usersRes.json()) || [];
+    ALL_USERS_FULL.sort((a, b) => {
+      if (a.role === "admin" && b.role !== "admin") return -1;
+      if (a.role !== "admin" && b.role === "admin") return 1;
+      return a.user.localeCompare(b.user, undefined, { sensitivity: "base" });
+    });
+    PG_ALL_USERS = ALL_USERS_FULL.map(u => u.user).filter(u => u && u.toLowerCase() !== "abarrach").sort((a,b) => a.localeCompare(b, undefined, {sensitivity:"base"}));
   } catch(e) {}
 
+  renderUsersAdmin();
+  renderPagesAdmin(pages);
+}
+
+// Cheffe de guilde identifiée par ID Discord (immuable), pas par pseudo
+// (évite tout risque de faute de frappe/renommage qui casserait la protection).
+const GUILD_CHIEF_DISCORD_ID = "332476079875031051"; // Lorhelyne
+
+function renderUsersAdmin() {
+  const list = document.getElementById("users-admin-list");
+  if (!ALL_USERS_FULL.length) { list.innerHTML = '<div class="order-empty">Aucun utilisateur.</div>'; return; }
+
+  list.innerHTML = ALL_USERS_FULL.map(u => {
+    const isAdmin = u.role === "admin";
+    const isSiteOwner  = u.user.toLowerCase() === "abarrach";
+    const isGuildChief = String(u.discord_id || "") === GUILD_CHIEF_DISCORD_ID;
+    const isProtected  = isSiteOwner || isGuildChief;
+    const badge = isSiteOwner ? ' <span class="usr-chief">(responsable du site)</span>'
+                : isGuildChief ? ' <span class="usr-chief">(chef de guilde)</span>' : '';
+    const safe = u.user.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+    return `<div class="usr-row">
+      <span class="usr-name" style="color:${isAdmin ? '#f3c44f' : '#f5deb3'}">${u.user}${badge}</span>
+      <div class="usr-actions">
+        ${isProtected ? '' : `<button class="usr-btn${isAdmin ? ' usr-btn-demote' : ' usr-btn-promote'}" onclick="toggleUserRole('${safe}','${u.role}')">${isAdmin ? 'Rétrograder' : 'Promouvoir'}</button>
+        <button class="usr-btn usr-btn-del" onclick="deleteUserAccount('${safe}')" title="Supprimer">🗑</button>`}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+async function toggleUserRole(target, role) {
+  const newRole = role === "admin" ? "user" : "admin";
+  try {
+    const res = await fetch("save.php", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ action: "updateRole", target, role: newRole }) });
+    const j = await res.json();
+    if (!j.ok) throw new Error(j.error || "Erreur serveur");
+    await loadAdminSections();
+  } catch(e) { alert("Échec : " + e.message); }
+}
+
+async function deleteUserAccount(target) {
+  if (!confirm("Supprimer l'utilisateur " + target + " ? Ses bases seront aussi supprimées.")) return;
+  try {
+    const res = await fetch("save.php", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ action: "deleteUser", target }) });
+    const j = await res.json();
+    if (!j.ok) throw new Error(j.error || "Erreur serveur");
+    await loadAdminSections();
+  } catch(e) { alert("Échec : " + e.message); }
+}
+
+function renderPagesAdmin(pages) {
   const list = document.getElementById("pages-admin-list");
   const reg = window.MENU_PAGES || [];
   if (!reg.length) { list.innerHTML = '<div class="order-empty">Aucune page enregistrée.</div>'; return; }
@@ -709,7 +822,26 @@ async function loadPagesAdmin() {
     const btns = PG_STATES.map(([v, l]) =>
       `<button class="pg-state-btn${v === cur ? " active" : ""}" data-state="${v}" onclick="setPageState('${p.key}','${v}',this)">${l}</button>`
     ).join("");
-    return `<div class="pg-row"><span class="pg-name">${p.title}</span><div class="pg-states">${btns}</div></div>`;
+    const granted = PG_ACCESS[p.key] || [];
+    const accessLabel = granted.length ? `👤 Accès (${granted.length})` : "👤 Accès";
+    const items = PG_ALL_USERS.length
+      ? PG_ALL_USERS.map(u => {
+          const checked = granted.some(g => g.toLowerCase() === u.toLowerCase()) ? "checked" : "";
+          const safe = u.replace(/"/g, "&quot;");
+          return `<label class="pg-access-item"><input type="checkbox" value="${safe}" ${checked}> ${u}</label>`;
+        }).join("")
+      : '<div class="pg-access-empty">Aucun joueur.</div>';
+    return `<div class="pg-row">
+      <span class="pg-name">${p.title}</span>
+      <div class="pg-states">${btns}</div>
+      <div class="pg-access">
+        <button class="pg-access-btn${granted.length ? " has-users" : ""}" onclick="togglePageAccessMenu(this)">${accessLabel}</button>
+        <div class="pg-access-menu" data-key="${p.key}" data-title="${p.title}" data-href="${p.href}">
+          ${items}
+          <button class="pg-access-save" onclick="savePageAccess(this)">Enregistrer</button>
+        </div>
+      </div>
+    </div>`;
   }).join("");
 }
 
@@ -720,7 +852,7 @@ async function setPageState(key, state, btn) {
   group.querySelectorAll(".pg-state-btn").forEach(b => b.classList.remove("active"));
   btn.classList.add("active");
   try {
-    const res = await fetch("save.php", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ action: "updatePage", adminUser: currentUser, key, status: state }) });
+    const res = await fetch("save.php", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ action: "updatePage", key, status: state }) });
     const j = await res.json();
     if (!j.ok) throw new Error(j.error || "Erreur serveur");
   } catch(e) {
@@ -730,11 +862,50 @@ async function setPageState(key, state, btn) {
   }
 }
 
+function togglePageAccessMenu(btn) {
+  const menu = btn.nextElementSibling;
+  const wasOpen = menu.classList.contains("open");
+  document.querySelectorAll(".pg-access-menu.open").forEach(m => m.classList.remove("open"));
+  if (!wasOpen) menu.classList.add("open");
+}
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".pg-access")) document.querySelectorAll(".pg-access-menu.open").forEach(m => m.classList.remove("open"));
+});
+
+async function savePageAccess(btn) {
+  const menu = btn.parentNode;
+  const key = menu.dataset.key;
+  const title = menu.dataset.title;
+  const href = menu.dataset.href;
+  const users = Array.from(menu.querySelectorAll('input[type="checkbox"]:checked')).map(c => c.value);
+  const link = window.location.origin + pgBasePath() + href;
+  btn.disabled = true;
+  btn.textContent = "…";
+  try {
+    const res = await fetch("save.php", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ action: "updatePageAccess", key, title, link, users }) });
+    const j = await res.json();
+    if (!j.ok) throw new Error(j.error || "Erreur serveur");
+    PG_ACCESS[key] = users;
+    menu.classList.remove("open");
+    const accessBtn = menu.previousElementSibling;
+    accessBtn.textContent = users.length ? `👤 Accès (${users.length})` : "👤 Accès";
+    accessBtn.classList.toggle("has-users", users.length > 0);
+    if (j.added && j.added.length) {
+      alert("Accès enregistré. MP Discord envoyé à : " + j.added.join(", "));
+    }
+  } catch(e) {
+    alert("Échec de l'enregistrement : " + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Enregistrer";
+  }
+}
+
 initPage();
 loadStats();
 loadProfile();
 loadOrderHistory();
-loadPagesAdmin();
+loadAdminSections();
 </script>
 </body>
 </html>

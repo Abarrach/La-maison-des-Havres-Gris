@@ -43,6 +43,14 @@
     .then(function (s) {
       var status = (s.pages && s.pages[key]) || 'open';
       if (status === 'open') return;
+
+      // Exception nominative : un ou plusieurs joueurs peuvent recevoir l'accès
+      // à une page « pas active »/« en travaux » sans changer son statut global
+      // (accordé depuis Mon Compte > Gestion des pages).
+      var allowed = (s.pages_access && s.pages_access[key]) || [];
+      var me = (localStorage.getItem('user') || '').toLowerCase();
+      if (me && allowed.some(function (u) { return String(u).toLowerCase() === me; })) return;
+
       if (status === 'wip') {
         block('🚧', 'Page en travaux', 'Cette section est en cours de préparation. Revenez bientôt.');
       } else {

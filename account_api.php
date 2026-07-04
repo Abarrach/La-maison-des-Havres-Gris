@@ -72,10 +72,18 @@ if ($method === 'GET') {
     if ($action === 'getProfile') {
         $profiles = readJson($profilesFile);
         $profile  = $profiles[$user] ?? [];
+
+        // Le mot de passe n'a de sens que pour un compte SANS lien Discord
+        // (connexion OAuth active = discord_id renseigné dans users_SECURE_9x.json).
+        $hasDiscordId = false;
+        foreach (readJson($usersFile) as $u) {
+            if (($u['user'] ?? '') === $user) { $hasDiscordId = !empty($u['discord_id']); break; }
+        }
+
         echo json_encode([
-            'ok'      => true,
-            'discord' => $profile['discord'] ?? '',
-            'avatar'  => $profile['avatar']  ?? '',
+            'ok'            => true,
+            'avatar'        => $profile['avatar']  ?? '',
+            'hasDiscordId'  => $hasDiscordId,
         ]);
         exit;
     }
@@ -165,17 +173,6 @@ if ($method === 'POST') {
         if (!$found) { echo json_encode(['ok' => false, 'error' => 'Mot de passe actuel incorrect']); exit; }
 
         writeJson($usersFile, $users);
-        echo json_encode(['ok' => true]);
-        exit;
-    }
-
-    // Sauvegarder Discord
-    if ($action === 'saveProfile') {
-        $discord  = trim($input['discord'] ?? '');
-        $profiles = readJson($profilesFile);
-        if (!isset($profiles[$user])) $profiles[$user] = [];
-        $profiles[$user]['discord'] = $discord;
-        writeJson($profilesFile, $profiles);
         echo json_encode(['ok' => true]);
         exit;
     }

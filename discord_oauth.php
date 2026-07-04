@@ -54,7 +54,12 @@ function dco_config(): ?array {
     return $cfg;
 }
 
-/** Pseudo "chef" toujours admin (cohérent avec save.php / get_users.php). */
+/**
+ * Pseudo du responsable du site (Abarrach) — toujours admin, quel que soit son
+ * rôle Discord (cohérent avec save.php / get_users.php). À ne pas confondre avec
+ * le chef de guilde (Lorhelyne), qui est un rôle Discord/guilde distinct : voir
+ * la protection anti-rétrogradation/suppression dans save.php (par discord_id).
+ */
 function dco_chief(): string { return 'Abarrach'; }
 
 /** Minuscule sûre (repli si l'extension mbstring est absente). */
@@ -153,7 +158,7 @@ function dco_guild_member(array $cfg, string $discordUserId): array {
  *   - si access_role_ids est vide  → tout membre de la guilde a accès
  *   - si access_role_ids est défini → il faut porter au moins un de ces rôles
  *     (permet d'exclure les invités / membres d'un autre jeu, etc.)
- * Le chef (Abarrach) garde toujours l'accès.
+ * Le responsable du site (Abarrach) garde toujours l'accès.
  */
 function dco_member_allowed(array $cfg, array $member, string $pseudo = ''): bool {
     if (empty($member['in_guild'])) return false;
@@ -171,11 +176,24 @@ function dco_member_allowed(array $cfg, array $member, string $pseudo = ''): boo
     return false;
 }
 
-/** Détermine le rôle du site (admin/user) à partir du pseudo et des rôles Discord. */
+/**
+ * Détermine le rôle du site (admin/user) à partir du pseudo et des rôles Discord.
+ *
+ * Un admin peut aussi être accordé MANUELLEMENT (indépendamment du rôle Discord)
+ * via Mon Compte (Gestion des utilisateurs > Promouvoir) : ce cas se traduit par
+ * `role: "admin"` déjà écrit dans users_SECURE_9x.json, qu'on honore ici comme
+ * un override persistant. Sans ce 3e cas, la revérification périodique Discord
+ * (session_check.php) écrasait silencieusement toute promotion manuelle.
+ */
 function dco_compute_role(array $cfg, string $pseudo, array $discordRoles): string {
     if (strcasecmp($pseudo, dco_chief()) === 0) return 'admin';
     foreach ($cfg['admin_role_ids'] as $rid) {
         if (in_array($rid, $discordRoles, true)) return 'admin';
+    }
+    foreach (dco_read_users() as $u) {
+        if (strcasecmp((string)($u['user'] ?? ''), $pseudo) === 0) {
+            return (($u['role'] ?? 'user') === 'admin') ? 'admin' : 'user';
+        }
     }
     return 'user';
 }
@@ -236,6 +254,38 @@ function dco_resolve_account(string $discordId, string $discordName): array {
 
     if ($changed) dco_write_users($users);
     return ['pseudo' => $pseudo, 'created' => $created];
+}
+
+/** POST JSON authentifié (Bot xxx). Renvoie ['code'=>int,'json'=>array|null]. */
+function dco_http_post_json(string $url, array $payload, string $auth): array {
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => json_encode($payload, JSON_UNESCAPED_UNICODE),
+        CURLOPT_HTTPHEADER     => ['Authorization: ' . $auth, 'Content-Type: application/json'],
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 10,
+        CURLOPT_CONNECTTIMEOUT => 5,
+    ]);
+    $resp = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    return ['code' => $code, 'json' => $resp ? json_decode($resp, true) : null];
+}
+
+/**
+ * Envoie un MP Discord à un membre via le bot (même token que l'appartenance
+ * guilde/bot Sorties). Best-effort : ne lève jamais, renvoie juste true/false
+ * (MP fermés, membre introuvable, config absente… tout est silencieux).
+ */
+function dco_dm_send(array $cfg, string $discordId, string $content): bool {
+    $token = $cfg['bot_token'] ?? '';
+    if ($token === '' || $discordId === '' || !function_exists('curl_init')) return false;
+    $open = dco_http_post_json(DCO_API . '/users/@me/channels', ['recipient_id' => $discordId], 'Bot ' . $token);
+    $chan = $open['json']['id'] ?? '';
+    if ($open['code'] < 200 || $open['code'] >= 300 || $chan === '') return false;
+    $send = dco_http_post_json(DCO_API . "/channels/{$chan}/messages", ['content' => $content], 'Bot ' . $token);
+    return $send['code'] >= 200 && $send['code'] < 300;
 }
 
 // ---------- Session ----------

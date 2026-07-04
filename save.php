@@ -6,11 +6,35 @@ date_default_timezone_set('Europe/Paris');
 
 // Intégration Discord (envoi/suppression auto des messages de demande)
 require_once __DIR__ . '/discord_helper.php';
+// Session (démarre avec les bons paramètres de cookie 30j, cf. discord_oauth.php)
+// + dco_config()/dco_dm_send() pour les MP d'octroi d'accès à une page.
+require_once __DIR__ . '/discord_oauth.php';
 
 function jerr($msg, $code = 400) {
     http_response_code($code);
     echo json_encode(['ok' => false, 'error' => $msg], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     exit;
+}
+
+// Vérification serveur du rôle admin (ne JAMAIS faire confiance à un champ
+// envoyé par le client, ex: adminUser) — s'appuie sur la session PHP réelle.
+function requireAdmin() {
+    if (($_SESSION['role'] ?? '') !== 'admin') jerr("not_authorized", 403);
+}
+
+// Cheffe de guilde protégée par ID Discord (immuable), pas par pseudo — un pseudo
+// peut être mal orthographié/renommé, l'ID Discord jamais. Ni rétrogradable ni
+// supprimable par un autre admin (cf. Abarrach, responsable du site, protégé pareil
+// mais par pseudo puisque son compte n'est pas nécessairement lié à Discord).
+const GUILD_CHIEF_DISCORD_ID = '332476079875031051'; // Lorhelyne
+
+function isGuildChief(array $users, string $pseudo): bool {
+    foreach ($users as $u) {
+        if (strcasecmp($u['user'] ?? '', $pseudo) === 0) {
+            return (string)($u['discord_id'] ?? '') === GUILD_CHIEF_DISCORD_ID;
+        }
+    }
+    return false;
 }
 
 function readJson($path) {
@@ -148,12 +172,14 @@ switch ($action) {
         exit;
 
     case 'deleteUser':
+        requireAdmin();
         $target = trim($data['target'] ?? '');
         if ($target === '') jerr("missing_target");
-        if (strcasecmp($target, 'Abarrach') === 0) jerr("Impossible de supprimer le chef.");
-        
+        if (strcasecmp($target, 'Abarrach') === 0) jerr("Impossible de supprimer le responsable du site.");
+
         $usersFile = __DIR__ . '/users_SECURE_9x.json';
         $users = readJson($usersFile);
+        if (isGuildChief($users, $target)) jerr("Impossible de supprimer le chef de guilde.");
         $users = array_filter($users, fn($u) => $u['user'] !== $target);
         writeJson($usersFile, array_values($users));
         
@@ -165,12 +191,14 @@ switch ($action) {
         exit;
 
     case 'updateRole':
+        requireAdmin();
         $target = trim($data['target'] ?? '');
         $newRole = trim($data['role'] ?? 'user');
-        if (strcasecmp($target, 'Abarrach') === 0 && $newRole !== 'admin') jerr("Impossible de rétrograder le chef.");
-        
+        if (strcasecmp($target, 'Abarrach') === 0 && $newRole !== 'admin') jerr("Impossible de rétrograder le responsable du site.");
+
         $usersFile = __DIR__ . '/users_SECURE_9x.json';
         $users = readJson($usersFile);
+        if ($newRole !== 'admin' && isGuildChief($users, $target)) jerr("Impossible de rétrograder le chef de guilde.");
         $found = false;
         foreach ($users as &$u) {
             if ($u['user'] === $target) {
@@ -352,6 +380,7 @@ switch ($action) {
         if (!file_exists($settingsFile)) writeJson($settingsFile, ['pages' => new stdClass()]);
         $settings = readJson($settingsFile);
         if (!isset($settings['pages']) || !is_array($settings['pages'])) $settings['pages'] = [];
+        if (!isset($settings['pages_access']) || !is_array($settings['pages_access'])) $settings['pages_access'] = [];
 
         // Migration : ancien booléen analytics_public -> pages.analytics
         // (true = ouvert à tous, false = restreint admin -> masqué pour les joueurs)
@@ -363,26 +392,18 @@ switch ($action) {
             writeJson($settingsFile, $settings);
         }
 
-        // Toujours renvoyer "pages" comme objet (et non tableau vide [])
+        // Toujours renvoyer "pages"/"pages_access" comme objets (et non tableau vide [])
         if (empty($settings['pages'])) $settings['pages'] = new stdClass();
+        if (empty($settings['pages_access'])) $settings['pages_access'] = new stdClass();
         echo json_encode($settings);
         exit;
 
     case 'updatePage':
-        $adminUser = trim($data['adminUser'] ?? '');
+        requireAdmin();
         $key       = trim($data['key']       ?? '');
         $status    = trim($data['status']    ?? '');
-        if ($adminUser === '' || $key === '') jerr("missing_data");
+        if ($key === '') jerr("missing_data");
         if (!in_array($status, ['open', 'hidden', 'wip'], true)) jerr("bad_status");
-
-        // Vérification côté serveur : l'appelant doit être admin
-        $usersFile = __DIR__ . '/users_SECURE_9x.json';
-        $users = readJson($usersFile);
-        $callerRole = null;
-        foreach ($users as $u) {
-            if ($u['user'] === $adminUser) { $callerRole = $u['role']; break; }
-        }
-        if ($callerRole !== 'admin') jerr("not_authorized", 403);
 
         $settingsFile = __DIR__ . '/settings.json';
         $settings = readJson($settingsFile);
@@ -391,6 +412,48 @@ switch ($action) {
         unset($settings['analytics_public']); // nettoyage post-migration
         if (!writeJson($settingsFile, $settings)) jerr("write_error", 500);
         echo json_encode(['ok' => true]);
+        exit;
+
+    case 'updatePageAccess':
+        requireAdmin();
+        $key   = trim($data['key'] ?? '');
+        $title = trim($data['title'] ?? $key);
+        $link  = trim($data['link'] ?? '');
+        if ($key === '') jerr("missing_data");
+        $rawUsers = is_array($data['users'] ?? null) ? $data['users'] : [];
+
+        $newList = [];
+        foreach ($rawUsers as $u) {
+            $u = trim((string)$u);
+            if ($u !== '' && !in_array($u, $newList, true)) $newList[] = $u;
+        }
+
+        $settingsFile = __DIR__ . '/settings.json';
+        $settings = readJson($settingsFile);
+        if (!isset($settings['pages_access']) || !is_array($settings['pages_access'])) $settings['pages_access'] = [];
+        $oldList = $settings['pages_access'][$key] ?? [];
+        $settings['pages_access'][$key] = $newList;
+        if (!writeJson($settingsFile, $settings)) jerr("write_error", 500);
+
+        // MP Discord aux joueurs NOUVELLEMENT ajoutés uniquement (pas aux déjà-autorisés).
+        $added = array_values(array_diff($newList, $oldList));
+        if (!empty($added) && $link !== '') {
+            $cfg = dco_config();
+            if ($cfg) {
+                $usersAll = readJson(__DIR__ . '/users_SECURE_9x.json');
+                foreach ($added as $pseudo) {
+                    $discordId = '';
+                    foreach ($usersAll as $u) {
+                        if (strcasecmp($u['user'] ?? '', $pseudo) === 0) { $discordId = (string)($u['discord_id'] ?? ''); break; }
+                    }
+                    if ($discordId === '') continue;
+                    $msg = "🔑 **Accès accordé** : tu as maintenant accès à la page **{$title}** sur le portail des Havres Gris.\n👉 {$link}";
+                    dco_dm_send($cfg, $discordId, $msg);
+                }
+            }
+        }
+
+        echo json_encode(['ok' => true, 'added' => $added]);
         exit;
 
     default: jerr("unknown_action");

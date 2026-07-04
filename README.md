@@ -465,11 +465,12 @@ Créer une sortie épice **directement depuis Discord** et gérer les inscriptio
 - **Widget compte joueur** présent dans toutes les pages : cercle avatar + pseudo, clic → page compte
 - Avatar personnalisable : grille de presets + upload personnel (redimensionné 200×200 px côté serveur via PHP GD, crop centré automatique)
 - Les avatars uploadés sont privés : chaque joueur ne voit que les siens dans le sélecteur
-- Discord : saisie et sauvegarde du pseudo Discord
-- Changement de mot de passe sécurisé
+- Changement de mot de passe : affiché uniquement pour un compte **sans** lien Discord (comptes liés OAuth : rien à faire, ce champ est masqué)
 - **Stats** : bases placées, destinations signalées, rang
 - **Historique commandes** : tuiles dépliantes « Commandes passées » (avec statut : en attente / en cours / terminé) et « Services rendus » (demandes fulfillées par le joueur)
+- **Gestion des utilisateurs (admin uniquement)** : liste de tous les comptes, boutons Promouvoir/Rétrograder et Supprimer (`save.php`, actions `updateRole`/`deleteUser`, validation admin **côté serveur** via la session PHP réelle). Le responsable du site et le chef de guilde n'ont pas ces boutons (protégés, voir plus bas). Remplace l'ancien panneau « Gérer Utilisateurs » de la carte (retiré).
 - **Gestion des pages (admin uniquement)** : section listant toutes les tuiles du registre `pages.js`, chacune réglable sur *Active* / *Pas active* / *En travaux*. L'état est stocké dans `settings.json` (`pages.<clé>`) via `save.php` (action `updatePage`, validation admin côté serveur). Chaque page applique son état à l'accès direct par URL grâce à `page-guard.js` (les joueurs sont bloqués sur une page *pas active* ou *en travaux*, les admins jamais)
+- **Accès nominatif par page** : bouton « 👤 Accès » sur chaque ligne de la gestion des pages → menu déroulant à cases à cocher pour donner l'accès à une page *pas active*/*en travaux* à un ou plusieurs joueurs précis, sans changer son statut global (la tuile reste invisible dans le menu, seul le lien direct fonctionne pour eux). Stocké dans `settings.json` (`pages_access.<clé>`), action `save.php` `updatePageAccess`. Les joueurs **nouvellement** cochés reçoivent automatiquement un **MP Discord** avec le lien de la page (bot, réutilise le `bot_token` de la connexion Discord).
 
 ---
 
@@ -481,7 +482,7 @@ L'accès au portail se fait en **« Se connecter avec Discord »** : pas de mot 
 
 - **Flux** (`discord_login.php` → `discord_callback.php`, lib partagée `discord_oauth.php`) : redirection vers Discord (scope `identify`, `state` anti-CSRF, `prompt=none` pour ne montrer l'écran d'autorisation qu'**une fois** par membre) → retour → vérification de l'appartenance à la guilde **via le bot** (`GET /guilds/{id}/members/{uid}`) → session PHP + `localStorage`.
 - **Filtrage par rôle Discord** (`access_role_ids`) : seuls les porteurs des rôles autorisés (ex. *Dune*, *Dune Pause*) entrent ; les invités / membres d'un autre jeu sont refusés.
-- **Admin dérivé d'un rôle Discord** (`admin_role_ids`, ex. *Admins* / *Modos*) : recalculé à chaque connexion. `Abarrach` reste admin en dur. Un rôle admin donne aussi l'accès.
+- **Admin dérivé d'un rôle Discord** (`admin_role_ids`, ex. *Admins* / *Modos*) : recalculé à chaque connexion. `Abarrach` reste admin en dur. Un rôle admin donne aussi l'accès. **Override manuel persistant** : un joueur promu admin depuis Mon Compte (« Gestion des utilisateurs ») reste admin même sans le rôle Discord requis — ce rôle stocké dans `users_SECURE_9x.json` est désormais consulté par `dco_compute_role()` en plus du rôle Discord (avant ce fix, la revérification périodique l'écrasait silencieusement).
 - **Enforcement continu** (`session_check.php`, appelé par `auth-guard.js`) : à chaque navigation, si la dernière vérif date de plus de `recheck_seconds` (~15 min), le serveur revérifie l'appartenance + le rôle. **Quitter la guilde ou perdre le rôle = session détruite immédiatement**, même session ouverte. C'est aussi une vraie protection **serveur** (le `localStorage` seul était falsifiable).
 - **Mapping pseudo** (`import_discord_map.php`, outil admin) : un CSV `id_discord ; pseudo_site` pré-lie chaque ID Discord à un compte existant (champ `discord_id` dans `users_SECURE_9x.json`) → chacun se connecte avec Discord **sans perdre ses données** (bases, avatar, demandes…). Un membre absent du CSV se voit créer un compte neuf à sa 1re connexion.
 - **Config** : `discord_oauth_config.php` (**gitignoré** : `client_secret` + `bot_token`) ; gabarit = `discord_oauth_config.example.php`. Nécessite **HTTPS** + la Redirect URI déclarée dans le portail Discord.
@@ -493,7 +494,8 @@ L'accès au portail se fait en **« Se connecter avec Discord »** : pas de mot 
 
 ### Communs
 
-- Deux niveaux d'accès : **Joueur** et **Administrateur** ; `Abarrach` ne peut pas être rétrogradé.
+- Deux niveaux d'accès : **Joueur** et **Administrateur**.
+- **Comptes protégés** (ni rétrogradables ni supprimables par un autre admin, vérifié côté serveur dans `save.php`) : `Abarrach` (responsable technique du site, protégé par pseudo) et le **chef de guilde** (protégé par `discord_id`, pas par pseudo — immunise contre une faute de frappe ou un renommage).
 - **Toutes les pages** sont protégées par `auth-guard.js` (garde client instantané + validation serveur via `session_check.php`).
 - **Auth serveur (épice)** : les endpoints de *Retours de Soirée* vérifient la session PHP **côté serveur** (`epice/auth_epice.php`). Rôle **organisateur** = admin OU pseudo dans `epice/data/organizers.json`.
 - La déconnexion efface la session `localStorage` et redirige vers la page de connexion (ne révoque pas l'autorisation Discord).

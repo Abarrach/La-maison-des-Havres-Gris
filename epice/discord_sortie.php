@@ -49,10 +49,14 @@ const POSTE_ICON = [
 //            => false : vit uniquement côté Discord (jauge d'intérêt), stockage séparé.
 //  'postes' => true  : inscription par poste (menu déroulant). false : RSVP Présent/Peut-être/Absent.
 const SORTIE_TYPES = [
-    'epice'     => ['label' => 'Épice',       'icon' => '🏜️', 'site' => true,  'postes' => true],
-    'labo'      => ['label' => 'Labos-Donjons', 'icon' => '🧪', 'site' => false, 'postes' => false],
-    'farm'      => ['label' => 'Farm divers', 'icon' => '🔁', 'site' => false, 'postes' => false],
-    'landsraad' => ['label' => 'Landsraad',   'icon' => '🏛️', 'site' => false, 'postes' => false],
+    'epice'     => ['label' => 'Épice',           'icon' => '🏜️', 'site' => true,  'postes' => true],
+    'labo'      => ['label' => 'Labos-Donjons',   'icon' => '🧪', 'site' => false, 'postes' => false],
+    'farm'      => ['label' => 'Farm divers',     'icon' => '🔁', 'site' => false, 'postes' => false],
+    'landsraad' => ['label' => 'Landsraad',       'icon' => '🏛️', 'site' => false, 'postes' => false],
+    'pvp_train' => ['label' => 'Entraînement PvP','icon' => '⚔️', 'site' => false, 'postes' => false],
+    'pvp_hunt'  => ['label' => 'Chasse PvP',      'icon' => '🎯', 'site' => false, 'postes' => false],
+    'base_dd'   => ['label' => 'Construction Base Guilde DD', 'icon' => '🏗️', 'site' => false, 'postes' => false],
+    'guilde'    => ['label' => 'Activité Guilde',  'icon' => '🛡️', 'site' => false, 'postes' => false],
 ];
 function sortie_type($stype): array { return SORTIE_TYPES[$stype] ?? SORTIE_TYPES['epice']; }
 
@@ -759,7 +763,7 @@ function write_data(array $data): void {
     fclose($fp);
 }
 
-// --- Store séparé des sorties NON-épice (Labo/Farm/Landsraad) : ne touche pas au débrief ---
+// --- Store séparé des sorties NON-épice : ne touche pas au débrief ---
 function dstore_file() {
     $dir = __DIR__ . '/data';
     if (!is_dir($dir)) @mkdir($dir, 0775, true);

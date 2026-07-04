@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Ornithopter Flap — Hub Jeux</title>
+<link rel="stylesheet" href="../style.css">
+<style>
+:root {
+    --bg: #0a0402;
+    --gold: #cda434;
+    --text: #f5deb3;
+    --muted: #7c5e2a;
+}
+html, body {
+    overflow: hidden; height: 100%; margin: 0;
+    touch-action: none; -webkit-tap-highlight-color: transparent;
+    user-select: none; -webkit-user-select: none;
+}
+body {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: var(--bg); font-family: 'Segoe UI', system-ui, sans-serif;
+    color: var(--text);
+}
+#game-wrapper {
+    position: relative; z-index: 1;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+canvas {
+    border: 1px solid #3d2b16; border-radius: 8px;
+    box-shadow:
+        0 0 60px rgba(205,164,52,0.08),
+        0 0 120px rgba(180,120,30,0.04);
+    cursor: pointer; display: block;
+}
+.game-header {
+    display: flex; align-items: center; gap: 10px;
+    width: 100%; max-width: 400px; padding: 8px 12px; box-sizing: border-box;
+    background: rgba(0,0,0,0.4); border: 1px solid #3d2b16; border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.35);
+}
+.game-header .back-link {
+    color: var(--gold); text-decoration: none; font-weight: bold; font-size: 0.78em;
+    border: 1px solid #7c5e2a; border-radius: 4px; padding: 5px 10px;
+    background: linear-gradient(180deg, #2a1a0b, #1a0f05);
+    transition: all 0.2s; white-space: nowrap;
+}
+.game-header .back-link:hover { background: var(--gold); color: #000; border-color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.4); }
+.game-header .game-title {
+    font-size: 1em; font-weight: bold; color: var(--gold);
+    text-transform: uppercase; letter-spacing: 0.5px; text-shadow: 0 0 10px rgba(205,164,52,0.3);
+}
+.score-live { font-size: 1.15em; color: #ffcc00; font-weight: bold; margin-left: auto; }
+
+#leaderboard {
+    position: absolute; right: -240px; top: 0; width: 220px;
+    background: rgba(10,5,2,0.92); border: 1px solid #3d2b16;
+    border-radius: 8px; padding: 16px 14px; font-size: 0.78em;
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+}
+#leaderboard h3 {
+    margin: 0 0 12px; color: var(--gold); font-size: 0.95em;
+    text-align: center; text-transform: uppercase; letter-spacing: 2px;
+}
+#lb-list { list-style: none; padding: 0; margin: 0; }
+#lb-list li {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 0; border-bottom: 1px solid rgba(61,43,22,0.4);
+}
+#lb-list li .rank { color: var(--muted); width: 26px; font-size: 0.9em; }
+#lb-list li .name { flex: 1; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#lb-list li .pts { color: #ffcc00; font-weight: bold; min-width: 44px; text-align: right; }
+#lb-list li.me .name { color: var(--gold); }
+
+/* Responsive */
+@media (max-width: 700px) {
+    #leaderboard { position: static; width: 90vw; max-width: 400px; margin-top: 6px; }
+}
+@media (max-width: 420px) {
+    canvas { width: 95vw !important; height: auto !important; }
+    .game-header { font-size: 0.7em; }
+}
+</style>
+</head>
+<body>
+<script src="../auth-guard.js"></script>
+<div id="game-wrapper">
+    <div class="game-header">
+        <a href="hub.html" class="back-link">&larr; Hub Jeux</a>
+        <span class="game-title">🪶 Ornithopter Flap</span>
+        <span class="score-live" id="score-display">0</span>
+    </div>
+    <canvas id="game" width="400" height="600"></canvas>
+    <div id="leaderboard">
+        <h3>🏆 Classement</h3>
+        <ul id="lb-list"><li style="color:var(--muted)">Chargement…</li></ul>
+    </div>
+</div>
+
+<script>
+;(function () {
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = 400, H = 600;
+const GAME_ID = 'orni_flap';
+
+// ──────────────────────────────────────────────
+//  CONSTANTES PHYSIQUES
+// ──────────────────────────────────────────────
+const TARGET_FPS = 60, FRAME_DUR = 1000 / TARGET_FPS;
+const GRAVITY = 0.38, FLAP_FORCE = -7.2;
+const PIPE_W = 48, GAP = 182;
+const PIPE_SPEED_BASE = 1.75;
+const PIPE_INTERVAL_BASE = 158;
+const BIRD_X = 80, BIRD_W = 36, BIRD_H = 26;
+const GROUND_H = 22;
+
+// ---- Variété (contre la monotonie) ----
+const SPICE_CHANCE       = 0.5;   // proba d'épice par pilier
+const SHIELD_MIN_SCORE   = 6;
+const SHIELD_CHANCE      = 0.1;   // proba de bouclier par pilier (si score suffisant)
+const OSCILLATE_MIN_SCORE = 8;
+const OSCILLATE_CHANCE   = 0.4;
+const OSC_AMPLITUDE      = 26;
+const OSC_SPEED          = 0.02;
+const CLOSE_CALL_MARGIN  = 10;
+const WORM_HAZARD_MIN_SCORE = 12; // avant ce score le ver reste un simple décor
+
+// ──────────────────────────────────────────────
+//  PALETTE DE COULEURS (Dune améliorée)
+// ──────────────────────────────────────────────
+const PAL = {
+    skyTop: '#3e1a0c',
+    skyHigh: '#7a3818',
+    skyMid: '#b45a2a',
+    skyLow: '#d99b4a',
+    skyHorizon: '#e8c47a',
+    sun: '#fff5d0',
+    sandFar: '#a67a3a',
+    sandMid: '#c49448',
+    sandNear: '#d9af55',
+    sandDark: '#8a5e28',
+    rock: '#4a3018',
+    rockLight: '#6b4a2a',
+    rockShadow: '#2e1a0a',
+    wing: '#5a3a20',
+    wingMembrane: '#8a6030',
+    body: '#3d2410',
+    cockpit: '#1a1008',
+    gold: '#ffcc00',
+    red: '#c44',
+    white: '#f5deb3',
+};
+
+// ──────────────────────────────────────────────
+//  ÉTAT GLOBAL
+// ──────────────────────────────────────────────
+let bird, pipes, particles, score, bestScore, gameState, frameCount, speed;
+let startTime = 0, scoreSecret = '';
+let lastTime = 0, accumulator = 0;
+let worm = null;
+let spiceItems = [], powerups = [];
+let shielded = false, shieldGrace = 0;
+let combo = 0, comboTimer = 0;
+
+// ──────────────────────────────────────────────
+//  AUDIO
+// ──────────────────────────────────────────────
+let audioCtx = null;
+function audCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+}
+function tone(freq, dur, vol = 0.08, type = 'sine') {
+    try {
+        const a = audCtx(), t = a.currentTime;
+        const o = a.createOscillator(), g = a.createGain();
+        o.type = type;
+        o.frequency.setValueAtTime(freq, t);
+        o.frequency.exponentialRampToValueAtTime(freq * 0.5, t + dur);
+        g.gain.setValueAtTime(vol, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+        o.connect(g); g.connect(a.destination);
+        o.start(t); o.stop(t + dur);
+    } catch (e) {}
+}
+function sndFlap()   { tone(300, 0.08, 0.1, 'triangle'); setTimeout(() => tone(480, 0.06, 0.08), 30); }
+function sndScore()  { tone(660, 0.1, 0.12); setTimeout(() => tone(880, 0.1, 0.1), 60); }
+function sndSpice()  { tone(880, 0.06, 0.08); setTimeout(() => tone(1100, 0.06, 0.06), 40); }
+function sndShield() { [660, 880, 1100].forEach((f, i) => setTimeout(() => tone(f, 0.08, 0.1), i * 60)); }
+function sndCloseCall() { tone(600, 0.06, 0.06, 'sawtooth'); }
+function sndWormWarn() { for (let i = 0; i < 3; i++) setTimeout(() => tone(800, 0.06, 0.06, 'square'), i * 120); }
+function sndCrash() {
+    try {
+        const a = audCtx(), t = a.currentTime;
+        const len = a.sampleRate * 0.2;
+        const buf = a.createBuffer(1, len, a.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+        const src = a.createBufferSource(), g = a.createGain();
+        src.buffer = buf;
+        g.gain.setValueAtTime(0.22, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+        src.connect(g); g.connect(a.destination); src.start(t);
+        tone(70, 0.2, 0.14, 'sine');
+    } catch (e) {}
+}
+
+// ──────────────────────────────────────────────
+//  DUNES (3 couches + points fixes)
+// ──────────────────────────────────────────────
+let dunes = [];
+function initDunes() {
+    dunes = [
+        { pts: [], speed: 0.15, color: PAL.sandFar, heightBase: 70 },
+        { pts: [], speed: 0.3,  color: PAL.sandMid, heightBase: 40 },
+        { pts: [], speed: 0.5,  color: PAL.sandNear, heightBase: 20 },
+    ];
+    for (const layer of dunes) {
+        const n = 10;
+        for (let i = 0; i <= n; i++) {
+            layer.pts.push({
+                x: (i / n) * (W + 120) - 60,
+                y: H - layer.heightBase - Math.random() * 30,
+            });
+        }
+    }
+}
+
+// ──────────────────────────────────────────────
+//  OBJETS
+// ──────────────────────────────────────────────
+function reset() {
+    bird = { y: H / 2.5, vy: 0, rot: 0, wingPhase: 0, wingSpeed: 0.22 };
+    pipes = [];
+    particles = [];
+    spiceItems = []; powerups = [];
+    shielded = false; shieldGrace = 0;
+    combo = 0; comboTimer = 0;
+    score = 0;
+    frameCount = 0;
+    speed = PIPE_SPEED_BASE;
+    worm = null;
+    startTime = Date.now();
+    initDunes();
+    updateScoreDisplay();
+}
+function updateScoreDisplay() {
+    document.getElementById('score-display').textContent = score;
+}
+function spawnPipe() {
+    const minTop = 55;
+    const maxTop = H - GAP - 90;
+    const topH = minTop + Math.random() * (maxTop - minTop);
+    const oscillates = score >= OSCILLATE_MIN_SCORE && Math.random() < OSCILLATE_CHANCE;
+    pipes.push({
+        x: W + 20, topH, baseTop: topH, scored: false, closeCalled: false,
+        seed: Math.random() * 1000, oscillates, oscPhase: Math.random() * Math.PI * 2,
+    });
+
+    // Un collectible (épice) ou plus rarement un bouclier, dans l'espace du trou
+    const gapMidY = topH + GAP / 2;
+    const px = W + 20 + PIPE_W / 2;
+    if (score >= SHIELD_MIN_SCORE && Math.random() < SHIELD_CHANCE) {
+        powerups.push({ x: px, y: gapMidY, collected: false, phase: Math.random() * Math.PI * 2 });
+    } else if (Math.random() < SPICE_CHANCE) {
+        spiceItems.push({ x: px, y: gapMidY + (Math.random() - 0.5) * (GAP * 0.4), collected: false, sparkle: Math.random() * Math.PI * 2 });
+    }
+}
+
+// ──────────────────────────────────────────────
+//  PARTICULES (sable + traînée)
+// ──────────────────────────────────────────────
+function emitSand(x, y, count) {
+    for (let i = 0; i < count; i++) {
+        particles.push({
+            x: x + (Math.random() - 0.5) * 12,
+            y: y + (Math.random() - 0.5) * 6,
+            vx: (Math.random() - 0.5) * 1.5 - 1,
+            vy: (Math.random() - 0.5) * 1.5 - 0.3,
+            life: 25 + Math.random() * 25,
+            maxLife: 50,
+            size: 1.2 + Math.random() * 2.5,
+            hue: 35 + Math.random() * 15,
+        });
+    }
+}
+
+// ──────────────────────────────────────────────
+//  DESSIN : CIEL
+// ──────────────────────────────────────────────
+function drawSky() {
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, PAL.skyTop);
+    grad.addColorStop(0.3, PAL.skyHigh);
+    grad.addColorStop(0.6, PAL.skyMid);
+    grad.addColorStop(0.85, PAL.skyLow);
+    grad.addColorStop(1, PAL.skyHorizon);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Soleil avec halo
+    const sx = 300, sy = 70;
+    const glow = ctx.createRadialGradient(sx, sy, 8, sx, sy, 90);
+    glow.addColorStop(0, 'rgba(255,240,200,0.95)');
+    glow.addColorStop(0.3, 'rgba(255,200,100,0.5)');
+    glow.addColorStop(0.7, 'rgba(255,140,40,0.1)');
+    glow.addColorStop(1, 'rgba(255,80,10,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath(); ctx.arc(sx, sy, 90, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = PAL.sun;
+    ctx.beginPath(); ctx.arc(sx, sy, 18, 0, Math.PI * 2); ctx.fill();
+
+    // Poussière en suspension (bandes horizontales)
+    ctx.fillStyle = 'rgba(220,170,100,0.08)';
+    for (let i = 0; i < 4; i++) {
+        const y = 120 + i * 80;
+        ctx.fillRect(0, y, W, 6 + i * 3);
+    }
+}
+
+// ──────────────────────────────────────────────
+//  DESSIN : DUNES
+// ──────────────────────────────────────────────
+function drawDunes() {
+    for (const layer of dunes) {
+        if (gameState === 'playing') {
+            for (const p of layer.pts) p.x -= layer.speed * (speed / PIPE_SPEED_BASE);
+        }
+        // Ré-enroulement
+        const first = layer.pts[0];
+        if (first.x < -80) {
+            layer.pts.shift();
+            const last = layer.pts[layer.pts.length - 1];
+            layer.pts.push({
+                x: last.x + (W + 120) / (layer.pts.length),
+                y: H - layer.heightBase - 5 - Math.random() * 25,
+            });
+        }
+        // Tracé lissé
+        ctx.fillStyle = layer.color;
+        ctx.beginPath();
+        ctx.moveTo(0, H);
+        for (let i = 0; i < layer.pts.length - 1; i++) {
+            const p0 = layer.pts[i], p1 = layer.pts[i + 1];
+            const cx = (p0.x + p1.x) / 2;
+            const cy = (p0.y + p1.y) / 2 - 4;
+            ctx.quadraticCurveTo(p0.x, p0.y, cx, cy);
+            ctx.quadraticCurveTo(p1.x, p1.y, p1.x, p1.y);
+        }
+        ctx.lineTo(W, H);
+        ctx.closePath(); ctx.fill();
+    }
+    // Sol dur
+    ctx.fillStyle = PAL.sandDark;
+    ctx.fillRect(0, H - GROUND_H, W, GROUND_H);
+    ctx.fillStyle = PAL.sandNear;
+    ctx.fillRect(0, H - 4, W, 4);
+}
+
+// ──────────────────────────────────────────────
+//  DESSIN : PILIERS ROCHEUX
+// ──────────────────────────────────────────────
+function drawPipe(pipe) {
+    const topH = pipe.topH;
+    const botY = topH + GAP;
+    const w = PIPE_W;
+
+    // Fonction utilitaire : pilier unique avec texture
+    function drawPillar(x, y, h, isTop) {
+        // Corps du pilier
+        const grad = ctx.createLinearGradient(x, 0, x + w, 0);
+        grad.addColorStop(0, PAL.rock);
+        grad.addColorStop(0.3, PAL.rockLight);
+        grad.addColorStop(0.7, PAL.rock);
+        grad.addColorStop(1, PAL.rockShadow);
+        ctx.fillStyle = grad;
+        ctx.fillRect(x, y, w, h);
+
+        // Stries horizontales
+        ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < h; i += 18) {
+            ctx.beginPath();
+            ctx.moveTo(x + 4, y + i + Math.sin(i * 0.5 + pipe.seed) * 3);
+            ctx.lineTo(x + w - 4, y + i + Math.cos(i * 0.5 + pipe.seed) * 3);
+            ctx.stroke();
+        }
+
+        // Capsule rocheuse (embout)
+        const capY = isTop ? y + h : y;
+        ctx.fillStyle = PAL.rockLight;
+        ctx.beginPath();
+        ctx.ellipse(x + w / 2, capY, w / 2 + 5, 10, 0, isTop ? Math.PI : 0, isTop ? Math.PI * 2 : Math.PI);
+        ctx.fill();
+        ctx.fillStyle = PAL.rock;
+        ctx.beginPath();
+        ctx.ellipse(x + w / 2, capY, w / 2, 8, 0, isTop ? Math.PI : 0, isTop ? Math.PI * 2 : Math.PI);
+        ctx.fill();
+        // Arête vive
+        ctx.fillStyle = PAL.rockShadow;
+        ctx.beginPath();
+        ctx.ellipse(x + w / 2, capY, w / 2 - 3, 4, 0, isTop ? Math.PI : 0, isTop ? Math.PI * 2 : Math.PI);
+        ctx.fill();
+    }
+
+    drawPillar(pipe.x, 0, topH, true);
+    drawPillar(pipe.x, botY, H - botY, false);
+}
+
+// ──────────────────────────────────────────────
+//  DESSIN : VER GÉANT (apparition rare)
+// ──────────────────────────────────────────────
+function maybeSpawnWorm() {
+    if (worm || Math.random() > 0.002) return;
+    const hazard = score >= WORM_HAZARD_MIN_SCORE;
+    worm = { x: W + 30, y: H - 40 - Math.random() * 20, phase: 0, segments: 10, hazard };
+    if (hazard) sndWormWarn();
+}
+function drawWorm() {
+    if (!worm) return;
+    worm.x -= speed * 0.7;
+    worm.phase += 0.1;
+    const segCount = worm.segments;
+    for (let i = segCount - 1; i >= 0; i--) {
+        const sx = worm.x + i * 14;
+        const sy = worm.y + Math.sin(worm.phase + i * 0.7) * 9;
+        const r = 6 - i * 0.3;
+        const grad = ctx.createRadialGradient(sx - 2, sy - 2, r * 0.2, sx, sy, r);
+        grad.addColorStop(0, worm.hazard ? '#c07040' : '#a07040');
+        grad.addColorStop(1, worm.hazard ? '#6a1a10' : '#4a2a10');
+        ctx.fillStyle = grad;
+        ctx.beginPath(); ctx.arc(sx, sy, Math.max(2, r), 0, Math.PI * 2); ctx.fill();
+        if (i === 0) {
+            ctx.fillStyle = '#c44';
+            ctx.beginPath(); ctx.arc(sx + 5, sy, 4, 0, Math.PI * 2); ctx.fill();
+        }
+    }
+    if (worm.hazard) {
+        ctx.fillStyle = 'rgba(255,60,40,0.12)';
+        ctx.beginPath(); ctx.arc(worm.x, worm.y, 16, 0, Math.PI * 2); ctx.fill();
+    }
+    if (worm.x < -150) worm = null;
+}
+function collidesWorm() {
+    if (!worm || !worm.hazard) return false;
+    const bx = BIRD_X + BIRD_W / 2, by = bird.y + BIRD_H / 2;
+    for (let i = 0; i < worm.segments; i++) {
+        const sx = worm.x + i * 14;
+        const sy = worm.y + Math.sin(worm.phase + i * 0.7) * 9;
+        const r = (6 - i * 0.3) + 9; // marge indulgente
+        const dx = bx - sx, dy = by - sy;
+        if (dx * dx + dy * dy < r * r) return true;
+    }
+    return false;
+}
+
+// ──────────────────────────────────────────────
+//  DESSIN : ORNITHOPTÈRE
+// ──────────────────────────────────────────────
+function drawBird() {
+    ctx.save();
+    const cx = BIRD_X + BIRD_W / 2, cy = bird.y + BIRD_H / 2;
+    ctx.translate(cx, cy);
+
+    // Rotation progressive
+    bird.rot += (Math.min(bird.vy * 2.8, 65) - bird.rot) * 0.12;
+    ctx.rotate(bird.rot * Math.PI / 180);
+
+    // Battement d'ailes
+    if (gameState === 'playing') bird.wingPhase += bird.wingSpeed;
+    const wingFlap = Math.sin(bird.wingPhase) * 0.55;
+
+    // Ombre portée (décalée)
+    ctx.save();
+    ctx.globalAlpha = 0.2;
+    ctx.fillStyle = '#000';
+    ctx.translate(0, 12);
+    ctx.beginPath(); ctx.ellipse(0, 0, BIRD_W / 2, BIRD_H / 2.2, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+
+    // Corps principal
+    ctx.fillStyle = PAL.body;
+    ctx.beginPath(); ctx.ellipse(0, 0, BIRD_W / 2.2, BIRD_H / 2.2, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#7a5020';
+    ctx.beginPath(); ctx.ellipse(BIRD_W / 4.5, -2, 7, 4.5, -0.1, 0, Math.PI * 2); ctx.fill();
+
+    // Cockpit (verrière)
+    ctx.fillStyle = PAL.cockpit;
+    ctx.beginPath(); ctx.ellipse(BIRD_W / 5, -3, 5, 6, 0.1, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,200,100,0.25)';
+    ctx.beginPath(); ctx.ellipse(BIRD_W / 5, -5, 3, 3, 0, 0, Math.PI * 2); ctx.fill();
+
+    // Ailes gauches et droites
+    const wingSpan = BIRD_W / 2 + 14;
+    ctx.fillStyle = PAL.wing;
+    ctx.save();
+    ctx.rotate(wingFlap);
+    // Aile haute
+    ctx.beginPath();
+    ctx.moveTo(4, -2);
+    ctx.lineTo(-wingSpan, -BIRD_H + 4);
+    ctx.lineTo(-wingSpan + 6, -BIRD_H + 12);
+    ctx.lineTo(2, 2);
+    ctx.closePath(); ctx.fill();
+    // Membrane
+    ctx.fillStyle = PAL.wingMembrane;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-wingSpan + 10, -BIRD_H + 15);
+    ctx.lineTo(-wingSpan + 16, -BIRD_H + 18);
+    ctx.lineTo(2, 3);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+
+    ctx.fillStyle = PAL.wing;
+    ctx.save();
+    ctx.rotate(-wingFlap);
+    // Aile basse
+    ctx.beginPath();
+    ctx.moveTo(4, 2);
+    ctx.lineTo(-wingSpan, BIRD_H - 4);
+    ctx.lineTo(-wingSpan + 6, BIRD_H - 12);
+    ctx.lineTo(2, -2);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = PAL.wingMembrane;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(-wingSpan + 10, BIRD_H - 15);
+    ctx.lineTo(-wingSpan + 16, BIRD_H - 18);
+    ctx.lineTo(2, -3);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+
+    // Queue (stabilisateur)
+    ctx.fillStyle = PAL.body;
+    ctx.beginPath();
+    ctx.moveTo(-BIRD_W / 2, 0);
+    ctx.lineTo(-BIRD_W / 2 - 12, -6);
+    ctx.lineTo(-BIRD_W / 2 - 12, 6);
+    ctx.closePath(); ctx.fill();
+
+    // Trainée de poussière
+    if (gameState === 'playing' && frameCount % 2 === 0) {
+        emitSand(cx - BIRD_W / 2 - 5, cy, 1);
+    }
+
+    ctx.restore();
+}
+
+function drawShieldRing() {
+    if (!shielded) return;
+    const cx = BIRD_X + BIRD_W / 2, cy = bird.y + BIRD_H / 2;
+    ctx.save();
+    ctx.strokeStyle = `rgba(100,180,255,${0.4 + Math.sin(frameCount * 0.2) * 0.15})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(cx, cy, BIRD_W / 2 + 10, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+}
+
+// ──────────────────────────────────────────────
+//  COLLECTIBLES (épice + bouclier)
+// ──────────────────────────────────────────────
+function drawSpiceItem(sp) {
+    if (sp.collected) return;
+    sp.sparkle += 0.08;
+    const glow = 0.45 + Math.sin(sp.sparkle) * 0.35;
+    ctx.save();
+    ctx.shadowBlur = 12; ctx.shadowColor = PAL.gold;
+    ctx.fillStyle = `rgba(255,230,150,${glow * 0.6})`;
+    ctx.beginPath(); ctx.arc(sp.x, sp.y, 10, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fffef5';
+    ctx.beginPath();
+    ctx.moveTo(sp.x, sp.y - 6); ctx.lineTo(sp.x + 4, sp.y);
+    ctx.lineTo(sp.x, sp.y + 6); ctx.lineTo(sp.x - 4, sp.y);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+}
+function drawPowerup(pu) {
+    if (pu.collected) return;
+    pu.phase += 0.06;
+    const py = pu.y + Math.sin(pu.phase) * 3;
+    ctx.font = '18px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.fillText('🛡️', pu.x, py);
+    ctx.textBaseline = 'alphabetic';
+}
+
+// ──────────────────────────────────────────────
+//  PARTICULES (sable)
+// ──────────────────────────────────────────────
+function drawParticles() {
+    ctx.save();
+    ctx.globalCompositeOperation = 'screen';
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx; p.y += p.vy; p.life--;
+        if (p.life <= 0 || p.x < -15) { particles.splice(i, 1); continue; }
+        const alpha = (p.life / p.maxLife) * 0.7;
+        ctx.fillStyle = `hsla(${p.hue}, 65%, 65%, ${alpha})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+// ──────────────────────────────────────────────
+//  HUD & ÉCRANS
+// ──────────────────────────────────────────────
+function drawScore() {
+    ctx.save();
+    ctx.font = 'bold 44px "Segoe UI", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.shadowBlur = 8; ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.fillStyle = PAL.gold;
+    ctx.fillText(score, W / 2, 65);
+    if (combo > 1) {
+        ctx.shadowBlur = 0;
+        ctx.font = 'bold 14px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#ff8800';
+        ctx.fillText('x' + combo + ' COMBO', W / 2, 88);
+    }
+    ctx.restore();
+}
+
+function drawMenu() {
+    ctx.fillStyle = 'rgba(6,3,1,0.65)'; ctx.fillRect(0, 0, W, H);
+    ctx.save(); ctx.textAlign = 'center';
+    ctx.font = 'bold 26px "Segoe UI", sans-serif';
+    ctx.fillStyle = PAL.gold;
+    ctx.shadowBlur = 10; ctx.shadowColor = 'rgba(205,164,52,0.4)';
+    ctx.fillText('ORNITHOPTER FLAP', W / 2, H / 3 - 10);
+    ctx.shadowBlur = 0;
+    ctx.font = '14px sans-serif'; ctx.fillStyle = '#a89060';
+    ctx.fillText('Survole les canyons d\'Arrakis', W / 2, H / 3 + 25);
+    ctx.fillText('et évite les piliers rocheux', W / 2, H / 3 + 44);
+    ctx.font = '11px sans-serif'; ctx.fillStyle = '#7c5e2a';
+    ctx.fillText('✦ Épice = bonus · 🛡️ Bouclier = 1 choc absorbé · frôle les bords pour un combo', W / 2, H / 3 + 64);
+    ctx.font = 'bold 16px "Segoe UI", sans-serif';
+    ctx.fillStyle = PAL.white;
+    ctx.fillText('🖱️ Clique ou [ESPACE]', W / 2, H / 2 + 25);
+    if (bestScore > 0) {
+        ctx.font = '13px sans-serif'; ctx.fillStyle = '#7c5e2a';
+        ctx.fillText('🏆 Meilleur : ' + bestScore, W / 2, H / 2 + 55);
+    }
+    ctx.restore();
+}
+
+function drawDead() {
+    ctx.fillStyle = 'rgba(8,3,1,0.65)'; ctx.fillRect(0, 0, W, H);
+    ctx.save(); ctx.textAlign = 'center';
+    ctx.font = 'bold 30px "Segoe UI", sans-serif';
+    ctx.fillStyle = PAL.red;
+    ctx.shadowBlur = 8; ctx.shadowColor = 'rgba(200,40,40,0.5)';
+    ctx.fillText('CRASH !', W / 2, H / 3 - 15);
+    ctx.shadowBlur = 0;
+    ctx.font = 'bold 48px "Segoe UI", sans-serif';
+    ctx.fillStyle = PAL.gold;
+    ctx.fillText(score, W / 2, H / 3 + 45);
+    if (bestScore > 0) {
+        ctx.font = '15px sans-serif'; ctx.fillStyle = '#a89060';
+        ctx.fillText('🏆 Record : ' + bestScore, W / 2, H / 3 + 75);
+    }
+    ctx.font = 'bold 15px "Segoe UI", sans-serif';
+    ctx.fillStyle = PAL.white;
+    ctx.fillText('🖱️ Clique pour rejouer', W / 2, H / 2 + 35);
+    ctx.restore();
+}
+
+// ──────────────────────────────────────────────
+//  COLLISIONS (tolérance)
+// ──────────────────────────────────────────────
+function collides() {
+    const pad = 5;
+    const bx = BIRD_X + pad, by = bird.y + pad;
+    const bw = BIRD_W - pad * 2, bh = BIRD_H - pad * 2;
+    if (bird.y + pad < 0 || bird.y + BIRD_H - pad > H - GROUND_H) return true;
+    for (const p of pipes) {
+        if (bx + bw > p.x && bx < p.x + PIPE_W) {
+            if (by < p.topH || by + bh > p.topH + GAP) return true;
+        }
+    }
+    return false;
+}
+
+// ──────────────────────────────────────────────
+//  API SCORE (identique à l'original)
+// ──────────────────────────────────────────────
+async function submitScore(s) {
+    if (!scoreSecret) await fetchSecret();
+    if (!scoreSecret) return;
+    const dur = Math.floor((Date.now() - startTime) / 1000);
+    const hash = await sha256(GAME_ID + s + dur + scoreSecret);
+    try {
+        const r = await fetch('scores_api.php', {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'submit', game: GAME_ID, score: s, duration: dur, hash })
+        });
+        const j = await r.json();
+        if (!j.ok) console.warn('[orni_flap] score non enregistré côté serveur :', j.error || 'raison inconnue');
+        if (j.ok && j.new_personal) {
+            bestScore = s;
+            localStorage.setItem('orni_best', String(s));
+        }
+        loadLeaderboard();
+    } catch (e) {}
+}
+async function sha256(msg) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+async function fetchSecret() {
+    try {
+        const r = await fetch('scores_api.php', {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'token', game: GAME_ID })
+        });
+        const j = await r.json();
+        if (j.ok) scoreSecret = j.secret;
+    } catch (e) {}
+}
+async function loadLeaderboard() {
+    try {
+        const r = await fetch('scores_api.php?action=leaderboard&game=' + GAME_ID + '&limit=10', { credentials: 'same-origin' });
+        const j = await r.json();
+        if (!j.ok) return;
+        const me = localStorage.getItem('user') || '';
+        const ul = document.getElementById('lb-list');
+        if (!j.leaderboard.length) { ul.innerHTML = '<li style="color:var(--muted)">Aucun score</li>'; return; }
+        ul.innerHTML = j.leaderboard.map((e, i) => {
+            const medals = ['🥇', '🥈', '🥉'];
+            const rank = medals[i] || (i + 1);
+            const isMe = e.player === me;
+            return `<li class="${isMe ? 'me' : ''}"><span class="rank">${rank}</span><span class="name">${esc(e.player)}</span><span class="pts">${e.score}</span></li>`;
+        }).join('');
+    } catch (e) {}
+}
+function esc(s) {
+    return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+}
+
+// ──────────────────────────────────────────────
+//  ACTION FLAP
+// ──────────────────────────────────────────────
+function flap() {
+    if (gameState === 'menu') {
+        gameState = 'playing';
+        reset();
+        bird.vy = FLAP_FORCE;
+        sndFlap();
+        fetchSecret();
+        return;
+    }
+    if (gameState === 'dead') {
+        if (frameCount > 30) {
+            gameState = 'menu';
+            reset();
+        }
+        return;
+    }
+    bird.vy = FLAP_FORCE;
+    bird.wingPhase = 0;
+    sndFlap();
+}
+
+canvas.addEventListener('pointerdown', e => { e.preventDefault(); flap(); });
+document.addEventListener('keydown', e => {
+    if (e.code === 'Space' || e.code === 'ArrowUp') { e.preventDefault(); flap(); }
+});
+
+// ──────────────────────────────────────────────
+//  BOUCLE PRINCIPALE
+// ──────────────────────────────────────────────
+function tick() {
+    if (gameState === 'dead') { frameCount++; return; }
+    if (gameState !== 'playing') return;
+    frameCount++;
+
+    speed = PIPE_SPEED_BASE + Math.min(score * 0.028, 1.7);
+    bird.vy += GRAVITY;
+    bird.y  += bird.vy;
+
+    if (comboTimer > 0) comboTimer--; else combo = 0;
+    if (shieldGrace > 0) shieldGrace--;
+
+    const interval = Math.max(PIPE_INTERVAL_BASE - score * 0.9, 88);
+    if (frameCount % Math.round(interval) === 0) spawnPipe();
+
+    const minTop = 55, maxTop = H - GAP - 90;
+    for (let i = pipes.length - 1; i >= 0; i--) {
+        const p = pipes[i];
+        p.x -= speed;
+        if (p.oscillates) {
+            p.oscPhase += OSC_SPEED;
+            p.topH = Math.max(minTop, Math.min(maxTop, p.baseTop + Math.sin(p.oscPhase) * OSC_AMPLITUDE));
+        }
+        if (!p.scored && p.x + PIPE_W < BIRD_X) {
+            p.scored = true;
+            score++;
+            updateScoreDisplay();
+            sndScore();
+        }
+        // Frôlement : on a longé un bord du trou de très près sans le toucher
+        if (!p.closeCalled && !p.scored) {
+            const bx = BIRD_X + BIRD_W / 2, by = bird.y + BIRD_H / 2;
+            if (bx > p.x - CLOSE_CALL_MARGIN && bx < p.x + PIPE_W + CLOSE_CALL_MARGIN) {
+                const distTop = by - p.topH, distBot = (p.topH + GAP) - by;
+                if ((distTop > 0 && distTop < CLOSE_CALL_MARGIN) || (distBot > 0 && distBot < CLOSE_CALL_MARGIN)) {
+                    p.closeCalled = true;
+                    combo++; comboTimer = 90;
+                    score += 2 * Math.min(combo, 5);
+                    sndCloseCall();
+                }
+            }
+        }
+        if (p.x < -PIPE_W - 20) pipes.splice(i, 1);
+    }
+
+    // Épice & bouclier
+    const bcx = BIRD_X + BIRD_W / 2, bcy = bird.y + BIRD_H / 2;
+    for (let i = spiceItems.length - 1; i >= 0; i--) {
+        const sp = spiceItems[i];
+        sp.x -= speed;
+        if (!sp.collected) {
+            const dx = sp.x - bcx, dy = sp.y - bcy;
+            if (dx * dx + dy * dy < 300) {
+                sp.collected = true; score += 3; sndSpice(); updateScoreDisplay();
+            }
+        }
+        if (sp.x < -20) spiceItems.splice(i, 1);
+    }
+    for (let i = powerups.length - 1; i >= 0; i--) {
+        const pu = powerups[i];
+        pu.x -= speed;
+        if (!pu.collected) {
+            const dx = pu.x - bcx, dy = pu.y - bcy;
+            if (dx * dx + dy * dy < 350) { pu.collected = true; shielded = true; sndShield(); }
+        }
+        if (pu.x < -20) powerups.splice(i, 1);
+    }
+
+    maybeSpawnWorm();
+
+    if (shieldGrace <= 0 && (collides() || collidesWorm())) {
+        if (shielded) {
+            // Le bouclier absorbe le choc : on rebondit et on repart, une seule fois
+            shielded = false;
+            shieldGrace = 25;
+            bird.vy = FLAP_FORCE;
+            sndShield();
+            emitSand(bcx, bcy, 10);
+        } else {
+            gameState = 'dead';
+            frameCount = 0;
+            sndCrash();
+            if (score > 0) {
+                if (score > bestScore) {
+                    bestScore = score;
+                    localStorage.setItem('orni_best', String(score));
+                }
+                submitScore(score);
+            }
+            // Particules d'explosion
+            emitSand(bcx, bcy, 25);
+        }
+    }
+}
+
+function draw() {
+    drawSky();
+    drawDunes();
+    drawParticles();
+    for (const p of pipes) drawPipe(p);
+    for (const sp of spiceItems) drawSpiceItem(sp);
+    for (const pu of powerups) drawPowerup(pu);
+    drawWorm();
+    drawBird();
+    drawShieldRing();
+    if (gameState === 'playing') drawScore();
+    if (gameState === 'menu') drawMenu();
+    if (gameState === 'dead') drawDead();
+
+    // Vignette subtile
+    const vignette = ctx.createRadialGradient(W / 2, H / 2, W * 0.3, W / 2, H / 2, W * 0.7);
+    vignette.addColorStop(0, 'rgba(0,0,0,0)');
+    vignette.addColorStop(1, 'rgba(6,3,1,0.4)');
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, W, H);
+}
+
+function loop(now) {
+    requestAnimationFrame(loop);
+    if (!lastTime) { lastTime = now; return; }
+    const dt = Math.min(now - lastTime, 100);
+    lastTime = now;
+    accumulator += dt;
+    while (accumulator >= FRAME_DUR) { tick(); accumulator -= FRAME_DUR; }
+    draw();
+}
+
+// ──────────────────────────────────────────────
+//  INITIALISATION
+// ──────────────────────────────────────────────
+bestScore = parseInt(localStorage.getItem('orni_best') || '0', 10);
+gameState = 'menu';
+reset();
+loadLeaderboard();
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

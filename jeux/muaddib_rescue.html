@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Muad'Dib Rescue — Hub Jeux</title>
+<link rel="stylesheet" href="../style.css">
+<style>
+:root {
+    --bg: #0a0402;
+    --gold: #cda434;
+    --text: #f5deb3;
+    --muted: #7c5e2a;
+}
+html, body {
+    overflow: hidden; height: 100%; margin: 0;
+    touch-action: none; -webkit-tap-highlight-color: transparent;
+    user-select: none; -webkit-user-select: none;
+}
+body {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: var(--bg); font-family: 'Segoe UI', system-ui, sans-serif;
+    color: var(--text);
+}
+#game-wrapper {
+    position: relative; z-index: 1;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+canvas {
+    border: 1px solid #3d2b16; border-radius: 8px;
+    box-shadow: 0 0 60px rgba(205,164,52,0.08), 0 0 120px rgba(180,120,30,0.04);
+    cursor: pointer; display: block;
+}
+.game-header {
+    display: flex; align-items: center; gap: 14px;
+    width: 100%; max-width: 800px; padding: 10px 16px; box-sizing: border-box;
+    background: rgba(0,0,0,0.85); border: 1px solid #3d2b16; border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.7);
+}
+.game-header .back-link {
+    color: var(--gold); text-decoration: none; font-weight: bold; font-size: 0.82em;
+    border: 1px solid #7c5e2a; border-radius: 4px; padding: 6px 14px;
+    background: linear-gradient(180deg, #2a1a0b, #1a0f05);
+    transition: all 0.2s; white-space: nowrap;
+}
+.game-header .back-link:hover { background: var(--gold); color: #000; border-color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.4); }
+.game-header .game-title {
+    font-size: 1.15em; font-weight: bold; color: var(--gold);
+    text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 10px rgba(205,164,52,0.3);
+}
+.score-live { font-size: 1.25em; color: #ffcc00; font-weight: bold; margin-left: auto; }
+
+#leaderboard {
+    position: absolute; right: -240px; top: 0; width: 220px;
+    background: rgba(10,5,2,0.92); border: 1px solid #3d2b16;
+    border-radius: 8px; padding: 16px 14px; font-size: 0.78em;
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+}
+#leaderboard h3 {
+    margin: 0 0 12px; color: var(--gold); font-size: 0.95em;
+    text-align: center; text-transform: uppercase; letter-spacing: 2px;
+}
+#lb-list { list-style: none; padding: 0; margin: 0; }
+#lb-list li {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 0; border-bottom: 1px solid rgba(61,43,22,0.4);
+}
+#lb-list li .rank { color: var(--muted); width: 26px; font-size: 0.9em; }
+#lb-list li .name { flex: 1; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#lb-list li .pts { color: #ffcc00; font-weight: bold; min-width: 44px; text-align: right; }
+#lb-list li.me .name { color: var(--gold); }
+.controls-hint { font-size: 0.72em; color: var(--muted); text-align: center; opacity: 0.7; }
+
+@media (max-width: 900px) {
+    #leaderboard { position: static; width: 90vw; max-width: 500px; margin-top: 6px; }
+}
+@media (max-width: 820px) {
+    canvas { width: 95vw !important; height: auto !important; }
+}
+</style>
+</head>
+<body>
+<script src="../auth-guard.js"></script>
+<div id="game-wrapper">
+    <div class="game-header">
+        <a href="hub.html" class="back-link">&larr; Hub Jeux</a>
+        <span class="game-title">🐭 Muad'Dib Rescue</span>
+        <span class="score-live" id="score-display">0</span>
+    </div>
+    <canvas id="game" width="800" height="400"></canvas>
+    <div class="controls-hint">
+        [Clic] Sauve le Muad'Dib avant qu'il ne disparaisse &nbsp;&bull;&nbsp; Évite les scorpions
+    </div>
+    <div id="leaderboard">
+        <h3>🏆 Classement</h3>
+        <ul id="lb-list"><li style="color:var(--muted)">Chargement…</li></ul>
+    </div>
+</div>
+
+<script>
+;(function () {
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const W = 800, H = 400;
+const GAME_ID = 'muaddib_rescue';
+
+// ──────────────────────────────────────────────
+//  CONSTANTES
+// ──────────────────────────────────────────────
+const TARGET_FPS = 60, FRAME_DUR = 1000 / TARGET_FPS;
+const COLS = 4, ROWS = 3;
+const MARGIN_X = 110, TOP_Y = 160, BOT_Y = 355;
+const HOLE_R = 34;
+const MAX_LIVES = 4;
+const CLOSE_MARGIN = 10;
+
+const C = {
+    skyTop: '#3e1a0c', skyMid: '#8b5a2a', skyLow: '#d9a94a',
+    sand: '#c99850', sandDark: '#8a5e28', sandLine: '#b8862d',
+    mound: '#a97c3e', moundDark: '#6e4a20', hole: '#1a0f06',
+    mouseBody: '#c9a373', mouseDark: '#8a6640', mouseEar: '#e8c9a0', mouseNose: '#c96060',
+    scorpion: '#2a1810', scorpionLight: '#4a2f18',
+    gold: '#ffcc00', red: '#c44', white: '#f5deb3',
+};
+
+// ──────────────────────────────────────────────
+//  AUDIO
+// ──────────────────────────────────────────────
+let audioCtx = null;
+function audCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+}
+function tone(freq, dur, vol = 0.08, type = 'sine') {
+    try {
+        const a = audCtx(), t = a.currentTime;
+        const o = a.createOscillator(), g = a.createGain();
+        o.type = type;
+        o.frequency.setValueAtTime(freq, t);
+        o.frequency.exponentialRampToValueAtTime(freq * 0.6, t + dur);
+        g.gain.setValueAtTime(vol, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+        o.connect(g); g.connect(a.destination);
+        o.start(t); o.stop(t + dur);
+    } catch (e) {}
+}
+function sndPop()    { tone(500, 0.05, 0.05, 'triangle'); }
+function sndSave()   { tone(880, 0.07, 0.09); setTimeout(() => tone(1180, 0.08, 0.08), 50); }
+function sndCombo()  { [880, 1100, 1320, 1760].forEach((f, i) => setTimeout(() => tone(f, 0.09, 0.07), i * 55)); }
+function sndMiss()   { tone(260, 0.18, 0.07, 'sawtooth'); }
+function sndDecoy()  { tone(150, 0.2, 0.09, 'square'); setTimeout(() => tone(110, 0.2, 0.07, 'square'), 60); }
+function sndPowerup(){ [660, 880, 1100, 1320].forEach((f, i) => setTimeout(() => tone(f, 0.08, 0.09), i * 50)); }
+function sndGameOver() { [400, 350, 300, 200].forEach((f, i) => setTimeout(() => tone(f, 0.2, 0.06, 'sawtooth'), i * 150)); }
+// Son du mode caché — jamais expliqué à l'écran (juste plus marqué qu'avant).
+function sndKill() {
+    try {
+        const a = audCtx(), t = a.currentTime;
+        const len = a.sampleRate * 0.22;
+        const buf = a.createBuffer(1, len, a.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < len; i++) d[i] = (Math.random()*2-1) * Math.pow(1-i/len, 1.4);
+        const src = a.createBufferSource(), g = a.createGain();
+        src.buffer = buf; g.gain.setValueAtTime(0.34, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.22);
+        src.connect(g); g.connect(a.destination); src.start(t);
+        tone(80, 0.22, 0.2, 'sine');
+        tone(45, 0.3, 0.14, 'sawtooth');
+    } catch(e){}
+}
+
+// ──────────────────────────────────────────────
+//  ÉTAT
+// ──────────────────────────────────────────────
+let holes = [];
+let particles = [], floatingTexts = [], hearts = [], skulls = [];
+let score, savedCount, missedCount, combo, comboTimer, lives, gameState, frameCount;
+let bestScore, startTime, scoreSecret;
+let nextSpawn = 0;
+let shakeTimer = 0, shakeIntensity = 0;
+
+// Mode caché : jamais mentionné dans l'UI, l'aide ou le menu. F10 pendant une
+// partie inverse le sens du clic (sauver -> tuer). Toute partie où il a été
+// activé au moins une fois est silencieusement exclue de la soumission de
+// score, pour ne jamais pouvoir fausser le classement.
+let hardcoreMode = false, hardcoreEverUsed = false;
+
+function initHoles() {
+    holes = [];
+    for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+            const x = MARGIN_X + (W - MARGIN_X * 2) * (c / (COLS - 1));
+            const y = TOP_Y + (BOT_Y - TOP_Y) * (r / (ROWS - 1));
+            holes.push({ x, y, state: 'idle', type: null, timer: 0, popDur: 1, phase: Math.random()*Math.PI*2 });
+        }
+    }
+}
+
+function reset() {
+    initHoles();
+    particles = []; floatingTexts = []; hearts = []; skulls = [];
+    score = 0; savedCount = 0; missedCount = 0; combo = 0; comboTimer = 0;
+    lives = MAX_LIVES; frameCount = 0; nextSpawn = 40;
+    shakeTimer = 0;
+    hardcoreMode = false; hardcoreEverUsed = false;
+    startTime = Date.now();
+    updateScoreDisplay();
+}
+function updateScoreDisplay() { document.getElementById('score-display').textContent = score; }
+
+// ──────────────────────────────────────────────
+//  DIFFICULTÉ (progressive avec le nombre de sauvetages)
+// ──────────────────────────────────────────────
+function popDurationTicks()  { return Math.max(26, 84 - savedCount * 2.2); }
+function spawnIntervalTicks(){ return Math.max(14, 46 - savedCount * 1.3); }
+function maxActiveHoles()    { return Math.min(5, 1 + Math.floor(savedCount / 8)); }
+function decoyChance()       { return Math.min(0.35, Math.max(0, (savedCount - 6) * 0.02)); }
+function powerupChance()     { return savedCount >= 10 ? 0.04 : 0; }
+
+// ──────────────────────────────────────────────
+//  PARTICULES / TEXTES
+// ──────────────────────────────────────────────
+function spawnSand(x, y, count, color) {
+    for (let i = 0; i < count; i++) {
+        particles.push({
+            x: x + (Math.random()-0.5)*14, y: y + (Math.random()-0.5)*8,
+            vx: (Math.random()-0.5)*3, vy: -Math.random()*2.5,
+            life: 20 + Math.random()*16, maxLife: 36,
+            size: 1.5 + Math.random()*2.5, color: color || 'rgba(210,180,120,',
+        });
+    }
+}
+function addFloatingText(text, x, y, color) {
+    floatingTexts.push({ text, x, y, vy: -1.4, life: 45, color, alpha: 1 });
+}
+function spawnHeart(x, y) {
+    hearts.push({ x, y, vy: -0.45, drift: (Math.random()-0.5)*0.3, life: 110, maxLife: 110 });
+}
+function spawnSkull(x, y) {
+    skulls.push({ x, y, vy: -0.55, drift: (Math.random()-0.5)*0.5, wobble: Math.random()*Math.PI*2, life: 100 });
+}
+
+// ──────────────────────────────────────────────
+//  SPAWN
+// ──────────────────────────────────────────────
+function spawnSomething() {
+    const idle = holes.filter(h => h.state === 'idle');
+    const active = holes.length - idle.length;
+    if (!idle.length || active >= maxActiveHoles()) return;
+    const hole = idle[Math.floor(Math.random() * idle.length)];
+
+    let type = 'mouse';
+    const r = Math.random();
+    if (powerupChance() > 0 && r < powerupChance()) type = 'powerup';
+    else if (r < powerupChance() + decoyChance()) type = 'decoy';
+
+    hole.state = 'up';
+    hole.type = type;
+    hole.popDur = popDurationTicks();
+    hole.timer = hole.popDur;
+    hole.closeCalled = false;
+    sndPop();
+}
+
+// ──────────────────────────────────────────────
+//  CLIC
+// ──────────────────────────────────────────────
+function handleSave(hole) {
+    if (hardcoreMode) {
+        sndKill();
+        shakeTimer = 10; shakeIntensity = 6;
+        spawnSand(hole.x, hole.y - 8, 22, 'rgba(150,10,10,');
+        spawnSand(hole.x, hole.y - 4, 10, 'rgba(90,0,0,');
+        spawnSkull(hole.x + (Math.random()-0.5)*10, hole.y - 20);
+        hole.state = 'idle';
+        return;
+    }
+    combo++; comboTimer = 90;
+    const bonus = 10 * Math.min(combo, 5);
+    // Bonus de réflexe : sauver tôt (proche de l'apparition) rapporte un peu
+    // plus que sauver à la toute dernière seconde — même sauvetage, mais la
+    // rapidité est récompensée.
+    const speedFrac = hole.timer / Math.max(1, hole.popDur);
+    const speedBonus = Math.round(8 * Math.max(0, speedFrac));
+    score += bonus + speedBonus; savedCount++;
+    addFloatingText('+' + (bonus + speedBonus), hole.x, hole.y - 30, C.gold);
+    if (speedBonus >= 5) addFloatingText('⚡ réflexe !', hole.x, hole.y - 46, '#88ddff');
+    spawnHeart(hole.x + (Math.random()-0.5)*10, hole.y - 20);
+    if (combo >= 3) sndCombo(); else sndSave();
+    spawnSand(hole.x, hole.y - 10, 8, 'rgba(255,230,150,');
+    hole.state = 'idle';
+    updateScoreDisplay();
+}
+
+function onCanvasClick(cx, cy) {
+    if (gameState === 'menu') { gameState = 'playing'; reset(); if (!scoreSecret) fetchSecret(); return; }
+    if (gameState === 'dead') { if (frameCount > 30) { gameState = 'menu'; } return; }
+
+    for (const hole of holes) {
+        if (hole.state !== 'up') continue;
+        const dx = cx - hole.x, dy = cy - (hole.y - 8);
+        if (dx*dx + dy*dy > (HOLE_R+6) * (HOLE_R+6)) continue;
+
+        if (hole.type === 'mouse') {
+            handleSave(hole);
+        } else if (hole.type === 'decoy') {
+            lives--; combo = 0; sndDecoy();
+            addFloatingText('AÏE !', hole.x, hole.y - 30, C.red);
+            spawnSand(hole.x, hole.y - 10, 10, 'rgba(180,80,40,');
+            hole.state = 'idle';
+            if (lives <= 0) return triggerGameOver();
+        } else if (hole.type === 'powerup') {
+            sndPowerup();
+            addFloatingText('FILET !', hole.x, hole.y - 30, C.gold);
+            hole.state = 'idle';
+            for (const h of holes) {
+                if (h.state === 'up' && h.type === 'mouse') handleSave(h);
+            }
+        }
+        return;
+    }
+}
+
+// ──────────────────────────────────────────────
+//  GAME OVER
+// ──────────────────────────────────────────────
+function triggerGameOver() {
+    gameState = 'dead'; frameCount = 0;
+    sndGameOver();
+    if (score > bestScore) { bestScore = score; localStorage.setItem('muaddib_best', String(score)); }
+    // Une partie où le mode caché a été activé n'est jamais soumise au classement.
+    if (score > 0 && !hardcoreEverUsed) submitScore(score);
+}
+
+// ──────────────────────────────────────────────
+//  TICK
+// ──────────────────────────────────────────────
+function tick() {
+    if (gameState === 'dead') { frameCount++; return; }
+    if (gameState !== 'playing') return;
+    frameCount++;
+
+    if (comboTimer > 0) comboTimer--; else combo = 0;
+
+    if (frameCount >= nextSpawn) {
+        spawnSomething();
+        nextSpawn = frameCount + spawnIntervalTicks() + Math.floor(Math.random()*10);
+    }
+
+    for (const hole of holes) {
+        if (hole.state !== 'up') continue;
+        hole.timer--;
+        if (hole.timer <= 0) {
+            if (hole.type === 'mouse') {
+                missedCount++; lives--; combo = 0; sndMiss();
+                addFloatingText('perdu…', hole.x, hole.y - 30, '#a89060');
+                spawnSand(hole.x, hole.y - 6, 6, 'rgba(140,110,80,');
+                hole.state = 'idle';
+                if (lives <= 0) { triggerGameOver(); return; }
+            } else {
+                hole.state = 'idle';
+            }
+        }
+    }
+}
+
+// ──────────────────────────────────────────────
+//  AMBIANCE : dunes animées + rafales de sable occasionnelles
+//  (tournent en continu, indépendamment de l'état de la partie)
+// ──────────────────────────────────────────────
+let ambientFrame = 0;
+let duneFarPts = [], duneNearPts = [];
+function initDunes() {
+    duneFarPts = []; duneNearPts = [];
+    const nf = 12, nn = 10;
+    for (let i = 0; i <= nf; i++) duneFarPts.push({ x: i*(W+120)/nf - 60, y: 366 - Math.random()*30 });
+    for (let i = 0; i <= nn; i++) duneNearPts.push({ x: i*(W+160)/nn - 80, y: 394 - Math.random()*24 });
+}
+function scrollDunes(pts, speed, wrapWidth) {
+    for (const p of pts) p.x -= speed;
+    if (pts[0].x < -100) {
+        const first = pts.shift();
+        const last = pts[pts.length-1];
+        first.x = last.x + wrapWidth/pts.length;
+        pts.push(first);
+    }
+}
+function drawDuneLayer(pts, color, ridgeColor) {
+    if (pts.length < 2) return;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(-60, H);
+    for (let i = 0; i < pts.length - 1; i++) {
+        const p0 = pts[i], p1 = pts[i+1];
+        const cx = (p0.x+p1.x)/2, cy = (p0.y+p1.y)/2 - 4;
+        ctx.quadraticCurveTo(p0.x, p0.y, cx, cy);
+        ctx.quadraticCurveTo(p1.x, p1.y, p1.x, p1.y);
+    }
+    ctx.lineTo(W+60, H);
+    ctx.closePath(); ctx.fill();
+
+    // Crête éclairée : accentue le relief et rend le défilement plus visible.
+    if (ridgeColor) {
+        ctx.strokeStyle = ridgeColor; ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let i = 0; i < pts.length - 1; i++) {
+            const p0 = pts[i], p1 = pts[i+1];
+            const cx = (p0.x+p1.x)/2, cy = (p0.y+p1.y)/2 - 4;
+            if (i === 0) ctx.moveTo(p0.x, p0.y);
+            ctx.quadraticCurveTo(p0.x, p0.y, cx, cy);
+            ctx.quadraticCurveTo(p1.x, p1.y, p1.x, p1.y);
+        }
+        ctx.stroke();
+    }
+}
+
+let gustTimer = 500, gustActive = 0, gustParticles = [];
+function sndGust() {
+    try {
+        const a = audCtx(), t = a.currentTime;
+        const len = a.sampleRate * 0.9;
+        const buf = a.createBuffer(1, len, a.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < len; i++) d[i] = (Math.random()*2-1) * 0.14 * Math.sin(i/len*Math.PI);
+        const src = a.createBufferSource(), g = a.createGain();
+        src.buffer = buf; g.gain.setValueAtTime(0.1, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.9);
+        const bp = a.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 500; bp.Q.value = 1;
+        src.connect(bp); bp.connect(g); g.connect(a.destination); src.start(t);
+    } catch (e) {}
+}
+function updateAmbient() {
+    ambientFrame++;
+    scrollDunes(duneFarPts, 0.18, (W+120));
+    scrollDunes(duneNearPts, 0.35, (W+160));
+
+    if (gustActive > 0) {
+        gustActive--;
+        if (Math.random() < 0.7) {
+            gustParticles.push({
+                x: -20, y: Math.random()*H*0.9,
+                vx: 5 + Math.random()*4, vy: (Math.random()-0.5)*1.2,
+                size: 1 + Math.random()*2.5, alpha: 0.12 + Math.random()*0.22,
+            });
+        }
+        if (gustActive <= 0) gustTimer = 900 + Math.floor(Math.random()*700);
+    } else {
+        gustTimer--;
+        if (gustTimer <= 0) { gustActive = 140; sndGust(); }
+    }
+    for (let i = gustParticles.length - 1; i >= 0; i--) {
+        const p = gustParticles[i];
+        p.x += p.vx; p.y += p.vy;
+        if (p.x > W + 20) gustParticles.splice(i, 1);
+    }
+}
+function drawGust() {
+    if (gustActive <= 0 && !gustParticles.length) return;
+    ctx.save();
+    if (gustActive > 0) { ctx.fillStyle = 'rgba(200,160,100,0.06)'; ctx.fillRect(0, 0, W, H); }
+    for (const p of gustParticles) {
+        ctx.fillStyle = `rgba(220,190,140,${p.alpha})`;
+        ctx.beginPath(); ctx.ellipse(p.x, p.y, p.size*2.4, p.size, 0, 0, Math.PI*2); ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawSun() {
+    const sx = 690, sy = 62;
+    const glow = ctx.createRadialGradient(sx, sy, 8, sx, sy, 78);
+    glow.addColorStop(0, 'rgba(255,240,205,0.95)');
+    glow.addColorStop(0.35, 'rgba(255,205,110,0.5)');
+    glow.addColorStop(0.7, 'rgba(255,150,60,0.16)');
+    glow.addColorStop(1, 'rgba(255,100,20,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath(); ctx.arc(sx, sy, 78, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#fff6dc';
+    ctx.beginPath(); ctx.arc(sx, sy, 15, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,235,190,0.55)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(sx, sy, 15, 0, Math.PI*2); ctx.stroke();
+}
+
+// ──────────────────────────────────────────────
+//  DESSIN
+// ──────────────────────────────────────────────
+function drawBackground() {
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, C.skyTop); grad.addColorStop(0.35, C.skyMid); grad.addColorStop(0.7, C.skyLow); grad.addColorStop(1, C.sand);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    drawSun();
+    drawDuneLayer(duneFarPts, 'rgba(110,70,30,0.65)', 'rgba(230,190,130,0.18)');
+    drawDuneLayer(duneNearPts, 'rgba(80,48,18,0.85)', 'rgba(240,205,150,0.28)');
+
+    ctx.strokeStyle = 'rgba(255,220,160,0.05)'; ctx.lineWidth = 1;
+    for (let i = 0; i < 3; i++) {
+        const yy = 90 + i * 14;
+        ctx.beginPath();
+        for (let x = 0; x < W; x += 8) {
+            const dy = Math.sin((x + ambientFrame*0.6 + i*90) * 0.02) * 2;
+            if (x === 0) ctx.moveTo(x, yy+dy); else ctx.lineTo(x, yy+dy);
+        }
+        ctx.stroke();
+    }
+}
+
+function drawHole(hole) {
+    ctx.fillStyle = C.moundDark;
+    ctx.beginPath(); ctx.ellipse(hole.x, hole.y+6, HOLE_R+8, 16, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = C.mound;
+    ctx.beginPath(); ctx.ellipse(hole.x, hole.y+2, HOLE_R+4, 13, 0, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = C.hole;
+    ctx.beginPath(); ctx.ellipse(hole.x, hole.y, HOLE_R, 10, 0, 0, Math.PI*2); ctx.fill();
+}
+
+function drawMouse(hole) {
+    const t = Math.max(0, Math.min(1, hole.timer / Math.max(1,hole.popDur)));
+    const popIn = Math.min(1, (hole.popDur - hole.timer) / 6);
+    const lift = Math.min(popIn, 1) * 22 * Math.min(1, t*3);
+    const cx = hole.x, cy = hole.y - lift;
+
+    ctx.save();
+    ctx.beginPath(); ctx.rect(hole.x-HOLE_R-14, hole.y-100, (HOLE_R+14)*2, 114); ctx.clip();
+
+    // corps
+    ctx.fillStyle = C.mouseBody;
+    ctx.beginPath(); ctx.ellipse(cx, cy+14, 15, 18, 0, 0, Math.PI*2); ctx.fill();
+    // oreilles
+    ctx.fillStyle = C.mouseEar;
+    ctx.beginPath(); ctx.ellipse(cx-11, cy-6, 7, 9, -0.3, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx+11, cy-6, 7, 9, 0.3, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = 'rgba(230,190,150,0.5)';
+    ctx.beginPath(); ctx.ellipse(cx-11, cy-6, 4, 5.5, -0.3, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(cx+11, cy-6, 4, 5.5, 0.3, 0, Math.PI*2); ctx.fill();
+    // tête
+    ctx.fillStyle = C.mouseBody;
+    ctx.beginPath(); ctx.arc(cx, cy, 13, 0, Math.PI*2); ctx.fill();
+    // nez
+    ctx.fillStyle = C.mouseNose;
+    ctx.beginPath(); ctx.arc(cx, cy+6, 2.6, 0, Math.PI*2); ctx.fill();
+    // yeux
+    ctx.fillStyle = '#2a1a0c';
+    ctx.beginPath(); ctx.arc(cx-5, cy-1, 2.2, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx+5, cy-1, 2.2, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(cx-5.6, cy-1.6, 0.7, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx+4.4, cy-1.6, 0.7, 0, Math.PI*2); ctx.fill();
+    // moustaches
+    ctx.strokeStyle = 'rgba(40,25,12,0.6)'; ctx.lineWidth = 1;
+    [-1,1].forEach(side => {
+        for (let i=0;i<3;i++) {
+            ctx.beginPath();
+            ctx.moveTo(cx+side*8, cy+5+i*1.5);
+            ctx.lineTo(cx+side*16, cy+3+i*2.5);
+            ctx.stroke();
+        }
+    });
+    ctx.restore();
+
+    // barre de temps restant
+    if (t < 1) {
+        ctx.fillStyle = 'rgba(0,0,0,0.35)';
+        ctx.fillRect(hole.x-18, hole.y-42, 36, 4);
+        ctx.fillStyle = t > 0.4 ? '#8ee08e' : (t > 0.2 ? '#e0c05a' : '#e05a5a');
+        ctx.fillRect(hole.x-18, hole.y-42, 36*t, 4);
+    }
+}
+
+function drawDecoy(hole) {
+    const popIn = Math.min(1, (hole.popDur - hole.timer) / 6);
+    const lift = popIn * 16;
+    const cx = hole.x, cy = hole.y - lift;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(hole.x-HOLE_R-14, hole.y-100, (HOLE_R+14)*2, 114); ctx.clip();
+    ctx.fillStyle = C.scorpion;
+    ctx.beginPath(); ctx.ellipse(cx, cy+10, 13, 10, 0, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = C.scorpionLight; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(cx+8, cy+6); ctx.quadraticCurveTo(cx+20, cy-4, cx+14, cy-16);
+    ctx.stroke();
+    ctx.fillStyle = '#c44';
+    ctx.beginPath(); ctx.arc(cx-5, cy+4, 2, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(cx+3, cy+4, 2, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+}
+
+function drawPowerup(hole) {
+    const popIn = Math.min(1, (hole.popDur - hole.timer) / 6);
+    const lift = popIn * 20;
+    hole.phase += 0.08;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(hole.x-HOLE_R-14, hole.y-100, (HOLE_R+14)*2, 114); ctx.clip();
+    ctx.font = '26px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('🥅', hole.x, hole.y - lift + Math.sin(hole.phase)*2);
+    ctx.restore();
+}
+
+function drawParticles() {
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx; p.y += p.vy; p.vy += 0.08; p.life--;
+        if (p.life <= 0) { particles.splice(i, 1); continue; }
+        ctx.fillStyle = p.color + (p.life/p.maxLife) + ')';
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+    }
+}
+function drawFloatingTexts() {
+    for (let i = floatingTexts.length - 1; i >= 0; i--) {
+        const ft = floatingTexts[i];
+        ft.y += ft.vy; ft.life--; ft.alpha = Math.min(1, ft.life/15);
+        if (ft.life <= 0) { floatingTexts.splice(i, 1); continue; }
+        ctx.save(); ctx.globalAlpha = ft.alpha;
+        ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillStyle = ft.color; ctx.fillText(ft.text, ft.x, ft.y);
+        ctx.restore();
+    }
+}
+function drawHearts() {
+    for (let i = hearts.length - 1; i >= 0; i--) {
+        const h = hearts[i];
+        h.y += h.vy; h.x += h.drift; h.life--;
+        if (h.life <= 0) { hearts.splice(i, 1); continue; }
+        const alpha = Math.min(1, h.life / 30);
+        ctx.save(); ctx.globalAlpha = alpha;
+        ctx.font = '16px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('❤️', h.x, h.y);
+        ctx.restore();
+    }
+}
+
+function drawSkulls() {
+    for (let i = skulls.length - 1; i >= 0; i--) {
+        const s = skulls[i];
+        s.wobble += 0.16;
+        s.y += s.vy; s.x += s.drift + Math.sin(s.wobble)*0.5; s.life--;
+        if (s.life <= 0) { skulls.splice(i, 1); continue; }
+        const alpha = Math.min(1, s.life / 30);
+        ctx.save(); ctx.globalAlpha = alpha;
+        ctx.font = '18px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('💀', s.x, s.y);
+        ctx.restore();
+    }
+}
+
+function drawHUD() {
+    ctx.save();
+    ctx.font = '13px sans-serif'; ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(255,220,180,0.8)';
+    ctx.fillText('❤'.repeat(lives) + '🖤'.repeat(MAX_LIVES-lives), 15, 24);
+    if (combo > 1) { ctx.fillStyle = C.gold; ctx.fillText('x' + combo + ' COMBO', 15, 42); }
+    ctx.restore();
+}
+
+const MENU_RULES = [
+    "Clique un Muad'Dib avant qu'il ne disparaisse pour le sauver",
+    "Évite les scorpions — un clic dessus coûte une vie",
+    "Sauvetages d'affilée = combo, et plus tu réagis vite, plus ça rapporte",
+    "Le filet 🥅 sauve tous les Muad'Dib visibles d'un coup",
+    "4 vies avant la fin de la partie",
+];
+// Indice très discret : se lit comme une simple ligne d'ambiance (Lorhelyne,
+// connue pour veiller sur les Muad'Dib) — la vraie information est noyée
+// dans la seconde partie de la phrase, sans jamais nommer le mode caché.
+const MENU_MYSTERY = [
+    "Lorhelyne veille sur eux mais tous les sauvetages ne se valent pas,",
+    "et tous ne sont pas récompensés.",
+];
+function drawMenu() {
+    ctx.fillStyle = 'rgba(6,3,1,0.68)'; ctx.fillRect(0, 0, W, H);
+    ctx.save(); ctx.textAlign = 'center';
+    ctx.font = 'bold 26px sans-serif'; ctx.fillStyle = C.gold;
+    ctx.fillText("MUAD'DIB RESCUE", W/2, 46);
+    ctx.font = 'italic 12px sans-serif'; ctx.fillStyle = '#e0a8b8';
+    ctx.fillText('— La Quête de Lorhelyne —', W/2, 66);
+
+    ctx.font = '12.5px sans-serif'; ctx.fillStyle = '#c9b088';
+    MENU_RULES.forEach((line, i) => {
+        ctx.fillText('• ' + line, W/2, 96 + i*22);
+    });
+
+    const rulesBottom = 96 + MENU_RULES.length*22;
+    ctx.font = 'italic 11px sans-serif'; ctx.fillStyle = '#6a5230';
+    MENU_MYSTERY.forEach((line, i) => {
+        ctx.fillText(line, W/2, rulesBottom + 16 + i*15);
+    });
+    const mysteryBottom = rulesBottom + 16 + MENU_MYSTERY.length*15;
+
+    ctx.font = 'bold 17px sans-serif'; ctx.fillStyle = C.white;
+    ctx.fillText('Clique pour commencer', W/2, mysteryBottom + 26);
+    if (bestScore > 0) { ctx.font = '13px sans-serif'; ctx.fillStyle = '#7c5e2a'; ctx.fillText('Meilleur score : ' + bestScore, W/2, mysteryBottom + 50); }
+    ctx.restore();
+}
+
+function drawDead() {
+    ctx.fillStyle = 'rgba(10,5,2,0.6)'; ctx.fillRect(0, 0, W, H);
+    ctx.save(); ctx.textAlign = 'center';
+    ctx.font = 'bold 26px sans-serif'; ctx.fillStyle = C.red;
+    ctx.fillText('Trop en danger…', W/2, H/2-55);
+    ctx.font = 'bold 40px sans-serif'; ctx.fillStyle = C.gold; ctx.fillText(score, W/2, H/2-10);
+    ctx.font = '14px sans-serif'; ctx.fillStyle = '#a89060';
+    ctx.fillText(savedCount + ' sauvés · ' + missedCount + ' perdus', W/2, H/2+15);
+    if (bestScore > 0) ctx.fillText('Record : ' + bestScore, W/2, H/2+38);
+    ctx.font = 'bold 15px sans-serif'; ctx.fillStyle = C.white;
+    ctx.fillText('Clique pour rejouer', W/2, H/2+70);
+    ctx.restore();
+}
+
+function draw() {
+    updateAmbient();
+    ctx.save();
+    if (shakeTimer > 0) { shakeTimer--; ctx.translate((Math.random()-0.5)*shakeIntensity, (Math.random()-0.5)*shakeIntensity); }
+    drawBackground();
+    for (const hole of holes) {
+        drawHole(hole);
+        if (hole.state === 'up') {
+            if (hole.type === 'mouse') drawMouse(hole);
+            else if (hole.type === 'decoy') drawDecoy(hole);
+            else if (hole.type === 'powerup') drawPowerup(hole);
+        }
+    }
+    drawParticles();
+    drawFloatingTexts();
+    drawHearts();
+    drawSkulls();
+    drawGust();
+    if (gameState === 'playing') drawHUD();
+    if (gameState === 'menu') drawMenu();
+    if (gameState === 'dead') drawDead();
+    const vignette = ctx.createRadialGradient(W/2, H/2, W*0.3, W/2, H/2, W*0.7);
+    vignette.addColorStop(0, 'rgba(0,0,0,0)'); vignette.addColorStop(1, 'rgba(6,3,1,0.35)');
+    ctx.fillStyle = vignette; ctx.fillRect(0, 0, W, H);
+    ctx.restore();
+}
+
+// ──────────────────────────────────────────────
+//  BOUCLE
+// ──────────────────────────────────────────────
+let lastTime = 0, accumulator = 0;
+function loop(now) {
+    requestAnimationFrame(loop);
+    if (!lastTime) { lastTime = now; return; }
+    const dt = Math.min(now - lastTime, 100);
+    lastTime = now;
+    accumulator += dt;
+    while (accumulator >= FRAME_DUR) { tick(); accumulator -= FRAME_DUR; }
+    draw();
+}
+
+// ──────────────────────────────────────────────
+//  INPUT
+// ──────────────────────────────────────────────
+canvas.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = W / rect.width, scaleY = H / rect.height;
+    onCanvasClick((e.clientX - rect.left) * scaleX, (e.clientY - rect.top) * scaleY);
+});
+document.addEventListener('keydown', e => {
+    if (e.code === 'F10') {
+        e.preventDefault();
+        hardcoreMode = !hardcoreMode;
+        if (hardcoreMode) hardcoreEverUsed = true;
+    }
+});
+
+// ──────────────────────────────────────────────
+//  API SCORES
+// ──────────────────────────────────────────────
+async function submitScore(s) {
+    if (!scoreSecret) await fetchSecret();
+    if (!scoreSecret) return;
+    const dur = Math.floor((Date.now() - startTime) / 1000);
+    const hash = await sha256(GAME_ID + s + dur + scoreSecret);
+    try {
+        const r = await fetch('scores_api.php', {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'submit', game: GAME_ID, score: s, duration: dur, hash })
+        });
+        const j = await r.json();
+        if (!j.ok) console.warn('[muaddib_rescue] score non enregistré côté serveur :', j.error || 'raison inconnue');
+        if (j.ok && j.new_personal) { bestScore = s; localStorage.setItem('muaddib_best', String(s)); }
+        loadLeaderboard();
+    } catch (e) {}
+}
+async function sha256(msg) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+async function fetchSecret() {
+    try {
+        const r = await fetch('scores_api.php', {
+            method: 'POST', credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'token', game: GAME_ID })
+        });
+        const j = await r.json();
+        if (j.ok) scoreSecret = j.secret;
+    } catch (e) {}
+}
+async function loadLeaderboard() {
+    try {
+        const r = await fetch('scores_api.php?action=leaderboard&game=' + GAME_ID + '&limit=10', { credentials: 'same-origin' });
+        const j = await r.json();
+        if (!j.ok) return;
+        const me = localStorage.getItem('user') || '';
+        const ul = document.getElementById('lb-list');
+        if (!j.leaderboard.length) { ul.innerHTML = '<li style="color:var(--muted)">Aucun score</li>'; return; }
+        ul.innerHTML = j.leaderboard.map((e, i) => {
+            const medals = ['🥇','🥈','🥉'];
+            const rank = medals[i] || (i + 1);
+            const isMe = e.player === me;
+            return `<li class="${isMe?'me':''}"><span class="rank">${rank}</span><span class="name">${esc(e.player)}</span><span class="pts">${e.score}</span></li>`;
+        }).join('');
+    } catch (e) {}
+}
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ──────────────────────────────────────────────
+//  INIT
+// ──────────────────────────────────────────────
+bestScore = parseInt(localStorage.getItem('muaddib_best') || '0', 10);
+gameState = 'menu';
+initDunes();
+reset();
+loadLeaderboard();
+fetchSecret();
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

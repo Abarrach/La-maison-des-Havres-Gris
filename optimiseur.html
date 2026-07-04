@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Havres Gris — Optimiseur de Stuff</title>
+<link rel="stylesheet" href="style.css">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --or-vif:#f3c44f; --or-base:#d4a23b; --or-sombre:#8b6e3b;
+  --brun-bordure:#3b2a16; --brun-fond:rgba(20,12,4,0.88);
+  --texte-beige:#f5deb3; --bg-page:#0a0603;
+  --vert:#1d9e75; --ambre:#ef9f27; --corail:#d85a30; --bleu:#378add; --violet:#9b6dd4;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{height:auto;overflow-y:auto;}
+body{font-family:'Inter','Segoe UI',sans-serif;background:var(--bg-page);color:var(--texte-beige);min-height:100vh;height:auto;overflow-y:auto;font-size:14px;}
+
+header{background:rgba(10,6,3,0.92);backdrop-filter:blur(10px);height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;border-bottom:1px solid var(--brun-bordure);position:sticky;top:0;z-index:100;}
+.logo{display:flex;align-items:center;gap:12px;}
+.logo-title{color:var(--or-vif);font-family:'Cinzel',serif;font-size:1.25em;font-weight:700;letter-spacing:1px;}
+.logo-sub{color:var(--or-sombre);font-size:.72em;letter-spacing:.5px;}
+.btn-menu{background:linear-gradient(180deg,#443311 0%,#221100 100%);border:1px solid var(--or-base);color:var(--or-vif);padding:9px 18px;text-decoration:none;font-size:.78em;font-weight:bold;border-radius:4px;transition:all .3s;text-transform:uppercase;letter-spacing:1px;white-space:nowrap;}
+.btn-menu:hover{background:var(--or-base);color:#000;border-color:#fff;box-shadow:0 0 10px rgba(243,196,79,.5);}
+
+.wrap{max-width:1180px;margin:0 auto;padding:22px 18px 60px;}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:18px;}
+@media(max-width:840px){.layout{grid-template-columns:1fr;}}
+
+.panel{background:var(--brun-fond);border:1px solid var(--brun-bordure);border-radius:8px;padding:14px;}
+.panel-title{font-family:'Cinzel',serif;color:var(--or-vif);font-size:.95em;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.panel-title .ic{width:18px;height:18px;fill:var(--or-base);}
+.panel-title .add{margin-left:auto;background:none;border:1px solid var(--brun-bordure);color:var(--or-base);font-size:.8rem;padding:4px 10px;border-radius:5px;cursor:pointer;text-transform:none;letter-spacing:0;font-family:'Inter';}
+.panel-title .add:hover{border-color:var(--or-base);color:var(--or-vif);background:rgba(205,164,52,.08);}
+
+.summary{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px;}
+.metric{flex:1;min-width:120px;background:linear-gradient(180deg,#1a1008,#0d0705);border:1px solid var(--brun-bordure);border-radius:8px;padding:12px 14px;}
+.metric.hl{border-color:var(--or-base);box-shadow:inset 0 0 0 1px rgba(205,164,52,.15);}
+.metric .lab{font-size:.72em;color:var(--or-sombre);text-transform:uppercase;letter-spacing:.5px;}
+.metric .val{font-size:1.9em;font-weight:500;color:var(--or-vif);font-family:'Cinzel',serif;line-height:1.1;}
+.metric .val small{font-size:.45em;color:var(--vert);font-family:'Inter';}
+
+.slot-group-lab{font-size:.72em;color:var(--or-sombre);text-transform:uppercase;letter-spacing:.6px;margin:6px 0 6px;}
+.slot{display:flex;align-items:center;gap:10px;padding:8px 9px;border:1px solid var(--brun-bordure);border-radius:6px;margin-bottom:7px;cursor:pointer;background:rgba(0,0,0,.18);transition:border-color .15s,background .15s;}
+.slot:hover{border-color:var(--or-base);background:rgba(205,164,52,.06);}
+.slot.filled{border-color:#5a4420;}
+.slot-ic{width:34px;height:34px;border-radius:5px;background:#0d0705;border:1px solid var(--brun-bordure);object-fit:contain;flex-shrink:0;}
+.slot-ph{width:34px;height:34px;border-radius:5px;background:#0d0705;border:1px dashed #5a4420;display:flex;align-items:center;justify-content:center;color:#5a4420;flex-shrink:0;}
+.slot-body{flex:1;min-width:0;}
+.slot-name{font-size:.85em;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.slot-name.empty{color:#6b573a;font-style:italic;}
+.slot-meta{font-size:.7em;color:var(--or-sombre);}
+.slot-stat{font-size:.8em;font-weight:500;color:var(--or-vif);white-space:nowrap;}
+.slot-x{color:#6b573a;font-size:1.1em;padding:0 2px;}
+.slot-x:hover{color:var(--corail);}
+
+.opts-groups{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;}
+.opt-group{display:flex;align-items:center;gap:8px;padding:7px 10px;background:rgba(0,0,0,.2);border:1px solid var(--brun-bordure);border-radius:6px;font-size:.8em;}
+.opt-lab{color:var(--or-sombre);text-transform:uppercase;font-size:.85em;letter-spacing:.5px;}
+/* Mode Simple/Expert : masque les blocs marqués expert-only (réglages fins, détails de calcul). */
+body.simple-mode .expert-only{display:none !important;}
+.mode-seg .seg-b{font-size:.85em;padding:6px 13px;}
+.info-btn{margin-left:auto;background:rgba(205,164,52,.12);border:1px solid var(--or-base);color:var(--or-vif);width:22px;height:22px;line-height:20px;border-radius:50%;cursor:help;font-size:.85em;padding:0;text-align:center;text-transform:none;letter-spacing:0;flex-shrink:0;}
+.info-btn:hover{background:rgba(205,164,52,.22);box-shadow:0 0 6px rgba(243,196,79,.4);}
+.mit-tabs{display:flex;gap:6px;margin:10px 0 8px;}
+.mit-tabs .seg-b{font-size:.82em;padding:5px 12px;}
+.seg{display:inline-flex;border:1px solid var(--brun-bordure);border-radius:5px;overflow:hidden;}
+.seg-b{background:transparent;border:none;color:var(--or-sombre);padding:5px 11px;cursor:pointer;font-family:inherit;font-size:1em;}
+.seg-b.active{background:rgba(205,164,52,.16);color:var(--or-vif);}
+.opt-chk{display:inline-flex;align-items:center;gap:5px;color:var(--texte-beige);cursor:pointer;}
+.opt-chk input{accent-color:var(--or-base);}
+.opt-mult{color:var(--or-sombre);display:inline-flex;align-items:center;gap:2px;}
+.opt-mult input{width:46px;background:#0a0603;border:1px solid var(--brun-bordure);color:var(--texte-beige);border-radius:4px;padding:3px 5px;font-family:inherit;font-size:1em;}
+.opt-mult.off{opacity:.4;pointer-events:none;}
+.dr-line{font-size:.78em;color:var(--or-sombre);margin:-4px 0 10px;}
+.dr-line b{color:var(--vert);}
+.bar-row{display:flex;justify-content:space-between;font-size:.8em;margin-bottom:3px;}
+.bar{height:7px;background:#0d0705;border-radius:99px;overflow:hidden;margin-bottom:9px;}
+.bar > i{display:block;height:100%;border-radius:99px;}
+.statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(86px,1fr));gap:8px;margin-top:4px;}
+.wpn-block{margin-top:10px;padding-top:10px;border-top:1px solid var(--brun-bordure);}
+.wpn-block:first-child{border-top:none;margin-top:0;padding-top:0;}
+.wpn-head{font-size:.82em;font-weight:500;color:var(--or-base);margin-bottom:7px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.wpn-dps{margin-left:auto;color:var(--or-vif);font-weight:500;white-space:nowrap;}
+.wpn-dps small{color:var(--vert);font-size:.8em;}
+.wpn-head-dps{color:var(--ambre);}
+.grade-sel{background:#0a0603;border:1px solid var(--or-sombre);color:var(--or-vif);border-radius:4px;padding:2px 4px;font-family:inherit;font-size:.92em;cursor:pointer;}
+.ttk{display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding:6px 9px;background:rgba(216,90,48,.08);border:1px solid rgba(216,90,48,.25);border-radius:6px;font-size:.82em;}
+.ttk span{color:var(--or-sombre);} .ttk b{color:var(--corail);font-weight:500;} .ttk b small{color:var(--or-sombre);font-weight:400;}
+.ttk-note{font-size:.74em;color:var(--or-sombre);font-style:italic;margin-top:3px;}
+.opt-toggle{background:none;border:1px solid var(--brun-bordure);color:var(--or-base);font-size:.85em;padding:3px 9px;border-radius:4px;cursor:pointer;font-family:inherit;}
+.opt-toggle:hover{border-color:var(--or-base);color:var(--or-vif);}
+.opt-toggle.open{color:var(--or-vif);border-color:var(--or-base);background:rgba(205,164,52,.08);}
+.target-mit-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 14px;padding:9px 10px;margin:-4px 0 12px;background:rgba(0,0,0,.15);border:1px solid var(--brun-bordure);border-top:none;border-radius:0 0 6px 6px;font-size:.8em;}
+.target-mit-grid .tm-row{display:flex;align-items:center;justify-content:space-between;gap:6px;color:var(--or-sombre);}
+.target-mit-grid .tm-row input{width:48px;background:#0a0603;border:1px solid var(--brun-bordure);color:var(--texte-beige);border-radius:4px;padding:3px 5px;font-family:inherit;font-size:1em;text-align:right;}
+.opt-sep{color:var(--brun-bordure);}
+.opt-mult input[type=number]{width:54px;}
+.slot-grade{font-size:.72em;padding:1px 2px;margin-right:6px;flex-shrink:0;}
+/* Augments numériques (Phase 0) — détail + rolls réglables */
+.aug-detail{margin:-9px 0 9px;padding:8px 10px;border:1px solid var(--brun-bordure);border-top:none;border-radius:0 0 6px 6px;background:rgba(0,0,0,.25);}
+.aug-simple{margin:-9px 0 9px;padding:6px 10px;border:1px solid var(--brun-bordure);border-top:none;border-radius:0 0 6px 6px;background:rgba(0,0,0,.25);font-size:.8em;}
+.aug-head{display:flex;align-items:center;gap:8px;font-size:.72em;color:var(--or-sombre);text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px;}
+.aug-head .grade-sel{text-transform:none;}
+.aug-applies{margin-left:auto;font-style:italic;}
+.aug-eff{display:flex;align-items:center;gap:9px;font-size:.8em;padding:3px 0;}
+.aug-el{flex:0 0 40%;color:var(--texte-beige);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.aug-roll-wrap{display:flex;align-items:center;gap:6px;flex:1;min-width:80px;}
+.aug-roll{flex:1;accent-color:var(--or-base);height:3px;cursor:pointer;min-width:40px;}
+.aug-pct{width:48px;background:rgba(0,0,0,.4);border:1px solid var(--brun-bordure);border-radius:4px;color:var(--or-vif);font-size:.82em;text-align:center;padding:2px 2px 2px 4px;font-family:'Inter';outline:none;}
+.aug-pct:focus{border-color:var(--or-base);}
+.aug-pct-lbl{color:var(--or-sombre);font-size:.82em;}
+.aug-fixed{flex:1;font-size:.85em;color:var(--or-sombre);font-style:italic;text-align:center;}
+.aug-ev{flex:0 0 54px;text-align:right;font-weight:600;}
+.aug-ev.pos{color:var(--vert);} .aug-ev.neg{color:var(--corail);}
+.aug-mm{flex:0 0 96px;font-size:.8em;color:var(--or-sombre);text-align:right;white-space:nowrap;}
+.aug-empty{font-size:.78em;color:var(--or-sombre);font-style:italic;}
+.aug-piece-row{display:flex;align-items:center;gap:8px;font-size:.78em;color:var(--or-sombre);margin-top:7px;padding-top:7px;border-top:1px dashed var(--brun-bordure);}
+.aug-piece-warn{font-style:italic;color:var(--corail);}
+.statcell{background:rgba(0,0,0,.22);border:1px solid var(--brun-bordure);border-radius:6px;padding:8px;text-align:center;}
+.statcell .l{font-size:.68em;color:var(--or-sombre);text-transform:uppercase;}
+.statcell .n{font-size:1.05em;font-weight:500;color:var(--texte-beige);}
+.muted-note{font-size:.7em;color:var(--or-sombre);font-style:italic;margin-top:8px;line-height:1.5;}
+.loot-spots{margin-top:12px;padding-top:10px;border-top:1px solid var(--brun-bordure);}
+.loot-spots-title{font-size:.72em;color:var(--or-sombre);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;}
+.loot-row{display:flex;justify-content:space-between;gap:10px;font-size:.85em;padding:3px 0;}
+.loot-row small{color:var(--or-sombre);}
+.loot-row .v{color:var(--or-vif);font-weight:500;white-space:nowrap;}
+.loot-note{font-size:.7em;color:var(--or-sombre);font-style:italic;margin-top:6px;line-height:1.5;}
+
+.recipe-head{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:.85em;}
+.ing{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.22);border:1px solid var(--brun-bordure);border-radius:6px;padding:7px 10px;min-height:42px;}
+.ing img{width:24px;height:24px;object-fit:contain;flex-shrink:0;}
+.ing .nm{font-size:.78em;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.ing .qt{margin-left:auto;padding-left:6px;font-size:.85em;font-weight:500;color:var(--or-vif);flex-shrink:0;}
+.ing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:7px;}
+
+/* Capacités & techniques */
+.skills-wrap{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+@media(max-width:680px){.skills-wrap{grid-template-columns:1fr;}}
+.sk-col-title{font-size:.78em;color:var(--or-base);text-transform:uppercase;letter-spacing:.6px;display:flex;align-items:center;gap:6px;margin-bottom:8px;}
+.sk-col-title .add{margin-left:auto;background:none;border:1px solid var(--brun-bordure);color:var(--or-base);font-size:.95em;padding:2px 9px;border-radius:5px;cursor:pointer;}
+.sk-col-title .add:hover{border-color:var(--or-base);color:var(--or-vif);}
+.sk-count{font-size:.85em;color:var(--or-sombre);font-weight:400;text-transform:none;letter-spacing:0;}
+.sk-count.full{color:var(--corail);}
+.sk-col-title .add.disabled{opacity:.35;cursor:not-allowed;border-color:var(--brun-bordure);color:var(--or-sombre);}
+.sk-col-title .add.disabled:hover{border-color:var(--brun-bordure);color:var(--or-sombre);background:none;}
+.chip{display:flex;align-items:center;gap:9px;padding:7px 8px;border:1px solid var(--brun-bordure);border-radius:6px;margin-bottom:7px;background:rgba(0,0,0,.18);}
+.chip img{width:28px;height:28px;object-fit:contain;background:#0d0705;border:1px solid var(--brun-bordure);border-radius:5px;flex-shrink:0;}
+.chip .cb{flex:1;min-width:0;}
+.chip .cn{font-size:.83em;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.chip .cm{font-size:.7em;color:var(--or-sombre);}
+.chip .lvl{display:flex;align-items:center;gap:4px;}
+.chip .lvl button{width:20px;height:20px;border:1px solid var(--brun-bordure);background:#0d0705;color:var(--or-base);border-radius:4px;cursor:pointer;font-size:.9em;line-height:1;}
+.chip .lvl button:hover{border-color:var(--or-base);color:var(--or-vif);}
+.chip .lvl span{font-size:.78em;min-width:30px;text-align:center;color:var(--texte-beige);}
+.chip .cx{color:#6b573a;cursor:pointer;font-size:1.05em;padding:0 2px;}
+.chip .cx:hover{color:var(--corail);}
+.chip .cbon{font-size:.78em;font-weight:500;color:var(--vert);white-space:nowrap;}
+.sk-empty{font-size:.78em;color:var(--or-sombre);font-style:italic;padding:8px 4px;}
+.dmg-summary{margin-top:12px;padding:10px;background:rgba(29,158,117,.07);border:1px solid rgba(29,158,117,.25);border-radius:6px;font-size:.82em;}
+.dmg-summary b{color:var(--vert);}
+.dmg-cond{margin-top:6px;font-size:.92em;color:var(--or-sombre);}
+.dmg-cond span{color:var(--ambre);}
+
+/* Picker overlay */
+.overlay{position:fixed;inset:0;background:rgba(5,3,1,.72);backdrop-filter:blur(3px);z-index:300;display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto;}
+.overlay.open{display:flex;}
+.picker{width:100%;max-width:680px;background:#120a04;border:1px solid var(--or-sombre);border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.7);overflow:hidden;}
+.picker-head{padding:14px 16px;border-bottom:1px solid var(--brun-bordure);display:flex;align-items:center;gap:12px;}
+.picker-head h3{font-family:'Cinzel',serif;color:var(--or-vif);font-size:1.05em;letter-spacing:.5px;}
+.picker-head .close{margin-left:auto;background:none;border:1px solid var(--brun-bordure);color:var(--or-base);width:30px;height:30px;border-radius:5px;cursor:pointer;font-size:1.1em;}
+.picker-head .close:hover{border-color:var(--corail);color:var(--corail);}
+.picker-tools{display:flex;gap:8px;padding:10px 16px;border-bottom:1px solid var(--brun-bordure);flex-wrap:wrap;}
+.picker-tools input,.picker-tools select{background:#0a0603;border:1px solid var(--brun-bordure);color:var(--texte-beige);border-radius:5px;padding:7px 10px;font-size:.85em;font-family:inherit;}
+.picker-tools input{flex:1;min-width:140px;}
+.picker-list{max-height:54vh;overflow-y:auto;padding:8px;}
+.pick-item{display:flex;align-items:center;gap:11px;padding:8px;border-radius:6px;cursor:pointer;border:1px solid transparent;}
+.pick-item:hover{background:rgba(205,164,52,.08);border-color:var(--brun-bordure);}
+.pick-item img{width:38px;height:38px;object-fit:contain;background:#0d0705;border:1px solid var(--brun-bordure);border-radius:5px;flex-shrink:0;}
+.pick-item .pi-body{flex:1;min-width:0;}
+.pick-item .pi-name{font-size:.9em;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pick-item .pi-meta{font-size:.72em;color:var(--or-sombre);}
+.pick-item .pi-stat{font-size:.85em;font-weight:500;color:var(--or-vif);text-align:right;white-space:nowrap;}
+.rar{display:inline-block;padding:1px 6px;border-radius:3px;font-size:.92em;}
+.rar-Common{color:#cfc4ad;} .rar-Unique{color:#f3c44f;} .rar-Rare{color:#69a7e0;} .rar-Legendary{color:#d07cff;} .rar-Uncommon{color:#7ec97e;} .rar-Memento{color:#d07cff;}
+/* Comparateur instantané (Phase 1.1) — Δ vs objet équipé */
+.pick-item .pi-right{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;min-width:56px;}
+.pick-item.is-equipped{border-color:var(--or-sombre);background:rgba(205,164,52,.05);}
+.pi-stat small{color:var(--or-sombre);font-size:.78em;font-weight:400;}
+.pi-delta{font-size:.74em;font-weight:600;padding:1px 6px;border-radius:4px;line-height:1.4;white-space:nowrap;}
+.pi-delta.pos{color:var(--vert);background:rgba(29,158,117,.14);}
+.pi-delta.neg{color:var(--corail);background:rgba(216,90,48,.14);}
+.pi-delta.eq{color:var(--or-sombre);background:rgba(205,164,52,.08);}
+.pk-cmp{padding:7px 16px;border-bottom:1px solid var(--brun-bordure);font-size:.76em;color:var(--or-sombre);background:rgba(0,0,0,.15);}
+.pk-cmp b{color:var(--or-base);}
+.pk-cmp:empty{display:none;}
+/* Couleurs sémantiques calibrées (Phase 1 ②) — paliers val/meilleur */
+.mt-best{color:var(--vert);} .mt-hi{color:var(--or-vif);} .mt-mid{color:var(--or-base);} .mt-lo{color:var(--or-sombre);} .mt-min{color:#7a6745;}
+.pi-meter{height:3px;background:#0d0705;border-radius:99px;overflow:hidden;margin-top:5px;}
+.pi-meter > i{display:block;height:100%;border-radius:99px;}
+.pi-best-tag{font-size:.64em;font-weight:700;color:#0a0603;background:var(--or-vif);border-radius:3px;padding:1px 5px;letter-spacing:.3px;white-space:nowrap;}
+.pick-item.is-best{border-color:var(--or-base);background:rgba(243,196,79,.06);}
+.slot-badge{font-size:.7em;font-weight:600;flex-shrink:0;white-space:nowrap;}
+.slot-badge.opt{color:var(--or-vif);}
+.slot-badge.up{color:var(--ambre);}
+.pk-group-head{display:flex;align-items:center;gap:8px;font-family:'Cinzel',serif;font-size:.72em;letter-spacing:.6px;text-transform:uppercase;color:var(--or-base);padding:9px 8px 5px;border-bottom:1px solid var(--brun-bordure);margin:2px 0 4px;position:sticky;top:0;background:#120a04;z-index:2;}
+.pk-group-head span{color:var(--or-sombre);font-family:'Inter',sans-serif;font-weight:400;text-transform:none;letter-spacing:0;font-size:1em;}
+.empty-state{color:var(--or-sombre);text-align:center;padding:30px;font-style:italic;}
+.loading{text-align:center;color:var(--or-sombre);padding:50px;font-family:'Cinzel',serif;letter-spacing:1px;}
+.toolbar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+.btn-reset{background:none;border:1px solid var(--brun-bordure);color:var(--or-sombre);padding:7px 14px;border-radius:5px;cursor:pointer;font-size:.78em;text-transform:uppercase;letter-spacing:.5px;}
+.btn-reset:hover{border-color:var(--corail);color:var(--corail);}
+
+/* Tooltip stats au survol */
+#tip{position:fixed;z-index:500;max-width:320px;background:#0c0703;border:1px solid var(--or-sombre);border-radius:7px;padding:9px 11px;box-shadow:0 10px 30px rgba(0,0,0,.7);pointer-events:none;display:none;}
+#tip .tt-name{font-size:.85em;font-weight:500;color:var(--or-vif);margin-bottom:5px;}
+#tip .tt-desc{font-size:.76em;color:var(--texte-beige);font-style:italic;line-height:1.4;margin-bottom:5px;}
+#tip .tt-row{display:flex;justify-content:space-between;align-items:baseline;gap:14px;font-size:.78em;padding:1px 0;}
+#tip .tt-row .k{color:var(--or-sombre);min-width:0;} #tip .tt-row .v{color:var(--texte-beige);font-weight:500;white-space:nowrap;flex-shrink:0;}
+#tip .tt-row .v.neg{color:var(--corail);} #tip .tt-row .v.pos{color:var(--vert);}
+#tip .tt-loot-title{font-size:.7em;color:var(--or-sombre);text-transform:uppercase;letter-spacing:.5px;margin:7px 0 3px;padding-top:6px;border-top:1px solid var(--brun-bordure);}
+#tip .tt-note-line{font-size:.78em;color:var(--texte-beige);line-height:1.5;margin-bottom:7px;}
+#tip .tt-note-line:last-child{margin-bottom:0;}
+#tip.tip-wide{max-width:420px;}
+</style>
+</head>
+<body>
+<script src="auth-guard.js"></script>
+<script src="page-guard.js" data-page="optimiseur"></script>
+
+<header>
+  <div class="logo">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="#f3c44f"><path d="M6.92 5c.96 0 1.63.74 2.18 1.66l-2.4 2.4L4.85 7.21C5.23 5.92 6.09 5 6.92 5zM4.17 11.23l1.87-1.87 5.16 5.16L19.1 6.62c.4-.41.41-1.07 0-1.48l-1.3-1.31c-.41-.42-1.07-.42-1.48 0L9.43 10.72 7.11 8.4c.48-1.55 1.57-2.99 3.19-3.79 1.48-.73 3.69-.64 5.37 1.05l1.31 1.31c1.68 1.68 1.76 3.88 1.04 5.36-.81 1.64-2.26 2.74-3.82 3.22l-2.31-2.31-6.72 6.72c-.39.39-1.02.39-1.41 0l-2.83-2.83c-.39-.39-.39-1.02 0-1.41l3.24-4.49z"/></svg>
+    <div>
+      <div class="logo-title">Optimiseur de Stuff</div>
+      <div class="logo-sub">Armes · Armures · Augments · Capacités & Techniques — données FR datamine + gaming.tools</div>
+    </div>
+  </div>
+  <a href="menu.html" class="btn-menu">Retour Menu</a>
+</header>
+
+<div class="wrap">
+  <div class="toolbar">
+    <div class="seg mode-seg" title="Simple = l'essentiel (équiper, DPS, armure, PV). Expert = tous les réglages fins et détails de calcul.">
+      <button class="seg-b" id="seg-mode-simple" onclick="setUiMode('simple')">Mode Simple</button>
+      <button class="seg-b" id="seg-mode-expert" onclick="setUiMode('expert')">Mode Expert</button>
+    </div>
+    <div>
+      <button class="btn-reset" id="btn-share" onclick="shareBuild()" style="margin-right:8px;border-color:var(--or-base);color:var(--or-base)">Partager le build</button>
+      <button class="btn-reset" onclick="resetBuild()">Réinitialiser le build</button>
+    </div>
+  </div>
+
+  <div class="summary">
+    <div class="metric hl"><div class="lab">DPS optimisé</div><div class="val" id="m-dpsopt">—</div></div>
+    <div class="metric"><div class="lab">DPS arme (effectif)</div><div class="val" id="m-dps">—</div></div>
+    <div class="metric"><div class="lab">Armure totale</div><div class="val" id="m-armor">—</div></div>
+    <div class="metric"><div class="lab">PV max</div><div class="val" id="m-hp">—</div></div>
+    <div class="metric"><div class="lab">Durabilité</div><div class="val" id="m-dur">—</div></div>
+  </div>
+
+  <div id="boot" class="loading">Chargement de la base d'items…</div>
+
+  <div id="app" style="display:none">
+    <div class="layout">
+      <div class="panel">
+        <div class="panel-title"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l8 4v6c0 4.4-3.4 8.3-8 9-4.6-.7-8-4.6-8-9V7l8-4z"/></svg>Loadout</div>
+        <div id="slots"></div>
+      </div>
+      <div>
+        <div class="panel" style="margin-bottom:14px">
+          <div class="panel-title"><svg class="ic" viewBox="0 0 24 24"><path d="M3.5 18.5l6-6 4 4L22 7l-1.4-1.4-7.1 7.9-4-4L2 17z"/></svg>Stats cumulées<button class="info-btn" data-note="stats">ⓘ</button></div>
+          <div class="opts-groups">
+            <div class="opt-group">
+              <span class="opt-lab">Mode</span>
+              <div class="seg"><button class="seg-b" id="seg-pve" onclick="setOpt('pvp',false)">PvE</button><button class="seg-b" id="seg-pvp" onclick="setOpt('pvp',true)">PvP ×0,4</button></div>
+              <label class="opt-chk"><input type="checkbox" id="opt-head" onchange="setOpt('head',this.checked)"> Tirs à la tête</label>
+              <span class="opt-mult" id="opt-mult-wrap">×<input type="number" id="opt-headmult" value="2" min="1" step="0.1" onchange="setOpt('headMult',parseFloat(this.value)||1)"></span>
+            </div>
+            <div class="opt-group expert-only">
+              <span class="opt-lab">Perso</span>
+              <span class="opt-mult" title="PV de base avant vitalité — valeur communautaire, pas dataminée">PV base <input type="number" id="opt-basehp" min="1" value="150" onchange="setOpt('baseHp',parseInt(this.value,10)||150)"></span>
+            </div>
+            <div class="opt-group expert-only">
+              <span class="opt-lab">Cible</span>
+              <span class="opt-mult">PV <input type="number" id="opt-thp" min="1" value="150" onchange="setOpt('targetHp',parseInt(this.value,10)||150)"></span>
+              <span class="opt-mult">Armure <input type="number" id="opt-tarm" min="0" value="0" onchange="setOpt('targetArmor',parseInt(this.value,10)||0)"></span>
+              <button type="button" class="opt-toggle" id="btn-tmit" onclick="toggleTargetMit()">Résistances ▾</button>
+            </div>
+          </div>
+          <div id="target-mit" class="target-mit-grid expert-only" style="display:none"></div>
+          <div id="defense-dr" class="expert-only"></div>
+          <div class="mit-tabs expert-only">
+            <button class="seg-b" id="mv-pct" onclick="setMitView('pct')">% Mitigation</button>
+            <button class="seg-b" id="mv-ehp" onclick="setMitView('ehp')">PV effectifs</button>
+          </div>
+          <div id="defense" class="expert-only"></div>
+          <div id="offense"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title"><svg class="ic" viewBox="0 0 24 24"><path d="M22 9L12 2 2 9l10 7 10-7zM12 4.4l6.9 4.6L12 13.6 5.1 9 12 4.4z"/></svg>Recette &amp; composants</div>
+          <div id="recipe"><div class="empty-state">Sélectionne une arme ou une pièce pour voir sa recette.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:18px">
+      <div class="panel-title"><svg class="ic" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7.4-6.3-4.6L5.7 21.4 8 14 2 9.4h7.6z"/></svg>Capacités &amp; Techniques</div>
+      <div class="skills-wrap">
+        <div>
+          <div class="sk-col-title">Capacités <span class="sk-count" id="cnt-ability"></span> <button class="add" id="add-ability" onclick="openSkillPicker('Ability')" title="Ajouter">+</button></div>
+          <div id="sk-abilities"></div>
+        </div>
+        <div>
+          <div class="sk-col-title">Techniques <span class="sk-count" id="cnt-technique"></span> &amp; attributs <button class="add" onclick="openSkillPicker('Technique')" title="Ajouter">+</button></div>
+          <div id="sk-techniques"></div>
+        </div>
+      </div>
+      <div class="dmg-summary" id="dmg-summary"></div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="picker">
+    <div class="picker-head">
+      <h3 id="pk-title">Choisir</h3>
+      <button class="close" onclick="closePicker()" aria-label="Fermer">✕</button>
+    </div>
+    <div class="picker-tools">
+      <input id="pk-search" type="text" placeholder="Rechercher…" oninput="renderPicker()">
+      <select id="pk-sort" onchange="renderPicker()">
+        <option value="stat">Tri : meilleure stat</option>
+        <option value="tier">Tri : tier ↓</option>
+        <option value="name">Tri : nom A→Z</option>
+      </select>
+      <select id="pk-ftier" onchange="renderPicker()"><option value="">Tier : tous</option></select>
+      <select id="pk-frar" onchange="renderPicker()"><option value="">Rareté : toutes</option></select>
+      <select id="pk-fsub" onchange="renderPicker()"><option value="">Type : tous</option></select>
+    </div>
+    <div class="pk-cmp" id="pk-cmp"></div>
+    <div class="picker-list" id="pk-list"></div>
+  </div>
+</div>
+
+<div id="tip"></div>
+
+<script>
+const PROXY='stuff_proxy.php';
+let DB=null, SKILLS=[], ICON_BASE='', BUILD={skills:[]}, detailCache={};
+
+// ── Mode Simple/Expert (préférence d'affichage, PAS liée au build partagé) ────
+let UI_MODE=localStorage.getItem('optim_uimode')||'simple';
+function isExpert(){return UI_MODE==='expert';}
+function setUiMode(m){UI_MODE=m;localStorage.setItem('optim_uimode',m);syncUiMode();renderAll();}
+function syncUiMode(){
+  document.body.classList.toggle('simple-mode',!isExpert());
+  document.getElementById('seg-mode-simple').classList.toggle('active',!isExpert());
+  document.getElementById('seg-mode-expert').classList.toggle('active',isExpert());
+}
+// Explication des formules (infobulle au survol de l'icône ⓘ) — un sujet par ligne, pas un pavé.
+const STAT_NOTE_TOPICS=[
+  'DPS par arme = effectif × (1 + bonus de capacités) × <span style="color:var(--violet)">facteur des augments de dégâts compatibles</span>, ×0,4 en PvP, ×mult tête si actif.',
+  'Les augments (dataminés) ont un <b>roll réglable</b> par effet et une qualité.',
+  'Augments d\'armure : les <b>mitigations</b> (réduc. par type) sont additionnées au total quelle que soit la pièce ; le <b>bonus d\'armure</b> (%) ne s\'applique qu\'à la pièce choisie dans le détail de l\'augment (un augment est serti sur une seule pièce, les 3 emplacements du build sont globaux).',
+  'Armure→réduction et ×0,4 PvP = <b>modèles communautaires</b> (naguya.tech), pas dataminés.',
+  '<b>PV max</b> = PV de base (éditable, valeur communautaire) + bonus Vitalité (skill, dataminé) ; <b>PV effectifs</b> par type = PV max / ((1−réduc. armure)×(1−mitigation du type)) — mêmes mitigations que ci-dessus, augments compris.',
+  '<b>Résistances de la cible</b> (bouton « Résistances », par type de dégâts) se cumulent avec sa réduction d\'armure pour le calcul des tirs/coups pour tuer — à saisir manuellement selon la cible visée.',
+];
+let mitView=localStorage.getItem('optim_mitview')||'pct';
+function setMitView(v){mitView=v;localStorage.setItem('optim_mitview',v);renderAll();}
+
+const PARTS={head:'Tête',chest:'Torse',hands:'Mains',legs:'Jambes',feet:'Pieds'};
+const OFFENSE_KEYS=['dps','damagePerShot','damagePerHit','heavyAttackDamage'];
+function hasOffense(it){return (it.stats||[]).some(s=>OFFENSE_KEYS.includes(s.k));}
+function isWeapon(it){return it.group==='weapons' && it.cat!=='weapons/ammunition' && hasOffense(it);}
+function isAug(it){return it.group==='augment';}
+function partAccept(part){return it=>it.group==='garment' && (it.cat.endsWith('/'+part) || (part==='chest' && it.cat==='garment/utilitywearables'));}
+
+const SLOTS=[
+  {key:'weapon1',label:'Arme principale',group:'Armes',accept:isWeapon,stat:['effectiveDps','dps','damagePerHit']},
+  {key:'weapon2',label:'Arme secondaire',group:'Armes',accept:isWeapon,stat:['effectiveDps','dps','damagePerHit']},
+  {key:'head', label:'Tête', group:'Armure',accept:partAccept('head'), stat:['armorValue']},
+  {key:'chest',label:'Torse',group:'Armure',accept:partAccept('chest'),stat:['armorValue']},
+  {key:'hands',label:'Mains',group:'Armure',accept:partAccept('hands'),stat:['armorValue']},
+  {key:'legs', label:'Jambes',group:'Armure',accept:partAccept('legs'),stat:['armorValue']},
+  {key:'feet', label:'Pieds',group:'Armure',accept:partAccept('feet'),stat:['armorValue']},
+  {key:'aug1',label:'Augment 1',group:'Augments',accept:isAug,stat:['tier']},
+  {key:'aug2',label:'Augment 2',group:'Augments',accept:isAug,stat:['tier']},
+  {key:'aug3',label:'Augment 3',group:'Augments',accept:isAug,stat:['tier']},
+];
+
+// Libellés alignés sur la VF du jeu (« aiguilles », pas « dards »).
+const MITIG=[
+  {k:'bladeMitigation',label:'Lames',color:'var(--vert)'},
+  {k:'lightDartMitigation',label:'Petites aiguilles',color:'var(--vert)'},
+  {k:'heavyDartMitigation',label:'Grosses aiguilles',color:'var(--vert)'},
+  {k:'concussiveMitigation',label:'Commotion',color:'var(--vert)'},
+  {k:'energyMitigation',label:'Énergie',color:'var(--ambre)'},
+  {k:'heatMitigation',label:'Feu',color:'var(--corail)'},
+  {k:'radiationMitigation',label:'Radiations',color:'var(--corail)'},
+  {k:'poisonMitigation',label:'Poison',color:'var(--corail)'},
+];
+const ARMOR_SLOTS=['head','chest','hands','legs','feet'];
+
+// Bonus de dégâts (op Additive, valeur 0.1 = +10%) applicables à l'arme équipée.
+const COND_DMG=['HeadDamageBonus','BodyDamageBonus','BackstabDamageBonus','SurpriseAttackDamageBonus'];
+const COND_LABEL={HeadDamageBonus:'Tête',BodyDamageBonus:'Corps',BackstabDamageBonus:'Dans le dos',SurpriseAttackDamageBonus:'Attaque surprise'};
+function uncondDmgKeys(w){
+  const k=['WeaponDamageBonus']; const c=w?w.cat:'';
+  if(/rifles|sidearms|scatterguns|heavyweapons/.test(c)){k.push('RangedDamageBonus');
+    if(c.includes('rifles'))k.push('RifleDamageBonus');
+    if(c.includes('sidearms/pistol'))k.push('PistolDamageBonus');
+    if(c.includes('sidearms/smg'))k.push('CarbineDamageBonus');
+    if(c.includes('scatterguns'))k.push('ScattergunDamageBonus');
+    if(c.includes('heavyweapons/lmg'))k.push('LmgDamageBonus');
+    if(c.includes('heavyweapons/flamethrower'))k.push('FlameThrowerDamageBonus');
+    if(c.includes('heavyweapons/lasgun'))k.push('LasgunDamageBonus');
+  }
+  if(/longblades|shortblades/.test(c)){k.push('MeleeDamageBonus');
+    if(c.includes('longblades'))k.push('LongBladeDamageBonus');
+    if(c.includes('shortblades'))k.push('ShortBladeDamageBonus');
+  }
+  return k;
+}
+
+function statVal(it,key){const s=(it.stats||[]).find(s=>s.k===key);return s?s.v:undefined;}
+function firstStat(it,keys){for(const k of keys){const v=statVal(it,k);if(v!==undefined&&v!==null)return{k,v};}return null;}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function iconUrl(p){return p?ICON_BASE+p:'';}
+function skillById(id){return SKILLS.find(s=>s.id===id);}
+function itemById(id){return DB.find(i=>i.id===id);}
+
+function fmt(v,format){
+  if(v===null||v===undefined)return '—';
+  if(typeof v==='string')return esc(v);
+  let dec=0; if(format){ if(format.includes('0.##'))dec=2; else if(format.includes('0.#'))dec=1; }
+  let suffix=''; if(format){const i=format.lastIndexOf('}'); if(i>=0)suffix=format.slice(i+1);}
+  if(suffix==='%')return (Math.round(v*10)/10)+'%';
+  return Number(v.toFixed(dec)).toLocaleString('fr-FR')+suffix;
+}
+// Les bonus de skills sont des fractions (0.1) à afficher en %.
+function pct(v){const p=Math.round(v*1000)/10;return (p>0?'+':'')+p+'%';}
+
+// Stats d'un skill à un niveau donné
+function skillStatsAt(sk,lvl){return (sk.stats||[]).filter(s=>s.lvl===lvl);}
+
+function saveBuild(){try{localStorage.setItem('stuffBuild',JSON.stringify(BUILD));}catch(e){}}
+// Partage : build encodé en base64url dans le hash (#b=…)
+function buildToParam(){try{return btoa(unescape(encodeURIComponent(JSON.stringify(BUILD)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}catch(e){return '';}}
+function paramToBuild(s){try{s=s.replace(/-/g,'+').replace(/_/g,'/');const b=JSON.parse(decodeURIComponent(escape(atob(s))));return (b&&typeof b==='object')?b:null;}catch(e){return null;}}
+function loadBuild(){
+  const m=(location.hash||'').match(/[#&]b=([^&]+)/);
+  if(m){const b=paramToBuild(m[1]);if(b){BUILD=b;if(!BUILD.skills)BUILD.skills=[];saveBuild();return;}}
+  try{BUILD=JSON.parse(localStorage.getItem('stuffBuild')||'{}')||{};}catch(e){BUILD={};}
+  if(!BUILD.skills)BUILD.skills=[];
+}
+function shareBuild(){
+  const url=location.origin+location.pathname+'#b='+buildToParam();
+  const done=()=>{const b=document.getElementById('btn-share');const t=b.textContent;b.textContent='Lien copié ✓';setTimeout(()=>b.textContent=t,1800);};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(url).then(done).catch(()=>prompt('Copie ce lien :',url));
+  else prompt('Copie ce lien :',url);
+}
+function resetBuild(){BUILD={skills:[]};saveBuild();renderAll();document.getElementById('recipe').innerHTML='<div class="empty-state">Sélectionne une arme ou une pièce pour voir sa recette.</div>';}
+
+const PH_SVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>';
+function renderSlots(){
+  let html='', curGroup='';
+  for(const sl of SLOTS){
+    if(sl.group!==curGroup){curGroup=sl.group;html+=`<div class="slot-group-lab">${sl.group}</div>`;}
+    const id=BUILD[sl.key], it=id?itemById(id):null;
+    if(it){
+      const grade=getGrade(sl.key,it);
+      const st=firstStat(it,sl.stat);
+      const stv=(st&&st.k!=='tier')?wStat(it,grade,st.k):(st?st.v:null);
+      const sv=st? (st.k==='tier'?('T'+st.v):fmt(stv,(it.stats.find(s=>s.k===st.k)||{}).f)) : '';
+      let gsel='';
+      if(it.group==='garment' && maxGrade(it)>0){
+        let o='';for(let g=0;g<=maxGrade(it);g++)o+=`<option value="${g}"${g===grade?' selected':''}>${g===0?'Base':'G'+g}</option>`;
+        gsel=`<select class="grade-sel slot-grade" title="Qualité" onclick="event.stopPropagation()" onchange="setGrade('${sl.key}',parseInt(this.value,10))">${o}</select>`;
+      }
+      // Repère qualité : cet objet est-il le meilleur de SA CATÉGORIE pour ce slot ? (potentiel max)
+      let badge=''; const m2=metricAtMax(sl.key,it);
+      if(m2){
+        const cls=compClass(sl.key,it); let best=0;
+        for(const c of DB){if(c.group!==it.group||!sl.accept(c)||compClass(sl.key,c)!==cls)continue;const cm=metricAtMax(sl.key,c);if(cm&&cm.val>best)best=cm.val;}
+        if(best>0){const clab=classLabel(cls);
+          if(m2.val>=best*0.999)badge=`<span class="slot-badge opt" title="Meilleur de sa catégorie (${esc(clab)}) pour cet emplacement, à potentiel max">★</span>`;
+          else{const d=Math.round(best-m2.val);badge=`<span class="slot-badge up" title="Un meilleur existe dans sa catégorie (${esc(clab)}) : +${d.toLocaleString('fr-FR')} ${m2.unit} au potentiel max">▲&nbsp;+${d.toLocaleString('fr-FR')}</span>`;}
+        }
+      }
+      html+=`<div class="slot filled" data-item="${esc(it.id)}" onclick="openPicker('${sl.key}')">
+        <img class="slot-ic" src="${esc(iconUrl(it.icon))}" alt="" onerror="this.style.visibility='hidden'">
+        <div class="slot-body"><div class="slot-name">${esc(it.name)}</div>
+          <div class="slot-meta">${esc(sl.label)} · <span class="rar rar-${esc(it.rarity||'')}">${esc(it.rarity||'')}</span> ${it.tier?('· T'+it.tier):''}</div></div>
+        ${gsel}${badge}<span class="slot-stat">${sv}</span>
+        <span class="slot-x" onclick="event.stopPropagation();unequip('${sl.key}')" title="Retirer">✕</span>
+      </div>`;
+      if(sl.group==='Augments' && AUGMENTS[it.id]) html+= isExpert() ? augDetail(sl.key,it) : `<div class="aug-simple">${augPickerSummary(AUGMENTS[it.id])||'<span class="aug-empty">Effet non chiffré.</span>'}</div>`;
+    }else{
+      html+=`<div class="slot" onclick="openPicker('${sl.key}')">
+        <div class="slot-ph">${PH_SVG}</div>
+        <div class="slot-body"><div class="slot-name empty">${esc(sl.label)}</div><div class="slot-meta">vide — cliquer pour équiper</div></div>
+      </div>`;
+    }
+  }
+  document.getElementById('slots').innerHTML=html;
+}
+
+// ── Augments numériques (Phase 0) — effets dataminés + rolls réglables ─────────
+// Données : stuff_augments.json (DataAssets AugmentStatsPerQualityDataAsset). Chaque effet a une
+// fourchette [min,max] par qualité (le craft tire un nombre dedans). Multiply = facteur, Add = delta.
+let AUGMENTS={};
+// Emplacements de loot (Phase datamine 2026-07-03) : uniquement les lieux NOMMÉS (stations
+// expérimentales à thème, donjon) — voir tools/build_loot_locations_from_datamine.js.
+let LOOT={};
+function augData(id){return id?AUGMENTS[id]:null;}
+function augQuality(sk){const a=augData(BUILD[sk]);if(!a)return 0;const mn=a.minQuality||0;const q=(BUILD.augQ||{})[sk];return q==null?5:Math.max(mn,Math.min(5,q));}
+function setAugQuality(sk,q){if(!BUILD.augQ)BUILD.augQ={};BUILD.augQ[sk]=q;saveBuild();renderAll();}
+function augRoll(sk,ei){const r=(BUILD.augR||{})[sk];return (r&&r[ei]!=null)?r[ei]:1;}            // défaut = max (potentiel)
+function setAugRoll(sk,ei,v){v=Math.max(0,Math.min(1,+v));if(!BUILD.augR)BUILD.augR={};if(!BUILD.augR[sk])BUILD.augR[sk]={};BUILD.augR[sk][ei]=v;saveBuild();renderAll();}
+function augRollLive(el,sk,ei){const v=Math.max(0,Math.min(100,+el.value));el.closest('.aug-roll-wrap').querySelector('.aug-pct').value=v;if(!BUILD.augR)BUILD.augR={};if(!BUILD.augR[sk])BUILD.augR[sk]={};BUILD.augR[sk][ei]=v/100;const a=augData(BUILD[sk]);if(!a||!a.effects[ei])return;const eff=a.effects[ei],ev=augEffectAt(eff,augQuality(sk),v/100);if(!ev)return;const row=el.closest('.aug-eff'),evEl=row&&row.querySelector('.aug-ev');if(evEl){evEl.textContent=augValFmt(eff,ev);evEl.className='aug-ev '+((eff.op==='Multiply'?ev.val<1:ev.val<0)?'neg':'pos');}}
+function augEffectAt(eff,q,roll){const r=eff.q&&eff.q[q];if(!r)return null;const mn=r[0],mx=r[1];return {mn,mx,val:mn+(mx-mn)*roll,rolled:Math.abs(mx-mn)>1e-9};}
+
+const AUG_STAT_FR={Damage:'Dégâts',AoEBaseDamage:'Dégâts de zone',AoEMinimumDamage:'Dégâts de zone (min)',ShotsPerSecond:'Cadence',ShieldDamage:'Dégâts bouclier',AoEBaseShieldDamage:'Dég. bouclier (zone)',AoEMinimumShieldDamage:'Dég. bouclier zone (min)',CritDamage:'Dégâts critiques',MaxAmmo:'Chargeur',ReloadTime:'Recharge',EffectiveRange:'Portée efficace',MaxRange:'Portée max',PowerConsumptionPerShot:'Conso énergie/tir',RecoilPitchScalar:'Recul vertical',RecoilYawScalar:'Recul latéral',ADSBaseAccuracyOffset:'Précision (visée)',ADSMaxAccuracyOffset:'Précision visée (max)',HipFireBaseAccuracyOffset:'Précision (hanche)',HipFireMaxAccuracyOffset:'Précision hanche (max)',ScattergunOffsetDistance:'Dispersion',AttackStaminaBaseCost:'Coût end. attaque',BlockStaminaCost:'Coût end. blocage',FireDoT:'Feu (DoT)',PoisonDamage:'Dégâts poison',Volume:'Volume',ArmorValue:'Armure',ColdProtectionValue:'Protection froid',ColdDamageMitigation:'Réduc. froid',PhysicalDamageMitigation:'Réduc. physique',EnergyDamageMitigation:'Réduc. énergie',HeatDamageMitigation:'Réduc. feu',RadiationDamageMitigation:'Réduc. radiations',PoisonDamageMitigation:'Réduc. poison',DartDamageMitigation:'Réduc. petites aiguilles',HeavyDartDamageMitigation:'Réduc. grosses aiguilles',MeleeDamageMitigation:'Réduc. lames',DashStaminaCost:'Coût end. esquive',DehydrationCaptureModifier:'Hydratation',DefeatDurabilityLoss:'Perte durabilité (KO)'};
+function augStatLabel(s){return AUG_STAT_FR[s]||s;}
+function effStats(eff){return eff.stats.filter(s=>!(eff.target==='Weapon'&&s==='ArmorValue'));}  // 'ArmorValue' co-listé sur arme = bruit
+function effLabel(eff){const s=effStats(eff);if(!s.length)return augStatLabel(eff.stats[0]);const prim=s.find(x=>!/^AoE/.test(x))||s[0];return augStatLabel(prim)+(s.length>1?' …':'');}
+function augValFmt(eff,ev){
+  if(eff.op==='Multiply'){const p=(ev.val-1)*100;return (p>=0?'+':'')+(Math.round(p*10)/10)+'%';}
+  if(eff.op==='Add'){const d=ev.val;if(Math.abs(d)<=1){const p=d*100;return (p>=0?'+':'')+(Math.round(p*10)/10)+'%';}return (d>=0?'+':'')+Math.round(d);}
+  return String(ev.val);
+}
+// Aperçu non-équipé (picker) : potentiel max (Q5, roll 100%) — cohérent avec les autres comparaisons du picker.
+function augPickerSummary(a){
+  for(const eff of a.effects){
+    if(!effStats(eff).length)continue;
+    const ev=augEffectAt(eff,5,1); if(!ev)continue;
+    const neg=(eff.op==='Multiply'?ev.val<1:ev.val<0);
+    return `<span class="${neg?'neg':'pos'}">${augValFmt(eff,ev)}</span> <small>${esc(effLabel(eff))}</small>`;
+  }
+  return '';
+}
+// Détail complet (tooltip picker) : tous les effets chiffrés, fourchette min…max au potentiel max si rollé.
+function augTipRows(a){
+  return a.effects.filter(eff=>effStats(eff).length).map(eff=>{
+    const evMax=augEffectAt(eff,5,1); if(!evMax)return '';
+    const neg=(eff.op==='Multiply'?evMax.val<1:evMax.val<0);
+    const val=evMax.rolled?`${augValFmt(eff,{val:augEffectAt(eff,5,0).val})} … ${augValFmt(eff,evMax)}`:augValFmt(eff,evMax);
+    return `<div class="tt-row"><span class="k">${esc(effStats(eff).map(augStatLabel).join(', '))}</span><span class="v ${neg?'neg':'pos'}">${val}</span></div>`;
+  }).join('');
+}
+// Applicabilité (tags datamine → objets équipés)
+function augAppliesToWeapon(a,w){if(!a||!w)return false;const melee=isMelee(w);
+  for(const t of a.applies){
+    if(t==='Items.Holsters.MeleeWeapons'){if(melee)return true;continue;}
+    if(t.indexOf('Items.Holsters.RangedWeapons')===0){if(melee)continue;
+      if(t==='Items.Holsters.RangedWeapons')return true;
+      const seg=t.split('.').pop().toLowerCase();
+      if((w.cat||'').toLowerCase().indexOf(seg)>=0)return true;
+    }
+  } return false;
+}
+const AUG_ARMOR_TAG={'Items.Clothes.HeavyArmor':'heavyarmor','Items.Clothes.ScoutArmor':'lightarmor','Items.Clothes.Stillsuit':'stillsuits','Items.Clothes.Utility':'utilitywearables'};
+function augAppliesToArmorSub(a,sub){return !!a&&a.applies.some(t=>AUG_ARMOR_TAG[t]===sub);}
+// Stats de mitigation d'augment (Add, delta) → clé MITIG équivalente. Correspondance vérifiée directement
+// sur DT_ArmorItemTable.json (FModel) : le champ brut "PhysicalDamageMitigationArmor" EST la Commotion
+// (concussiveMitigation) — confirmé sur un item ayant concussiveMitigation=3% ↔ PhysicalDamageMitigationArmor=0.03.
+const AUG_MIT_TO_KEY={DartDamageMitigation:'lightDartMitigation',HeavyDartDamageMitigation:'heavyDartMitigation',MeleeDamageMitigation:'bladeMitigation',EnergyDamageMitigation:'energyMitigation',HeatDamageMitigation:'heatMitigation',RadiationDamageMitigation:'radiationMitigation',PoisonDamageMitigation:'poisonMitigation',PhysicalDamageMitigation:'concussiveMitigation'};
+// ArmorValue Multiply est rangé tantôt sous target=Armor, tantôt sous target=Item selon l'augment (schéma
+// datamine : ArmorValue est un champ générique de l'Item de base, pas toujours classé dans le bucket "Armor").
+function isArmorValueBoost(e){return e.op==='Multiply'&&(e.target==='Armor'||e.target==='Item')&&e.stats.includes('ArmorValue');}
+function augHasArmorValueBoost(a){return a.effects.some(isArmorValueBoost);}
+// Pièces d'armure ÉQUIPÉES compatibles avec cet augment (pour choisir sur laquelle appliquer son bonus d'armure —
+// un augment est serti sur UNE pièce ; les 3 slots du build sont globaux, donc on ne peut pas deviner laquelle).
+function augCompatiblePieces(a){return ARMOR_SLOTS.filter(sk=>{const it=itemById(BUILD[sk]);return it&&augAppliesToArmorSub(a,subOf(it));});}
+function setAugPiece(sk,pieceKey){if(!BUILD.augPiece)BUILD.augPiece={};BUILD.augPiece[sk]=pieceKey||'';saveBuild();renderAll();}
+// Multiplicateur de dégâts d'une arme dû aux augments compatibles équipés (Multiply sur Damage/Cadence).
+function augWeaponDmgMult(w){let m=1;if(!w)return m;
+  for(const sk of ['aug1','aug2','aug3']){const a=augData(BUILD[sk]);if(!a||!augAppliesToWeapon(a,w))continue;const q=augQuality(sk);
+    a.effects.forEach((eff,ei)=>{if(eff.target!=='Weapon'||eff.op!=='Multiply')return;
+      if(!eff.stats.some(s=>s==='Damage'||s==='ShotsPerSecond'))return;
+      const ev=augEffectAt(eff,q,augRoll(sk,ei));if(ev&&ev.val>0)m*=ev.val;});
+  } return m;
+}
+// Bloc détail sous un slot augment équipé : qualité + 1 curseur par effet rollé.
+function augDetail(sk,it){
+  const a=augData(it.id); if(!a)return '';
+  const q=augQuality(sk), mn=a.minQuality||0;
+  let qsel='';for(let g=mn;g<=5;g++)qsel+=`<option value="${g}"${g===q?' selected':''}>Q${g}${g===5?' (max)':''}</option>`;
+  let rows='';
+  a.effects.forEach((eff,ei)=>{
+    if(!effStats(eff).length)return;
+    const ev=augEffectAt(eff,q,augRoll(sk,ei)); if(!ev)return;
+    const neg=(eff.op==='Multiply'?ev.val<1:ev.val<0);
+    const pct=Math.round(augRoll(sk,ei)*100);
+    const ctrl= ev.rolled
+      ? `<span class="aug-roll-wrap"><input type="range" class="aug-roll" min="0" max="100" value="${pct}" oninput="augRollLive(this,'${sk}',${ei})" onchange="setAugRoll('${sk}',${ei},this.value/100)"><input type="number" class="aug-pct" min="0" max="100" value="${pct}" onclick="event.stopPropagation();this.select()" onchange="let v=Math.max(0,Math.min(100,+this.value));this.value=v;this.previousElementSibling.value=v;setAugRoll('${sk}',${ei},v/100)"><span class="aug-pct-lbl">%</span></span>`
+      : `<span class="aug-fixed">fixe</span>`;
+    const mm= ev.rolled ? `<span class="aug-mm">${augValFmt(eff,{val:ev.mn})} … ${augValFmt(eff,{val:ev.mx})}</span>` : '<span class="aug-mm"></span>';
+    rows+=`<div class="aug-eff"><span class="aug-el" title="${esc(effStats(eff).map(augStatLabel).join(', '))}">${esc(effLabel(eff))}</span>${ctrl}<span class="aug-ev ${neg?'neg':'pos'}">${augValFmt(eff,ev)}</span>${mm}</div>`;
+  });
+  const onWeapon=a.applies.some(t=>t.indexOf('Holster')>=0);
+  const where=onWeapon?'s\'applique aux armes compatibles (replié dans le DPS)':'s\'applique aux armures compatibles (mitigations additionnées au total)';
+  let pieceRow='';
+  if(augHasArmorValueBoost(a)){
+    const pieces=augCompatiblePieces(a);
+    if(pieces.length===1&&(BUILD.augPiece||{})[sk]===undefined){if(!BUILD.augPiece)BUILD.augPiece={};BUILD.augPiece[sk]=pieces[0];saveBuild();}
+    const cur=(BUILD.augPiece||{})[sk]||'';
+    const opts='<option value="">— non appliqué —</option>'+pieces.map(sk2=>{const lab=SLOTS.find(s=>s.key===sk2).label,it2=itemById(BUILD[sk2]);return `<option value="${sk2}"${sk2===cur?' selected':''}>${esc(lab)} · ${esc(it2.name)}</option>`;}).join('');
+    const warn=pieces.length===0?'<span class="aug-piece-warn">équipe une pièce compatible pour l\'appliquer au total</span>':'';
+    pieceRow=`<div class="aug-piece-row"><span>Bonus d'armure appliqué sur</span><select class="grade-sel" onclick="event.stopPropagation()" onchange="setAugPiece('${sk}',this.value)">${opts}</select>${warn}</div>`;
+  }
+  return `<div class="aug-detail"><div class="aug-head"><span>Qualité</span>
+      <select class="grade-sel" onclick="event.stopPropagation()" onchange="setAugQuality('${sk}',parseInt(this.value,10))">${qsel}</select>
+      <span class="aug-applies">${where}</span></div>${rows||'<div class="aug-empty">Effet non chiffré.</div>'}${pieceRow}</div>`;
+}
+
+// ── Calcul des bonus de dégâts (par arme — les bonus diffèrent selon le type) ──
+function dmgBonusFor(w){
+  const keys=uncondDmgKeys(w);
+  let uncond=0; const condSum={}; const perSkill={};
+  for(const sel of (BUILD.skills||[])){
+    const sk=skillById(sel.id); if(!sk)continue;
+    let s=0;
+    for(const st of skillStatsAt(sk,sel.lvl)){
+      if(st.op!=='Additive')continue;
+      if(keys.includes(st.k)){uncond+=st.v;s+=st.v;}
+      else if(COND_DMG.includes(st.k))condSum[st.k]=(condSum[st.k]||0)+st.v;
+    }
+    perSkill[sel.id]=s;
+  }
+  return {w,uncond,condSum,perSkill};
+}
+function primaryWeapon(){const id=BUILD.weapon1||BUILD.weapon2;return id?itemById(id):null;}
+function damageBonuses(){return dmgBonusFor(primaryWeapon());} // compat (renderSkills)
+
+// Options de simulation (PvE/PvP, tirs à la tête) — modèles communautaires (naguya.tech).
+function opts(){if(!BUILD.opts)BUILD.opts={pvp:false,head:false,headMult:2};return BUILD.opts;}
+function setOpt(k,v){opts()[k]=v;saveBuild();renderAll();}
+// Réduction de dégâts depuis l'armure : DR = Armure/(Armure+500), plafond 95 % (modèle communautaire).
+function armorDR(armor){return armor>0?Math.min(0.95,armor/(armor+500)):0;}
+// Bonus de dégâts à la tête cumulé (skills, op Additive sur HeadDamageBonus).
+function headBonusTotal(){let s=0;for(const sel of (BUILD.skills||[])){const sk=skillById(sel.id);if(!sk)continue;for(const st of skillStatsAt(sk,sel.lvl)){if(st.op==='Additive'&&st.k==='HeadDamageBonus')s+=st.v;}}return s;}
+// ── EHP / Survie (Phase 2.1) — PV max = base (éditable, communautaire) + bonus Vitalité (skill, dataminé). ──
+function maxHealthBonus(){let s=0;for(const sel of (BUILD.skills||[])){const sk=skillById(sel.id);if(!sk)continue;for(const st of skillStatsAt(sk,sel.lvl)){if(st.op==='Additive'&&st.k==='MaxHealth')s+=st.v;}}return s;}
+function baseHp(){return opts().baseHp||150;}
+function maxHp(){return baseHp()+maxHealthBonus();}
+// PV effectifs contre un type de dégâts = PV max / ((1−réduction armure)×(1−mitigation du type)).
+function ehpVsType(mh,dr,mitPct){const m=Math.max(-0.95,Math.min(0.95,(mitPct||0)/100));const denom=Math.max(0.001,(1-dr)*(1-m));return mh/denom;}
+// ── Grades (qualité 0→5) — multiplicateurs DATAMINÉS des courbes CF_*PerQuality (Funcom).
+// Le DPS d'une arme = stat de base × multiplicateur du grade (courbes globales, mêmes pour toutes les armes).
+const Q_DAMAGE=[1,1.07,1.2533,1.5147,1.8805,2.3927];   // CF_WeaponsDamageBoostPerQuality
+const Q_SHIELD=[1,1.08,1.16,1.24,1.32,1.4];             // CF_WeaponsShieldDamageBoostPerQuality
+const Q_ARMOR =[1,1.1143,1.2571,1.3998,1.4953,1.6857];  // CF_ArmorBoostPerQuality
+const DMG_STATS=new Set(['dps','effectiveDps','damagePerShot','damagePerHit','heavyAttackDamage','heavyAttackDamageUnshielded']);
+const SHD_STATS=new Set(['shieldDamagePerShot','shieldDamagePerHit']);
+function gradable(it){return !!it && (isWeapon(it) || (it.group==='garment' && statVal(it,'armorValue')!=null));}
+function maxGrade(it){if(gradable(it))return 5;return (it&&it.scaled)?Math.max(0,...Object.keys(it.scaled).map(Number)):0;}
+function getGrade(slotKey,it){const m=maxGrade(it);if(!m)return 0;const g=(BUILD.grades||{})[slotKey];return (g==null)?m:Math.max(0,Math.min(m,g));}
+function setGrade(slotKey,g){if(!BUILD.grades)BUILD.grades={};BUILD.grades[slotKey]=g;saveBuild();renderAll();}
+// Valeur d'une stat au grade choisi : override datamine si présent, sinon base × courbe de qualité.
+// (Armes : dégâts/bouclier scalent. Armure : SEULE armorValue scale ; les mitigations restent fixes.)
+function wStat(it,grade,key){
+  const base=statVal(it,key);
+  if(!grade||grade<1||typeof base!=='number')return base;
+  if(it.scaled&&it.scaled[grade]&&it.scaled[grade][key]!=null)return it.scaled[grade][key];
+  if(DMG_STATS.has(key))return base*(Q_DAMAGE[grade]||1);
+  if(SHD_STATS.has(key))return base*(Q_SHIELD[grade]||1);
+  if(key==='armorValue')return base*(Q_ARMOR[grade]||1);
+  return base;
+}
+
+// DPS affiché d'une arme selon options + grade. base = effectif×(1+bonus). pvp ×0,4. tête = ×mult×(1+bonus tête).
+function weaponDpsView(it,grade){
+  grade=grade||0;
+  const {uncond}=dmgBonusFor(it);
+  const eff=wStat(it,grade,'effectiveDps')??wStat(it,grade,'dps')??wStat(it,grade,'damagePerHit');
+  if(eff==null)return null;
+  const o=opts(), pvp=o.pvp?0.4:1, melee=isMelee(it);
+  const augM=augWeaponDmgMult(it);                       // augments de dégâts compatibles (Phase 0)
+  const base=eff*(1+uncond)*augM;
+  const head=(!melee&&o.head)?base*(o.headMult||1)*(1+headBonusTotal())*pvp:null;
+  return {uncond,augM,melee,unit:melee?'/coup':'DPS',body:Math.round(base*pvp),head:head!=null?Math.round(head):null};
+}
+// ── Cible (TTK) — réutilise EXACTEMENT le pipeline de dégâts ci-dessus (grade+bonus+PvP+tête) ──
+function targetDR(){const a=opts().targetArmor||0;return a>0?Math.min(0.95,a/(a+500)):0;}
+// Type de dégâts de l'arme (libellé FR de la stat "damageType") → clé de mitigation cible (mêmes clés que MITIG).
+const DMG_TYPE_TO_MITIG={'Lames':'bladeMitigation','Petites aiguilles':'lightDartMitigation','Grosses aiguilles':'heavyDartMitigation','Contondants':'concussiveMitigation','Énergie':'energyMitigation','Feu':'heatMitigation','Radiations':'radiationMitigation','Poison':'poisonMitigation'};
+function weaponMitigKey(it){const s=(it.stats||[]).find(x=>x.k==='damageType');return s?DMG_TYPE_TO_MITIG[s.v]:null;}
+// Résistance spécifique de la cible (saisie manuelle, %) au type de dégâts de l'arme — se cumule avec l'armure (targetDR).
+function targetTypeMit(it){const key=weaponMitigKey(it);if(!key)return 0;const v=(opts().targetMit||{})[key];return typeof v==='number'?Math.max(-1,Math.min(1,v/100)):0;}
+function setTargetMit(k,v){const o=opts();if(!o.targetMit)o.targetMit={};o.targetMit[k]=Math.max(-100,Math.min(100,Math.round(+v||0)));saveBuild();renderAll();}
+let targetMitOpen=false;
+function toggleTargetMit(){targetMitOpen=!targetMitOpen;renderAll();}
+function renderTargetMit(){
+  const el=document.getElementById('target-mit'), btn=document.getElementById('btn-tmit');
+  if(!el||!btn)return;
+  btn.classList.toggle('open',targetMitOpen);
+  btn.textContent='Résistances '+(targetMitOpen?'▲':'▾');
+  el.style.display=targetMitOpen?'grid':'none';
+  if(!targetMitOpen)return;
+  const tm=opts().targetMit||{};
+  el.innerHTML=MITIG.map(m=>`<span class="tm-row">${esc(m.label)}<input type="number" min="-100" max="100" value="${tm[m.k]||0}" onchange="setTargetMit('${m.k}',this.value)">%</span>`).join('');
+}
+// Dégâts par tir/coup réellement infligés à la cible, au grade choisi. (cohérent avec le DPS affiché)
+function shotVsTarget(it,grade){
+  const o=opts(), melee=isMelee(it);
+  const base=melee?wStat(it,grade,'damagePerHit'):wStat(it,grade,'damagePerShot');
+  if(typeof base!=='number')return null;
+  const {uncond}=dmgBonusFor(it);
+  const augM=augWeaponDmgMult(it);
+  const pvp=o.pvp?0.4:1;
+  const headM=(!melee&&o.head)?(o.headMult||1)*(1+headBonusTotal()):1;
+  return base*(1+uncond)*augM*pvp*headM*(1-targetDR())*(1-targetTypeMit(it));   // mêmes facteurs que weaponDpsView + réduction cible (armure + résistance au type)
+}
+function weaponKill(it,grade){
+  const per=shotVsTarget(it,grade); if(!per||per<=0)return null;
+  const hp=opts().targetHp||150;
+  const shots=Math.ceil(hp/per);
+  const melee=isMelee(it);
+  let secs=null;
+  if(!melee){const rof=statVal(it,'rateOfFire'),clip=statVal(it,'clipSize'),reload=statVal(it,'reloadSpeed')||0;
+    if(rof){const reloads=clip?Math.floor((shots-1)/clip):0;secs=(shots-1)/(rof/60)+reloads*reload;}}
+  return {shots,secs,melee};
+}
+function syncOpts(){
+  const o=opts();
+  document.getElementById('seg-pve').classList.toggle('active',!o.pvp);
+  document.getElementById('seg-pvp').classList.toggle('active',!!o.pvp);
+  document.getElementById('opt-head').checked=!!o.head;
+  document.getElementById('opt-headmult').value=o.headMult||2;
+  document.getElementById('opt-mult-wrap').classList.toggle('off',!o.head);
+  document.getElementById('opt-basehp').value=o.baseHp||150;
+  document.getElementById('opt-thp').value=o.targetHp||150;
+  document.getElementById('opt-tarm').value=o.targetArmor||0;
+  renderTargetMit();
+}
+
+// Toutes les clés de bonus de dégâts (déjà reflétées dans le DPS) → exclues des « apports ».
+const DMG_KEYS_ALL=new Set(['WeaponDamageBonus','RangedDamageBonus','MeleeDamageBonus','RifleDamageBonus','PistolDamageBonus','CarbineDamageBonus','ScattergunDamageBonus','LmgDamageBonus','FlameThrowerDamageBonus','LasgunDamageBonus','LongBladeDamageBonus','ShortBladeDamageBonus','HeadDamageBonus','BodyDamageBonus','BackstabDamageBonus','SurpriseAttackDamageBonus']);
+// Agrège les effets NON-DPS des capacités/techniques (passifs : survie, résist., endurance…).
+function aggregateSkillEffects(){
+  const agg={};
+  for(const sel of (BUILD.skills||[])){const sk=skillById(sel.id);if(!sk)continue;
+    for(const st of skillStatsAt(sk,sel.lvl)){
+      if(st.op!=='Additive'||!st.k||st.k.includes('.')||st.k.startsWith('UI_')||DMG_KEYS_ALL.has(st.k))continue;
+      if(!agg[st.k])agg[st.k]={n:st.n||st.k,f:st.f,v:0};
+      agg[st.k].v+=st.v;
+    }
+  }
+  return agg;
+}
+function skillEffectVal(e){return (typeof e.v==='number'&&Math.abs(e.v)<=1&&(e.f||'').includes('%'))?pct(e.v):fmt(e.v,e.f);}
+
+// Libellés courts par clé (distance + mêlée). Repli sur le nom FR de la source.
+const STAT_LABELS={
+  effectiveDps:'DPS eff.',dps:'DPS brut',damagePerShot:'Dég./tir',shieldDamagePerShot:'Dég. bouclier',
+  rateOfFire:'Cadence',clipSize:'Chargeur',reloadSpeed:'Recharge',accuracy:'Précision',stability:'Stabilité',
+  effectiveRange:'Portée',damageType:'Type',fireMode:'Mode tir',
+  damagePerHit:'Dég./coup',attackSpeed:'Vit. attaque',heavyAttackDamage:'Att. lourde',
+  heavyAttackDamageUnshielded:'Att. lourde (ss bouclier)',shieldDamagePerHit:'Dég. bouclier',
+  attackStaminaCost:'Coût end. att.',blockStaminaCost:'Coût end. bloc',bladeMitigation:'Réduc. lames'
+};
+function statLabel(s){return STAT_LABELS[s.k]||String(s.n||s.k).replace(/\s*:\s*$/,'');}
+function isMelee(it){return /longblades|shortblades/.test(it.cat||'');}
+function weaponBlock(slotKey,label,it){
+  const mg=maxGrade(it), grade=getGrade(slotKey,it);
+  const v=weaponDpsView(it,grade);
+  // Affiche TOUTES les stats présentes, ajustées au grade choisi (dég/tir, dps… scalent ; le reste non).
+  // Mode Simple : grille détaillée masquée (le DPS dans l'en-tête suffit) — cf. tâche décluttering.
+  const cells=(it.stats||[]).map(s=>`<div class="statcell"><div class="l">${esc(statLabel(s))}</div><div class="n">${fmt(wStat(it,grade,s.k),s.f)}</div></div>`).join('');
+  let gradeSel='';
+  if(mg>0){let o='';for(let g=0;g<=mg;g++)o+=`<option value="${g}"${g===grade?' selected':''}>${g===0?'Base':'Grade '+g}</option>`;
+    gradeSel=` <select class="grade-sel" title="Qualité de l'arme" onclick="event.stopPropagation()" onchange="setGrade('${slotKey}',parseInt(this.value,10))">${o}</select>`;}
+  const headStr=(v&&v.head!=null)?` · <span class="wpn-head-dps">tête ${v.head.toLocaleString('fr-FR')}</span>`:'';
+  const augStr=(v&&v.augM>1)?` <small style="color:var(--violet)">aug +${Math.round((v.augM-1)*100)}%</small>`:'';
+  const dpsStr=v?` <span class="wpn-dps">${v.body.toLocaleString('fr-FR')} ${v.unit}${v.uncond>0?` <small>+${Math.round(v.uncond*100)}%</small>`:''}${augStr}${headStr}</span>`:'';
+  const k=weaponKill(it,grade);
+  const ttkStr=k?`<div class="ttk"><span>${k.melee?'Coups':'Tirs'} pour tuer la cible</span><b>${k.shots}${k.secs!=null?` <small>≈ ${k.secs.toFixed(1)} s</small>`:''}</b></div>`:'';
+  const tMitKey=weaponMitigKey(it), tMitLabel=tMitKey&&MITIG.find(m=>m.k===tMitKey)?.label;
+  const tMitPct=tMitLabel?Math.round(targetTypeMit(it)*100):0;
+  const dr=Math.round(targetDR()*100);
+  const mitNote=k?`<div class="ttk-note expert-only">dont ${dr}% réduc. armure cible${tMitLabel&&tMitPct?` + ${tMitPct}% résist. ${tMitLabel} cible`:''}</div>`:'';
+  return `<div class="wpn-block"><div class="wpn-head" data-item="${esc(it.id)}">${label} · ${esc(it.name)}${gradeSel}${dpsStr}</div><div class="statgrid expert-only">${cells}</div>${ttkStr}${mitNote}</div>`;
+}
+
+function renderStats(){
+  let totalArmor=0, totalDur=0; const mitSum={};
+  for(const sk of ARMOR_SLOTS){
+    const id=BUILD[sk]; if(!id)continue; const it=itemById(id); if(!it)continue;
+    totalArmor+=Number(wStat(it,getGrade(sk,it),'armorValue')||0);   // armorValue scale avec le grade
+    totalDur+=Number(statVal(it,'maxDurability')||0);
+    for(const m of MITIG){const v=statVal(it,m.k);if(typeof v==='number')mitSum[m.k]=(mitSum[m.k]||0)+v;} // mitigations FIXES
+  }
+  // Augments d'armure équipés (Phase 0 v2) : mitigations Add → additionnées directement (flat, indépendant
+  // de la pièce). Bonus d'armure Multiply → appliqué SEULEMENT à la pièce choisie par l'utilisateur (évite
+  // de gonfler le total en l'appliquant aux 5 pièces alors qu'un augment n'est serti que sur une seule).
+  let augArmorBonus=0;
+  for(const sk of ['aug1','aug2','aug3']){
+    const a=augData(BUILD[sk]); if(!a)continue;
+    const q=augQuality(sk);
+    a.effects.forEach((eff,ei)=>{
+      if(eff.target!=='Armor'&&!isArmorValueBoost(eff))return;   // mitigations = target Armor ; bonus d'armure = Armor OU Item
+      const ev=augEffectAt(eff,q,augRoll(sk,ei)); if(!ev)return;
+      if(eff.target==='Armor'&&eff.op==='Add'){
+        for(const s of eff.stats){
+          const mk=AUG_MIT_TO_KEY[s];
+          if(mk)mitSum[mk]=(mitSum[mk]||0)+ev.val*100;
+        }
+      }else if(isArmorValueBoost(eff)){
+        const pieceKey=(BUILD.augPiece||{})[sk], pieceIt=pieceKey?itemById(BUILD[pieceKey]):null;
+        if(pieceIt)augArmorBonus+=Number(wStat(pieceIt,getGrade(pieceKey,pieceIt),'armorValue')||0)*(ev.val-1);
+      }
+    });
+  }
+  totalArmor=Math.round(totalArmor+augArmorBonus);
+  const dr=armorDR(totalArmor);
+  const augNote=augArmorBonus?` <small style="color:var(--violet)">dont ${augArmorBonus>0?'+':''}${Math.round(augArmorBonus)} augments</small>`:'';
+  document.getElementById('defense-dr').innerHTML=totalArmor? `<div class="dr-line">Armure ${totalArmor.toLocaleString('fr-FR')}${augNote} → <b>${Math.round(dr*100)}% de réduction</b> des dégâts physiques (rendements décroissants, plafond 95 %).</div>`:'';
+  // Deux vues au choix (onglets) : % de mitigation par type, OU PV effectifs (EHP, Phase 2.1) — jamais
+  // empilées, pour éviter les 16 barres à la suite (cf. décluttering 2026-07-03).
+  let mitHtml='';
+  for(const m of MITIG){
+    const v=Math.round((mitSum[m.k]||0)*10)/10; const neg=v<0;
+    mitHtml+=`<div class="bar-row"><span>${m.label}</span><span class="v" style="color:${neg?'var(--corail)':'var(--or-base)'}">${v>0?'+':''}${v}%</span></div>
+      <div class="bar"><i style="width:${Math.max(0,Math.min(100,v))}%;background:${neg?'var(--corail)':m.color}"></i></div>`;
+  }
+  // EHP / Survie (Phase 2.1) : PV effectifs par type de dégâts = PV max / ((1−réduc. armure)×(1−mitigation du type)).
+  const mh=maxHp(), vitB=maxHealthBonus();
+  const ehpList=MITIG.map(m=>({...m,ehp:Math.round(ehpVsType(mh,dr,mitSum[m.k]||0))}));
+  const maxEhp=Math.max(...ehpList.map(e=>e.ehp),1);
+  let ehpHtml=`<div class="slot-group-lab">PV effectifs par type de dégâts <small style="text-transform:none;letter-spacing:0">— PV max ${mh.toLocaleString('fr-FR')} (base ${baseHp()}${vitB?` + ${vitB} vitalité`:''})</small></div>`;
+  ehpList.forEach(e=>{
+    ehpHtml+=`<div class="bar-row"><span>${e.label}</span><span class="v" style="color:var(--or-vif)">${e.ehp.toLocaleString('fr-FR')} PV</span></div>
+      <div class="bar"><i style="width:${Math.max(0,Math.min(100,e.ehp/maxEhp*100))}%;background:${e.color}"></i></div>`;
+  });
+  document.getElementById('defense').innerHTML=mitView==='ehp'?ehpHtml:mitHtml;
+  document.getElementById('mv-pct').classList.toggle('active',mitView!=='ehp');
+  document.getElementById('mv-ehp').classList.toggle('active',mitView==='ehp');
+
+  // Offense PAR ARME (l'impact des capacités/techniques diffère selon l'arme)
+  const wlist=[['weapon1','Arme principale'],['weapon2','Arme secondaire']]
+    .map(([k,l])=>({k,l,it:BUILD[k]?itemById(BUILD[k]):null})).filter(x=>x.it);
+  let off=wlist.map(({k,l,it})=>weaponBlock(k,l,it)).join('');
+  if(!off)off='<div class="empty-state">Aucune arme équipée.</div>';
+  // Apports non-DPS des capacités/techniques (survie, résistances, endurance…)
+  const agg=aggregateSkillEffects(); const ak=Object.keys(agg);
+  if(ak.length){
+    off+=`<div class="wpn-block"><div class="wpn-head">Apports des capacités &amp; techniques</div><div class="statgrid">`
+      +ak.map(k=>`<div class="statcell"><div class="l">${esc(agg[k].n)}</div><div class="n">${skillEffectVal(agg[k])}</div></div>`).join('')+`</div></div>`;
+  }
+  document.getElementById('offense').innerHTML=off;
+
+  const pk=BUILD.weapon1?'weapon1':(BUILD.weapon2?'weapon2':null);
+  const w=pk?itemById(BUILD[pk]):null;
+  const pg=w?getGrade(pk,w):0;
+  const eff=w?(wStat(w,pg,'effectiveDps')??wStat(w,pg,'dps')??wStat(w,pg,'damagePerHit')):null;
+  const v=w?weaponDpsView(w,pg):null;
+  const pvp=opts().pvp;
+  document.getElementById('m-dps').innerHTML=eff!=null?Math.round(eff):'—';
+  document.getElementById('m-dpsopt').innerHTML=v?(v.body.toLocaleString('fr-FR')+(v.uncond>0?` <small>+${Math.round(v.uncond*100)}%</small>`:'')+(pvp?' <small style="color:var(--ambre)">PvP</small>':'')):'—';
+  document.getElementById('m-armor').innerHTML=totalArmor?(totalArmor.toLocaleString('fr-FR')+` <small>${Math.round(dr*100)}% réduc.</small>`):'—';
+  document.getElementById('m-hp').innerHTML=mh.toLocaleString('fr-FR')+(vitB?` <small>+${vitB} vit.</small>`:'');
+  document.getElementById('m-dur').innerHTML=totalDur?totalDur.toLocaleString('fr-FR'):'—';
+  syncOpts();
+}
+
+// ── Capacités & techniques ────────────────────────────────────────────────────
+function renderSkills(){
+  const {w,uncond,condSum,perSkill}=damageBonuses();
+  const groups={Ability:[],Technique:[]};
+  for(const sel of (BUILD.skills||[])){const sk=skillById(sel.id);if(!sk)continue;(sk.type==='Ability'?groups.Ability:groups.Technique).push({sel,sk});}
+  const render=list=>{
+    if(!list.length)return '<div class="sk-empty">Aucune sélection. Clique « + » pour ajouter.</div>';
+    return list.map(({sel,sk})=>{
+      const bon=perSkill[sk.id]||0;
+      return `<div class="chip" data-skill="${esc(sk.id)}" data-lvl="${sel.lvl}">
+        <img src="${esc(iconUrl(sk.icon))}" alt="" onerror="this.style.visibility='hidden'">
+        <div class="cb"><div class="cn">${esc(sk.name)}</div><div class="cm">${esc(sk.tree||'')} · ${sk.type==='Ability'?'Capacité':sk.type}</div></div>
+        ${sk.maxLevel>1?`<div class="lvl"><button onclick="skillLvl('${esc(sk.id)}',-1)">−</button><span>Niv ${sel.lvl}/${sk.maxLevel}</span><button onclick="skillLvl('${esc(sk.id)}',1)">+</button></div>`:''}
+        ${bon?`<span class="cbon">${pct(bon)}</span>`:''}
+        <span class="cx" onclick="removeSkill('${esc(sk.id)}')" title="Retirer">✕</span>
+      </div>`;
+    }).join('');
+  };
+  document.getElementById('sk-abilities').innerHTML=render(groups.Ability);
+  document.getElementById('sk-techniques').innerHTML=render(groups.Technique);
+  // compteurs n/3 + désactivation du « + » capacités quand plein
+  const na=countType('Ability'), nt=countType('Technique');
+  const ca=document.getElementById('cnt-ability'), ct=document.getElementById('cnt-technique');
+  if(ca){ca.textContent='('+na+'/3)';ca.classList.toggle('full',na>=SKILL_CAP.Ability);}
+  if(ct){ct.textContent='('+nt+'/3)';ct.classList.toggle('full',nt>=SKILL_CAP.Technique);}
+  const addA=document.getElementById('add-ability'); if(addA)addA.classList.toggle('disabled',na>=SKILL_CAP.Ability);
+
+  let html='';
+  if(!w)html='Équipe une arme pour voir l\'impact des capacités/techniques sur son DPS.';
+  else{
+    const pk=BUILD.weapon1?'weapon1':'weapon2', grade=getGrade(pk,w);
+    const eff=wStat(w,grade,'effectiveDps')??wStat(w,grade,'dps')??wStat(w,grade,'damagePerHit')??0;
+    const unit=isMelee(w)?'/coup':'DPS';
+    html=`Bonus de dégâts applicables à <b>${esc(w.name)}</b> : <b>${pct(uncond)}</b> → ${Math.round(eff)} ${unit} ➜ <b>${Math.round(eff*(1+uncond))} ${unit}</b>`;
+    const conds=Object.keys(condSum).filter(k=>condSum[k]);
+    if(conds.length)html+=`<div class="dmg-cond">Conditionnels (non inclus) : `+conds.map(k=>`${COND_LABEL[k]} <span>${pct(condSum[k])}</span>`).join(' · ')+`</div>`;
+    html+=`<div class="dmg-cond" style="opacity:.8">Seuls les bonus en % d'arme (ex. <span>+20%</span>) augmentent le DPS. Les <b>capacités actives</b> infligent leurs propres dégâts sur cooldown — source séparée, non additionnée au DPS de l'arme.</div>`;
+  }
+  document.getElementById('dmg-summary').innerHTML=html;
+}
+
+function skillLvl(id,d){const s=(BUILD.skills||[]).find(x=>x.id===id);if(!s)return;const sk=skillById(id);s.lvl=Math.max(1,Math.min(sk.maxLevel,s.lvl+d));saveBuild();renderAll();}
+function removeSkill(id){BUILD.skills=(BUILD.skills||[]).filter(x=>x.id!==id);saveBuild();renderAll();}
+
+function renderAll(){renderSlots();renderStats();renderSkills();}
+
+// ── Recette ───────────────────────────────────────────────────────────────────
+async function showRecipe(id){
+  const box=document.getElementById('recipe');
+  box.innerHTML='<div class="empty-state">Chargement de la recette…</div>';
+  let d=detailCache[id];
+  if(!d){try{const r=await fetch(PROXY+'?id='+encodeURIComponent(id));d=await r.json();detailCache[id]=d;}catch(e){box.innerHTML='<div class="empty-state">Recette indisponible.</div>';return;}}
+  const it=itemById(id);
+  const spots=LOOT[(id||'').toLowerCase()];
+  const lootHtml=spots?`<div class="loot-spots"><div class="loot-spots-title">Se trouve aussi (lieu nommé)</div>${spots.map(s=>
+    `<div class="loot-row"><span>${esc(s.location)} <small>(conteneur ${esc(s.tier)})</small></span><span class="v">~${s.chance}%</span></div>`).join('')}
+    <div class="loot-note">Probabilité par ouverture du conteneur de plus haut palier à cet endroit — dataminée, indicative.</div></div>`:'';
+  if(!d.recipes||!d.recipes.length){
+    box.innerHTML=`<div class="recipe-head"><strong>${esc(d.name||(it&&it.name)||'')}</strong></div>
+      <div class="empty-state">Pas de recette de craft connue (objet loot/vendeur).${d.vendorPrice?(' Prix vendeur : '+d.vendorPrice.toLocaleString('fr-FR')+' Solaris.'):''}</div>${lootHtml}`;
+    return;
+  }
+  const ings=d.recipes[0].ingredients.map(ing=>`
+    <div class="ing" title="${esc(ing.name)} ×${ing.qty}">${ing.icon?`<img src="${esc(iconUrl(ing.icon))}" alt="" onerror="this.style.display='none'">`:''}
+      <span class="nm">${esc(ing.name)}</span><span class="qt">×${ing.qty}</span></div>`).join('');
+  box.innerHTML=`<div class="recipe-head"><strong>${esc(d.name||'')}</strong>
+      <span style="color:var(--or-sombre);font-size:.85em">${d.tier?('T'+d.tier):''} ${d.rarity?('· '+d.rarity):''}</span></div>
+    <div class="ing-grid">${ings}</div>
+    ${d.vendorPrice?`<div class="muted-note">Prix vendeur : ${d.vendorPrice.toLocaleString('fr-FR')} Solaris.</div>`:''}${lootHtml}`;
+}
+
+// ── Picker (items + skills) ───────────────────────────────────────────────────
+let pkSlot=null, pkSkillType=null;
+// Filtres picker (Phase 1 ③) — libellés FR des sous-types + rang de rareté.
+const SUBTYPE_FR={rifles:'Fusils',sidearms:'Armes de poing',scatterguns:'Fusils à dispersion',heavyweapons:'Armes lourdes',longblades:'Lames longues',shortblades:'Lames courtes',lightarmor:'Armure légère',heavyarmor:'Armure lourde',stillsuit:'Distille',utilitywearables:'Tenues utilitaires',armor:'Armure',melee:'Mêlée',ranged:'À distance',misc:'Divers'};
+const RAR_RANK={Common:0,Uncommon:1,Rare:2,Unique:3,Legendary:4,Memento:5};
+function subOf(it){return (it.cat||'').split('/')[1]||'';}
+function subLabel(slug){return SUBTYPE_FR[slug]||(slug?slug.charAt(0).toUpperCase()+slug.slice(1):slug);}
+// Catégories COMPARABLES (theorycrafting) : on ne compare la « meilleure valeur » qu'au sein d'une même
+// classe — un laser lourd ne se compare pas à un pistolet, une combinaison antiradiations pas à un plastron.
+// Armes : par sous-type, mais toutes les lames (longues + courtes) regroupées. Armures : par sous-type
+// (les combinaisons utilitaires/antiradiations forment leur propre classe, à part des armures classiques).
+function compClass(slotKey,it){
+  if(!it)return null;
+  if(it.group==='weapons'){const s=subOf(it);return (s==='longblades'||s==='shortblades')?'blades':s;}
+  if(it.group==='garment')return subOf(it);
+  return null; // augments : pas de métrique → pas de classe
+}
+const CLASS_FR={rifles:'Fusils',sidearms:'Armes de poing',scatterguns:'Fusils à dispersion',heavyweapons:'Armes lourdes',blades:'Lames',lightarmor:'Armure légère',heavyarmor:'Armure lourde',stillsuits:'Distilles',utilitywearables:'Combinaisons',socialwearables:'Tenues sociales'};
+const CLASS_ORDER=['rifles','sidearms','scatterguns','heavyweapons','blades','lightarmor','heavyarmor','stillsuits','utilitywearables','socialwearables'];
+function classLabel(c){return CLASS_FR[c]||subLabel(c);}
+const PK_FILTERS=['pk-sort','pk-ftier','pk-frar','pk-fsub'];
+function setFiltersDisplay(show){PK_FILTERS.forEach(id=>document.getElementById(id).style.display=show?'':'none');}
+// Peuple les 3 filtres avec les seules valeurs présentes dans ce slot, et réinitialise.
+function populateFilters(){
+  const list=DB.filter(pkSlot.accept);
+  const tiers=[...new Set(list.map(it=>it.tier).filter(v=>v!=null))].sort((a,b)=>a-b);
+  const rars=[...new Set(list.map(it=>it.rarity).filter(Boolean))].sort((a,b)=>(RAR_RANK[a]??9)-(RAR_RANK[b]??9));
+  const subs=[...new Set(list.map(subOf).filter(Boolean))].sort((a,b)=>subLabel(a).localeCompare(subLabel(b)));
+  const fill=(id,vals,label,opt)=>{const el=document.getElementById(id);el.innerHTML=`<option value="">${label}</option>`+vals.map(v=>`<option value="${esc(String(v))}">${esc(opt(v))}</option>`).join('');el.value='';};
+  fill('pk-ftier',tiers,'Tier : tous',v=>'T'+v);
+  fill('pk-frar',rars,'Rareté : toutes',v=>v);
+  fill('pk-fsub',subs,'Type : tous',subLabel);
+}
+// À l'ouverture, positionne la liste sur la catégorie de l'objet déjà équipé (sinon reste en haut).
+function scrollToEquippedGroup(){
+  if(!pkSlot)return;
+  const box=document.getElementById('pk-list');
+  const eqId=BUILD[pkSlot.key]; if(!eqId){box.scrollTop=0;return;}
+  const eqIt=itemById(eqId), cls=eqIt?compClass(pkSlot.key,eqIt):null;
+  const grp=cls?box.querySelector('.pk-group[data-class="'+cls+'"]'):null;
+  box.scrollTop = grp ? box.scrollTop + grp.getBoundingClientRect().top - box.getBoundingClientRect().top : 0;
+}
+function openPicker(slotKey){
+  pkSkillType=null; pkSlot=SLOTS.find(s=>s.key===slotKey);
+  document.getElementById('pk-title').textContent='Choisir — '+pkSlot.label;
+  document.getElementById('pk-search').value='';
+  setFiltersDisplay(true); populateFilters();
+  document.getElementById('overlay').classList.add('open'); renderPicker();
+  scrollToEquippedGroup();
+}
+function openSkillPicker(type){
+  if(type==='Ability' && countType('Ability')>=SKILL_CAP.Ability)return; // « + » capacités désactivé quand plein
+  pkSlot=null; pkSkillType=type;
+  document.getElementById('pk-title').textContent='Ajouter — '+(type==='Ability'?'Capacité':'Technique / Attribut');
+  document.getElementById('pk-search').value='';
+  setFiltersDisplay(false);
+  document.getElementById('overlay').classList.add('open'); renderPicker();
+}
+function closePicker(){document.getElementById('overlay').classList.remove('open');pkSlot=null;pkSkillType=null;hideTip();}
+document.getElementById('overlay').addEventListener('click',e=>{if(e.target.id==='overlay')closePicker();});
+
+// ── Comparateur instantané (Phase 1.1) ─────────────────────────────────────────
+// Métrique d'un candidat pour un slot, évaluée à GRADE MAX (plein potentiel).
+// equip() réinitialise le grade au max → candidat et objet équipé comparés sur la même base.
+function slotMetric(slotKey,it,grade){
+  if(isWeapon(it)){const v=weaponDpsView(it,grade);return v?{val:v.body,unit:v.unit}:null;}
+  if(it.group==='garment'){const a=wStat(it,grade,'armorValue');return (a!=null)?{val:Math.round(a),unit:'arm.'}:null;}
+  return null; // augments : pas de stat chiffrée (cf. Phase 0)
+}
+function metricAtMax(slotKey,it){return slotMetric(slotKey,it,maxGrade(it));}
+// Échelle calibrée (couleurs sémantiques) : ratio val/meilleur → palier + couleur.
+function metricTier(ratio){
+  if(ratio>=0.98)return 'mt-best';
+  if(ratio>=0.80)return 'mt-hi';
+  if(ratio>=0.55)return 'mt-mid';
+  if(ratio>=0.30)return 'mt-lo';
+  return 'mt-min';
+}
+const TIER_COLOR={'mt-best':'var(--vert)','mt-hi':'var(--or-vif)','mt-mid':'var(--or-base)','mt-lo':'var(--or-sombre)','mt-min':'#7a6745'};
+// Bandeau d'aide : explique la métrique comparée et l'objet de référence.
+function cmpNote(slot,eqIt){
+  let base='';
+  if(slot.group==='Armes')base='Valeur = DPS optimisé à grade max (selon vos capacités)';
+  else if(slot.group==='Armure')base='Valeur = armure à grade max';
+  else return ''; // augments : pas de comparaison chiffrée
+  let s=base;
+  if(eqIt)s+=` · <b>Δ</b> = écart absolu vs l'objet équipé (${esc(eqIt.name)})`;
+  s+=` · <b>★</b> et la barre = meilleur <b>de sa catégorie</b> (fusils entre eux, lames ensemble, combinaisons à part — pas globalement, un laser lourd ne remplace pas un pistolet)`;
+  return s;
+}
+
+function renderPicker(){
+  const q=document.getElementById('pk-search').value.trim().toLowerCase();
+  const box=document.getElementById('pk-list');
+  const cmpEl=document.getElementById('pk-cmp'); if(cmpEl)cmpEl.innerHTML='';
+  if(pkSkillType){
+    let list=SKILLS.filter(s=>pkSkillType==='Ability'?s.type==='Ability':s.type!=='Ability');
+    if(q)list=list.filter(s=>s.name.toLowerCase().includes(q)||(s.tree||'').toLowerCase().includes(q));
+    list.sort((a,b)=>(a.tree||'').localeCompare(b.tree||'')||a.name.localeCompare(b.name));
+    if(!list.length){box.innerHTML='<div class="empty-state">Aucun résultat.</div>';return;}
+    box.innerHTML=list.slice(0,400).map(s=>{
+      const already=(BUILD.skills||[]).some(x=>x.id===s.id);
+      return `<div class="pick-item" data-skill="${esc(s.id)}" data-lvl="${s.maxLevel}" onclick="addSkill('${esc(s.id)}')" style="${already?'opacity:.45':''}">
+        <img src="${esc(iconUrl(s.icon))}" alt="" onerror="this.style.visibility='hidden'">
+        <div class="pi-body"><div class="pi-name">${esc(s.name)}</div>
+          <div class="pi-meta">${esc(s.tree||'')} · ${s.type==='Ability'?'Capacité':s.type} · max ${s.maxLevel}</div></div>
+        <div class="pi-stat">${already?'✓':''}</div></div>`;
+    }).join('');
+    return;
+  }
+  const sort=document.getElementById('pk-sort').value;
+  let list=DB.filter(pkSlot.accept);
+  if(q)list=list.filter(it=>it.name.toLowerCase().includes(q));
+  // Filtres tier / rareté / sous-type (Phase 1 ③)
+  const ftier=document.getElementById('pk-ftier').value, frar=document.getElementById('pk-frar').value, fsub=document.getElementById('pk-fsub').value;
+  if(ftier)list=list.filter(it=>String(it.tier)===ftier);
+  if(frar)list=list.filter(it=>it.rarity===frar);
+  if(fsub)list=list.filter(it=>subOf(it)===fsub);
+  // Objet équipé dans ce slot (référence du comparateur), évalué à grade max comme les candidats.
+  const eqId=BUILD[pkSlot.key], eqIt=eqId?itemById(eqId):null, eqM=eqIt?metricAtMax(pkSlot.key,eqIt):null;
+  const keyStat=it=>{const m=metricAtMax(pkSlot.key,it);if(m)return m.val;const s=firstStat(it,pkSlot.stat);return s?Number(s.v)||0:0;};
+  if(cmpEl)cmpEl.innerHTML=cmpNote(pkSlot,eqIt);
+  if(!list.length){box.innerHTML='<div class="empty-state">Aucun objet.</div>';return;}
+
+  // Tri intra-catégorie selon le sélecteur
+  const cmp = sort==='name' ? (a,b)=>a.name.localeCompare(b.name)
+    : sort==='tier' ? (a,b)=>(b.tier||0)-(a.tier||0)||keyStat(b)-keyStat(a)
+    : (a,b)=>keyStat(b)-keyStat(a);
+  // Regroupement par CATÉGORIE comparable : la « meilleure valeur » (★/barre) est normalisée
+  // au sein de chaque classe, pas globalement (cf. compClass). Δ reste un écart absolu.
+  const groups=new Map();
+  for(const it of list){const c=compClass(pkSlot.key,it)||'_';if(!groups.has(c))groups.set(c,[]);groups.get(c).push(it);}
+  const order=[...groups.keys()].sort((a,b)=>{const ia=CLASS_ORDER.indexOf(a),ib=CLASS_ORDER.indexOf(b);return (ia<0?99:ia)-(ib<0?99:ib)||classLabel(a).localeCompare(classLabel(b));});
+  const showHeads=!(order.length===1 && order[0]==='_');
+
+  const rowHtml=(it,gbest)=>{
+    const st=firstStat(it,pkSlot.stat);
+    const augA=it.group==='augment'?augData(it.id):null;
+    const sv=augA?augPickerSummary(augA):(st?(st.k==='tier'?'':fmt(st.v,(it.stats.find(s=>s.k===st.k)||{}).f)):'');
+    const m=metricAtMax(pkSlot.key,it);
+    const ratio=(m&&gbest>0)?m.val/gbest:0;                 // normalisé au meilleur DE SA CATÉGORIE
+    const tier=m?metricTier(ratio):'';
+    const isBest=m&&gbest>0&&m.val>=gbest*0.999;
+    const mainVal=m?`<span class="${tier}">${m.val.toLocaleString('fr-FR')}</span> <small>${m.unit}</small>`:sv;
+    const meter=m?`<div class="pi-meter"><i style="width:${Math.round(ratio*100)}%;background:${TIER_COLOR[tier]}"></i></div>`:'';
+    const bestTag=isBest?'<div class="pi-best-tag">★ Meilleur</div>':'';
+    let delta='';
+    if(it.id===eqId)delta='<div class="pi-delta eq">équipé</div>';
+    else if(eqM&&m){const d=Math.round(m.val-eqM.val);const cls=d>0?'pos':(d<0?'neg':'eq');delta=`<div class="pi-delta ${cls}">${d>0?'+':''}${d.toLocaleString('fr-FR')}</div>`;}
+    return `<div class="pick-item${it.id===eqId?' is-equipped':''}${isBest?' is-best':''}" data-item="${esc(it.id)}" onclick="equip('${esc(it.id)}')">
+      <img src="${esc(iconUrl(it.icon))}" alt="" onerror="this.style.visibility='hidden'">
+      <div class="pi-body"><div class="pi-name">${esc(it.name)}</div>
+        <div class="pi-meta"><span class="rar rar-${esc(it.rarity||'')}">${esc(it.rarity||'—')}</span> · T${it.tier||'?'} · ${esc(it.cat.split('/').slice(1).join(' / '))}</div>${meter}</div>
+      <div class="pi-right">${bestTag}<div class="pi-stat">${mainVal}</div>${delta}</div></div>`;
+  };
+
+  let html='', shown=0;
+  for(const c of order){
+    if(shown>=300)break;
+    const items=groups.get(c).slice().sort(cmp);
+    const gbest=items.reduce((mx,it)=>{const m=metricAtMax(pkSlot.key,it);return (m&&m.val>mx)?m.val:mx;},0);
+    let rows=''; for(const it of items){if(shown>=300)break;rows+=rowHtml(it,gbest);shown++;}
+    // Chaque groupe est enveloppé → l'en-tête sticky ne colle qu'au sein de son groupe (sinon ils s'empilent).
+    if(showHeads && c!=='_')html+=`<div class="pk-group" data-class="${esc(c)}"><div class="pk-group-head">${esc(classLabel(c))} <span>${items.length}</span></div>${rows}</div>`;
+    else html+=rows;
+  }
+  box.innerHTML=html;
+}
+
+function equip(id){if(!pkSlot)return;BUILD[pkSlot.key]=id;if(BUILD.grades)delete BUILD.grades[pkSlot.key];saveBuild();const it=itemById(id);closePicker();renderAll();if(it&&(it.group==='weapons'||it.group==='garment'))showRecipe(id);}
+function unequip(slotKey){delete BUILD[slotKey];saveBuild();renderAll();}
+// Limite du jeu : 3 capacités + 3 techniques équipées (les attributs passifs ne sont pas limités).
+const SKILL_CAP={Ability:3,Technique:3};
+function countType(t){return (BUILD.skills||[]).filter(x=>{const s=skillById(x.id);return s&&s.type===t;}).length;}
+function flashCap(t){const h=document.getElementById('pk-title');if(!h)return;const o=h.dataset.base||h.textContent;h.dataset.base=o;h.textContent='Maximum atteint — '+SKILL_CAP[t]+' '+(t==='Ability'?'capacités':'techniques');h.style.color='var(--corail)';setTimeout(()=>{h.textContent=o;h.style.color='';},1300);}
+function addSkill(id){
+  if((BUILD.skills||[]).some(x=>x.id===id))return;
+  const sk=skillById(id); if(!sk)return;
+  const cap=SKILL_CAP[sk.type];
+  if(cap && countType(sk.type)>=cap){flashCap(sk.type);return;}   // bloque le 4e
+  BUILD.skills.push({id,lvl:sk.maxLevel||1});saveBuild();closePicker();renderAll();
+}
+
+// ── Tooltip stats ─────────────────────────────────────────────────────────────
+const tip=document.getElementById('tip');
+function statRows(stats,levelFilter){
+  return (stats||[]).filter(s=>levelFilter===undefined||s.lvl===levelFilter).map(s=>{
+    let val, cls='';
+    if(typeof s.v==='number'){
+      if(s.op==='Additive' && Math.abs(s.v)<=1 && (s.f||'').includes('%')){val=pct(s.v);}
+      else val=fmt(s.v,s.f);
+      if(s.v<0)cls='neg'; else if(s.v>0&&(s.op==='Additive'))cls='pos';
+    }else val=esc(String(s.v));
+    return `<div class="tt-row"><span class="k">${esc(s.n||s.k)}</span><span class="v ${cls}">${val}</span></div>`;
+  }).join('');
+}
+function showTipFor(el,x,y){
+  let html='';
+  if(el.dataset.item){const it=itemById(el.dataset.item);if(!it)return;
+    const augA=AUGMENTS[it.id];
+    const rows=augA?augTipRows(augA):statRows(it.stats);
+    const spots=LOOT[(it.id||'').toLowerCase()];
+    const lootHtml=spots?`<div class="tt-loot-title">Se trouve aussi (lieu nommé)</div>${spots.map(s=>
+      `<div class="tt-row"><span class="k">${esc(s.location)} <small>(${esc(s.tier)})</small></span><span class="v">~${s.chance}%</span></div>`).join('')}`:'';
+    // Armes/armures : que les stats (description retirée pour la lisibilité). Augments : description
+    // gardée (les effets seuls, co-listés sur plusieurs stats, sont moins clairs sans le contexte narratif).
+    html=`<div class="tt-name">${esc(it.name)}</div>`
+      +(augA&&it.desc?`<div class="tt-desc">${esc(it.desc)}</div>`:'')
+      +(rows||'<div class="tt-row"><span class="k">Aucune stat chiffrée</span></div>')
+      +(augA?'<div class="tt-row"><span class="k" style="opacity:.65;font-style:italic">Potentiel max — Q5, roll 100%</span></div>':'')
+      +lootHtml;}
+  else if(el.dataset.skill){const sk=skillById(el.dataset.skill);if(!sk)return;
+    const lvl=parseInt(el.dataset.lvl||sk.maxLevel,10);
+    html=`<div class="tt-name">${esc(sk.name)} · niv ${lvl}</div>${statRows(sk.stats,lvl)||'<div class="tt-row"><span class="k">Effet non chiffré</span></div>'}`;}
+  else if(el.dataset.note==='stats'){
+    html=`<div class="tt-name">Comment sont calculés ces chiffres ?</div>${STAT_NOTE_TOPICS.map(t=>`<div class="tt-note-line">${t}</div>`).join('')}`;}
+  else return;
+  tip.classList.toggle('tip-wide',el.dataset.note==='stats');
+  tip.innerHTML=html; tip.style.display='block';
+  const w=tip.offsetWidth,h=tip.offsetHeight;
+  tip.style.left=Math.min(x+14,window.innerWidth-w-8)+'px';
+  tip.style.top=Math.min(y+14,window.innerHeight-h-8)+'px';
+}
+function hideTip(){tip.style.display='none';}
+document.addEventListener('mousemove',e=>{
+  const el=e.target.closest('[data-item],[data-skill],[data-note]');
+  if(el){showTipFor(el,e.clientX,e.clientY);}else hideTip();
+});
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+(async function(){
+  try{
+    const [rl,rs,ra,rlo]=await Promise.all([fetch(PROXY),fetch(PROXY+'?skills=1'),fetch('stuff_augments.json').catch(()=>null),fetch('stuff_loot.json').catch(()=>null)]);
+    const data=await rl.json(); if(!data.items)throw new Error('no items');
+    DB=data.items;ICON_BASE=data.icon_base||'';
+    try{const sd=await rs.json();SKILLS=sd.skills||[];}catch(e){SKILLS=[];}
+    try{if(ra&&ra.ok){const ad=await ra.json();AUGMENTS=ad.augments||{};}}catch(e){AUGMENTS={};}
+    try{if(rlo&&rlo.ok){const ld=await rlo.json();LOOT=ld.loot||{};}}catch(e){LOOT={};}
+    loadBuild();
+    document.getElementById('boot').style.display='none';
+    document.getElementById('app').style.display='block';
+    syncUiMode();
+    renderAll();
+    const wId=BUILD.weapon1||BUILD.weapon2; if(wId)showRecipe(wId);
+  }catch(e){
+    document.getElementById('boot').innerHTML='Impossible de charger la base d\'items.<br><span style="font-size:.8em">Vérifie que stuff_proxy.php + stuff_data.json sont déployés.</span>';
+  }
+})();
+</script>
+</body>
+</html>

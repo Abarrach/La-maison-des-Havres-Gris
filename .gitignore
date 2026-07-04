@@ -30,3 +30,11 @@ epice/data/discord_sorties.json
 # Meshes du jeu extraits via FModel (lourd ~357Mo + assets Funcom) — déploiement WinSCP séparé
 models/
 *.glb
+
+# Caches runtime des proxies gaming.tools (recréés par les .php ; ne pas commiter)
+dd_cache.json
+stuff_cache_list.json
+stuff_cache_skills.json
+stuff_cache/
+# Cache de noms d'items (intermédiaire build, régénéré par build_stuff_snapshot.js)
+stuff_names.json

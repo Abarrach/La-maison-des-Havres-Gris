@@ -81,6 +81,14 @@ window.MENU_PAGES = [
     icon: '<path d="M12 3L2 12h3v8h6v-6h2v6h6v-8h3L12 3zm0 2.7l5 4.5V18h-2v-6H9v6H7v-7.8l5-4.5z"/>'
   },
   {
+    key: "optimiseur",
+    href: "optimiseur.html",
+    img: "optimiseur.jpg",
+    title: "Optimiseur de Stuff",
+    desc: "Composez et comparez vos builds — armes, armures et augments avec DPS, résistances cumulées et recettes.",
+    icon: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>'
+  },
+  {
     key: "debrief",
     href: "epice/debrief.html",
     img: "debrief.jpg",

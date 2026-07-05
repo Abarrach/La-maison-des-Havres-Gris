@@ -176,12 +176,17 @@ function respond_modal($stype = 'epice') {
     exit;
 }
 
+// Convertit une date stockée Y-m-d (format interne) en JJ-MM-AAAA pour l'affichage
+// (repli : chaîne telle quelle si illisible).
+function fmt_date_fr($isoDate) {
+    $d = DateTime::createFromFormat('Y-m-d', trim((string)$isoDate));
+    return ($d instanceof DateTime) ? $d->format('d-m-Y') : $isoDate;
+}
+
 // Reconstruit "JJ-MM-AAAA HH:MM" à partir des champs date (Y-m-d) + heure, pour pré-remplir le modal.
 function fmt_when($sortie) {
-    $date = $sortie['date'] ?? ''; $heure = $sortie['heure'] ?? '';
-    $d = DateTime::createFromFormat('Y-m-d', $date);
-    $ds = ($d instanceof DateTime) ? $d->format('d-m-Y') : $date;
-    return trim($ds . ' ' . $heure);
+    $heure = $sortie['heure'] ?? '';
+    return trim(fmt_date_fr($sortie['date'] ?? '') . ' ' . $heure);
 }
 
 // Formate la durée pour l'affichage : "2" → "2h" ; "1h30"/"2h" → tels quels ; vide → "".
@@ -574,7 +579,7 @@ function discord_delete_message_api($channelId, $messageId) {
 function build_sortie_message($sortie) {
     $desc = '';
     if (trim($sortie['description'] ?? '') !== '') $desc .= $sortie['description'] . "\n\n";
-    $when = trim(($sortie['date'] ?? '') . ' · ' . ($sortie['heure'] ?? ''), ' ·');
+    $when = trim(fmt_date_fr($sortie['date'] ?? '') . ' · ' . ($sortie['heure'] ?? ''), ' ·');
     if ($when !== '')                          $desc .= "📅 **{$when}**\n";
     if (fmt_duree($sortie['duree'] ?? '') !== '') $desc .= "⏱️ Durée : " . fmt_duree($sortie['duree']) . "\n";
     if (trim($sortie['zone'] ?? '') !== '')    $desc .= "📍 " . $sortie['zone'] . "\n";

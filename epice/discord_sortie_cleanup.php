@@ -22,7 +22,7 @@ if (PHP_SAPI !== 'cli') { http_response_code(403); echo 'CLI only'; exit; }
 date_default_timezone_set('Europe/Paris');
 
 const DEFAULT_DUREE_H = 4;   // durée présumée si non renseignée
-const GRACE_H         = 1;   // délai après la fin avant suppression
+const GRACE_H         = 4;   // délai après la fin avant suppression (toutes sorties, épice incluse)
 
 $DRY = in_array('--dry', $argv ?? [], true);
 

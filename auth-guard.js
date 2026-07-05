@@ -29,7 +29,50 @@
   function toLogin() {
     localStorage.removeItem("user");
     localStorage.removeItem("role");
+    localStorage.removeItem("realRole");
+    localStorage.removeItem("previewPlayer");
     window.location.replace(base + "index.html#login");
+  }
+
+  // 3. Aperçu "vue joueur" pour les admins : bascule la valeur de "role" LUE
+  //    PARTOUT sur le site sur "user", sans toucher au vrai rôle serveur
+  //    (conservé à part dans "realRole", resynchronisé en continu par
+  //    checkSession). Comme tous les gardes du site (menu, page-guard,
+  //    panneaux admin…) ne font que lire localStorage["role"], ce simple
+  //    échange suffit à leur faire montrer exactement ce qu'un joueur voit,
+  //    sans avoir à modifier chacun d'eux séparément.
+  function isPreviewing() { return localStorage.getItem("previewPlayer") === "1"; }
+
+  function togglePreview() {
+    if (isPreviewing()) {
+      localStorage.setItem("role", localStorage.getItem("realRole") || "user");
+      localStorage.removeItem("previewPlayer");
+    } else {
+      localStorage.setItem("previewPlayer", "1");
+      localStorage.setItem("role", "user");
+    }
+    location.reload();
+  }
+
+  function renderPreviewToggle() {
+    if (localStorage.getItem("realRole") !== "admin") return;
+    if (document.getElementById("preview-toggle-btn")) return;
+    var previewing = isPreviewing();
+    var btn = document.createElement("button");
+    btn.id = "preview-toggle-btn";
+    btn.type = "button";
+    btn.textContent = previewing
+      ? "🎭 Aperçu joueur actif — cliquer pour revenir admin"
+      : "👁 Aperçu joueur";
+    btn.style.cssText = "position:fixed;left:12px;bottom:12px;z-index:99999;"
+      + "font-family:'Segoe UI',sans-serif;font-size:12px;font-weight:bold;"
+      + "padding:8px 14px;border-radius:20px;cursor:pointer;"
+      + "text-transform:uppercase;letter-spacing:.5px;"
+      + (previewing
+          ? "background:#a83b3b;color:#fff2e0;border:1px solid #ff8888;box-shadow:0 0 12px rgba(168,59,59,0.6);"
+          : "background:rgba(10,5,2,0.9);color:#cda434;border:1px solid #7c5e2a;");
+    btn.onclick = togglePreview;
+    (document.body || document.documentElement).appendChild(btn);
   }
 
   // 2. Validation serveur (revérif d'appartenance Discord côté PHP).
@@ -47,8 +90,13 @@
           toLogin();
           return;
         }
-        // Synchronise le rôle (l'admin dérivé de Discord a pu changer)
-        if (res.role) localStorage.setItem("role", res.role);
+        // Synchronise le VRAI rôle (l'admin dérivé de Discord a pu changer).
+        // Le rôle AFFICHÉ ("role") n'est resynchronisé que hors aperçu joueur.
+        if (res.role) {
+          localStorage.setItem("realRole", res.role);
+          if (!isPreviewing()) localStorage.setItem("role", res.role);
+          renderPreviewToggle();
+        }
         if (res.user) localStorage.setItem("user", res.user);
       })
       .catch(function () {

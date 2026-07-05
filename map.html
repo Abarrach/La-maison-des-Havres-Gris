@@ -306,6 +306,8 @@
     function logout() {
       localStorage.removeItem("user");
       localStorage.removeItem("role");
+      localStorage.removeItem("realRole");
+      localStorage.removeItem("previewPlayer");
       window.location.href = "index.html";
     }
   </script>

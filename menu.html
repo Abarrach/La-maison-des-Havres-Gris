@@ -32,9 +32,14 @@
             z-index: 0;
         }
 
+        /* Header épinglé pendant le défilement, comme sur les autres pages du site
+           (chroniques, métiers…) — par défaut style.css le pose en absolute. */
+        header { position: fixed; }
+
         /* === ESPACEMENT HAUT === */
+        /* Dégage l'espace sous le header fixe (50px, cf. style.css) + une respiration. */
         .cards-top-spacer {
-            height: 48px;
+            height: 70px;
             position: relative;
             z-index: 1;
         }
@@ -45,7 +50,7 @@
             justify-content: center;
             gap: 22px;
             width: 100%;
-            max-width: 1106px;   /* 4 cartes (4×260) + 3 gaps (3×22) → 2 lignes (4+3) sur grand écran */
+            max-width: 1266px;   /* 4 cartes (4×300) + 3 gaps (3×22) → lignes de 4 sur grand écran */
             margin: 0 auto;
             box-sizing: border-box;
             padding: 20px 0;
@@ -53,17 +58,20 @@
             z-index: 1;
         }
 
+        /* Tuile photo plein format : plus de bloc de texte séparé sous l'image.
+           Le titre reste visible en permanence (coin bas-droit) ; la description
+           n'apparaît qu'au survol, en infobulle, pour ne pas alourdir la tuile. */
         .card {
             background-color: rgba(10, 5, 2, 0.82);
             border-radius: 6px;
             overflow: hidden;
-            width: 260px;
+            width: 300px;
             box-shadow: 0 15px 40px rgba(0,0,0,0.8);
             transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s;
             text-decoration: none;
             border: 1px solid #3d2b16;
             position: relative;
-            backdrop-filter: blur(2px);
+            display: block;
         }
 
         .card:hover {
@@ -74,45 +82,55 @@
 
         .card-image {
             width: 100%;
-            height: 160px; /* Hauteur ajustée pour la nouvelle largeur */
+            height: 185px;
             object-fit: cover;
-            border-bottom: 3px solid #cda434;
+            display: block;
             filter: sepia(0.2) contrast(1.1);
             transition: filter 0.3s;
         }
-        
+
         .card:hover .card-image {
             filter: sepia(0) contrast(1.2);
         }
 
-        .card-content {
-            padding: 18px; /* Padding réduit */
-            text-align: center;
-            background: linear-gradient(180deg, #1a1008 0%, #0d0705 100%);
+        /* Assombrit le bas de l'image pour que le titre reste lisible sur n'importe quelle photo. */
+        .card-scrim {
+            position: absolute; inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0) 55%);
+            pointer-events: none;
         }
 
         .card-title {
+            position: absolute;
+            right: 12px; bottom: 10px;
             color: #ffcc00;
-            font-size: 1.2em; /* Titre légèrement plus petit */
+            font-size: 1.05em;
             font-weight: bold;
-            margin-bottom: 10px;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+            letter-spacing: .5px;
+            text-align: right;
+            z-index: 2;
         }
 
+        /* Description : cachée par défaut, révélée au survol (souris uniquement — voir mobile plus bas). */
         .card-desc {
-            color: #999;
-            font-size: 0.85em; /* Texte description plus petit */
+            position: absolute;
+            left: 10px; right: 10px; top: 10px;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            background: rgba(10, 6, 3, 0.94);
+            border: 1px solid #7c5e2a;
+            border-radius: 4px;
+            padding: 8px 10px;
+            font-size: 0.78em;
             font-style: italic;
-            line-height: 1.5;
+            line-height: 1.4;
+            color: #d9c48f;
+            z-index: 2;
+            pointer-events: none;
         }
 
-        /* Icônes SVG */
-        .icon { width: 22px; height: 22px; fill: #cda434; }
+        .card:hover .card-desc { opacity: 1; }
 
         /* --- BOUTON DÉCONNEXION DE RETOUR --- */
         .logout-btn {
@@ -153,8 +171,7 @@
             box-shadow: 0 15px 40px rgba(0,0,0,0.8);
             border-color: #3d2b16;
         }
-        .card-wip .card-content { opacity: 0.5; }
-        .card-wip .card-image { border-bottom-color: #7c5e2a; }
+        .card-wip .card-title { opacity: 0.7; }
         /* Image affichée quand en_travaux.png est absent : on grise la vignette d'origine */
         .card-wip .card-image.wip-fallback { filter: grayscale(1) brightness(0.45); }
 
@@ -172,7 +189,6 @@
         /* === INDICATEUR ADMIN « MASQUÉE » (la tuile reste cliquable) === */
         .card-admin-hidden .card-image { filter: grayscale(0.85) brightness(0.5); transition: filter 0.3s; }
         .card-admin-hidden:hover .card-image { filter: grayscale(0.4) brightness(0.7); }
-        .img-wrap { position: relative; line-height: 0; }
         .hidden-eye {
             position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
             pointer-events: none; z-index: 3;
@@ -189,9 +205,11 @@
         @media(max-width: 580px) {
             .cards-top-spacer { height: 20px; }
             .cards-container { gap: 12px; padding: 10px; }
-            .card { width: min(260px, calc(100vw - 40px)); margin: 0 auto; }
-            .card-image { height: 120px; }
+            .card { width: min(300px, calc(100vw - 40px)); margin: 0 auto; }
+            .card-image { height: 135px; }
             .logout-btn { margin-top: 25px; padding: 12px 25px; font-size: 0.9em; }
+            /* Pas de survol tactile fiable : le titre suffit, la description en infobulle
+               ne s'affiche que sur pointeur souris (desktop). */
         }
 
         /* Espace bas de page */
@@ -201,12 +219,15 @@
 <body>
 <script src="auth-guard.js"></script>
 
-<div style="position:fixed;top:12px;right:16px;z-index:200;">
-  <a href="account.html" class="user-account-widget" id="ua-widget">
-    <div class="ua-avatar" id="ua-avatar">?</div>
-    <span class="ua-pseudo" id="ua-pseudo">…</span>
-  </a>
-</div>
+<header>
+  <div class="title">Maison des Havres Gris</div>
+  <div class="header-controls">
+    <a href="account.html" class="user-account-widget" id="ua-widget">
+      <div class="ua-avatar" id="ua-avatar">?</div>
+      <span class="ua-pseudo" id="ua-pseudo">…</span>
+    </a>
+  </div>
+</header>
 <script>(function(){var u=localStorage.getItem("user")||"?";document.getElementById("ua-pseudo").textContent=u;var av=document.getElementById("ua-avatar");var img=localStorage.getItem("avatar");if(img){av.style.background="transparent";av.innerHTML='<img src="'+img+'" style="width:42px;height:42px;margin:-1px;object-fit:cover;border-radius:50%;">';}else{av.textContent=u.charAt(0).toUpperCase();var h=0;for(var i=0;i<u.length;i++)h=((h<<5)-h)+u.charCodeAt(i);av.style.background="hsl("+(Math.abs(h)%360)+",55%,32%)";}})();</script>
 
     <div class="cards-top-spacer"></div>
@@ -220,6 +241,8 @@
 function logout() {
     localStorage.removeItem("user");
     localStorage.removeItem("role");
+    localStorage.removeItem("realRole");
+    localStorage.removeItem("previewPlayer");
     window.location.href = "index.html";
 }
 
@@ -244,16 +267,16 @@ function esc(s) {
     // Icône « œil barré » pour signaler aux admins une tuile masquée
     const EYE_OFF = '<svg viewBox="0 0 24 24"><path d="M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46C3.08 8.3 1.78 10.02 1 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z"/></svg>';
 
-    const contentBlock = p => `
-        <div class="card-content">
-            <div class="card-title"><svg class="icon" viewBox="0 0 24 24">${p.icon}</svg>${esc(p.title)}</div>
-            <div class="card-desc">${esc(p.desc)}</div>
-        </div>`;
+    // Titre (coin bas-droit, toujours visible) + description (infobulle au survol).
+    const overlay = p => `
+        <div class="card-scrim"></div>
+        <div class="card-desc">${esc(p.desc)}</div>
+        <div class="card-title">${esc(p.title)}</div>`;
 
     const wipImg = p => `<img src="en_travaux.png" onerror="this.onerror=null;this.src='${esc(p.img)}';this.classList.add('wip-fallback')" alt="${esc(p.title)}" class="card-image">`;
 
     const inner = p => `
-        <img src="${esc(p.img)}" onerror="this.src='intro.jpg'" alt="${esc(p.title)}" class="card-image">${contentBlock(p)}`;
+        <img src="${esc(p.img)}" onerror="this.src='intro.jpg'" alt="${esc(p.title)}" class="card-image">${overlay(p)}`;
 
     const html = (window.MENU_PAGES || []).map(p => {
         const status = pages[p.key] || 'open';
@@ -263,17 +286,15 @@ function esc(s) {
             if (status === 'wip') {
                 return `<a href="${esc(p.href)}" class="card" data-page="${esc(p.key)}" title="En travaux (visible par toi seul·e)">
                     <div class="wip-ribbon">En travaux</div>
-                    ${wipImg(p)}${contentBlock(p)}
+                    ${wipImg(p)}${overlay(p)}
                 </a>`;
             }
             if (status === 'hidden') {
                 return `<a href="${esc(p.href)}" class="card card-admin-hidden" data-page="${esc(p.key)}" title="Masquée pour les joueurs (visible par toi seul·e)">
                     <div class="hidden-ribbon">Masquée</div>
-                    <div class="img-wrap">
-                        <img src="${esc(p.img)}" onerror="this.src='intro.jpg'" alt="${esc(p.title)}" class="card-image">
-                        <div class="hidden-eye">${EYE_OFF}</div>
-                    </div>
-                    ${contentBlock(p)}
+                    <img src="${esc(p.img)}" onerror="this.src='intro.jpg'" alt="${esc(p.title)}" class="card-image">
+                    <div class="hidden-eye">${EYE_OFF}</div>
+                    ${overlay(p)}
                 </a>`;
             }
             return `<a href="${esc(p.href)}" class="card" data-page="${esc(p.key)}">${inner(p)}</a>`;
@@ -284,7 +305,7 @@ function esc(s) {
         if (status === 'wip') {
             return `<div class="card card-wip" data-page="${esc(p.key)}" title="En travaux">
                 <div class="wip-ribbon">En travaux</div>
-                ${wipImg(p)}${contentBlock(p)}
+                ${wipImg(p)}${overlay(p)}
             </div>`;
         }
         return `<a href="${esc(p.href)}" class="card" data-page="${esc(p.key)}">${inner(p)}</a>`;

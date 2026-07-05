@@ -957,15 +957,37 @@
         return results;
     }
 
+    // Insère un point y=null là où deux relevés consécutifs sont espacés de plus de
+    // thresholdHours (cadence normale = 1h). Sans ça, Plotly relie les deux points de part
+    // et d'autre d'un vrai trou par une courbe (spline) qui laisse croire à une donnée réelle
+    // continue — un null casse le tracé (connectgaps:false par défaut) pour un vrai vide visuel.
+    function insertGapBreaks(series, thresholdHours = 1.5) {
+        if (series.length < 2) return series;
+        const thresholdMs = thresholdHours * 3600000;
+        const out = [series[0]];
+        for (let i = 1; i < series.length; i++) {
+            const prev = series[i - 1], cur = series[i];
+            if (cur.ts - prev.ts > thresholdMs) {
+                const mid = new Date((prev.ts + cur.ts) / 2);
+                const dateStr = `${mid.getFullYear()}-${String(mid.getMonth()+1).padStart(2,'0')}-${String(mid.getDate()).padStart(2,'0')} ${String(mid.getHours()).padStart(2,'0')}:${String(mid.getMinutes()).padStart(2,'0')}:00`;
+                out.push({ date: dateStr, ts: (prev.ts + cur.ts) / 2, total: null, y: null });
+            }
+            out.push(cur);
+        }
+        return out;
+    }
+
     // Moyenne horaire simple d'une série {timestamp, joueurs} (ex. un seul couple serveur/sietch).
     function hourlyAvg(data) {
         const tsMap = new Map();
         data.forEach(d => {
             const tStr = `${d.timestamp.getFullYear()}-${String(d.timestamp.getMonth()+1).padStart(2,'0')}-${String(d.timestamp.getDate()).padStart(2,'0')} ${String(d.timestamp.getHours()).padStart(2,'0')}:00:00`;
-            if (!tsMap.has(tStr)) tsMap.set(tStr, { sum: 0, count: 0 });
-            tsMap.get(tStr).sum += d.joueurs; tsMap.get(tStr).count += 1;
+            if (!tsMap.has(tStr)) tsMap.set(tStr, { ts: new Date(d.timestamp).setMinutes(0,0,0), sum: 0, count: 0 });
+            const b = tsMap.get(tStr);
+            b.sum += d.joueurs; b.count += 1;
         });
-        return Array.from(tsMap, ([date, a]) => ({ date, y: a.sum / a.count })).sort((a, b) => a.date.localeCompare(b.date));
+        const series = Array.from(tsMap, ([date, a]) => ({ date, ts: a.ts, y: a.sum / a.count })).sort((a, b) => a.ts - b.ts);
+        return insertGapBreaks(series);
     }
 
     // Total des joueurs connectés par heure : moyenne d'abord chaque serveur sur les relevés
@@ -981,11 +1003,12 @@
             s.sum += d.total;
             s.count += 1;
         });
-        return Array.from(timeSeriesMap, ([date, a]) => {
+        const series = Array.from(timeSeriesMap, ([date, a]) => {
             let total = 0;
             a.servers.forEach(s => total += s.sum / s.count);
             return { date, ts: a.ts, total };
         }).sort((a,b) => a.ts - b.ts);
+        return insertGapBreaks(series);
     }
 
     // Graphes réactifs à la fenêtre temporelle (heatmap, top 15, KPIs)

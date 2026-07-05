@@ -79,6 +79,19 @@ body.simple-mode .expert-only{display:none !important;}
 .bar{height:7px;background:#0d0705;border-radius:99px;overflow:hidden;margin-bottom:9px;}
 .bar > i{display:block;height:100%;border-radius:99px;}
 .statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(86px,1fr));gap:8px;margin-top:4px;}
+/* Arbre de contributions (Phase 2.3) */
+.ct-block{margin-top:10px;padding-top:10px;border-top:1px solid var(--brun-bordure);}
+.ct-block:first-child{margin-top:0;padding-top:0;border-top:none;}
+.ct-block.ct-sub{margin-top:6px;padding:6px 0 0 12px;border-top:none;border-left:2px solid var(--brun-bordure);}
+.ct-row{display:flex;justify-content:space-between;gap:10px;font-size:.8em;padding:2px 0;color:var(--texte-beige);}
+.ct-val{color:var(--or-vif);white-space:nowrap;}
+.ct-pos{color:var(--vert);}
+.ct-row.ct-total{margin-top:4px;padding-top:5px;border-top:1px dashed var(--brun-bordure);font-weight:600;}
+.ct-row.ct-total .ct-val{color:var(--or-base);}
+/* Suggestions (Phase 3) */
+.sug-row{display:flex;align-items:baseline;gap:8px;font-size:.82em;padding:6px 0;border-bottom:1px solid var(--brun-bordure);}
+.sug-row:last-child{border-bottom:none;}
+.sug-link{color:var(--or-vif);white-space:nowrap;text-decoration:underline;cursor:pointer;}
 .wpn-block{margin-top:10px;padding-top:10px;border-top:1px solid var(--brun-bordure);}
 .wpn-block:first-child{border-top:none;margin-top:0;padding-top:0;}
 .wpn-head{font-size:.82em;font-weight:500;color:var(--or-base);margin-bottom:7px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
@@ -264,6 +277,14 @@ body.simple-mode .expert-only{display:none !important;}
   <div id="boot" class="loading">Chargement de la base d'items…</div>
 
   <div id="app" style="display:none">
+    <div class="panel" id="profile-panel" style="margin-bottom:18px">
+      <div class="panel-title"><svg class="ic" viewBox="0 0 24 24"><path d="M5 21V9h3v12H5zm5.5 0V3h3v18h-3zM16 21v-8h3v8h-3z"/></svg>Profil du build<button class="info-btn" data-note="profile">ⓘ</button></div>
+      <div id="profile-bars"></div>
+    </div>
+    <div class="panel" id="suggestions-panel" style="margin-bottom:18px;display:none">
+      <div class="panel-title"><svg class="ic" viewBox="0 0 24 24"><path d="M9 21c0 .55.45 1 1 1h4c.55 0 1-.45 1-1v-1H9v1zm3-19C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7z"/></svg>Suggestions</div>
+      <div id="suggestions"></div>
+    </div>
     <div class="layout">
       <div class="panel">
         <div class="panel-title"><svg class="ic" viewBox="0 0 24 24"><path d="M12 3l8 4v6c0 4.4-3.4 8.3-8 9-4.6-.7-8-4.6-8-9V7l8-4z"/></svg>Loadout</div>
@@ -300,7 +321,11 @@ body.simple-mode .expert-only{display:none !important;}
           <div id="offense"></div>
         </div>
         <div class="panel">
-          <div class="panel-title"><svg class="ic" viewBox="0 0 24 24"><path d="M22 9L12 2 2 9l10 7 10-7zM12 4.4l6.9 4.6L12 13.6 5.1 9 12 4.4z"/></svg>Recette &amp; composants</div>
+          <div class="panel-title"><svg class="ic" viewBox="0 0 24 24"><path d="M22 9L12 2 2 9l10 7 10-7zM12 4.4l6.9 4.6L12 13.6 5.1 9 12 4.4z"/></svg>Recette &amp; composants
+            <select id="recipe-select" style="margin-left:auto;background:#0a0603;border:1px solid var(--brun-bordure);color:var(--texte-beige);border-radius:5px;padding:6px 10px;font-size:.78em;font-family:inherit;cursor:pointer" onchange="onRecipeSelect(this.value)">
+              <option value="all">Tout le build</option>
+            </select>
+          </div>
           <div id="recipe"><div class="empty-state">Sélectionne une arme ou une pièce pour voir sa recette.</div></div>
         </div>
       </div>
@@ -319,6 +344,11 @@ body.simple-mode .expert-only{display:none !important;}
         </div>
       </div>
       <div class="dmg-summary" id="dmg-summary"></div>
+    </div>
+
+    <div class="panel expert-only" style="margin-top:18px">
+      <div class="panel-title"><svg class="ic" viewBox="0 0 24 24"><path d="M4 4h16v2H4V4zm2 4h12v2H6V8zm2 4h8v2H8v-2zm2 4h4v2h-4v-2z"/></svg>Arbre de contributions<button class="info-btn" data-note="contrib">ⓘ</button></div>
+      <div id="contrib-tree"></div>
     </div>
   </div>
 </div>
@@ -368,6 +398,19 @@ const STAT_NOTE_TOPICS=[
   'Armure→réduction et ×0,4 PvP = <b>modèles communautaires</b> (naguya.tech), pas dataminés.',
   '<b>PV max</b> = PV de base (éditable, valeur communautaire) + bonus Vitalité (skill, dataminé) ; <b>PV effectifs</b> par type = PV max / ((1−réduc. armure)×(1−mitigation du type)) — mêmes mitigations que ci-dessus, augments compris.',
   '<b>Résistances de la cible</b> (bouton « Résistances », par type de dégâts) se cumulent avec sa réduction d\'armure pour le calcul des tirs/coups pour tuer — à saisir manuellement selon la cible visée.',
+];
+// Explication du profil par axe (Phase 2.2) — chaque barre est calibrée séparément, pas de score unique.
+const PROFILE_NOTE_TOPICS=[
+  '<b>Attaque</b> = DPS optimisé de l\'arme principale, comparé au meilleur DPS atteignable (grade max, sans bonus) dans <b>la même catégorie</b> (un fusil se compare à un fusil, pas à un pistolet).',
+  '<b>Défense</b> = réduction de dégâts de l\'armure, rapportée au plafond du jeu (95%).',
+  '<b>Survie</b> = PV effectifs moyens sur les 8 types de dégâts, rapportés au plafond <b>atteignable</b> : la meilleure armure de chaque emplacement RÉELLEMENT présente dans la base, au grade max (pas un plafond théorique impossible à atteindre).',
+  'Trois jauges séparées, jamais fondues en un score global : un build peut être excellent en PvE et fragile en PvP, ou l\'inverse.',
+];
+// Explication de l'arbre de contributions (Phase 2.3).
+const CONTRIB_NOTE_TOPICS=[
+  '<b>DPS</b> : base de l\'arme au grade choisi, puis chaque capacité/technique (%, additif entre elles) et chaque augment (%, multiplicatif) — exactement la formule utilisée pour le DPS affiché ailleurs.',
+  '<b>Armure</b> et <b>résistances</b> : détail pièce par pièce (tête/torse/mains/jambes/pieds) + augments, jusqu\'au total déjà affiché dans les stats cumulées.',
+  'La <b>Survie</b> (PV effectifs) n\'a volontairement <b>pas</b> d\'arbre : c\'est une division (PV/((1−armure)×(1−résistance))), pas une somme — la décomposer en « contributions » donnerait des chiffres qui n\'ont pas de sens réel.',
 ];
 let mitView=localStorage.getItem('optim_mitview')||'pct';
 function setMitView(v){mitView=v;localStorage.setItem('optim_mitview',v);renderAll();}
@@ -507,6 +550,27 @@ function renderSlots(){
     }
   }
   document.getElementById('slots').innerHTML=html;
+  populateRecipeSelect();
+}
+
+// Menu déroulant "Recette & composants" : une pièce précise, ou tout le build.
+// Repeuplé à chaque rendu du loadout (équiper/retirer change les options disponibles).
+function populateRecipeSelect(){
+  const sel=document.getElementById('recipe-select'); if(!sel)return;
+  const prev=sel.value||'all';
+  let html='<option value="all">Tout le build</option>';
+  for(const k of ['weapon1','weapon2','head','chest','hands','legs','feet']){
+    const id=BUILD[k]; if(!id)continue;
+    const it=itemById(id); if(!it)continue;
+    const sl=SLOTS.find(s=>s.key===k);
+    html+=`<option value="${esc(k)}">${esc(sl.label)} — ${esc(it.name)}</option>`;
+  }
+  sel.innerHTML=html;
+  sel.value=[...sel.options].some(o=>o.value===prev)?prev:'all';
+}
+function onRecipeSelect(v){
+  if(v==='all')showBuildCost();
+  else{const id=BUILD[v]; if(id)showRecipe(id);}
 }
 
 // ── Augments numériques (Phase 0) — effets dataminés + rolls réglables ─────────
@@ -584,6 +648,19 @@ function augWeaponDmgMult(w){let m=1;if(!w)return m;
       if(!eff.stats.some(s=>s==='Damage'||s==='ShotsPerSecond'))return;
       const ev=augEffectAt(eff,q,augRoll(sk,ei));if(ev&&ev.val>0)m*=ev.val;});
   } return m;
+}
+// Même calcul que ci-dessus mais détaillé PAR EMPLACEMENT d'augment (Phase 2.3, arbre de contributions).
+function augWeaponDmgMultBySlot(w){
+  const out={}; if(!w)return out;
+  for(const sk of ['aug1','aug2','aug3']){
+    const a=augData(BUILD[sk]); if(!a||!augAppliesToWeapon(a,w))continue;
+    const q=augQuality(sk); let m=1;
+    a.effects.forEach((eff,ei)=>{if(eff.target!=='Weapon'||eff.op!=='Multiply')return;
+      if(!eff.stats.some(s=>s==='Damage'||s==='ShotsPerSecond'))return;
+      const ev=augEffectAt(eff,q,augRoll(sk,ei));if(ev&&ev.val>0)m*=ev.val;});
+    if(m!==1)out[sk]=m;
+  }
+  return out;
 }
 // Bloc détail sous un slot augment équipé : qualité + 1 curseur par effet rollé.
 function augDetail(sk,it){
@@ -787,18 +864,24 @@ function weaponBlock(slotKey,label,it){
   return `<div class="wpn-block"><div class="wpn-head" data-item="${esc(it.id)}">${label} · ${esc(it.name)}${gradeSel}${dpsStr}</div><div class="statgrid expert-only">${cells}</div>${ttkStr}${mitNote}</div>`;
 }
 
-function renderStats(){
+// Armure/mitigations cumulées (pièces + augments) — factorisé pour être réutilisé par renderStats()
+// ET le profil par axe (Phase 2.2), afin de ne jamais désynchroniser les deux calculs.
+function computeDefenseTotals(){
   let totalArmor=0, totalDur=0; const mitSum={};
+  const pieces=[]; // détail par pièce (Phase 2.3, arbre de contributions)
   for(const sk of ARMOR_SLOTS){
     const id=BUILD[sk]; if(!id)continue; const it=itemById(id); if(!it)continue;
-    totalArmor+=Number(wStat(it,getGrade(sk,it),'armorValue')||0);   // armorValue scale avec le grade
+    const av=Number(wStat(it,getGrade(sk,it),'armorValue')||0);   // armorValue scale avec le grade
+    const pieceMit={};
+    totalArmor+=av;
     totalDur+=Number(statVal(it,'maxDurability')||0);
-    for(const m of MITIG){const v=statVal(it,m.k);if(typeof v==='number')mitSum[m.k]=(mitSum[m.k]||0)+v;} // mitigations FIXES
+    for(const m of MITIG){const v=statVal(it,m.k);if(typeof v==='number'){mitSum[m.k]=(mitSum[m.k]||0)+v;pieceMit[m.k]=v;}} // mitigations FIXES
+    pieces.push({slotKey:sk,label:SLOTS.find(s=>s.key===sk).label,name:it.name,armor:av,mit:pieceMit});
   }
   // Augments d'armure équipés (Phase 0 v2) : mitigations Add → additionnées directement (flat, indépendant
   // de la pièce). Bonus d'armure Multiply → appliqué SEULEMENT à la pièce choisie par l'utilisateur (évite
   // de gonfler le total en l'appliquant aux 5 pièces alors qu'un augment n'est serti que sur une seule).
-  let augArmorBonus=0;
+  let augArmorBonus=0; const augMit={}; // détail par augment (Phase 2.3)
   for(const sk of ['aug1','aug2','aug3']){
     const a=augData(BUILD[sk]); if(!a)continue;
     const q=augQuality(sk);
@@ -808,7 +891,7 @@ function renderStats(){
       if(eff.target==='Armor'&&eff.op==='Add'){
         for(const s of eff.stats){
           const mk=AUG_MIT_TO_KEY[s];
-          if(mk)mitSum[mk]=(mitSum[mk]||0)+ev.val*100;
+          if(mk){mitSum[mk]=(mitSum[mk]||0)+ev.val*100;if(!augMit[sk])augMit[sk]={};augMit[sk][mk]=(augMit[sk][mk]||0)+ev.val*100;}
         }
       }else if(isArmorValueBoost(eff)){
         const pieceKey=(BUILD.augPiece||{})[sk], pieceIt=pieceKey?itemById(BUILD[pieceKey]):null;
@@ -818,6 +901,11 @@ function renderStats(){
   }
   totalArmor=Math.round(totalArmor+augArmorBonus);
   const dr=armorDR(totalArmor);
+  return {totalArmor,totalDur,mitSum,dr,augArmorBonus,pieces,augMit};
+}
+
+function renderStats(){
+  const {totalArmor,totalDur,mitSum,dr,augArmorBonus,pieces,augMit}=computeDefenseTotals();
   const augNote=augArmorBonus?` <small style="color:var(--violet)">dont ${augArmorBonus>0?'+':''}${Math.round(augArmorBonus)} augments</small>`:'';
   document.getElementById('defense-dr').innerHTML=totalArmor? `<div class="dr-line">Armure ${totalArmor.toLocaleString('fr-FR')}${augNote} → <b>${Math.round(dr*100)}% de réduction</b> des dégâts physiques (rendements décroissants, plafond 95 %).</div>`:'';
   // Deux vues au choix (onglets) : % de mitigation par type, OU PV effectifs (EHP, Phase 2.1) — jamais
@@ -865,7 +953,184 @@ function renderStats(){
   document.getElementById('m-armor').innerHTML=totalArmor?(totalArmor.toLocaleString('fr-FR')+` <small>${Math.round(dr*100)}% réduc.</small>`):'—';
   document.getElementById('m-hp').innerHTML=mh.toLocaleString('fr-FR')+(vitB?` <small>+${vitB} vit.</small>`:'');
   document.getElementById('m-dur').innerHTML=totalDur?totalDur.toLocaleString('fr-FR'):'—';
+  renderProfile({pk,w,v,dr,mh,mitSum});
+  renderContribTree({pieces,augMit,mitSum,totalArmor,augArmorBonus,dr});
+  renderSuggestions({totalArmor,dr});
   syncOpts();
+}
+
+// ── Assistant (Phase 3) — suggestions déterministes, jamais de LLM. Chaque suggestion
+// réutilise une formule/donnée déjà en place ailleurs dans l'outil (pas de nouveau modèle).
+function computeSuggestions({totalArmor,dr}){
+  const sugg=[];
+
+  // 0) Emplacement(s) d'augment vide(s) — potentiel non exploité, le plus évident des 3.
+  const emptyAugs=['aug1','aug2','aug3'].filter(sk=>!BUILD[sk]);
+  if(emptyAugs.length){
+    const label=emptyAugs.length>1?`${emptyAugs.length} emplacements d'augment sont vides`:`1 emplacement d'augment est vide`;
+    sugg.push({text:`<b>Augments</b> : ${label} — équiper un augment supplémentaire peut ajouter des dégâts, de l'armure ou des résistances.`,slot:emptyAugs[0]});
+  }
+
+  // 1) Meilleur objet possible dans la MÊME catégorie (même logique que le badge ▲ du loadout
+  //    et l'axe Attaque du profil) — seuil 5% pour ne pas polluer avec des écarts négligeables.
+  for(const sl of SLOTS){
+    if(sl.group==='Augments')continue;
+    const id=BUILD[sl.key]; if(!id)continue;
+    const it=itemById(id); if(!it)continue;
+    const cur=metricAtMax(sl.key,it); if(!cur||cur.val<=0)continue;
+    const best=bestInClass(sl.key,it);
+    if(best>cur.val*1.05){
+      const clab=classLabel(compClass(sl.key,it));
+      sugg.push({text:`<b>${esc(sl.label)}</b> : un objet plus performant existe dans sa catégorie (${esc(clab)}) — jusqu'à +${Math.round(best-cur.val).toLocaleString('fr-FR')} ${esc(cur.unit)} au potentiel max.`,slot:sl.key});
+    }
+  }
+
+  // 2) Rendements décroissants de l'armure (formule armorDR déjà utilisée partout).
+  if(totalArmor>0 && dr>=0.7){
+    const marginal=(armorDR(totalArmor+100)-dr)*100;
+    sugg.push({text:`<b>Défense</b> : ton armure est déjà à ${Math.round(dr*100)}% de réduction — un +100 d'armure supplémentaire ne rapporterait que +${marginal.toFixed(1)} point (rendements décroissants). Une résistance élémentaire ou un augment de dégâts sera sans doute plus rentable maintenant.`,slot:null});
+  }
+
+  // 3) Bonus d'armure d'augment jamais assigné à une pièce (plusieurs compatibles équipées,
+  //    aucune choisie → l'auto-sélection ne s'est pas déclenchée, le bonus ne compte nulle part).
+  for(const sk of ['aug1','aug2','aug3']){
+    const a=augData(BUILD[sk]); if(!a||!augHasArmorValueBoost(a))continue;
+    const cur=(BUILD.augPiece||{})[sk];
+    if(!cur && augCompatiblePieces(a).length>1){
+      const augIt=itemById(BUILD[sk]);
+      sugg.push({text:`<b>${esc(augIt?augIt.name:'Augment')}</b> : son bonus d'armure n'est appliqué à aucune pièce (plusieurs compatibles équipées) — choisis-en une dans le détail de l'augment (Mode Expert) pour qu'il compte dans le total.`,slot:null});
+    }
+  }
+
+  return sugg;
+}
+function renderSuggestions(ctx){
+  const panel=document.getElementById('suggestions-panel'), el=document.getElementById('suggestions');
+  if(!panel||!el)return;
+  const sugg=computeSuggestions(ctx);
+  if(!sugg.length){panel.style.display='none';return;}
+  panel.style.display='block';
+  el.innerHTML=sugg.map(s=>`<div class="sug-row"><span>💡 ${s.text}</span>${s.slot?`<a class="sug-link" onclick="openPicker('${s.slot}')">Voir</a>`:''}</div>`).join('');
+}
+
+// ── Arbre de contributions (Phase 2.3) — d'où vient chaque chiffre. Décompose le DPS
+// (skills + augments, additif/multiplicatif = la vraie formule) et l'armure/résistances
+// (par pièce + augments). La Survie (EHP) n'est PAS décomposée ici : c'est une division,
+// pas une somme — une répartition en "contributions" y serait artificielle.
+function renderContribTree({pieces,augMit,mitSum,totalArmor,augArmorBonus,dr}){
+  const el=document.getElementById('contrib-tree'); if(!el)return;
+  let html='';
+
+  // DPS par arme équipée
+  const wlist=[['weapon1','Arme principale'],['weapon2','Arme secondaire']]
+    .map(([k,l])=>({k,l,it:BUILD[k]?itemById(BUILD[k]):null})).filter(x=>x.it);
+  for(const {k,l,it} of wlist){
+    const grade=getGrade(k,it);
+    const base=wStat(it,grade,'effectiveDps')??wStat(it,grade,'dps')??wStat(it,grade,'damagePerHit');
+    if(base==null)continue;
+    const {perSkill}=dmgBonusFor(it);
+    const augMult=augWeaponDmgMultBySlot(it);
+    let rows='';
+    for(const sel of (BUILD.skills||[])){
+      const s=perSkill[sel.id]; if(!s)continue;
+      const sk=skillById(sel.id); if(!sk)continue;
+      rows+=`<div class="ct-row"><span>${esc(sk.name)}</span><span class="ct-val ct-pos">+${Math.round(s*100)}%</span></div>`;
+    }
+    for(const ak in augMult){
+      const augIt=itemById(BUILD[ak]); if(!augIt)continue;
+      rows+=`<div class="ct-row"><span>${esc(augIt.name)}</span><span class="ct-val ct-pos">+${Math.round((augMult[ak]-1)*100)}%</span></div>`;
+    }
+    const view=weaponDpsView(it,grade);
+    html+=`<div class="ct-block"><div class="slot-group-lab">${esc(l)} — ${esc(it.name)}</div>
+      <div class="ct-row"><span>Base (grade ${grade})</span><span class="ct-val">${Math.round(base).toLocaleString('fr-FR')}</span></div>
+      ${rows||'<div class="ct-row"><span style="opacity:.6">Aucun bonus actif</span></div>'}
+      <div class="ct-row ct-total"><span>DPS final</span><span class="ct-val">${view?view.body.toLocaleString('fr-FR'):'—'}</span></div>
+    </div>`;
+  }
+  if(!wlist.length)html+='<div class="ct-block empty-state">Équipe une arme pour voir le détail du DPS.</div>';
+
+  // Armure totale, par pièce
+  if(pieces.length||augArmorBonus){
+    let arows=pieces.map(p=>`<div class="ct-row"><span>${esc(p.label)} — ${esc(p.name)}</span><span class="ct-val">${Math.round(p.armor).toLocaleString('fr-FR')}</span></div>`).join('');
+    if(augArmorBonus)arows+=`<div class="ct-row"><span>Augment</span><span class="ct-val ct-pos">${augArmorBonus>0?'+':''}${Math.round(augArmorBonus).toLocaleString('fr-FR')}</span></div>`;
+    html+=`<div class="ct-block"><div class="slot-group-lab">Armure totale</div>${arows}
+      <div class="ct-row ct-total"><span>Total</span><span class="ct-val">${totalArmor.toLocaleString('fr-FR')} → ${Math.round(dr*100)}% réduction</span></div>
+    </div>`;
+  }
+
+  // Résistances par type (seulement celles non nulles)
+  const activeMit=MITIG.filter(m=>Math.round((mitSum[m.k]||0)*10)/10!==0);
+  if(activeMit.length){
+    let mrows='';
+    for(const m of activeMit){
+      let rows=pieces.filter(p=>p.mit[m.k]).map(p=>`<div class="ct-row"><span>${esc(p.label)} — ${esc(p.name)}</span><span class="ct-val">+${p.mit[m.k]}%</span></div>`).join('');
+      for(const ak in augMit){
+        if(augMit[ak][m.k]){const augIt=itemById(BUILD[ak]);rows+=`<div class="ct-row"><span>${esc(augIt?augIt.name:'Augment')}</span><span class="ct-val ct-pos">+${Math.round(augMit[ak][m.k]*10)/10}%</span></div>`;}
+      }
+      mrows+=`<div class="ct-block ct-sub"><div class="slot-group-lab">${esc(m.label)}</div>${rows}
+        <div class="ct-row ct-total"><span>Total</span><span class="ct-val">${Math.round((mitSum[m.k]||0)*10)/10}%</span></div>
+      </div>`;
+    }
+    html+=`<div class="ct-block"><div class="slot-group-lab">Résistances par type</div>${mrows}</div>`;
+  }
+
+  el.innerHTML=html||'<div class="empty-state">Équipe une arme ou une armure pour voir le détail.</div>';
+}
+
+// ── Profil par axe (Phase 2.2) — 3 jauges calibrées séparément, jamais fondues en un score unique. ──
+// Meilleur DPS/armure atteignable dans LA MÊME CATÉGORIE (compClass), à grade max, sans bonus —
+// même principe que le comparateur du picker (Phase 1), réutilisé ici pour calibrer le profil.
+function bestInClass(slotKey,it){
+  if(!it)return 0;
+  const cls=compClass(slotKey,it); if(!cls)return 0;
+  const slotDef=SLOTS.find(s=>s.key===slotKey); if(!slotDef)return 0;
+  let best=0;
+  for(const cand of DB){
+    if(!slotDef.accept(cand)||compClass(slotKey,cand)!==cls)continue;
+    const m=metricAtMax(slotKey,cand);
+    if(m&&m.val>best)best=m.val;
+  }
+  return best;
+}
+// Meilleure armure RÉELLEMENT disponible dans la base : pour chaque emplacement, la pièce
+// avec la plus haute armorValue au grade max (approximation du "meilleur stuff atteignable" —
+// n'optimise pas finement le compromis armure/mitigations entre pièces, juste la plus grosse
+// armure par emplacement, cohérent avec le fait que l'armure domine la formule de réduction).
+function bestGearEhpCeiling(mh){
+  let bestArmor=0; const bestMit={};
+  for(const sk of ARMOR_SLOTS){
+    const slotDef=SLOTS.find(s=>s.key===sk); if(!slotDef)continue;
+    let bestVal=-1, bestIt=null;
+    for(const cand of DB){
+      if(!slotDef.accept(cand))continue;
+      const av=wStat(cand,maxGrade(cand),'armorValue');
+      if(typeof av==='number'&&av>bestVal){bestVal=av;bestIt=cand;}
+    }
+    if(bestIt){
+      bestArmor+=bestVal;
+      for(const m of MITIG){const v=statVal(bestIt,m.k);if(typeof v==='number')bestMit[m.k]=(bestMit[m.k]||0)+v;}
+    }
+  }
+  const dr=armorDR(bestArmor);
+  return MITIG.reduce((s,m)=>s+ehpVsType(mh,dr,bestMit[m.k]||0),0)/MITIG.length;
+}
+function renderProfile({pk,w,v,dr,mh,mitSum}){
+  const el=document.getElementById('profile-bars'); if(!el)return;
+  const atkVal=v?v.body:0;
+  const atkBest=w?bestInClass(pk,w):0;
+  const atkRatio=atkBest>0?Math.min(1,atkVal/atkBest):0;
+  const defRatio=dr/0.95;
+  const ehpAvg=MITIG.reduce((s,m)=>s+ehpVsType(mh,dr,mitSum[m.k]||0),0)/MITIG.length;
+  const ehpCeil=bestGearEhpCeiling(mh);
+  const surRatio=ehpCeil>0?Math.min(1,ehpAvg/ehpCeil):0;
+
+  const axes=[
+    {label:'Attaque',ratio:atkRatio,color:'var(--corail)',detail:w?`${Math.round(atkVal).toLocaleString('fr-FR')} DPS <small style="opacity:.6">/ ${Math.round(atkBest).toLocaleString('fr-FR')} max</small>`:'Aucune arme'},
+    {label:'Défense',ratio:defRatio,color:'var(--or-base)',detail:`${Math.round(dr*100)}% réduction <small style="opacity:.6">/ 95% max (jeu)</small>`},
+    {label:'Survie',ratio:surRatio,color:'var(--vert)',detail:`${Math.round(ehpAvg).toLocaleString('fr-FR')} PV eff. (moy.) <small style="opacity:.6">/ ${Math.round(ehpCeil).toLocaleString('fr-FR')} max</small>`},
+  ];
+  el.innerHTML=axes.map(a=>`<div class="bar-row"><span>${a.label}</span><span class="v" style="color:${a.color}">${a.detail}</span></div>
+    <div class="bar"><i style="width:${Math.max(0,Math.min(100,a.ratio*100))}%;background:${a.color}"></i></div>`).join('');
 }
 
 // ── Capacités & techniques ────────────────────────────────────────────────────
@@ -937,6 +1202,36 @@ async function showRecipe(id){
       <span style="color:var(--or-sombre);font-size:.85em">${d.tier?('T'+d.tier):''} ${d.rarity?('· '+d.rarity):''}</span></div>
     <div class="ing-grid">${ings}</div>
     ${d.vendorPrice?`<div class="muted-note">Prix vendeur : ${d.vendorPrice.toLocaleString('fr-FR')} Solaris.</div>`:''}${lootHtml}`;
+}
+
+// ── Coût total du build (Phase 3, bonus) — additionne les recettes de toutes les pièces
+// équipées (armes + armure) en une seule liste de matériaux. Regroupe par NOM de matériau,
+// comme la synthèse du Constructeur de Base. Les augments n'ont pas de recette de craft séparée.
+async function showBuildCost(){
+  const box=document.getElementById('recipe');
+  box.innerHTML='<div class="empty-state">Calcul du coût total…</div>';
+  const equipped=['weapon1','weapon2','head','chest','hands','legs','feet'].map(k=>({k,id:BUILD[k]})).filter(x=>x.id);
+  if(!equipped.length){box.innerHTML='<div class="empty-state">Aucune pièce équipée.</div>';return;}
+
+  const totals={}, noRecipe=[];
+  for(const {id} of equipped){
+    let d=detailCache[id];
+    if(!d){try{const r=await fetch(PROXY+'?id='+encodeURIComponent(id));d=await r.json();detailCache[id]=d;}catch(e){d=null;}}
+    if(!d||!d.recipes||!d.recipes.length){const it=itemById(id); noRecipe.push(it?it.name:id); continue;}
+    for(const ing of d.recipes[0].ingredients){
+      if(!totals[ing.name])totals[ing.name]={qty:0,icon:ing.icon};
+      totals[ing.name].qty+=ing.qty;
+    }
+  }
+  const names=Object.keys(totals).sort((a,b)=>totals[b].qty-totals[a].qty);
+  const rows=names.map(n=>`<div class="ing" title="${esc(n)} ×${totals[n].qty}">${totals[n].icon?`<img src="${esc(iconUrl(totals[n].icon))}" alt="" onerror="this.style.display='none'">`:''}
+    <span class="nm">${esc(n)}</span><span class="qt">×${totals[n].qty}</span></div>`).join('');
+  const nCraftable=equipped.length-noRecipe.length;
+  const noteMissing=noRecipe.length?`<div class="muted-note">Sans recette de craft connue (loot/vendeur) : ${noRecipe.map(esc).join(', ')}.</div>`:'';
+  box.innerHTML=`<div class="recipe-head"><strong>Coût total du build</strong>
+      <span style="color:var(--or-sombre);font-size:.85em">${nCraftable} pièce${nCraftable>1?'s':''} craftable${nCraftable>1?'s':''} sur ${equipped.length}</span></div>
+    <div class="ing-grid">${rows||'<div class="empty-state">Aucun composant (pièces équipées loot/vendeur uniquement).</div>'}</div>
+    ${noteMissing}`;
 }
 
 // ── Picker (items + skills) ───────────────────────────────────────────────────
@@ -1108,7 +1403,8 @@ function renderPicker(){
   box.innerHTML=html;
 }
 
-function equip(id){if(!pkSlot)return;BUILD[pkSlot.key]=id;if(BUILD.grades)delete BUILD.grades[pkSlot.key];saveBuild();const it=itemById(id);closePicker();renderAll();if(it&&(it.group==='weapons'||it.group==='garment'))showRecipe(id);}
+function equip(id){if(!pkSlot)return;const slotKey=pkSlot.key;BUILD[slotKey]=id;if(BUILD.grades)delete BUILD.grades[slotKey];saveBuild();const it=itemById(id);closePicker();renderAll();
+  if(it&&(it.group==='weapons'||it.group==='garment')){const sel=document.getElementById('recipe-select');if(sel)sel.value=slotKey;showRecipe(id);}}
 function unequip(slotKey){delete BUILD[slotKey];saveBuild();renderAll();}
 // Limite du jeu : 3 capacités + 3 techniques équipées (les attributs passifs ne sont pas limités).
 const SKILL_CAP={Ability:3,Technique:3};
@@ -1155,8 +1451,12 @@ function showTipFor(el,x,y){
     html=`<div class="tt-name">${esc(sk.name)} · niv ${lvl}</div>${statRows(sk.stats,lvl)||'<div class="tt-row"><span class="k">Effet non chiffré</span></div>'}`;}
   else if(el.dataset.note==='stats'){
     html=`<div class="tt-name">Comment sont calculés ces chiffres ?</div>${STAT_NOTE_TOPICS.map(t=>`<div class="tt-note-line">${t}</div>`).join('')}`;}
+  else if(el.dataset.note==='profile'){
+    html=`<div class="tt-name">Comment lire le profil ?</div>${PROFILE_NOTE_TOPICS.map(t=>`<div class="tt-note-line">${t}</div>`).join('')}`;}
+  else if(el.dataset.note==='contrib'){
+    html=`<div class="tt-name">Comment lire l'arbre ?</div>${CONTRIB_NOTE_TOPICS.map(t=>`<div class="tt-note-line">${t}</div>`).join('')}`;}
   else return;
-  tip.classList.toggle('tip-wide',el.dataset.note==='stats');
+  tip.classList.toggle('tip-wide',el.dataset.note==='stats'||el.dataset.note==='profile'||el.dataset.note==='contrib');
   tip.innerHTML=html; tip.style.display='block';
   const w=tip.offsetWidth,h=tip.offsetHeight;
   tip.style.left=Math.min(x+14,window.innerWidth-w-8)+'px';
@@ -1182,7 +1482,8 @@ document.addEventListener('mousemove',e=>{
     document.getElementById('app').style.display='block';
     syncUiMode();
     renderAll();
-    const wId=BUILD.weapon1||BUILD.weapon2; if(wId)showRecipe(wId);
+    const wKey=BUILD.weapon1?'weapon1':(BUILD.weapon2?'weapon2':null);
+    if(wKey){const sel=document.getElementById('recipe-select');if(sel)sel.value=wKey;showRecipe(BUILD[wKey]);}
   }catch(e){
     document.getElementById('boot').innerHTML='Impossible de charger la base d\'items.<br><span style="font-size:.8em">Vérifie que stuff_proxy.php + stuff_data.json sont déployés.</span>';
   }

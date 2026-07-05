@@ -3,12 +3,20 @@ users_SECURE_9x.json
 requetes.json
 bases.json
 migration_data.json
+dune_counts.csv
+dune_counts_archive.csv
+dune_counts_estimated.csv
+dune_counts.csv.bak_*
 
 # État local Claude Code (worktrees, settings personnels)
 .claude/
 
 # Secret webhook Discord (NE JAMAIS COMMITER)
 discord_webhook.txt
+
+# Secret API awoo.tools (logger stats VM, hors site web — NE JAMAIS COMMITER)
+dunelogger/awoo_api_key.txt
+dunelogger/data/
 
 # Secret OAuth2 "Login Discord" — client_secret + bot_token (NE JAMAIS COMMITER ; voir discord_oauth_config.example.php)
 discord_oauth_config.php

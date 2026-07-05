@@ -238,6 +238,29 @@
     .usr-btn-demote  { border-color: #8b6e3b; color: #e0b96a; }
     .usr-btn-del     { border-color: #7a2f2f; color: #ff8888; padding: 6px 9px; }
 
+    /* === ACTIVITÉ DES MEMBRES (admin) === */
+    .act-row { padding: 5px 0; border-bottom: 1px solid #1e1208; }
+    .act-row:last-child { border-bottom: none; }
+    .act-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px; cursor: pointer;
+    }
+    .act-name { font-size: 0.85em; color: #f5deb3; }
+    .act-badge {
+      font-size: 0.75em; color: #a08a5a; flex-shrink: 0; white-space: nowrap;
+    }
+    .act-detail { display: none; margin: 6px 0 4px; padding-left: 6px; border-left: 2px solid #3d2b16; }
+    .act-detail.open { display: block; }
+    .act-detail-item { font-size: 0.78em; color: #999; padding: 2px 0; }
+    .act-item-org { color: #cda434; }
+    .act-item-att { color: #999; }
+    .act-detail-empty { font-size: 0.78em; color: #666; font-style: italic; }
+    .act-idle-toggle {
+      padding: 8px 0; color: #7c6a4a; font-size: 0.8em; cursor: pointer; text-align: center;
+    }
+    .act-idle-toggle:hover { color: #cda434; }
+    .act-idle-group { display: none; }
+    .act-idle-group.open { display: block; }
+
     /* === GESTION DES PAGES (admin) === */
     .pg-intro { color: #888; font-size: 0.8em; margin: -8px 0 18px; line-height: 1.5; }
     .pg-row {
@@ -357,6 +380,38 @@
     <div id="list-fulfilled"><div class="order-empty">Chargement…</div></div>
   </div>
 
+  <!-- Mes sorties (activité guilde) -->
+  <div class="stats-orders" style="margin-top:14px;">
+    <div class="stat-card-btn" id="btn-organized" onclick="togglePanel('organized')">
+      <div class="stat-value" id="stat-organized">—</div>
+      <div class="stat-label">Sorties organisées</div>
+      <span class="stat-chevron">▼</span>
+    </div>
+    <div class="stat-card-btn" id="btn-attended" onclick="togglePanel('attended')">
+      <div class="stat-value" id="stat-attended">—</div>
+      <div class="stat-label">Sorties suivies</div>
+      <span class="stat-chevron">▼</span>
+    </div>
+  </div>
+  <div class="order-panel" id="panel-organized">
+    <div id="list-organized"><div class="order-empty">Chargement…</div></div>
+  </div>
+  <div class="order-panel" id="panel-attended" style="margin-top:-10px;">
+    <div id="list-attended"><div class="order-empty">Chargement…</div></div>
+  </div>
+
+  <!-- Mes records (mini-jeux) -->
+  <div class="stats-orders" style="grid-template-columns:1fr; margin-top:14px;">
+    <div class="stat-card-btn" id="btn-records" onclick="togglePanel('records')">
+      <div class="stat-value" id="stat-records">—</div>
+      <div class="stat-label">Mes records (mini-jeux)</div>
+      <span class="stat-chevron">▼</span>
+    </div>
+  </div>
+  <div class="order-panel" id="panel-records">
+    <div id="list-records"><div class="order-empty">Chargement…</div></div>
+  </div>
+
   <!-- Mot de passe (compte sans lien Discord uniquement) -->
   <div class="section" id="pwd-section" style="display:none;">
     <div class="section-title">Changer le mot de passe</div>
@@ -401,6 +456,15 @@
       (ils reçoivent un MP Discord avec le lien).
     </p>
     <div id="pages-admin-list"><div class="order-empty">Chargement…</div></div>
+  </div>
+
+  <!-- Activité des membres (admin uniquement) -->
+  <div class="section" id="activity-admin-section" style="display:none;">
+    <div class="section-title">Activité des membres</div>
+    <p class="pg-intro">
+      Statistiques d'organisation et de participation aux sorties (toutes confondues).
+    </p>
+    <div id="activity-admin-list"><div class="order-empty">Chargement…</div></div>
   </div>
 
 </div>
@@ -675,24 +739,31 @@ async function loadOrderHistory() {
   } catch(e) {}
 }
 
+const ALL_PANELS = ["demanded", "fulfilled", "organized", "attended", "records"];
+
 function togglePanel(which) {
   const btn   = document.getElementById("btn-" + which);
   const panel = document.getElementById("panel-" + which);
   const isOpen = panel.classList.contains("open");
 
-  // Fermer l'autre panneau si ouvert
-  const other = which === "demanded" ? "fulfilled" : "demanded";
-  document.getElementById("panel-" + other).classList.remove("open");
-  document.getElementById("btn-" + other).classList.remove("open");
+  // Ferme tous les autres panneaux ouverts (un seul déplié à la fois)
+  ALL_PANELS.forEach(w => {
+    if (w === which) return;
+    const p = document.getElementById("panel-" + w), b = document.getElementById("btn-" + w);
+    if (p) p.classList.remove("open");
+    if (b) b.classList.remove("open");
+  });
 
   if (isOpen) {
     panel.classList.remove("open");
     btn.classList.remove("open");
-  } else {
-    panel.classList.add("open");
-    btn.classList.add("open");
-    renderOrderPanel(which);
+    return;
   }
+  panel.classList.add("open");
+  btn.classList.add("open");
+  if (which === "demanded" || which === "fulfilled") renderOrderPanel(which);
+  else if (which === "organized" || which === "attended") renderActivityPanel(which);
+  else if (which === "records") renderRecordsPanel();
 }
 
 const STATUS_LABELS = { pending: "En attente", progress: "En cours", done: "Terminé" };
@@ -726,6 +797,67 @@ function renderOrderPanel(which) {
   }).join("");
 }
 
+// ====== MES SORTIES (activité guilde, personnel) ======
+let activityData = null;
+const ACT_TYPE_LABEL_PLAYER = {
+  epice: "Épice", labo: "Labos-Donjons", farm: "Farm divers", landsraad: "Landsraad",
+  pvp_train: "Entraînement PvP", pvp_hunt: "Chasse PvP", base_dd: "Construction Base DD", guilde: "Activité Guilde"
+};
+
+async function loadMyActivity() {
+  try {
+    const res  = await fetch("epice/data-api.php?action=my_activity", { credentials: "same-origin" });
+    const data = await res.json();
+    if (!data.ok) return;
+    activityData = data;
+    document.getElementById("stat-organized").textContent = data.organized.length;
+    document.getElementById("stat-attended").textContent  = data.attended.length;
+  } catch(e) {}
+}
+
+function renderActivityPanel(which) {
+  const el = document.getElementById("list-" + which);
+  if (!activityData) { el.innerHTML = '<div class="order-empty">Chargement…</div>'; return; }
+
+  const items = which === "organized" ? activityData.organized : activityData.attended;
+  if (!items.length) {
+    el.innerHTML = '<div class="order-empty">' + (which === "organized" ? "Aucune sortie organisée." : "Aucune sortie suivie.") + '</div>';
+    return;
+  }
+  el.innerHTML = items.map(a => `<div class="order-item">
+    <div class="order-body">
+      <div class="order-type">${esc(a.titre)}</div>
+      <div class="order-meta">${esc(a.date)} — ${esc(ACT_TYPE_LABEL_PLAYER[a.type] || a.type)}</div>
+    </div>
+  </div>`).join("");
+}
+
+// ====== MES RECORDS (mini-jeux, personnel) ======
+let scoresData = null;
+const GAME_LABEL = { orni_flap: "Ornithopter Flap", spice_runner: "Spice Runner", sandstorm_memory: "Sandstorm Memory", worm_rider: "Worm Rider", muaddib_rescue: "Muad'Dib Rescue" };
+
+async function loadMyScores() {
+  try {
+    const res  = await fetch("jeux/scores_api.php?action=my_scores", { credentials: "same-origin" });
+    const data = await res.json();
+    if (!data.ok) return;
+    scoresData = data.scores || [];
+    document.getElementById("stat-records").textContent = scoresData.length;
+  } catch(e) {}
+}
+
+function renderRecordsPanel() {
+  const el = document.getElementById("list-records");
+  if (!scoresData) { el.innerHTML = '<div class="order-empty">Chargement…</div>'; return; }
+  if (!scoresData.length) { el.innerHTML = '<div class="order-empty">Aucun score enregistré — va jouer dans le Hub Jeux !</div>'; return; }
+  el.innerHTML = scoresData.map(s => `<div class="order-item">
+    <div class="order-body">
+      <div class="order-type">${esc(GAME_LABEL[s.game] || s.game)}</div>
+      <div class="order-meta">Record personnel : ${esc(s.score)}</div>
+    </div>
+  </div>`).join("");
+}
+
 // ====== GESTION DES PAGES (admin) ======
 const PG_STATES = [["open", "Active"], ["hidden", "Pas active"], ["wip", "En travaux"]];
 let PG_ALL_USERS = [];   // pseudos connus (hors responsable du site), pour le menu d'accès
@@ -743,6 +875,7 @@ async function loadAdminSections() {
   if (localStorage.getItem("role") !== "admin") return;
   document.getElementById("users-admin-section").style.display = "block";
   document.getElementById("pages-admin-section").style.display = "block";
+  document.getElementById("activity-admin-section").style.display = "block";
 
   let pages = {};
   try {
@@ -764,6 +897,71 @@ async function loadAdminSections() {
 
   renderUsersAdmin();
   renderPagesAdmin(pages);
+  loadActivityReport();
+}
+
+// Échappe le texte injecté dans le HTML (titres de sortie = texte libre saisi par un joueur)
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+// ====== ACTIVITÉ DES MEMBRES (admin) ======
+async function loadActivityReport() {
+  const list = document.getElementById("activity-admin-list");
+  try {
+    const res = await fetch("epice/data-api.php?action=activity_report", { credentials: "same-origin" });
+    const j = await res.json();
+    if (!j.ok) throw new Error(j.error || "Erreur serveur");
+    renderActivityReport(j.rows || []);
+  } catch(e) {
+    list.innerHTML = '<div class="order-empty">Impossible de charger l\'activité (' + e.message + ').</div>';
+  }
+}
+
+const ACT_TYPE_LABEL = {
+  epice: "Épice", labo: "Labos-Donjons", farm: "Farm divers", landsraad: "Landsraad",
+  pvp_train: "Entraînement PvP", pvp_hunt: "Chasse PvP", base_dd: "Construction Base DD", guilde: "Activité Guilde"
+};
+
+function actActivityLine(a, colorClass) {
+  return `<div class="act-detail-item ${colorClass}">${esc(a.titre)} — ${esc(a.date)} <span style="color:#5a4a2a;">(${esc(ACT_TYPE_LABEL[a.type] || a.type)})</span></div>`;
+}
+
+function actRow(r, i) {
+  const detailId = "act-detail-" + i;
+  const orgItems  = r.organized_list.map(a => actActivityLine(a, "act-item-org")).join("");
+  const attItems  = r.attended_list.map(a => actActivityLine(a, "act-item-att")).join("");
+  const items = (orgItems + attItems) || '<div class="act-detail-empty">Aucune activité.</div>';
+  return `<div class="act-row">
+    <div class="act-head" onclick="document.getElementById('${detailId}').classList.toggle('open')">
+      <span class="act-name">${esc(r.pseudo)}</span>
+      <span class="act-badge">${r.organized} org. · ${r.present} prés.</span>
+    </div>
+    <div class="act-detail" id="${detailId}">${items}</div>
+  </div>`;
+}
+
+function renderActivityReport(rows) {
+  const list = document.getElementById("activity-admin-list");
+  if (!rows.length) { list.innerHTML = '<div class="order-empty">Aucune donnée.</div>'; return; }
+
+  const active = rows.filter(r => r.organized > 0 || r.present > 0);
+  const idle   = rows.filter(r => r.organized === 0 && r.present === 0);
+
+  let html = active.map((r, i) => actRow(r, i)).join("");
+  if (idle.length) {
+    const label = idle.length + " membre" + (idle.length > 1 ? "s" : "") + " sans activité";
+    html += `<div class="act-idle-toggle" id="act-idle-toggle" onclick="toggleIdleMembers('${label}')">▸ ${label}</div>
+      <div class="act-idle-group" id="act-idle-group">${idle.map((r, i) => actRow(r, "idle" + i)).join("")}</div>`;
+  }
+  list.innerHTML = html;
+}
+
+function toggleIdleMembers(label) {
+  const group = document.getElementById("act-idle-group");
+  const toggle = document.getElementById("act-idle-toggle");
+  const open = group.classList.toggle("open");
+  toggle.textContent = (open ? "▾ Masquer — " : "▸ ") + label;
 }
 
 // Cheffe de guilde identifiée par ID Discord (immuable), pas par pseudo
@@ -905,6 +1103,8 @@ initPage();
 loadStats();
 loadProfile();
 loadOrderHistory();
+loadMyActivity();
+loadMyScores();
 loadAdminSections();
 </script>
 </body>

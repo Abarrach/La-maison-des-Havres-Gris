@@ -13,8 +13,8 @@ $input = json_decode($raw, true) ?? [];
 
 // --- Contrôle d'accès serveur (basé sur la session du site, plus de token en dur) ---
 $organize_actions = ['list', 'open_sorties', 'new_soiree', 'close_soiree', 'reopen_sortie', 'save_assign', 'save_analyse', 'history', 'sortie_detail', 'delete_sortie'];
-$member_actions   = ['init', 'get_assign', 'my_debrief', 'save_debrief', 'public_history', 'public_sortie', 'me'];
-$admin_only       = ['get_orga', 'set_orga'];
+$member_actions   = ['init', 'get_assign', 'my_debrief', 'save_debrief', 'public_history', 'public_sortie', 'me', 'my_activity'];
+$admin_only       = ['get_orga', 'set_orga', 'activity_report'];
 if      (in_array($action, $admin_only, true))       epice_require_admin();
 elseif  (in_array($action, $organize_actions, true)) epice_require_organize();
 elseif  (in_array($action, $member_actions, true))   epice_require_login();
@@ -367,6 +367,36 @@ switch ($action) {
     case 'me':
         out(true, ['user' => epice_user(), 'role' => epice_role(), 'can_organize' => epice_can_organize()]);
 
+    // Mes activités (Mon Compte) : sorties QUE J'AI ORGANISÉES / AUXQUELLES J'AI PARTICIPÉ.
+    // Personnel uniquement — jamais de comparaison avec d'autres membres (cf. rapport admin
+    // séparé, action activity_report). Toutes sorties confondues (épice + autres types).
+    case 'my_activity':
+        $me        = epice_user() ?? '';
+        $myDiscord = (string)($_SESSION['discord_id'] ?? '');
+        $organized = [];
+        $attended  = [];
+
+        $dstoreFile = __DIR__ . '/data/discord_sorties.json';
+        $dstore = file_exists($dstoreFile) ? (json_decode(file_get_contents($dstoreFile), true) ?: ['sorties' => []]) : ['sorties' => []];
+
+        foreach ([read_data(), $dstore] as $store) {
+            foreach ($store['sorties'] ?? [] as $s) {
+                $entry = ['titre' => $s['titre'] ?? '(sans titre)', 'date' => $s['date'] ?? '', 'type' => $s['type'] ?? 'epice'];
+                // Organiser une sortie = déjà compté présent pour celle-ci, pas besoin
+                // d'être aussi inscrit (mêmes règles que le rapport admin activity_report).
+                if (epice_is_creator($s)) { $organized[] = $entry; continue; }
+                foreach ($s['signups'] ?? [] as $su) {
+                    if (($su['statut'] ?? 'present') !== 'present') continue;
+                    $isMe = ($myDiscord !== '' && (string)($su['id'] ?? '') === $myDiscord)
+                         || ($me !== '' && strcasecmp((string)($su['name'] ?? ''), $me) === 0);
+                    if ($isMe) { $attended[] = $entry; break; }
+                }
+            }
+        }
+        usort($organized, fn($a, $b) => strcmp($b['date'], $a['date']));
+        usort($attended, fn($a, $b) => strcmp($b['date'], $a['date']));
+        out(true, ['organized' => $organized, 'attended' => $attended]);
+
     // Liste des organisateurs (admin)
     case 'get_orga':
         out(true, ['organizers' => epice_organizers()]);
@@ -380,6 +410,80 @@ switch ($action) {
         $ok = @file_put_contents(__DIR__ . '/data/organizers.json', json_encode($clean, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) !== false;
         if (!$ok) out(false, [], "Écriture impossible (droits sur data/organizers.json).");
         out(true, ['organizers' => $clean, 'message' => 'Organisateurs enregistrés']);
+
+    // Rapport admin : qui organise / qui participe aux activités (toutes sorties,
+    // épice ET autres types). Réservé admin — jamais exposé aux joueurs (pas de
+    // classement social visible). Croise debriefs.json + discord_sorties.json.
+    case 'activity_report':
+        $usersFile = __DIR__ . '/../users_SECURE_9x.json';
+        $users = file_exists($usersFile) ? (json_decode(file_get_contents($usersFile), true) ?: []) : [];
+        $pseudoByDiscordId = [];
+        $allPseudos = [];
+        foreach ($users as $u) {
+            $p = trim((string)($u['user'] ?? ''));
+            if ($p === '') continue;
+            $allPseudos[] = $p;
+            if (!empty($u['discord_id'])) $pseudoByDiscordId[(string)$u['discord_id']] = $p;
+        }
+
+        // Résout un identifiant de sortie (organisateur ou inscrit) vers un pseudo du
+        // site : priorité à l'id Discord (immuable), repli sur le nom en clair.
+        $resolve = function (string $discordId, string $rawName) use ($pseudoByDiscordId, $allPseudos): string {
+            if ($discordId !== '' && isset($pseudoByDiscordId[$discordId])) return $pseudoByDiscordId[$discordId];
+            foreach ($allPseudos as $p) { if (strcasecmp($p, $rawName) === 0) return $p; }
+            return $rawName !== '' ? $rawName . ' (non lié)' : '?';
+        };
+
+        $stats = []; // pseudo => ['organized'=>[{titre,date,type}], 'attended'=>[...], 'present'=>int]
+        $ensure = function (string $key) use (&$stats) {
+            if (!isset($stats[$key])) $stats[$key] = ['organized' => [], 'attended' => [], 'present' => 0];
+        };
+
+        $dstoreFile = __DIR__ . '/data/discord_sorties.json';
+        $dstore = file_exists($dstoreFile) ? (json_decode(file_get_contents($dstoreFile), true) ?: ['sorties' => []]) : ['sorties' => []];
+
+        foreach ([read_data(), $dstore] as $store) {
+            foreach ($store['sorties'] ?? [] as $s) {
+                $entry = ['titre' => $s['titre'] ?? '(sans titre)', 'date' => $s['date'] ?? '', 'type' => $s['type'] ?? 'epice'];
+
+                // Organiser une sortie = compté organisateur ET présent pour CETTE sortie
+                // (on ne demande pas à l'organisateur de s'auto-inscrire pour être crédité).
+                $organizer = $resolve((string)($s['discord']['user_id'] ?? ''), (string)($s['createur'] ?? ''));
+                $ensure($organizer);
+                $stats[$organizer]['organized'][] = $entry;
+                $stats[$organizer]['present']++;
+                $presentHere = [$organizer => true]; // anti-doublon si l'organisateur s'est AUSSI inscrit
+
+                foreach ($s['signups'] ?? [] as $su) {
+                    if (($su['statut'] ?? 'present') !== 'present') continue;
+                    $p = $resolve((string)($su['id'] ?? ''), (string)($su['name'] ?? ''));
+                    if (isset($presentHere[$p])) continue;
+                    $presentHere[$p] = true;
+                    $ensure($p);
+                    $stats[$p]['present']++;
+                    $stats[$p]['attended'][] = $entry;
+                }
+            }
+        }
+
+        // Le roster complet est inclus même à 0/0 (repérer ceux qui ne font ni l'un ni l'autre).
+        foreach ($allPseudos as $p) { $ensure($p); }
+
+        $rows = [];
+        foreach ($stats as $pseudo => $v) {
+            usort($v['organized'], fn($a, $b) => strcmp($b['date'], $a['date']));
+            usort($v['attended'], fn($a, $b) => strcmp($b['date'], $a['date']));
+            $rows[] = [
+                'pseudo'        => $pseudo,
+                'organized'     => count($v['organized']),
+                'present'       => $v['present'],
+                'organized_list'=> $v['organized'],
+                'attended_list' => $v['attended'],
+            ];
+        }
+        usort($rows, fn($a, $b) => ($b['organized'] + $b['present']) <=> ($a['organized'] + $a['present']));
+
+        out(true, ['rows' => $rows]);
 
     default:
         out(false, [], 'Action inconnue : ' . htmlspecialchars($action));

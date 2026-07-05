@@ -96,24 +96,6 @@ switch ($action) {
         }
         exit;
 
-    case 'addUser':
-        $user = trim($data['user'] ?? '');
-        $pass = trim($data['password'] ?? '');
-        if ($user === '' || $pass === '') jerr("missing_fields");
-        
-        $usersFile = __DIR__ . '/users_SECURE_9x.json';
-        $users = readJson($usersFile);
-        
-        foreach ($users as $u) {
-            if (strcasecmp($u['user'], $user) === 0) jerr("exists");
-        }
-        $users[] = ['user' => $user, 'password' => $pass, 'role' => 'user'];
-        
-        if (!writeJson($usersFile, $users)) jerr("write_error", 500);
-        
-        echo json_encode(['ok' => true]);
-        exit;
-
     case 'add':
         $user = trim($data['user'] ?? '');
         $x = floatval($data['x'] ?? 0);

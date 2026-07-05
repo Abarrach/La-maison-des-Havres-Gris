@@ -2,7 +2,7 @@
 
 Auth du portail via le Discord de la guilde. Accès réservé aux membres ;
 sortie de la guilde = session détruite à la revérification. Page mot de passe
-discrète conservée (`login.html` → `auth.php`).
+discrète conservée (`sietch-tabr.html` → `auth.php`).
 
 ## 1) Fichiers de la fonctionnalité
 
@@ -40,7 +40,7 @@ discrète conservée (`login.html` → `auth.php`).
 3. **Déployer** les fichiers du tableau via WinSCP dans `/srv/dune-map/v2/`.
 4. **Amorcer le mapping** (chicken-and-egg : il faut un admin avant de pouvoir
    se mapper) :
-   - Se connecter via la page mot de passe discrète : `…/v2/login.html`
+   - Se connecter via la page mot de passe discrète : `…/v2/sietch-tabr.html`
      avec le compte **Abarrach** (toujours admin).
    - Ouvrir `…/v2/import_discord_map.php`, coller l'Excel exporté en
      **CSV UTF-8** (colonnes `id_discord ; pseudo_discord ; pseudo_site`),
@@ -71,7 +71,7 @@ Une seule chose change réellement : la **redirect_uri**.
 ## 4) Points d'attention
 
 - **Bootstrap admin** : tant que le mapping n'est pas importé, personne n'est
-  admin via Discord. Abarrach passe par `login.html` (mot de passe) → c'est
+  admin via Discord. Abarrach passe par `sietch-tabr.html` (mot de passe) → c'est
   voulu, c'est la « page cachée ».
 - **Filtrage d'accès par rôle** (`access_role_ids`) : matérialise tes
   catégories Discord. Vide = tout membre du serveur ; défini = seuls les
@@ -83,7 +83,8 @@ Une seule chose change réellement : la **redirect_uri**.
   membre exclu soit éjecté lors d'une navigation. Baisser pour plus strict.
 - **Sécurité** : `auth-guard.js` ajoute enfin une vérif **serveur** (le
   localStorage seul était falsifiable). `session_check.php` est l'autorité.
-- **Comptes mot de passe** : `auth.php` / `register.html` restent fonctionnels
-  (sessions sans `discord_id`, non revérifiées par Discord).
+- **Comptes mot de passe** : `auth.php` reste fonctionnel (sessions sans
+  `discord_id`, non revérifiées par Discord). Pas d'auto-inscription : un
+  compte se crée manuellement dans `users_SECURE_9x.json`.
 
 [déploiement]: voir mémoire projet (WinSCP → /srv/dune-map, www-data).

@@ -22,7 +22,7 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 
 ### Menu Principal (`menu.html`)
 - Grille de tuiles (flex-wrap), responsive : la dernière ligne reste centrée, 1 colonne sur mobile
-- 8 destinations : Cartographie, Métiers, Missions, Migration, Chroniques, Œil du Mentat, Constructeur de Base, Retours de Soirée
+- 10 destinations : Cartographie, Métiers, Missions, Migration, Chroniques, Œil du Mentat, Constructeur de Base, Optimiseur de Stuff, Retours de Soirée (Activité Guilde), Hub Jeux
 - **Tuiles générées depuis le registre central `pages.js`** — ajouter une page = une seule entrée, elle apparaît automatiquement dans le menu **et** dans la gestion des accès (Mon Compte)
 - **Accès par tuile** (défini par les admins, voir Mon Compte) : *active* (visible/cliquable), *pas active* (masquée pour les joueurs), *en travaux* (grisée + image `en_travaux.png` + non cliquable). Les admins voient et accèdent à tout en permanence, mais les tuiles non standard sont **signalées visuellement** : *en travaux* → ruban + image `en_travaux.png` ; *masquée* → vignette désaturée, icône œil barré et ruban « Masquée »
 - Widget compte joueur et déconnexion accessibles depuis le menu
@@ -450,14 +450,22 @@ Outil de **préparation, débrief et analyse** des sorties de récolte d'épice 
 #### Bot Sorties Discord (`epice/discord_sortie.php`)
 Créer une sortie épice **directement depuis Discord** et gérer les inscriptions par poste, synchronisées avec l'outil ci-dessus (même `debriefs.json`).
 - **Architecture** : endpoint HTTP d'**interactions Discord** en pur PHP (aucun démon/bot permanent). Discord POST sur `epice/discord_sortie.php`, signature **Ed25519 vérifiée** (`sodium`) à chaque requête. Le bot apparaît « hors ligne » dans Discord, c'est normal (pas de connexion gateway).
-- **Types de sortie** : la commande `/sortie creer` propose un **type** (menu natif) : **Épice** (la seule liée au site), **Labo**, **Farm divers**, **Landsraad**. Épice utilise l'inscription **par poste** ; les autres types un **RSVP simple** (Présent / Peut-être / Absent) pour jauger l'intérêt.
+- **Types de sortie** : la commande `/sortie creer` propose un **type** (menu natif) : **Épice** (la seule liée au site), **Labos-Donjons**, **Farm divers**, **Landsraad**, **Entraînement PvP**, **Chasse PvP**, **Construction Base Guilde DD**, **Activité Guilde** (générique). Épice utilise l'inscription **par poste** ; les autres types un **RSVP simple** (Présent / Peut-être / Absent) pour jauger l'intérêt.
 - **Flux** : `/sortie creer` → choix du type → formulaire (titre, date & heure, zone, **durée en heures**, description) → encart doré (bannière par type). Inscription épice via **menu déroulant de postes** (Moissonneur, Transporteur, Défenseur CaC, Pilote Ornithoptère, Présent) + boutons **❓ Peut-être / ✖️ Absent / Me désinscrire**. Le roster se met à jour en direct (`UPDATE_MESSAGE`). Le compteur `X inscrits` ne compte que les présents ; la durée s'affiche dans l'encart (`⏱️`).
 - **Gestion** : boutons **✏️ Modifier** (rouvre le formulaire pré-rempli → met à jour l'encart) et **🗑️ Supprimer**, **réservés au créateur ET au staff** (Administrateur / Gérer le serveur / Gérer les messages / Expulser / Bannir / Modérer les membres). Les boutons sont visibles par tous (Discord ne sait pas masquer par utilisateur) mais un membre sans droit reçoit un refus privé. **Suppression différenciée** : pour une sortie **épice** (liée au site), 🗑️ retire **uniquement le post Discord** et **conserve les données du raid** (retours, compo, analyse, historique) — la suppression réelle se fait depuis le site ; pour les **autres types** (store Discord séparé), la fiche est supprimée entièrement.
 - **Notification MP en cas de changement de date/heure** : si une modification change la **date et/ou l'heure**, le bot prévient **par message privé** tous les inscrits, avec un texte **différencié selon le statut** (présent / peut-être / absent). L'**auteur** de la modif n'est pas notifié (admins/modos peuvent aussi éditer). Les MP partent **en arrière-plan** (`fastcgi_finish_request` après la réponse Discord, pour rester sous la limite de 3 s) via l'API REST du bot (`POST /users/@me/channels` puis message) ; un échec (MP fermés, blocage) est silencieux et journalisé. Aucun re-`register` nécessaire (changement de comportement, pas de structure).
 - **Suppression automatique du post** (`discord_sortie_cleanup.php`, **cron**) : pour désencombrer le canal, le message d'une sortie est supprimé **4h après la fin** (`fin = date+heure + durée` ; durée absente → 4h présumées), **pour tous les types y compris épice** (le nettoyage ne retire que le post, jamais les données — voir ci-dessus). Le bot stocke le `message_id` de l'encart (récupéré à la création via `…/@original`, et au 1er clic d'inscription pour les sorties existantes). Script **CLI uniquement** (`--dry` pour simuler), lancé par cron toutes les ~15 min. Une sortie sans heure exploitable n'est jamais auto-supprimée. Idempotent (flag `discord.cleaned`).
 - **Données** : une sortie **épice** est ajoutée à `debriefs.json` (`source='discord'`, `type='epice'`, `signups[]` = `{id,name,poste,statut,ts}`) et devient la soirée active. Les **autres types** vont dans `epice/data/discord_sorties.json` (store séparé, gitignoré) et **ne touchent pas** au débrief. Côté `debrief.html`, l'Assignation propose les inscrits Discord via un **menu déroulant maison** (aux couleurs du site, filtrage à la frappe + navigation clavier) sur tous les champs de rôle ; un joueur **déjà placé n'est plus proposé ailleurs** (anti-doublon) ; saisie manuelle toujours possible. Les inscrits **« ❓ Peut-être »** sont affichés **en orange + badge** (pour ne pas les affecter comme s'ils étaient sûrs) ; les **« absents »** ne sont pas proposés. L'interface `debrief.html` est habillée façon **Dune Awakening** (cadres à équerres dorées, en-tête orné + devise, séparateurs en losange, titres Cinzel, champs à accent doré).
 - **Config** : `epice/discord_sortie_config.php` (**gitignoré** — `bot_token` secret ; `app_id`/`public_key` publics ; `guild_id` optionnel). Gabarit = `discord_sortie_config.example.php`.
-- **Mise en place** : `discord_register.php` (déclare la commande `/sortie`, à lancer une fois) ; `discord_probe.php` (sonde de diagnostic : sodium/cURL/config/droits — à supprimer après). Nécessite **HTTPS** sur le domaine (Let's Encrypt) car Discord refuse les URL `http`. URL d'interactions à déclarer dans le portail Discord (General Information → Interactions Endpoint URL).
+- **Mise en place** : `discord_register.php` (déclare la commande `/sortie`, à lancer à chaque changement de commande — gardé sur le serveur volontairement, pratique en cas de future modification). `discord_probe.php` (sonde de diagnostic ponctuelle) a été retiré du serveur après usage. Nécessite **HTTPS** sur le domaine (Let's Encrypt) car Discord refuse les URL `http`. URL d'interactions à déclarer dans le portail Discord (General Information → Interactions Endpoint URL).
+
+---
+
+### Hub Jeux (`jeux/hub.html`)
+Mini-jeux de guilde entre membres, avec records et classements. Tuile dédiée dans le menu.
+- **5 mini-jeux** : Orni Flap, Sandstorm Memory, Spice Runner, Worm Rider, Muad'Dib Rescue.
+- **Scores** : sauvegarde automatique par joueur (`jeux/scores_api.php`, stockage JSON), classement par jeu.
+- Chaque jeu est une page HTML autonome (`jeux/<jeu>.html`) protégée par `../auth-guard.js`.
 
 ---
 
@@ -489,8 +497,8 @@ L'accès au portail se fait en **« Se connecter avec Discord »** : pas de mot 
 
 ### Accès par mot de passe (page cachée, repli)
 
-- `login.html` (non liée depuis l'accueil) reste fonctionnelle via `auth.php` : comptes à mot de passe dans `users_SECURE_9x.json` (sessions sans `discord_id`, non revérifiées par Discord). Sert notamment à l'amorçage admin (`Abarrach`) avant l'import du mapping.
-- `register.html` (création de compte mot de passe) reste disponible mais hors du parcours principal.
+- `sietch-tabr.html` (non liée depuis l'accueil, nom volontairement discret) reste fonctionnelle via `auth.php` : comptes à mot de passe dans `users_SECURE_9x.json` (sessions sans `discord_id`, non revérifiées par Discord). Sert notamment à l'amorçage admin (`Abarrach`) avant l'import du mapping.
+- **Pas d'auto-inscription** : la création de compte mot de passe (`register.html`, action `save.php` `addUser`) a été retirée. Un compte mot de passe se crée désormais **manuellement**, en ajoutant l'entrée dans `users_SECURE_9x.json`.
 
 ### Communs
 
@@ -530,7 +538,6 @@ DuneMap/
 ├── rapport_regroupement.html # Synthèse guilde : regroupement serveurs EU (mai 2026)
 ├── dune_chronologie.html # Chronologie de l'univers
 ├── news.html             # Actualités du jeu
-├── register.html         # Création de compte (design deux colonnes : formulaire + présentation guilde)
 ├── base_planner.html     # Constructeur de Base 3D (Three.js, moteur sockets v2) — LIVRÉ en prod
 │
 ├── script.js             # Logique cartographique (Leaflet, marqueurs, Désert Profond)
@@ -543,7 +550,7 @@ DuneMap/
 ├── page-guard.js         # Garde d'accès par page (bloque hidden/wip pour les joueurs ; admin = accès total)
 │
 ├── save.php              # API principale (bases, utilisateurs, craft, commandes)
-├── auth.php              # Authentification par mot de passe (page cachée login.html)
+├── auth.php              # Authentification par mot de passe (page cachée sietch-tabr.html)
 ├── discord_oauth.php     # Lib partagée OAuth2 Discord (config, API, mapping, session)
 ├── discord_login.php     # Départ « Se connecter avec Discord » (state CSRF, prompt=none)
 ├── discord_callback.php  # Retour Discord → vérif guilde/rôle → session → menu
@@ -637,7 +644,7 @@ chmod 775 avatars/ uploads/
 > ```
 
 > [!IMPORTANT]
-> **Connexion Discord** (`discord_oauth_config.php`, hors Git) : copier `discord_oauth_config.example.php` → `discord_oauth_config.php` et renseigner `client_secret` + `bot_token` (le même que le bot Sorties). Déclarer la **Redirect URI** dans le portail Discord (OAuth2 → Redirects) à l'identique de `redirect_uri` (ex. `https://havresgris.ddns.net/discord_callback.php`). Le fichier `users_SECURE_9x.json` doit être `dune:www-data` en `664` (PHP écrit le mapping ; WinSCP doit pouvoir l'éditer). Amorçage : se connecter en admin via `login.html` (mot de passe), puis lancer l'import du mapping via `import_discord_map.php` **avant** d'ouvrir l'accès aux membres (sinon comptes-doublons). Procédure complète et bascule `/v2/` → racine : voir `DEPLOY_DISCORD_AUTH.md`.
+> **Connexion Discord** (`discord_oauth_config.php`, hors Git) : copier `discord_oauth_config.example.php` → `discord_oauth_config.php` et renseigner `client_secret` + `bot_token` (le même que le bot Sorties). Déclarer la **Redirect URI** dans le portail Discord (OAuth2 → Redirects) à l'identique de `redirect_uri` (ex. `https://havresgris.ddns.net/discord_callback.php`). Le fichier `users_SECURE_9x.json` doit être `dune:www-data` en `664` (PHP écrit le mapping ; WinSCP doit pouvoir l'éditer). Amorçage : se connecter en admin via `sietch-tabr.html` (mot de passe), puis lancer l'import du mapping via `import_discord_map.php` **avant** d'ouvrir l'accès aux membres (sinon comptes-doublons). Procédure complète et bascule `/v2/` → racine : voir `DEPLOY_DISCORD_AUTH.md`.
 
 Accéder ensuite à `index.html` via le navigateur.
 
@@ -661,8 +668,7 @@ Interface entièrement thématisée autour de l'univers de Dune :
 - Fond atmosphérique `menu_bg.png` appliqué globalement via l'élément `html` (non affecté par l'animation `fade-in` du `body`)
 - Filigrane semi-transparent du blason de guilde (`images/logoguilde.png`) sur toutes les pages
 - Écran d'accueil (`index.html`) : bandeau `guilde.png` + bouton `enter_arrakis.png` avec `mix-blend-mode: screen` (supprime le fond noir sans retouche de l'image)
-- Login : modale flottante avec glassmorphism (`backdrop-filter: blur`) et animation `floatIn` ; s'ouvre via URL hash `#login` depuis `register.html` et `auth-guard.js`
-- `register.html` : mise en page deux colonnes (formulaire à gauche, présentation guilde à droite)
+- Login : modale flottante avec glassmorphism (`backdrop-filter: blur`) et animation `floatIn` ; s'ouvre via URL hash `#login` (redirection `auth-guard.js` quand aucune session)
 - Animations : fondu, lueur, vibration
 - Design responsive adapté aux différentes tailles d'écran
 

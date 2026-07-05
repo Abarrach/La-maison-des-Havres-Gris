@@ -3,7 +3,7 @@
 //  import_discord_map.php — pré-charge le mapping "Discord ↔ pseudo site"
 //
 //  Outil d'amorçage (one-shot), réservé aux ADMINS.
-//  Abarrach se connecte via la page mot de passe cachée (login.html)
+//  Abarrach se connecte via la page mot de passe cachée (sietch-tabr.html)
 //  pour obtenir une session admin, puis ouvre cette page.
 //
 //  Entrée : CSV (export Excel "CSV UTF-8"), collé ou téléversé.
@@ -26,7 +26,7 @@ if (($_SESSION['role'] ?? '') !== 'admin') {
     header('Content-Type: text/html; charset=utf-8');
     echo '<!DOCTYPE html><meta charset="UTF-8"><body style="background:#0a0603;color:#cda434;font-family:sans-serif;text-align:center;padding-top:20vh">'
        . '<h2>🔒 Réservé aux administrateurs</h2>'
-       . '<p>Connecte-toi d\'abord en tant qu\'admin via la page mot de passe (<a href="login.html" style="color:#d4a23b">login.html</a>).</p></body>';
+       . '<p>Connecte-toi d\'abord en tant qu\'admin via la page mot de passe (<a href="sietch-tabr.html" style="color:#d4a23b">sietch-tabr.html</a>).</p></body>';
     exit;
 }
 

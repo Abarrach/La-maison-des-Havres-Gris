@@ -16,10 +16,17 @@
         }
 
         /* === Image plein écran === */
+        /* Pas d'URL relative ici : la page peut être servie (nginx error_page 404)
+           pour n'importe quelle URL cassée à n'importe quelle profondeur
+           (ex. /epice/ancienne-page), le navigateur garde CETTE URL comme base
+           et résoudrait un chemin relatif au mauvais endroit. Le chemin correct
+           (racine ou /v2/) est injecté en JS, voir fin de page. */
         .bg {
             position: fixed;
             inset: 0;
-            background: url('images/404_bg.jpg') center center / contain no-repeat;
+            background-repeat: no-repeat;
+            background-position: center center;
+            background-size: contain;
         }
 
         /* Texte accessible masqué visuellement (déjà dans l'image) */
@@ -95,5 +102,19 @@
     <a href="menu.html" class="btn-overlay" aria-label="Retour à l'eau — revenir au portail DuneMap">
         ◆ Retour à l'eau
     </a>
+
+    <script>
+        // Cette page est servie par nginx (error_page 404) pour une URL cassée
+        // à N'IMPORTE QUELLE profondeur (/, /epice/, /jeux/, /v2/...) — le
+        // navigateur garde l'URL d'origine comme base, donc un chemin relatif
+        // se résout au mauvais endroit dès qu'on n'est pas déjà à la racine.
+        // On calcule ici la racine du bon environnement (racine du site ou /v2/).
+        (function () {
+            var base = location.pathname.indexOf('/v2/') === 0 ? '/v2/' : '/';
+            document.querySelector('.bg').style.backgroundImage =
+                "url('" + base + "images/404_bg.jpg')";
+            document.querySelector('.btn-overlay').setAttribute('href', base + 'menu.html');
+        })();
+    </script>
 </body>
 </html>

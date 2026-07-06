@@ -314,7 +314,7 @@ input[type=number]{-moz-appearance:textfield;}
               <span class="opt-lab">Mode</span>
               <div class="seg"><button class="seg-b" id="seg-pve" onclick="setOpt('pvp',false)">PvE</button><button class="seg-b" id="seg-pvp" onclick="setOpt('pvp',true)">PvP ×0,4</button></div>
               <label class="opt-chk"><input type="checkbox" id="opt-head" onchange="setOpt('head',this.checked)"> Tirs à la tête</label>
-              <span class="opt-mult" id="opt-mult-wrap">×<input type="number" id="opt-headmult" value="2" min="1" step="0.1" title="Multiplicateur DE BASE de l'arme (pas dataminé par gaming.tools, à saisir toi-même) — le bonus « Dégâts critiques » d'un augment équipé sur l'arme s'ajoute automatiquement, ne le compte pas ici" onchange="setOpt('headMult',parseFloat(this.value)||1)"><span id="opt-headmult-note" class="opt-headmult-note"></span></span>
+              <span class="opt-mult" id="opt-mult-wrap">×<input type="number" id="opt-headmult" value="1.5" min="1" step="0.1" title="Multiplicateur DE BASE de l'arme (pas dataminé par gaming.tools — 1,5 par défaut, valeur communautaire la plus répandue, à ajuster selon l'arme équipée) — le bonus « Dégâts critiques » d'un augment équipé sur l'arme s'ajoute automatiquement, ne le compte pas ici" onchange="setOpt('headMult',parseFloat(this.value)||1)"><span id="opt-headmult-note" class="opt-headmult-note"></span></span>
             </div>
             <div class="opt-group expert-only">
               <span class="opt-lab">Perso</span>
@@ -409,9 +409,10 @@ function syncUiMode(){
 // Explication des formules (infobulle au survol de l'icône ⓘ) — un sujet par ligne, pas un pavé.
 const STAT_NOTE_TOPICS=[
   'DPS par arme = effectif × (1 + bonus de capacités) × <span style="color:var(--violet)">facteur des augments de dégâts compatibles</span>, ×0,4 en PvP, ×mult tête si actif.',
-  'Les augments (dataminés) ont un <b>roll réglable</b> par effet et une qualité.',
-  'Augments d\'armure : les <b>mitigations</b> (réduc. par type) sont additionnées au total quelle que soit la pièce ; le <b>bonus d\'armure</b> (%) ne s\'applique qu\'à la pièce choisie dans le détail de l\'augment (un augment est serti sur une seule pièce, les 3 emplacements du build sont globaux).',
+  'Les augments (dataminés) ont un <b>roll réglable</b> par effet et une qualité, et sont désormais rattachés à l\'objet qui les porte (chaque arme/pièce a ses propres emplacements).',
+  'Augments d\'armure : les <b>mitigations</b> (réduc. par type) sont additionnées au total ; le <b>bonus d\'armure</b> (%) s\'applique à la pièce sur laquelle l\'augment est équipé.',
   'Armure→réduction et ×0,4 PvP = <b>modèles communautaires</b> (naguya.tech), pas dataminés.',
+  '<b>Multiplicateur de tête</b> ("×" à côté de "Tirs à la tête") : base par défaut <b>1,5</b>, valeur communautaire la plus répandue (pas dataminée par gaming.tools — chaque arme a sa vraie valeur, ex. ×2 pour un SE — à ajuster selon l\'arme équipée). Le bonus « Dégâts critiques » d\'un augment équipé sur l\'arme s\'ajoute automatiquement par-dessus, inutile de le compter à la main.',
   '<b>PV max</b> = PV de base (éditable, valeur communautaire) + bonus Vitalité (skill, dataminé) ; <b>PV effectifs</b> par type = PV max / ((1−réduc. armure)×(1−mitigation du type)) — mêmes mitigations que ci-dessus, augments compris.',
   '<b>Résistances de la cible</b> (bouton « Résistances », par type de dégâts) se cumulent avec sa réduction d\'armure pour le calcul des tirs/coups pour tuer — à saisir manuellement selon la cible visée.',
 ];
@@ -862,7 +863,7 @@ function primaryWeapon(){const id=BUILD.weapon1||BUILD.weapon2;return id?itemByI
 function damageBonuses(){return dmgBonusFor(primaryWeapon());} // compat (renderSkills)
 
 // Options de simulation (PvE/PvP, tirs à la tête) — modèles communautaires (naguya.tech).
-function opts(){if(!BUILD.opts)BUILD.opts={pvp:false,head:false,headMult:2};return BUILD.opts;}
+function opts(){if(!BUILD.opts)BUILD.opts={pvp:false,head:false,headMult:1.5};return BUILD.opts;}
 function setOpt(k,v){opts()[k]=v;saveBuild();renderAll();}
 // Réduction de dégâts depuis l'armure : DR = Armure/(Armure+500), plafond 95 % (modèle communautaire).
 function armorDR(armor){return armor>0?Math.min(0.95,armor/(armor+500)):0;}
@@ -1012,7 +1013,7 @@ function syncOpts(){
   document.getElementById('seg-pve').classList.toggle('active',!o.pvp);
   document.getElementById('seg-pvp').classList.toggle('active',!!o.pvp);
   document.getElementById('opt-head').checked=!!o.head;
-  document.getElementById('opt-headmult').value=o.headMult||2;
+  document.getElementById('opt-headmult').value=o.headMult||1.5;
   document.getElementById('opt-mult-wrap').classList.toggle('off',!o.head);
   // Bonus "Dégâts critiques" des augments équipés sur CHAQUE arme à distance — additionné
   // automatiquement au multiplicateur de tête de CETTE arme (cf. weaponDpsView, et le détail par

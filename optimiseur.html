@@ -73,6 +73,7 @@ body.simple-mode .expert-only{display:none !important;}
 .opt-mult{color:var(--or-sombre);display:inline-flex;align-items:center;gap:2px;}
 .opt-mult input{width:46px;background:#0a0603;border:1px solid var(--brun-bordure);color:var(--texte-beige);border-radius:4px;padding:3px 5px;font-family:inherit;font-size:1em;}
 .opt-mult.off{opacity:.4;pointer-events:none;}
+.opt-headmult-note{color:var(--violet);font-size:.9em;white-space:nowrap;}
 .dr-line{font-size:.78em;color:var(--or-sombre);margin:-4px 0 10px;}
 .dr-line b{color:var(--vert);}
 .bar-row{display:flex;justify-content:space-between;font-size:.8em;margin-bottom:3px;}
@@ -110,6 +111,10 @@ body.simple-mode .expert-only{display:none !important;}
 .target-mit-grid .tm-row input{width:48px;background:#0a0603;border:1px solid var(--brun-bordure);color:var(--texte-beige);border-radius:4px;padding:3px 5px;font-family:inherit;font-size:1em;text-align:right;}
 .opt-sep{color:var(--brun-bordure);}
 .opt-mult input[type=number]{width:54px;}
+/* Flèches natives du navigateur (blanches) pas cohérentes avec le thème sombre — masquées, le champ
+   reste modifiable au clavier/molette comme avant, juste sans l'habillage par défaut du navigateur. */
+input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0;}
+input[type=number]{-moz-appearance:textfield;}
 .slot-grade{font-size:.72em;padding:1px 2px;margin-right:6px;flex-shrink:0;}
 /* Augments numériques (Phase 0) — détail + rolls réglables */
 .aug-detail{margin:-9px 0 9px;padding:8px 10px;border:1px solid var(--brun-bordure);border-top:none;border-radius:0 0 6px 6px;background:rgba(0,0,0,.25);}
@@ -129,8 +134,19 @@ body.simple-mode .expert-only{display:none !important;}
 .aug-ev.pos{color:var(--vert);} .aug-ev.neg{color:var(--corail);}
 .aug-mm{flex:0 0 96px;font-size:.8em;color:var(--or-sombre);text-align:right;white-space:nowrap;}
 .aug-empty{font-size:.78em;color:var(--or-sombre);font-style:italic;}
-.aug-piece-row{display:flex;align-items:center;gap:8px;font-size:.78em;color:var(--or-sombre);margin-top:7px;padding-top:7px;border-top:1px dashed var(--brun-bordure);}
-.aug-piece-warn{font-style:italic;color:var(--corail);}
+/* Emplacements d'augment PAR OBJET (Phase 4) — nichés sous chaque arme/pièce équipée */
+.aug-slots-box{margin:-9px 0 9px;padding:8px 10px 2px;border:1px solid var(--brun-bordure);border-top:none;border-radius:0 0 6px 6px;background:rgba(0,0,0,.15);}
+.aug-slots-head{display:flex;align-items:center;justify-content:space-between;font-size:.72em;color:var(--or-sombre);text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px;}
+.aug-cap-ctrl{display:flex;align-items:center;gap:5px;text-transform:none;font-size:1.1em;}
+.aug-cap-ctrl button{background:rgba(0,0,0,.4);border:1px solid var(--brun-bordure);color:var(--or-base);border-radius:4px;width:18px;height:18px;line-height:1;cursor:pointer;font-size:.9em;}
+.aug-cap-ctrl button:hover{border-color:var(--or-base);}
+.aug-mini{display:flex;align-items:center;gap:8px;padding:6px 7px;border:1px solid var(--brun-bordure);border-radius:5px;margin-bottom:6px;background:rgba(0,0,0,.18);}
+.aug-mini.empty{cursor:pointer;color:var(--or-sombre);font-size:.82em;font-style:italic;justify-content:center;border-style:dashed;}
+.aug-mini.empty:hover{border-color:var(--or-base);color:var(--or-base);}
+.aug-mini-ic{width:24px;height:24px;border-radius:4px;background:#0d0705;border:1px solid var(--brun-bordure);object-fit:contain;flex-shrink:0;}
+.aug-mini-name{flex:1;font-size:.85em;color:var(--texte-beige);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.aug-mini-body{flex:1;min-width:0;}
+.aug-mini-body .aug-detail,.aug-mini-body .aug-simple{margin:4px 0 0;border:none;padding:0;background:transparent;}
 .statcell{background:rgba(0,0,0,.22);border:1px solid var(--brun-bordure);border-radius:6px;padding:8px;text-align:center;}
 .statcell .l{font-size:.68em;color:var(--or-sombre);text-transform:uppercase;}
 .statcell .n{font-size:1.05em;font-weight:500;color:var(--texte-beige);}
@@ -298,7 +314,7 @@ body.simple-mode .expert-only{display:none !important;}
               <span class="opt-lab">Mode</span>
               <div class="seg"><button class="seg-b" id="seg-pve" onclick="setOpt('pvp',false)">PvE</button><button class="seg-b" id="seg-pvp" onclick="setOpt('pvp',true)">PvP ×0,4</button></div>
               <label class="opt-chk"><input type="checkbox" id="opt-head" onchange="setOpt('head',this.checked)"> Tirs à la tête</label>
-              <span class="opt-mult" id="opt-mult-wrap">×<input type="number" id="opt-headmult" value="2" min="1" step="0.1" onchange="setOpt('headMult',parseFloat(this.value)||1)"></span>
+              <span class="opt-mult" id="opt-mult-wrap">×<input type="number" id="opt-headmult" value="2" min="1" step="0.1" title="Multiplicateur DE BASE de l'arme (pas dataminé par gaming.tools, à saisir toi-même) — le bonus « Dégâts critiques » d'un augment équipé sur l'arme s'ajoute automatiquement, ne le compte pas ici" onchange="setOpt('headMult',parseFloat(this.value)||1)"><span id="opt-headmult-note" class="opt-headmult-note"></span></span>
             </div>
             <div class="opt-group expert-only">
               <span class="opt-lab">Perso</span>
@@ -430,10 +446,60 @@ const SLOTS=[
   {key:'hands',label:'Mains',group:'Armure',accept:partAccept('hands'),stat:['armorValue']},
   {key:'legs', label:'Jambes',group:'Armure',accept:partAccept('legs'),stat:['armorValue']},
   {key:'feet', label:'Pieds',group:'Armure',accept:partAccept('feet'),stat:['armorValue']},
-  {key:'aug1',label:'Augment 1',group:'Augments',accept:isAug,stat:['tier']},
-  {key:'aug2',label:'Augment 2',group:'Augments',accept:isAug,stat:['tier']},
-  {key:'aug3',label:'Augment 3',group:'Augments',accept:isAug,stat:['tier']},
 ];
+// Emplacements d'augment PAR OBJET (pas un pool global) — cf. arbre de spécialisation Artisanat
+// (dataminé gaming.tools) : chaque arme/pièce d'armure a ses propres emplacements, débloqués par
+// les paliers "Ranged/Melee/Garment Augmentation Limit" (+3 arme, +2 armure au maximum recensé).
+// La base avant spécialisation n'est pas confirmée par le datamine → valeur par défaut réglable
+// par l'utilisateur (+/-) plutôt qu'un chiffre présenté comme certain.
+const AUG_CAPACITY_DEFAULT={weapon1:3,weapon2:3,head:2,chest:2,hands:2,legs:2,feet:2};
+function augCapacity(itemSlotKey){const c=(BUILD.augCap||{})[itemSlotKey];return c!=null?c:(AUG_CAPACITY_DEFAULT[itemSlotKey]||0);}
+function setAugCapacity(itemSlotKey,delta){
+  const filled=((BUILD.augments||{})[itemSlotKey]||[]).filter(Boolean).length;
+  const cur=augCapacity(itemSlotKey);
+  const next=Math.max(filled,Math.min(5,cur+delta));
+  if(!BUILD.augCap)BUILD.augCap={};
+  BUILD.augCap[itemSlotKey]=next;
+  saveBuild();renderAll();
+}
+function augEntry(itemSlotKey,idx){return ((BUILD.augments||{})[itemSlotKey]||[])[idx]||null;}
+function augQuality(itemSlotKey,idx){const e=augEntry(itemSlotKey,idx);if(!e)return 0;const a=augData(e.id);if(!a)return 0;const mn=a.minQuality||0;return e.q==null?5:Math.max(mn,Math.min(5,e.q));}
+function setAugQuality(itemSlotKey,idx,q){const e=augEntry(itemSlotKey,idx);if(!e)return;e.q=q;saveBuild();renderAll();}
+function augRoll(itemSlotKey,idx,ei){const e=augEntry(itemSlotKey,idx);return (e&&e.r&&e.r[ei]!=null)?e.r[ei]:1;}            // défaut = max (potentiel)
+function setAugRoll(itemSlotKey,idx,ei,v){const e=augEntry(itemSlotKey,idx);if(!e)return;v=Math.max(0,Math.min(1,+v));if(!e.r)e.r={};e.r[ei]=v;saveBuild();renderAll();}
+function removeAug(itemSlotKey,idx){const arr=(BUILD.augments||{})[itemSlotKey];if(!arr)return;arr[idx]=null;saveBuild();renderAll();}
+// Migration one-shot des anciens builds (3 emplacements globaux aug1/aug2/aug3 + sélecteur de
+// pièce) vers le nouveau modèle par objet. Best-effort : une arme migre vers weapon1 (repli
+// weapon2 si occupé), une armure migre vers la pièce choisie dans l'ancien sélecteur BUILD.augPiece
+// (sinon vers la 1ère pièce compatible équipée) — sinon l'augment est perdu (pas d'endroit sûr où le mettre).
+function migrateLegacyAugments(){
+  if(!(BUILD.aug1||BUILD.aug2||BUILD.aug3))return;
+  if(!BUILD.augments)BUILD.augments={};
+  for(const sk of ['aug1','aug2','aug3']){
+    const id=BUILD[sk]; if(!id)continue;
+    const a=augData(id); if(!a){continue;}
+    const q=(BUILD.augQ||{})[sk], r=(BUILD.augR||{})[sk];
+    const entry={id,q:q==null?5:q,r:r||{}};
+    const onWeapon=a.applies.some(t=>t.indexOf('Holster')>=0);
+    let target=null;
+    if(onWeapon){
+      const w1=BUILD.weapon1?itemById(BUILD.weapon1):null, w2=BUILD.weapon2?itemById(BUILD.weapon2):null;
+      if(w1&&augAppliesToWeapon(a,w1))target='weapon1';
+      else if(w2&&augAppliesToWeapon(a,w2))target='weapon2';
+    }else{
+      const pieceKey=(BUILD.augPiece||{})[sk];
+      if(pieceKey&&BUILD[pieceKey])target=pieceKey;
+      else{const compat=augCompatiblePiecesLegacy(a);if(compat.length)target=compat[0];}
+    }
+    if(target){
+      if(!BUILD.augments[target])BUILD.augments[target]=[];
+      BUILD.augments[target].push(entry);
+    }
+  }
+  delete BUILD.aug1;delete BUILD.aug2;delete BUILD.aug3;delete BUILD.augQ;delete BUILD.augR;delete BUILD.augPiece;
+  saveBuild();
+}
+function augCompatiblePiecesLegacy(a){return ARMOR_SLOTS.filter(sk=>{const it=itemById(BUILD[sk]);return it&&augAppliesToArmorSub(a,subOf(it));});}
 
 // Libellés alignés sur la VF du jeu (« aiguilles », pas « dards »).
 const MITIG=[
@@ -447,6 +513,14 @@ const MITIG=[
   {k:'poisonMitigation',label:'Poison',color:'var(--corail)'},
 ];
 const ARMOR_SLOTS=['head','chest','hands','legs','feet'];
+// Objets non viables comme « meilleur objet » malgré une stat brute élevée : les Krys (lames
+// ramassées/de fortune) cassent au bout de 2 coups en jeu — la durabilité n'est pas exposée par
+// gaming.tools pour les armes (aucune arme de la base n'a de stat maxDurability), donc impossible
+// de le détecter depuis les données ; confirmé par un joueur, exclusion en dur assumée (même
+// principe que SERVEURS_EXCLUS dans dune_analytics.html). Reste équipable manuellement dans le
+// picker (pas caché), seulement jamais proposé comme ★ Meilleur / suggestion d'amélioration.
+const NONVIABLE_ITEMS=new Set(['crysknife','crysknife_story_zantara']);
+function isViableCandidate(it){return !NONVIABLE_ITEMS.has(it.id);}
 
 // Bonus de dégâts (op Additive, valeur 0.1 = +10%) applicables à l'arme équipée.
 const COND_DMG=['HeadDamageBonus','BodyDamageBonus','BackstabDamageBonus','SurpriseAttackDamageBonus'];
@@ -528,7 +602,7 @@ function renderSlots(){
       let badge=''; const m2=metricAtMax(sl.key,it);
       if(m2){
         const cls=compClass(sl.key,it); let best=0;
-        for(const c of DB){if(c.group!==it.group||!sl.accept(c)||compClass(sl.key,c)!==cls)continue;const cm=metricAtMax(sl.key,c);if(cm&&cm.val>best)best=cm.val;}
+        for(const c of DB){if(c.group!==it.group||!sl.accept(c)||compClass(sl.key,c)!==cls||!isViableCandidate(c))continue;const cm=metricAtMax(sl.key,c);if(cm&&cm.val>best)best=cm.val;}
         if(best>0){const clab=classLabel(cls);
           if(m2.val>=best*0.999)badge=`<span class="slot-badge opt" title="Meilleur de sa catégorie (${esc(clab)}) pour cet emplacement, à potentiel max">★</span>`;
           else{const d=Math.round(best-m2.val);badge=`<span class="slot-badge up" title="Un meilleur existe dans sa catégorie (${esc(clab)}) : +${d.toLocaleString('fr-FR')} ${m2.unit} au potentiel max">▲&nbsp;+${d.toLocaleString('fr-FR')}</span>`;}
@@ -541,7 +615,7 @@ function renderSlots(){
         ${gsel}${badge}<span class="slot-stat">${sv}</span>
         <span class="slot-x" onclick="event.stopPropagation();unequip('${sl.key}')" title="Retirer">✕</span>
       </div>`;
-      if(sl.group==='Augments' && AUGMENTS[it.id]) html+= isExpert() ? augDetail(sl.key,it) : `<div class="aug-simple">${augPickerSummary(AUGMENTS[it.id])||'<span class="aug-empty">Effet non chiffré.</span>'}</div>`;
+      html+=renderItemAugments(sl.key,it);
     }else{
       html+=`<div class="slot" onclick="openPicker('${sl.key}')">
         <div class="slot-ph">${PH_SVG}</div>
@@ -581,17 +655,33 @@ let AUGMENTS={};
 // expérimentales à thème, donjon) — voir tools/build_loot_locations_from_datamine.js.
 let LOOT={};
 function augData(id){return id?AUGMENTS[id]:null;}
-function augQuality(sk){const a=augData(BUILD[sk]);if(!a)return 0;const mn=a.minQuality||0;const q=(BUILD.augQ||{})[sk];return q==null?5:Math.max(mn,Math.min(5,q));}
-function setAugQuality(sk,q){if(!BUILD.augQ)BUILD.augQ={};BUILD.augQ[sk]=q;saveBuild();renderAll();}
-function augRoll(sk,ei){const r=(BUILD.augR||{})[sk];return (r&&r[ei]!=null)?r[ei]:1;}            // défaut = max (potentiel)
-function setAugRoll(sk,ei,v){v=Math.max(0,Math.min(1,+v));if(!BUILD.augR)BUILD.augR={};if(!BUILD.augR[sk])BUILD.augR[sk]={};BUILD.augR[sk][ei]=v;saveBuild();renderAll();}
-function augRollLive(el,sk,ei){const v=Math.max(0,Math.min(100,+el.value));el.closest('.aug-roll-wrap').querySelector('.aug-pct').value=v;if(!BUILD.augR)BUILD.augR={};if(!BUILD.augR[sk])BUILD.augR[sk]={};BUILD.augR[sk][ei]=v/100;const a=augData(BUILD[sk]);if(!a||!a.effects[ei])return;const eff=a.effects[ei],ev=augEffectAt(eff,augQuality(sk),v/100);if(!ev)return;const row=el.closest('.aug-eff'),evEl=row&&row.querySelector('.aug-ev');if(evEl){evEl.textContent=augValFmt(eff,ev);evEl.className='aug-ev '+((eff.op==='Multiply'?ev.val<1:ev.val<0)?'neg':'pos');}}
+function augRollLive(el,itemSlotKey,idx,ei){const v=Math.max(0,Math.min(100,+el.value));el.closest('.aug-roll-wrap').querySelector('.aug-pct').value=v;const e=augEntry(itemSlotKey,idx);if(!e)return;if(!e.r)e.r={};e.r[ei]=v/100;const a=augData(e.id);if(!a||!a.effects[ei])return;const eff=a.effects[ei],ev=augEffectAt(eff,augQuality(itemSlotKey,idx),v/100);if(!ev)return;const row=el.closest('.aug-eff'),evEl=row&&row.querySelector('.aug-ev');if(evEl){evEl.textContent=augValFmt(eff,ev);evEl.className='aug-ev '+(augEffIsNeg(eff,ev)?'neg':'pos');}}
 function augEffectAt(eff,q,roll){const r=eff.q&&eff.q[q];if(!r)return null;const mn=r[0],mx=r[1];return {mn,mx,val:mn+(mx-mn)*roll,rolled:Math.abs(mx-mn)>1e-9};}
 
 const AUG_STAT_FR={Damage:'Dégâts',AoEBaseDamage:'Dégâts de zone',AoEMinimumDamage:'Dégâts de zone (min)',ShotsPerSecond:'Cadence',ShieldDamage:'Dégâts bouclier',AoEBaseShieldDamage:'Dég. bouclier (zone)',AoEMinimumShieldDamage:'Dég. bouclier zone (min)',CritDamage:'Dégâts critiques',MaxAmmo:'Chargeur',ReloadTime:'Recharge',EffectiveRange:'Portée efficace',MaxRange:'Portée max',PowerConsumptionPerShot:'Conso énergie/tir',RecoilPitchScalar:'Recul vertical',RecoilYawScalar:'Recul latéral',ADSBaseAccuracyOffset:'Précision (visée)',ADSMaxAccuracyOffset:'Précision visée (max)',HipFireBaseAccuracyOffset:'Précision (hanche)',HipFireMaxAccuracyOffset:'Précision hanche (max)',ScattergunOffsetDistance:'Dispersion',AttackStaminaBaseCost:'Coût end. attaque',BlockStaminaCost:'Coût end. blocage',FireDoT:'Feu (DoT)',PoisonDamage:'Dégâts poison',Volume:'Volume',ArmorValue:'Armure',ColdProtectionValue:'Protection froid',ColdDamageMitigation:'Réduc. froid',PhysicalDamageMitigation:'Réduc. physique',EnergyDamageMitigation:'Réduc. énergie',HeatDamageMitigation:'Réduc. feu',RadiationDamageMitigation:'Réduc. radiations',PoisonDamageMitigation:'Réduc. poison',DartDamageMitigation:'Réduc. petites aiguilles',HeavyDartDamageMitigation:'Réduc. grosses aiguilles',MeleeDamageMitigation:'Réduc. lames',DashStaminaCost:'Coût end. esquive',DehydrationCaptureModifier:'Hydratation',DefeatDurabilityLoss:'Perte durabilité (KO)'};
 function augStatLabel(s){return AUG_STAT_FR[s]||s;}
-function effStats(eff){return eff.stats.filter(s=>!(eff.target==='Weapon'&&s==='ArmorValue'));}  // 'ArmorValue' co-listé sur arme = bruit
+// 'ArmorValue' co-listé = bruit dès qu'un autre stat réel accompagne l'effet (un vrai bonus d'armure
+// n'a jamais que 'ArmorValue' seul). 'Damage' est du même bruit quand 'Volume' est présent (ex. Accélérateur
+// pour disrupteur M11 : Damage+ArmorValue+Volume sur une seule courbe CV_Global_VolumePenalty — seul Volume est réel).
+function effStats(eff){
+  return eff.stats.filter(s=>{
+    if(s==='ArmorValue'&&eff.stats.length>1)return false;
+    if(s==='Damage'&&eff.stats.includes('Volume'))return false;
+    return true;
+  });
+}
 function effLabel(eff){const s=effStats(eff);if(!s.length)return augStatLabel(eff.stats[0]);const prim=s.find(x=>!/^AoE/.test(x))||s[0];return augStatLabel(prim)+(s.length>1?' …':'');}
+// Stats où une baisse est un BONUS (consommer moins d'énergie, recharger plus vite, moins de recul...) —
+// pour celles-ci, une valeur négative/un facteur <1 doit s'afficher en vert, pas en rouge.
+const AUG_INVERTED_STATS=new Set(['PowerConsumptionPerShot','ReloadTime','RecoilPitchScalar','RecoilYawScalar','ADSBaseAccuracyOffset','ADSMaxAccuracyOffset','HipFireBaseAccuracyOffset','HipFireMaxAccuracyOffset','ScattergunOffsetDistance','AttackStaminaBaseCost','BlockStaminaCost','DashStaminaCost','ClimbingStaminaScalar','DehydrationCaptureModifier','DefeatDurabilityLoss']);
+// Un effet est "négatif" (malus, rouge) si sa valeur baisse — sauf pour les stats inversées ci-dessus,
+// où baisser est le but recherché (ex. -70% de conso énergie/tir = un bonus, à afficher en vert).
+function augEffIsNeg(eff,ev){
+  const down=(eff.op==='Multiply'?ev.val<1:ev.val<0);
+  const s=effStats(eff);
+  const inverted=s.length>0&&s.every(x=>AUG_INVERTED_STATS.has(x));
+  return inverted?!down:down;
+}
 function augValFmt(eff,ev){
   if(eff.op==='Multiply'){const p=(ev.val-1)*100;return (p>=0?'+':'')+(Math.round(p*10)/10)+'%';}
   if(eff.op==='Add'){const d=ev.val;if(Math.abs(d)<=1){const p=d*100;return (p>=0?'+':'')+(Math.round(p*10)/10)+'%';}return (d>=0?'+':'')+Math.round(d);}
@@ -602,7 +692,7 @@ function augPickerSummary(a){
   for(const eff of a.effects){
     if(!effStats(eff).length)continue;
     const ev=augEffectAt(eff,5,1); if(!ev)continue;
-    const neg=(eff.op==='Multiply'?ev.val<1:ev.val<0);
+    const neg=augEffIsNeg(eff,ev);
     return `<span class="${neg?'neg':'pos'}">${augValFmt(eff,ev)}</span> <small>${esc(effLabel(eff))}</small>`;
   }
   return '';
@@ -611,7 +701,7 @@ function augPickerSummary(a){
 function augTipRows(a){
   return a.effects.filter(eff=>effStats(eff).length).map(eff=>{
     const evMax=augEffectAt(eff,5,1); if(!evMax)return '';
-    const neg=(eff.op==='Multiply'?evMax.val<1:evMax.val<0);
+    const neg=augEffIsNeg(eff,evMax);
     const val=evMax.rolled?`${augValFmt(eff,{val:augEffectAt(eff,5,0).val})} … ${augValFmt(eff,evMax)}`:augValFmt(eff,evMax);
     return `<div class="tt-row"><span class="k">${esc(effStats(eff).map(augStatLabel).join(', '))}</span><span class="v ${neg?'neg':'pos'}">${val}</span></div>`;
   }).join('');
@@ -635,64 +725,121 @@ function augAppliesToArmorSub(a,sub){return !!a&&a.applies.some(t=>AUG_ARMOR_TAG
 const AUG_MIT_TO_KEY={DartDamageMitigation:'lightDartMitigation',HeavyDartDamageMitigation:'heavyDartMitigation',MeleeDamageMitigation:'bladeMitigation',EnergyDamageMitigation:'energyMitigation',HeatDamageMitigation:'heatMitigation',RadiationDamageMitigation:'radiationMitigation',PoisonDamageMitigation:'poisonMitigation',PhysicalDamageMitigation:'concussiveMitigation'};
 // ArmorValue Multiply est rangé tantôt sous target=Armor, tantôt sous target=Item selon l'augment (schéma
 // datamine : ArmorValue est un champ générique de l'Item de base, pas toujours classé dans le bucket "Armor").
-function isArmorValueBoost(e){return e.op==='Multiply'&&(e.target==='Armor'||e.target==='Item')&&e.stats.includes('ArmorValue');}
-function augHasArmorValueBoost(a){return a.effects.some(isArmorValueBoost);}
-// Pièces d'armure ÉQUIPÉES compatibles avec cet augment (pour choisir sur laquelle appliquer son bonus d'armure —
-// un augment est serti sur UNE pièce ; les 3 slots du build sont globaux, donc on ne peut pas deviner laquelle).
-function augCompatiblePieces(a){return ARMOR_SLOTS.filter(sk=>{const it=itemById(BUILD[sk]);return it&&augAppliesToArmorSub(a,subOf(it));});}
-function setAugPiece(sk,pieceKey){if(!BUILD.augPiece)BUILD.augPiece={};BUILD.augPiece[sk]=pieceKey||'';saveBuild();renderAll();}
-// Multiplicateur de dégâts d'une arme dû aux augments compatibles équipés (Multiply sur Damage/Cadence).
-function augWeaponDmgMult(w){let m=1;if(!w)return m;
-  for(const sk of ['aug1','aug2','aug3']){const a=augData(BUILD[sk]);if(!a||!augAppliesToWeapon(a,w))continue;const q=augQuality(sk);
+// 'ArmorValue' co-listé avec d'autres stats = bruit (même mécanisme que effStats() : une seule courbe générique
+// partagée, ex. Calicot anti-aiguilles = Damage+ArmorValue+Volume sur CV_Global_VolumePenalty, alors que seul
+// Volume est réel — vérifié sur les 36 effets ArmorValue-Multiply de la base : les 6 à un seul stat sont de
+// vrais bonus/malus d'armure (CV_Global_BaseArmorBonus/Penalty), les 27 autres (multi-stats) sont TOUS du bruit
+// Volume — sans ce filtre, un faux bonus d'armure était ajouté au total ET le sélecteur de pièce s'affichait à tort.
+function isArmorValueBoost(e){return e.op==='Multiply'&&(e.target==='Armor'||e.target==='Item')&&e.stats.includes('ArmorValue')&&e.stats.length===1;}
+function augHasArmorValueBoost(a){return a.applies.some(t=>AUG_ARMOR_TAG[t]!==undefined)&&a.effects.some(isArmorValueBoost);}
+// Multiplicateur de dégâts d'une arme dû aux augments équipés SUR CETTE ARME (weaponSlotKey — un
+// augment est désormais serti sur un objet précis, plus de pool global). Multiply sur Damage/Cadence.
+// Les bonus % de MÊME catégorie (ex. 3× Dégâts +70%) s'ADDITIONNENT sur la base avant d'être appliqués
+// une seule fois (confirmé par le tableur communautaire "Weapon Augment Optimizer" — Rule 03 — et par le
+// rapport Talath : SE 967 + 2 augments = 2320,8, PAS 967×facteur1×facteur2). Dégâts et Cadence restent deux
+// catégories indépendantes qui, elles, se multiplient entre elles (DPS = dégât/tir × tirs/s).
+const WEAPON_PCT_STAT_KEYS=['Damage','ShotsPerSecond','MaxAmmo','ReloadTime'];
+function weaponAugPctSums(w,weaponSlotKey){
+  const sums={}; WEAPON_PCT_STAT_KEYS.forEach(k=>sums[k]=0); if(!w||!weaponSlotKey)return sums;
+  const list=(BUILD.augments||{})[weaponSlotKey]||[];
+  list.forEach((entry,idx)=>{
+    if(!entry)return; const a=augData(entry.id); if(!a||!augAppliesToWeapon(a,w))return;
+    const q=augQuality(weaponSlotKey,idx);
     a.effects.forEach((eff,ei)=>{if(eff.target!=='Weapon'||eff.op!=='Multiply')return;
-      if(!eff.stats.some(s=>s==='Damage'||s==='ShotsPerSecond'))return;
-      const ev=augEffectAt(eff,q,augRoll(sk,ei));if(ev&&ev.val>0)m*=ev.val;});
-  } return m;
+      const ev=augEffectAt(eff,q,augRoll(weaponSlotKey,idx,ei));if(!ev||ev.val<=0)return;
+      for(const s of eff.stats){if(WEAPON_PCT_STAT_KEYS.includes(s))sums[s]+=(ev.val-1);}});
+  });
+  return sums;
 }
-// Même calcul que ci-dessus mais détaillé PAR EMPLACEMENT d'augment (Phase 2.3, arbre de contributions).
-function augWeaponDmgMultBySlot(w){
-  const out={}; if(!w)return out;
-  for(const sk of ['aug1','aug2','aug3']){
-    const a=augData(BUILD[sk]); if(!a||!augAppliesToWeapon(a,w))continue;
-    const q=augQuality(sk); let m=1;
+function augWeaponDmgMult(w,weaponSlotKey){const s=weaponAugPctSums(w,weaponSlotKey);return (1+s.Damage)*(1+s.ShotsPerSecond);}
+// Bonus "Dégâts critiques" (tête) des augments équipés SUR CETTE ARME — vérifié sur toute la base
+// stuff_augments.json : CritDamage est TOUJOURS en op="Add" (delta direct, ex. +0,5), jamais en
+// Multiply comme Damage/Cadence — additionné tel quel au multiplicateur de tête (cf. weaponDpsView),
+// pas replié dans weaponAugPctSums (qui ne traite que les effets Multiply).
+function weaponAugCritBonus(w,weaponSlotKey){
+  if(!w||!weaponSlotKey)return 0;
+  const list=(BUILD.augments||{})[weaponSlotKey]||[];
+  let sum=0;
+  list.forEach((entry,idx)=>{
+    if(!entry)return; const a=augData(entry.id); if(!a||!augAppliesToWeapon(a,w))return;
+    const q=augQuality(weaponSlotKey,idx);
+    a.effects.forEach((eff,ei)=>{
+      if(eff.target!=='Weapon'||eff.op!=='Add'||!eff.stats.includes('CritDamage'))return;
+      const ev=augEffectAt(eff,q,augRoll(weaponSlotKey,idx,ei)); if(ev)sum+=ev.val;
+    });
+  });
+  return sum;
+}
+// Même calcul que ci-dessus mais détaillé PAR AUGMENT (Phase 2.3, arbre de contributions) —
+// pourcentage propre à chaque augment (additif), pour affichage seulement.
+function augWeaponDmgMultByAugIndex(w,weaponSlotKey){
+  const out={}; if(!w||!weaponSlotKey)return out;
+  const list=(BUILD.augments||{})[weaponSlotKey]||[];
+  list.forEach((entry,idx)=>{
+    if(!entry)return; const a=augData(entry.id); if(!a||!augAppliesToWeapon(a,w))return;
+    const q=augQuality(weaponSlotKey,idx); let sum=0;
     a.effects.forEach((eff,ei)=>{if(eff.target!=='Weapon'||eff.op!=='Multiply')return;
       if(!eff.stats.some(s=>s==='Damage'||s==='ShotsPerSecond'))return;
-      const ev=augEffectAt(eff,q,augRoll(sk,ei));if(ev&&ev.val>0)m*=ev.val;});
-    if(m!==1)out[sk]=m;
-  }
+      const ev=augEffectAt(eff,q,augRoll(weaponSlotKey,idx,ei));if(ev&&ev.val>0)sum+=(ev.val-1);});
+    if(sum!==0)out[idx]=1+sum;
+  });
   return out;
 }
-// Bloc détail sous un slot augment équipé : qualité + 1 curseur par effet rollé.
-function augDetail(sk,it){
+// Bloc détail d'un augment équipé sur un objet précis (itemSlotKey,idx) : qualité + 1 curseur
+// par effet rollé. L'augment est serti sur CET objet (plus de sélecteur "sur quelle pièce ?" —
+// c'est justement l'ambiguïté que ça supprime par rapport à l'ancien modèle 3 slots globaux).
+function augDetail(itemSlotKey,idx,it){
   const a=augData(it.id); if(!a)return '';
-  const q=augQuality(sk), mn=a.minQuality||0;
+  const q=augQuality(itemSlotKey,idx), mn=a.minQuality||0;
   let qsel='';for(let g=mn;g<=5;g++)qsel+=`<option value="${g}"${g===q?' selected':''}>Q${g}${g===5?' (max)':''}</option>`;
   let rows='';
   a.effects.forEach((eff,ei)=>{
     if(!effStats(eff).length)return;
-    const ev=augEffectAt(eff,q,augRoll(sk,ei)); if(!ev)return;
-    const neg=(eff.op==='Multiply'?ev.val<1:ev.val<0);
-    const pct=Math.round(augRoll(sk,ei)*100);
+    const ev=augEffectAt(eff,q,augRoll(itemSlotKey,idx,ei)); if(!ev)return;
+    const neg=augEffIsNeg(eff,ev);
+    const pct=Math.round(augRoll(itemSlotKey,idx,ei)*100);
     const ctrl= ev.rolled
-      ? `<span class="aug-roll-wrap"><input type="range" class="aug-roll" min="0" max="100" value="${pct}" oninput="augRollLive(this,'${sk}',${ei})" onchange="setAugRoll('${sk}',${ei},this.value/100)"><input type="number" class="aug-pct" min="0" max="100" value="${pct}" onclick="event.stopPropagation();this.select()" onchange="let v=Math.max(0,Math.min(100,+this.value));this.value=v;this.previousElementSibling.value=v;setAugRoll('${sk}',${ei},v/100)"><span class="aug-pct-lbl">%</span></span>`
+      ? `<span class="aug-roll-wrap"><input type="range" class="aug-roll" min="0" max="100" value="${pct}" oninput="augRollLive(this,'${itemSlotKey}',${idx},${ei})" onchange="setAugRoll('${itemSlotKey}',${idx},${ei},this.value/100)"><input type="number" class="aug-pct" min="0" max="100" value="${pct}" onclick="event.stopPropagation();this.select()" onchange="let v=Math.max(0,Math.min(100,+this.value));this.value=v;this.previousElementSibling.value=v;setAugRoll('${itemSlotKey}',${idx},${ei},v/100)"><span class="aug-pct-lbl">%</span></span>`
       : `<span class="aug-fixed">fixe</span>`;
     const mm= ev.rolled ? `<span class="aug-mm">${augValFmt(eff,{val:ev.mn})} … ${augValFmt(eff,{val:ev.mx})}</span>` : '<span class="aug-mm"></span>';
     rows+=`<div class="aug-eff"><span class="aug-el" title="${esc(effStats(eff).map(augStatLabel).join(', '))}">${esc(effLabel(eff))}</span>${ctrl}<span class="aug-ev ${neg?'neg':'pos'}">${augValFmt(eff,ev)}</span>${mm}</div>`;
   });
   const onWeapon=a.applies.some(t=>t.indexOf('Holster')>=0);
-  const where=onWeapon?'s\'applique aux armes compatibles (replié dans le DPS)':'s\'applique aux armures compatibles (mitigations additionnées au total)';
-  let pieceRow='';
-  if(augHasArmorValueBoost(a)){
-    const pieces=augCompatiblePieces(a);
-    if(pieces.length===1&&(BUILD.augPiece||{})[sk]===undefined){if(!BUILD.augPiece)BUILD.augPiece={};BUILD.augPiece[sk]=pieces[0];saveBuild();}
-    const cur=(BUILD.augPiece||{})[sk]||'';
-    const opts='<option value="">— non appliqué —</option>'+pieces.map(sk2=>{const lab=SLOTS.find(s=>s.key===sk2).label,it2=itemById(BUILD[sk2]);return `<option value="${sk2}"${sk2===cur?' selected':''}>${esc(lab)} · ${esc(it2.name)}</option>`;}).join('');
-    const warn=pieces.length===0?'<span class="aug-piece-warn">équipe une pièce compatible pour l\'appliquer au total</span>':'';
-    pieceRow=`<div class="aug-piece-row"><span>Bonus d'armure appliqué sur</span><select class="grade-sel" onclick="event.stopPropagation()" onchange="setAugPiece('${sk}',this.value)">${opts}</select>${warn}</div>`;
-  }
+  const where=onWeapon?'s\'applique à cette arme (replié dans le DPS)':'s\'applique à cette pièce (mitigations additionnées au total)';
   return `<div class="aug-detail"><div class="aug-head"><span>Qualité</span>
-      <select class="grade-sel" onclick="event.stopPropagation()" onchange="setAugQuality('${sk}',parseInt(this.value,10))">${qsel}</select>
-      <span class="aug-applies">${where}</span></div>${rows||'<div class="aug-empty">Effet non chiffré.</div>'}${pieceRow}</div>`;
+      <select class="grade-sel" onclick="event.stopPropagation()" onchange="setAugQuality('${itemSlotKey}',${idx},parseInt(this.value,10))">${qsel}</select>
+      <span class="aug-applies">${where}</span></div>${rows||'<div class="aug-empty">Effet non chiffré.</div>'}</div>`;
+}
+// Emplacements d'augment de l'objet équipé dans itemSlotKey (arme ou pièce d'armure) — un objet,
+// ses propres augments (cf. AUG_CAPACITY_DEFAULT/augCapacity). Remplace l'ancien pool global 3
+// slots + sélecteur "sur quelle pièce ?", qui ne correspondait pas au vrai système du jeu (confirmé
+// via l'arbre de spécialisation Artisanat dataminé : chaque objet a ses propres emplacements).
+function renderItemAugments(itemSlotKey,it){
+  const cap=augCapacity(itemSlotKey);
+  const list=(BUILD.augments||{})[itemSlotKey]||[];
+  const filled=list.filter(Boolean).length;
+  let rows='';
+  for(let idx=0;idx<cap;idx++){
+    const entry=list[idx];
+    const augIt=entry?itemById(entry.id):null;
+    if(entry&&augIt){
+      const body=isExpert()
+        ? augDetail(itemSlotKey,idx,augIt)
+        : (AUGMENTS[augIt.id]?(augPickerSummary(AUGMENTS[augIt.id])||'<span class="aug-empty">Effet non chiffré.</span>'):'');
+      rows+=`<div class="aug-mini" data-item="${esc(augIt.id)}">
+        <img class="aug-mini-ic" src="${esc(iconUrl(augIt.icon))}" alt="" onerror="this.style.visibility='hidden'">
+        <div class="aug-mini-body"><div class="aug-mini-name">${esc(augIt.name)}</div>${body}</div>
+        <span class="slot-x" onclick="removeAug('${itemSlotKey}',${idx})" title="Retirer">✕</span>
+      </div>`;
+    }else{
+      rows+=`<div class="aug-mini empty" onclick="openAugPicker('${itemSlotKey}',${idx})">+ Ajouter un augment</div>`;
+    }
+  }
+  return `<div class="aug-slots-box"><div class="aug-slots-head"><span>Augments (${filled}/${cap})</span>
+      <span class="aug-cap-ctrl">
+        <button onclick="event.stopPropagation();setAugCapacity('${itemSlotKey}',-1)" title="Réduire (spécialisation Artisanat, réglage manuel)">−</button>
+        <button onclick="event.stopPropagation();setAugCapacity('${itemSlotKey}',1)" title="Augmenter (spécialisation Artisanat, réglage manuel)">+</button>
+      </span></div>${rows}</div>`;
 }
 
 // ── Calcul des bonus de dégâts (par arme — les bonus diffèrent selon le type) ──
@@ -750,17 +897,64 @@ function wStat(it,grade,key){
   return base;
 }
 
-// DPS affiché d'une arme selon options + grade. base = effectif×(1+bonus). pvp ×0,4. tête = ×mult×(1+bonus tête).
-function weaponDpsView(it,grade){
+// Chargeur EFFECTIF (nb de tirs réels avant recharge) — gaming.tools ne l'expose pas comme stat séparée :
+// des armes comme le Perforateur consomment plusieurs munitions par tir (48 munitions / 12 par tir = 4 tirs
+// réels), et clipSize brut (48) ne le reflète pas. On le retrouve en résolvant N dans la formule même de
+// gaming.tools : effectiveDps = (dégât/tir×N)/((N/(cadence/60))+recharge) — les 4 autres variables sont
+// connues, donc N = (effectiveDps×recharge)/(dégât/tir − effectiveDps×60/cadence). Grade-invariant (dégât/tir
+// et effectiveDps scalent par le même facteur de grade, qui s'annule dans le ratio).
+function baseEffectiveClip(it,grade){
+  const D=wStat(it,grade,'damagePerShot'), R=wStat(it,grade,'rateOfFire'), T=wStat(it,grade,'reloadSpeed'), E=wStat(it,grade,'effectiveDps');
+  if(typeof D!=='number'||typeof R!=='number'||typeof T!=='number'||typeof E!=='number'||!R)return null;
+  const denom=D-E*60/R;
+  if(denom<=0)return null;                               // dégénéré (perte au rechargement non mesurable) → repli
+  const n=Math.round((E*T)/denom);
+  return (n>0&&isFinite(n))?n:null;
+}
+// DPS soutenu recalculé quand des augments touchent Chargeur%/Recharge%/Cadence% : la simple mise à l'échelle
+// du DPS eff. gaming.tools serait fausse dans ce cas (la cadence ne raccourcit pas le rechargement, donc son
+// gain sur le DPS SOUTENU n'est pas linéaire — confirmé par le rapport Talath et Rule 11 du Weapon Augment
+// Optimizer). Retourne null si le recalcul n'est pas possible (arme sans ces stats) → repli sur l'ancien calcul.
+function sustainedDps(it,grade,uncond,pct){
+  const D0=wStat(it,grade,'damagePerShot'), R0=wStat(it,grade,'rateOfFire'), T0=wStat(it,grade,'reloadSpeed');
+  if(typeof D0!=='number'||typeof R0!=='number'||typeof T0!=='number'||!R0)return null;
+  const nBase=baseEffectiveClip(it,grade); if(!nBase)return null;
+  const D=D0*(1+uncond)*(1+pct.Damage);
+  const R=R0*(1+(pct.ShotsPerSecond||0));
+  const T=T0*(1+(pct.ReloadTime||0));
+  const N=Math.max(1,Math.floor(nBase*(1+(pct.MaxAmmo||0))));
+  if(!R)return null;
+  const cycle=(N/(R/60))+T;
+  return cycle>0?(D*N)/cycle:null;
+}
+// DPS affiché d'une arme selon options + grade. base = DPS soutenu recalculé (chargeur/cadence/recharge
+// effectifs) si possible, sinon DPS eff. gaming.tools ×(1+bonus). pvp ×0,4.
+// tête = base × (multiplicateur tête + bonus tête) — le bonus de tête s'ADDITIONNE au multiplicateur de
+// base de l'arme, il ne le multiplie pas (confirmé par le rapport Talath : un +50% dégâts de tête sur un
+// SE à multiplicateur natif ×2 donne ×2,5, pas ×2×1,5=×3).
+function weaponDpsView(it,grade,weaponSlotKey){
   grade=grade||0;
   const {uncond}=dmgBonusFor(it);
-  const eff=wStat(it,grade,'effectiveDps')??wStat(it,grade,'dps')??wStat(it,grade,'damagePerHit');
-  if(eff==null)return null;
   const o=opts(), pvp=o.pvp?0.4:1, melee=isMelee(it);
-  const augM=augWeaponDmgMult(it);                       // augments de dégâts compatibles (Phase 0)
-  const base=eff*(1+uncond)*augM;
-  const head=(!melee&&o.head)?base*(o.headMult||1)*(1+headBonusTotal())*pvp:null;
-  return {uncond,augM,melee,unit:melee?'/coup':'DPS',body:Math.round(base*pvp),head:head!=null?Math.round(head):null};
+  const pct=weaponAugPctSums(it,weaponSlotKey);
+  const augM=(1+pct.Damage)*(1+(pct.ShotsPerSecond||0));
+  // Ne recalcule le DPS soutenu que si un augment touche vraiment Chargeur%/Recharge%/Cadence% — sinon le
+  // DPS eff. gaming.tools (déjà un DPS soutenu pour l'arme de base) reste la référence exacte, pour éviter un
+  // écart cosmétique dû à l'arrondi du chargeur effectif (cf. baseEffectiveClip) sur les builds sans ces augments.
+  const needsRecompute=!!(pct.MaxAmmo||pct.ReloadTime||pct.ShotsPerSecond);
+  let base=(!melee&&needsRecompute)?sustainedDps(it,grade,uncond,pct):null;
+  if(base==null){
+    const eff=wStat(it,grade,'effectiveDps')??wStat(it,grade,'dps')??wStat(it,grade,'damagePerHit');
+    if(eff==null)return null;
+    base=eff*(1+uncond)*augM;
+  }
+  // Multiplicateur de tête = base de L'ARME (pas dataminée par gaming.tools, valeur saisie à la main,
+  // cf. opts().headMult) + bonus de compétences (headBonusTotal) + bonus "Dégâts critiques" des
+  // augments équipés SUR CETTE ARME (calculé automatiquement — le joueur n'a plus besoin de
+  // l'additionner lui-même à la main dans le champ base).
+  const critAug=weaponAugCritBonus(it,weaponSlotKey);
+  const head=(!melee&&o.head)?base*((o.headMult||1)+headBonusTotal()+critAug)*pvp:null;
+  return {uncond,augM,critAug,melee,unit:melee?'/coup':'DPS',body:Math.round(base*pvp),head:head!=null?Math.round(head):null};
 }
 // ── Cible (TTK) — réutilise EXACTEMENT le pipeline de dégâts ci-dessus (grade+bonus+PvP+tête) ──
 function targetDR(){const a=opts().targetArmor||0;return a>0?Math.min(0.95,a/(a+500)):0;}
@@ -783,24 +977,34 @@ function renderTargetMit(){
   el.innerHTML=MITIG.map(m=>`<span class="tm-row">${esc(m.label)}<input type="number" min="-100" max="100" value="${tm[m.k]||0}" onchange="setTargetMit('${m.k}',this.value)">%</span>`).join('');
 }
 // Dégâts par tir/coup réellement infligés à la cible, au grade choisi. (cohérent avec le DPS affiché)
-function shotVsTarget(it,grade){
+function shotVsTarget(it,grade,weaponSlotKey){
   const o=opts(), melee=isMelee(it);
   const base=melee?wStat(it,grade,'damagePerHit'):wStat(it,grade,'damagePerShot');
   if(typeof base!=='number')return null;
   const {uncond}=dmgBonusFor(it);
-  const augM=augWeaponDmgMult(it);
+  const augM=augWeaponDmgMult(it,weaponSlotKey);
   const pvp=o.pvp?0.4:1;
-  const headM=(!melee&&o.head)?(o.headMult||1)*(1+headBonusTotal()):1;
+  const critAug=weaponAugCritBonus(it,weaponSlotKey);
+  const headM=(!melee&&o.head)?(o.headMult||1)+headBonusTotal()+critAug:1;
   return base*(1+uncond)*augM*pvp*headM*(1-targetDR())*(1-targetTypeMit(it));   // mêmes facteurs que weaponDpsView + réduction cible (armure + résistance au type)
 }
-function weaponKill(it,grade){
-  const per=shotVsTarget(it,grade); if(!per||per<=0)return null;
+function weaponKill(it,grade,weaponSlotKey){
+  const per=shotVsTarget(it,grade,weaponSlotKey); if(!per||per<=0)return null;
   const hp=opts().targetHp||150;
   const shots=Math.ceil(hp/per);
   const melee=isMelee(it);
   let secs=null;
-  if(!melee){const rof=statVal(it,'rateOfFire'),clip=statVal(it,'clipSize'),reload=statVal(it,'reloadSpeed')||0;
-    if(rof){const reloads=clip?Math.floor((shots-1)/clip):0;secs=(shots-1)/(rof/60)+reloads*reload;}}
+  if(!melee){
+    const pct=weaponAugPctSums(it,weaponSlotKey);
+    const rof0=statVal(it,'rateOfFire'), reload0=statVal(it,'reloadSpeed')||0;
+    const rof=rof0?rof0*(1+(pct.ShotsPerSecond||0)):rof0;
+    const reload=reload0*(1+(pct.ReloadTime||0));
+    // Chargeur effectif (tirs réels avant recharge, cf. sustainedDps) — clipSize brut surestimerait le nb de
+    // tirs sur les armes à plusieurs munitions/tir (ex. Perforateur : 48 munitions mais 4 tirs réels).
+    const nBase=baseEffectiveClip(it,grade);
+    const clip=nBase?Math.max(1,Math.floor(nBase*(1+(pct.MaxAmmo||0)))):statVal(it,'clipSize');
+    if(rof){const reloads=clip?Math.floor((shots-1)/clip):0;secs=(shots-1)/(rof/60)+reloads*reload;}
+  }
   return {shots,secs,melee};
 }
 function syncOpts(){
@@ -810,6 +1014,20 @@ function syncOpts(){
   document.getElementById('opt-head').checked=!!o.head;
   document.getElementById('opt-headmult').value=o.headMult||2;
   document.getElementById('opt-mult-wrap').classList.toggle('off',!o.head);
+  // Bonus "Dégâts critiques" des augments équipés sur CHAQUE arme à distance — additionné
+  // automatiquement au multiplicateur de tête de CETTE arme (cf. weaponDpsView, et le détail par
+  // arme plus bas qui affiche "dont augment +X%"). Le champ "×" et la case à cocher sont partagés
+  // par toutes les armes équipées : si plusieurs armes à distance ont des augments différents, on
+  // les liste toutes ici plutôt que de n'en montrer qu'une seule (ambigu, ça a fait chercher le
+  // bonus sur la mauvaise arme dans un cas réel signalé par un joueur).
+  const critParts=[];
+  for(const k of ['weapon1','weapon2']){
+    const wid=BUILD[k]; if(!wid)continue;
+    const wit=itemById(wid); if(!wit||isMelee(wit))continue;
+    const ca=weaponAugCritBonus(wit,k);
+    if(ca>0)critParts.push(`${wit.name} +${Math.round(ca*100)}%`);
+  }
+  document.getElementById('opt-headmult-note').textContent=critParts.length?` + augment auto : ${critParts.join(', ')}`:'';
   document.getElementById('opt-basehp').value=o.baseHp||150;
   document.getElementById('opt-thp').value=o.targetHp||150;
   document.getElementById('opt-tarm').value=o.targetArmor||0;
@@ -845,17 +1063,18 @@ function statLabel(s){return STAT_LABELS[s.k]||String(s.n||s.k).replace(/\s*:\s*
 function isMelee(it){return /longblades|shortblades/.test(it.cat||'');}
 function weaponBlock(slotKey,label,it){
   const mg=maxGrade(it), grade=getGrade(slotKey,it);
-  const v=weaponDpsView(it,grade);
+  const v=weaponDpsView(it,grade,slotKey);
   // Affiche TOUTES les stats présentes, ajustées au grade choisi (dég/tir, dps… scalent ; le reste non).
   // Mode Simple : grille détaillée masquée (le DPS dans l'en-tête suffit) — cf. tâche décluttering.
   const cells=(it.stats||[]).map(s=>`<div class="statcell"><div class="l">${esc(statLabel(s))}</div><div class="n">${fmt(wStat(it,grade,s.k),s.f)}</div></div>`).join('');
   let gradeSel='';
   if(mg>0){let o='';for(let g=0;g<=mg;g++)o+=`<option value="${g}"${g===grade?' selected':''}>${g===0?'Base':'Grade '+g}</option>`;
     gradeSel=` <select class="grade-sel" title="Qualité de l'arme" onclick="event.stopPropagation()" onchange="setGrade('${slotKey}',parseInt(this.value,10))">${o}</select>`;}
-  const headStr=(v&&v.head!=null)?` · <span class="wpn-head-dps">tête ${v.head.toLocaleString('fr-FR')}</span>`:'';
+  const critNote=(v&&v.head!=null&&v.critAug>0)?` <small style="color:var(--violet)">dont augment +${Math.round(v.critAug*100)}%</small>`:'';
+  const headStr=(v&&v.head!=null)?` · <span class="wpn-head-dps">tête ${v.head.toLocaleString('fr-FR')}${critNote}</span>`:'';
   const augStr=(v&&v.augM>1)?` <small style="color:var(--violet)">aug +${Math.round((v.augM-1)*100)}%</small>`:'';
   const dpsStr=v?` <span class="wpn-dps">${v.body.toLocaleString('fr-FR')} ${v.unit}${v.uncond>0?` <small>+${Math.round(v.uncond*100)}%</small>`:''}${augStr}${headStr}</span>`:'';
-  const k=weaponKill(it,grade);
+  const k=weaponKill(it,grade,slotKey);
   const ttkStr=k?`<div class="ttk"><span>${k.melee?'Coups':'Tirs'} pour tuer la cible</span><b>${k.shots}${k.secs!=null?` <small>≈ ${k.secs.toFixed(1)} s</small>`:''}</b></div>`:'';
   const tMitKey=weaponMitigKey(it), tMitLabel=tMitKey&&MITIG.find(m=>m.k===tMitKey)?.label;
   const tMitPct=tMitLabel?Math.round(targetTypeMit(it)*100):0;
@@ -867,45 +1086,49 @@ function weaponBlock(slotKey,label,it){
 // Armure/mitigations cumulées (pièces + augments) — factorisé pour être réutilisé par renderStats()
 // ET le profil par axe (Phase 2.2), afin de ne jamais désynchroniser les deux calculs.
 function computeDefenseTotals(){
-  let totalArmor=0, totalDur=0; const mitSum={};
-  const pieces=[]; // détail par pièce (Phase 2.3, arbre de contributions)
+  let totalArmor=0, totalDur=0, augArmorBonus=0; const mitSum={};
+  const pieces=[]; // détail par pièce (Phase 2.3, arbre de contributions) — augments inclus (augRows)
   for(const sk of ARMOR_SLOTS){
     const id=BUILD[sk]; if(!id)continue; const it=itemById(id); if(!it)continue;
-    const av=Number(wStat(it,getGrade(sk,it),'armorValue')||0);   // armorValue scale avec le grade
+    const av0=Number(wStat(it,getGrade(sk,it),'armorValue')||0);   // armorValue scale avec le grade
     const pieceMit={};
-    totalArmor+=av;
     totalDur+=Number(statVal(it,'maxDurability')||0);
     for(const m of MITIG){const v=statVal(it,m.k);if(typeof v==='number'){mitSum[m.k]=(mitSum[m.k]||0)+v;pieceMit[m.k]=v;}} // mitigations FIXES
-    pieces.push({slotKey:sk,label:SLOTS.find(s=>s.key===sk).label,name:it.name,armor:av,mit:pieceMit});
-  }
-  // Augments d'armure équipés (Phase 0 v2) : mitigations Add → additionnées directement (flat, indépendant
-  // de la pièce). Bonus d'armure Multiply → appliqué SEULEMENT à la pièce choisie par l'utilisateur (évite
-  // de gonfler le total en l'appliquant aux 5 pièces alors qu'un augment n'est serti que sur une seule).
-  let augArmorBonus=0; const augMit={}; // détail par augment (Phase 2.3)
-  for(const sk of ['aug1','aug2','aug3']){
-    const a=augData(BUILD[sk]); if(!a)continue;
-    const q=augQuality(sk);
-    a.effects.forEach((eff,ei)=>{
-      if(eff.target!=='Armor'&&!isArmorValueBoost(eff))return;   // mitigations = target Armor ; bonus d'armure = Armor OU Item
-      const ev=augEffectAt(eff,q,augRoll(sk,ei)); if(!ev)return;
-      if(eff.target==='Armor'&&eff.op==='Add'){
-        for(const s of eff.stats){
-          const mk=AUG_MIT_TO_KEY[s];
-          if(mk){mitSum[mk]=(mitSum[mk]||0)+ev.val*100;if(!augMit[sk])augMit[sk]={};augMit[sk][mk]=(augMit[sk][mk]||0)+ev.val*100;}
+
+    // Augments sertis SUR CETTE PIÈCE (Phase 0 v2, remplace l'ancien pool global aug1/2/3 + sélecteur
+    // "sur quelle pièce ?" — l'augment est désormais rattaché directement à l'objet qui le porte).
+    let pieceArmorBonus=0; const augRows=[];
+    const list=(BUILD.augments||{})[sk]||[];
+    list.forEach((entry,idx)=>{
+      if(!entry)return; const a=augData(entry.id); if(!a)return;
+      const q=augQuality(sk,idx);
+      const rowMit={}; let rowArmor=0;
+      a.effects.forEach((eff,ei)=>{
+        if(eff.target!=='Armor'&&!isArmorValueBoost(eff))return;   // mitigations = target Armor ; bonus d'armure = Armor OU Item
+        const ev=augEffectAt(eff,q,augRoll(sk,idx,ei)); if(!ev)return;
+        if(eff.target==='Armor'&&eff.op==='Add'){
+          for(const s of eff.stats){const mk=AUG_MIT_TO_KEY[s];if(mk){mitSum[mk]=(mitSum[mk]||0)+ev.val*100;rowMit[mk]=(rowMit[mk]||0)+ev.val*100;}}
+        }else if(isArmorValueBoost(eff)){
+          rowArmor+=av0*(ev.val-1);
         }
-      }else if(isArmorValueBoost(eff)){
-        const pieceKey=(BUILD.augPiece||{})[sk], pieceIt=pieceKey?itemById(BUILD[pieceKey]):null;
-        if(pieceIt)augArmorBonus+=Number(wStat(pieceIt,getGrade(pieceKey,pieceIt),'armorValue')||0)*(ev.val-1);
+      });
+      if(Object.keys(rowMit).length||rowArmor){
+        const augIt=itemById(entry.id);
+        augRows.push({name:augIt?augIt.name:'Augment',mit:rowMit,armor:rowArmor});
+        pieceArmorBonus+=rowArmor;
       }
     });
+    const av=av0+pieceArmorBonus;
+    totalArmor+=av; augArmorBonus+=pieceArmorBonus;
+    pieces.push({slotKey:sk,label:SLOTS.find(s=>s.key===sk).label,name:it.name,armor:av,mit:pieceMit,augRows});
   }
-  totalArmor=Math.round(totalArmor+augArmorBonus);
+  totalArmor=Math.round(totalArmor);
   const dr=armorDR(totalArmor);
-  return {totalArmor,totalDur,mitSum,dr,augArmorBonus,pieces,augMit};
+  return {totalArmor,totalDur,mitSum,dr,augArmorBonus,pieces};
 }
 
 function renderStats(){
-  const {totalArmor,totalDur,mitSum,dr,augArmorBonus,pieces,augMit}=computeDefenseTotals();
+  const {totalArmor,totalDur,mitSum,dr,augArmorBonus,pieces}=computeDefenseTotals();
   const augNote=augArmorBonus?` <small style="color:var(--violet)">dont ${augArmorBonus>0?'+':''}${Math.round(augArmorBonus)} augments</small>`:'';
   document.getElementById('defense-dr').innerHTML=totalArmor? `<div class="dr-line">Armure ${totalArmor.toLocaleString('fr-FR')}${augNote} → <b>${Math.round(dr*100)}% de réduction</b> des dégâts physiques (rendements décroissants, plafond 95 %).</div>`:'';
   // Deux vues au choix (onglets) : % de mitigation par type, OU PV effectifs (EHP, Phase 2.1) — jamais
@@ -946,7 +1169,7 @@ function renderStats(){
   const w=pk?itemById(BUILD[pk]):null;
   const pg=w?getGrade(pk,w):0;
   const eff=w?(wStat(w,pg,'effectiveDps')??wStat(w,pg,'dps')??wStat(w,pg,'damagePerHit')):null;
-  const v=w?weaponDpsView(w,pg):null;
+  const v=w?weaponDpsView(w,pg,pk):null;
   const pvp=opts().pvp;
   document.getElementById('m-dps').innerHTML=eff!=null?Math.round(eff):'—';
   document.getElementById('m-dpsopt').innerHTML=v?(v.body.toLocaleString('fr-FR')+(v.uncond>0?` <small>+${Math.round(v.uncond*100)}%</small>`:'')+(pvp?' <small style="color:var(--ambre)">PvP</small>':'')):'—';
@@ -954,7 +1177,7 @@ function renderStats(){
   document.getElementById('m-hp').innerHTML=mh.toLocaleString('fr-FR')+(vitB?` <small>+${vitB} vit.</small>`:'');
   document.getElementById('m-dur').innerHTML=totalDur?totalDur.toLocaleString('fr-FR'):'—';
   renderProfile({pk,w,v,dr,mh,mitSum});
-  renderContribTree({pieces,augMit,mitSum,totalArmor,augArmorBonus,dr});
+  renderContribTree({pieces,mitSum,totalArmor,augArmorBonus,dr});
   renderSuggestions({totalArmor,dr});
   syncOpts();
 }
@@ -964,17 +1187,23 @@ function renderStats(){
 function computeSuggestions({totalArmor,dr}){
   const sugg=[];
 
-  // 0) Emplacement(s) d'augment vide(s) — potentiel non exploité, le plus évident des 3.
-  const emptyAugs=['aug1','aug2','aug3'].filter(sk=>!BUILD[sk]);
-  if(emptyAugs.length){
-    const label=emptyAugs.length>1?`${emptyAugs.length} emplacements d'augment sont vides`:`1 emplacement d'augment est vide`;
-    sugg.push({text:`<b>Augments</b> : ${label} — équiper un augment supplémentaire peut ajouter des dégâts, de l'armure ou des résistances.`,slot:emptyAugs[0]});
+  // 0) Emplacement(s) d'augment vide(s) sur les objets équipés — potentiel non exploité, le plus évident des 3.
+  const emptySpots=[];
+  for(const isk of ['weapon1','weapon2',...ARMOR_SLOTS]){
+    if(!BUILD[isk])continue;
+    const cap=augCapacity(isk), list=(BUILD.augments||{})[isk]||[];
+    const firstIdx=(()=>{for(let i=0;i<cap;i++)if(!list[i])return i;return -1;})();
+    if(firstIdx>=0){const sl=SLOTS.find(s=>s.key===isk);const filled=list.filter(Boolean).length;emptySpots.push({key:isk,idx:firstIdx,label:sl.label,n:cap-filled});}
+  }
+  if(emptySpots.length){
+    const total=emptySpots.reduce((s,x)=>s+x.n,0);
+    const detail=emptySpots.map(x=>`${esc(x.label)} (${x.n})`).join(', ');
+    sugg.push({text:`<b>Augments</b> : ${total} emplacement${total>1?'s':''} vide${total>1?'s':''} sur ${detail} — équiper un augment supplémentaire peut ajouter des dégâts, de l'armure ou des résistances.`,augSlot:{itemSlotKey:emptySpots[0].key,idx:emptySpots[0].idx}});
   }
 
   // 1) Meilleur objet possible dans la MÊME catégorie (même logique que le badge ▲ du loadout
   //    et l'axe Attaque du profil) — seuil 5% pour ne pas polluer avec des écarts négligeables.
   for(const sl of SLOTS){
-    if(sl.group==='Augments')continue;
     const id=BUILD[sl.key]; if(!id)continue;
     const it=itemById(id); if(!it)continue;
     const cur=metricAtMax(sl.key,it); if(!cur||cur.val<=0)continue;
@@ -991,17 +1220,6 @@ function computeSuggestions({totalArmor,dr}){
     sugg.push({text:`<b>Défense</b> : ton armure est déjà à ${Math.round(dr*100)}% de réduction — un +100 d'armure supplémentaire ne rapporterait que +${marginal.toFixed(1)} point (rendements décroissants). Une résistance élémentaire ou un augment de dégâts sera sans doute plus rentable maintenant.`,slot:null});
   }
 
-  // 3) Bonus d'armure d'augment jamais assigné à une pièce (plusieurs compatibles équipées,
-  //    aucune choisie → l'auto-sélection ne s'est pas déclenchée, le bonus ne compte nulle part).
-  for(const sk of ['aug1','aug2','aug3']){
-    const a=augData(BUILD[sk]); if(!a||!augHasArmorValueBoost(a))continue;
-    const cur=(BUILD.augPiece||{})[sk];
-    if(!cur && augCompatiblePieces(a).length>1){
-      const augIt=itemById(BUILD[sk]);
-      sugg.push({text:`<b>${esc(augIt?augIt.name:'Augment')}</b> : son bonus d'armure n'est appliqué à aucune pièce (plusieurs compatibles équipées) — choisis-en une dans le détail de l'augment (Mode Expert) pour qu'il compte dans le total.`,slot:null});
-    }
-  }
-
   return sugg;
 }
 function renderSuggestions(ctx){
@@ -1010,14 +1228,18 @@ function renderSuggestions(ctx){
   const sugg=computeSuggestions(ctx);
   if(!sugg.length){panel.style.display='none';return;}
   panel.style.display='block';
-  el.innerHTML=sugg.map(s=>`<div class="sug-row"><span>💡 ${s.text}</span>${s.slot?`<a class="sug-link" onclick="openPicker('${s.slot}')">Voir</a>`:''}</div>`).join('');
+  el.innerHTML=sugg.map(s=>{
+    const link=s.augSlot?`<a class="sug-link" onclick="openAugPicker('${s.augSlot.itemSlotKey}',${s.augSlot.idx})">Voir</a>`
+      :(s.slot?`<a class="sug-link" onclick="openPicker('${s.slot}')">Voir</a>`:'');
+    return `<div class="sug-row"><span>💡 ${s.text}</span>${link}</div>`;
+  }).join('');
 }
 
 // ── Arbre de contributions (Phase 2.3) — d'où vient chaque chiffre. Décompose le DPS
 // (skills + augments, additif/multiplicatif = la vraie formule) et l'armure/résistances
 // (par pièce + augments). La Survie (EHP) n'est PAS décomposée ici : c'est une division,
 // pas une somme — une répartition en "contributions" y serait artificielle.
-function renderContribTree({pieces,augMit,mitSum,totalArmor,augArmorBonus,dr}){
+function renderContribTree({pieces,mitSum,totalArmor,augArmorBonus,dr}){
   const el=document.getElementById('contrib-tree'); if(!el)return;
   let html='';
 
@@ -1029,18 +1251,18 @@ function renderContribTree({pieces,augMit,mitSum,totalArmor,augArmorBonus,dr}){
     const base=wStat(it,grade,'effectiveDps')??wStat(it,grade,'dps')??wStat(it,grade,'damagePerHit');
     if(base==null)continue;
     const {perSkill}=dmgBonusFor(it);
-    const augMult=augWeaponDmgMultBySlot(it);
+    const augMult=augWeaponDmgMultByAugIndex(it,k);
     let rows='';
     for(const sel of (BUILD.skills||[])){
       const s=perSkill[sel.id]; if(!s)continue;
       const sk=skillById(sel.id); if(!sk)continue;
       rows+=`<div class="ct-row"><span>${esc(sk.name)}</span><span class="ct-val ct-pos">+${Math.round(s*100)}%</span></div>`;
     }
-    for(const ak in augMult){
-      const augIt=itemById(BUILD[ak]); if(!augIt)continue;
-      rows+=`<div class="ct-row"><span>${esc(augIt.name)}</span><span class="ct-val ct-pos">+${Math.round((augMult[ak]-1)*100)}%</span></div>`;
+    for(const idx in augMult){
+      const entry=augEntry(k,idx); const augIt=entry?itemById(entry.id):null; if(!augIt)continue;
+      rows+=`<div class="ct-row"><span>${esc(augIt.name)}</span><span class="ct-val ct-pos">+${Math.round((augMult[idx]-1)*100)}%</span></div>`;
     }
-    const view=weaponDpsView(it,grade);
+    const view=weaponDpsView(it,grade,k);
     html+=`<div class="ct-block"><div class="slot-group-lab">${esc(l)} — ${esc(it.name)}</div>
       <div class="ct-row"><span>Base (grade ${grade})</span><span class="ct-val">${Math.round(base).toLocaleString('fr-FR')}</span></div>
       ${rows||'<div class="ct-row"><span style="opacity:.6">Aucun bonus actif</span></div>'}
@@ -1049,10 +1271,13 @@ function renderContribTree({pieces,augMit,mitSum,totalArmor,augArmorBonus,dr}){
   }
   if(!wlist.length)html+='<div class="ct-block empty-state">Équipe une arme pour voir le détail du DPS.</div>';
 
-  // Armure totale, par pièce
+  // Armure totale, par pièce (+ augments sertis sur cette pièce)
   if(pieces.length||augArmorBonus){
-    let arows=pieces.map(p=>`<div class="ct-row"><span>${esc(p.label)} — ${esc(p.name)}</span><span class="ct-val">${Math.round(p.armor).toLocaleString('fr-FR')}</span></div>`).join('');
-    if(augArmorBonus)arows+=`<div class="ct-row"><span>Augment</span><span class="ct-val ct-pos">${augArmorBonus>0?'+':''}${Math.round(augArmorBonus).toLocaleString('fr-FR')}</span></div>`;
+    let arows=pieces.map(p=>{
+      let r=`<div class="ct-row"><span>${esc(p.label)} — ${esc(p.name)}</span><span class="ct-val">${Math.round(p.armor).toLocaleString('fr-FR')}</span></div>`;
+      for(const ar of p.augRows){if(ar.armor)r+=`<div class="ct-row"><span>&nbsp;&nbsp;↳ ${esc(ar.name)}</span><span class="ct-val ct-pos">+${Math.round(ar.armor).toLocaleString('fr-FR')}</span></div>`;}
+      return r;
+    }).join('');
     html+=`<div class="ct-block"><div class="slot-group-lab">Armure totale</div>${arows}
       <div class="ct-row ct-total"><span>Total</span><span class="ct-val">${totalArmor.toLocaleString('fr-FR')} → ${Math.round(dr*100)}% réduction</span></div>
     </div>`;
@@ -1064,8 +1289,8 @@ function renderContribTree({pieces,augMit,mitSum,totalArmor,augArmorBonus,dr}){
     let mrows='';
     for(const m of activeMit){
       let rows=pieces.filter(p=>p.mit[m.k]).map(p=>`<div class="ct-row"><span>${esc(p.label)} — ${esc(p.name)}</span><span class="ct-val">+${p.mit[m.k]}%</span></div>`).join('');
-      for(const ak in augMit){
-        if(augMit[ak][m.k]){const augIt=itemById(BUILD[ak]);rows+=`<div class="ct-row"><span>${esc(augIt?augIt.name:'Augment')}</span><span class="ct-val ct-pos">+${Math.round(augMit[ak][m.k]*10)/10}%</span></div>`;}
+      for(const p of pieces){
+        for(const ar of p.augRows){if(ar.mit[m.k])rows+=`<div class="ct-row"><span>&nbsp;&nbsp;↳ ${esc(ar.name)}</span><span class="ct-val ct-pos">+${Math.round(ar.mit[m.k]*10)/10}%</span></div>`;}
       }
       mrows+=`<div class="ct-block ct-sub"><div class="slot-group-lab">${esc(m.label)}</div>${rows}
         <div class="ct-row ct-total"><span>Total</span><span class="ct-val">${Math.round((mitSum[m.k]||0)*10)/10}%</span></div>
@@ -1086,7 +1311,7 @@ function bestInClass(slotKey,it){
   const slotDef=SLOTS.find(s=>s.key===slotKey); if(!slotDef)return 0;
   let best=0;
   for(const cand of DB){
-    if(!slotDef.accept(cand)||compClass(slotKey,cand)!==cls)continue;
+    if(!slotDef.accept(cand)||compClass(slotKey,cand)!==cls||!isViableCandidate(cand))continue;
     const m=metricAtMax(slotKey,cand);
     if(m&&m.val>best)best=m.val;
   }
@@ -1235,7 +1460,7 @@ async function showBuildCost(){
 }
 
 // ── Picker (items + skills) ───────────────────────────────────────────────────
-let pkSlot=null, pkSkillType=null;
+let pkSlot=null, pkSkillType=null, pkAugTarget=null;
 // Filtres picker (Phase 1 ③) — libellés FR des sous-types + rang de rareté.
 const SUBTYPE_FR={rifles:'Fusils',sidearms:'Armes de poing',scatterguns:'Fusils à dispersion',heavyweapons:'Armes lourdes',longblades:'Lames longues',shortblades:'Lames courtes',lightarmor:'Armure légère',heavyarmor:'Armure lourde',stillsuit:'Distille',utilitywearables:'Tenues utilitaires',armor:'Armure',melee:'Mêlée',ranged:'À distance',misc:'Divers'};
 const RAR_RANK={Common:0,Uncommon:1,Rare:2,Unique:3,Legendary:4,Memento:5};
@@ -1277,7 +1502,7 @@ function scrollToEquippedGroup(){
   box.scrollTop = grp ? box.scrollTop + grp.getBoundingClientRect().top - box.getBoundingClientRect().top : 0;
 }
 function openPicker(slotKey){
-  pkSkillType=null; pkSlot=SLOTS.find(s=>s.key===slotKey);
+  pkSkillType=null; pkAugTarget=null; pkSlot=SLOTS.find(s=>s.key===slotKey);
   document.getElementById('pk-title').textContent='Choisir — '+pkSlot.label;
   document.getElementById('pk-search').value='';
   setFiltersDisplay(true); populateFilters();
@@ -1286,20 +1511,30 @@ function openPicker(slotKey){
 }
 function openSkillPicker(type){
   if(type==='Ability' && countType('Ability')>=SKILL_CAP.Ability)return; // « + » capacités désactivé quand plein
-  pkSlot=null; pkSkillType=type;
+  pkSlot=null; pkAugTarget=null; pkSkillType=type;
   document.getElementById('pk-title').textContent='Ajouter — '+(type==='Ability'?'Capacité':'Technique / Attribut');
   document.getElementById('pk-search').value='';
   setFiltersDisplay(false);
   document.getElementById('overlay').classList.add('open'); renderPicker();
 }
-function closePicker(){document.getElementById('overlay').classList.remove('open');pkSlot=null;pkSkillType=null;hideTip();}
+// Choisir un augment pour un emplacement précis d'un objet équipé (itemSlotKey,idx) — filtré à la
+// compatibilité de CET objet (arme ou pièce d'armure), pas de comparateur chiffré (cf. Phase 0).
+function openAugPicker(itemSlotKey,idx){
+  const it=itemById(BUILD[itemSlotKey]); if(!it)return;
+  pkSlot=null; pkSkillType=null; pkAugTarget={itemSlotKey,idx,it};
+  document.getElementById('pk-title').textContent='Choisir un augment — '+it.name;
+  document.getElementById('pk-search').value='';
+  setFiltersDisplay(false);
+  document.getElementById('overlay').classList.add('open'); renderPicker();
+}
+function closePicker(){document.getElementById('overlay').classList.remove('open');pkSlot=null;pkSkillType=null;pkAugTarget=null;hideTip();}
 document.getElementById('overlay').addEventListener('click',e=>{if(e.target.id==='overlay')closePicker();});
 
 // ── Comparateur instantané (Phase 1.1) ─────────────────────────────────────────
 // Métrique d'un candidat pour un slot, évaluée à GRADE MAX (plein potentiel).
 // equip() réinitialise le grade au max → candidat et objet équipé comparés sur la même base.
 function slotMetric(slotKey,it,grade){
-  if(isWeapon(it)){const v=weaponDpsView(it,grade);return v?{val:v.body,unit:v.unit}:null;}
+  if(isWeapon(it)){const v=weaponDpsView(it,grade,slotKey);return v?{val:v.body,unit:v.unit}:null;}
   if(it.group==='garment'){const a=wStat(it,grade,'armorValue');return (a!=null)?{val:Math.round(a),unit:'arm.'}:null;}
   return null; // augments : pas de stat chiffrée (cf. Phase 0)
 }
@@ -1344,6 +1579,29 @@ function renderPicker(){
     }).join('');
     return;
   }
+  if(pkAugTarget){
+    const {it,itemSlotKey,idx}=pkAugTarget, isW=isWeapon(it);
+    // En jeu, on ne peut pas sertir 2 fois le même augment sur UN SEUL objet (mais rien n'empêche de
+    // le reposer ailleurs sur un autre objet) — on l'exclut des autres emplacements de CET objet.
+    const alreadyOnThisItem=new Set(((BUILD.augments||{})[itemSlotKey]||[]).filter((e,i)=>e&&i!==idx).map(e=>e.id));
+    let list=DB.filter(c=>{
+      if(!isAug(c)||alreadyOnThisItem.has(c.id))return false;
+      const a=augData(c.id); if(!a)return false;
+      return isW?augAppliesToWeapon(a,it):augAppliesToArmorSub(a,subOf(it));
+    });
+    if(q)list=list.filter(c=>c.name.toLowerCase().includes(q));
+    list.sort((a,b)=>a.name.localeCompare(b.name));
+    if(!list.length){box.innerHTML='<div class="empty-state">Aucun augment compatible avec cet objet.</div>';return;}
+    box.innerHTML=list.map(c=>{
+      const a=augData(c.id), sv=augPickerSummary(a)||'<span class="aug-empty">Effet non chiffré.</span>';
+      return `<div class="pick-item" data-item="${esc(c.id)}" onclick="equip('${esc(c.id)}')">
+        <img src="${esc(iconUrl(c.icon))}" alt="" onerror="this.style.visibility='hidden'">
+        <div class="pi-body"><div class="pi-name">${esc(c.name)}</div>
+          <div class="pi-meta"><span class="rar rar-${esc(c.rarity||'')}">${esc(c.rarity||'—')}</span></div></div>
+        <div class="pi-right"><div class="pi-stat">${sv}</div></div></div>`;
+    }).join('');
+    return;
+  }
   const sort=document.getElementById('pk-sort').value;
   let list=DB.filter(pkSlot.accept);
   if(q)list=list.filter(it=>it.name.toLowerCase().includes(q));
@@ -1376,7 +1634,7 @@ function renderPicker(){
     const m=metricAtMax(pkSlot.key,it);
     const ratio=(m&&gbest>0)?m.val/gbest:0;                 // normalisé au meilleur DE SA CATÉGORIE
     const tier=m?metricTier(ratio):'';
-    const isBest=m&&gbest>0&&m.val>=gbest*0.999;
+    const isBest=isViableCandidate(it)&&m&&gbest>0&&m.val>=gbest*0.999;
     const mainVal=m?`<span class="${tier}">${m.val.toLocaleString('fr-FR')}</span> <small>${m.unit}</small>`:sv;
     const meter=m?`<div class="pi-meter"><i style="width:${Math.round(ratio*100)}%;background:${TIER_COLOR[tier]}"></i></div>`:'';
     const bestTag=isBest?'<div class="pi-best-tag">★ Meilleur</div>':'';
@@ -1386,7 +1644,7 @@ function renderPicker(){
     return `<div class="pick-item${it.id===eqId?' is-equipped':''}${isBest?' is-best':''}" data-item="${esc(it.id)}" onclick="equip('${esc(it.id)}')">
       <img src="${esc(iconUrl(it.icon))}" alt="" onerror="this.style.visibility='hidden'">
       <div class="pi-body"><div class="pi-name">${esc(it.name)}</div>
-        <div class="pi-meta"><span class="rar rar-${esc(it.rarity||'')}">${esc(it.rarity||'—')}</span> · T${it.tier||'?'} · ${esc(it.cat.split('/').slice(1).join(' / '))}</div>${meter}</div>
+        <div class="pi-meta"><span class="rar rar-${esc(it.rarity||'')}">${esc(it.rarity||'—')}</span> · ${it.tier?('T'+it.tier+' · '):''}${esc(it.cat.split('/').slice(1).join(' / '))}</div>${meter}</div>
       <div class="pi-right">${bestTag}<div class="pi-stat">${mainVal}</div>${delta}</div></div>`;
   };
 
@@ -1394,7 +1652,7 @@ function renderPicker(){
   for(const c of order){
     if(shown>=300)break;
     const items=groups.get(c).slice().sort(cmp);
-    const gbest=items.reduce((mx,it)=>{const m=metricAtMax(pkSlot.key,it);return (m&&m.val>mx)?m.val:mx;},0);
+    const gbest=items.reduce((mx,it)=>{if(!isViableCandidate(it))return mx;const m=metricAtMax(pkSlot.key,it);return (m&&m.val>mx)?m.val:mx;},0);
     let rows=''; for(const it of items){if(shown>=300)break;rows+=rowHtml(it,gbest);shown++;}
     // Chaque groupe est enveloppé → l'en-tête sticky ne colle qu'au sein de son groupe (sinon ils s'empilent).
     if(showHeads && c!=='_')html+=`<div class="pk-group" data-class="${esc(c)}"><div class="pk-group-head">${esc(classLabel(c))} <span>${items.length}</span></div>${rows}</div>`;
@@ -1403,9 +1661,17 @@ function renderPicker(){
   box.innerHTML=html;
 }
 
-function equip(id){if(!pkSlot)return;const slotKey=pkSlot.key;BUILD[slotKey]=id;if(BUILD.grades)delete BUILD.grades[slotKey];saveBuild();const it=itemById(id);closePicker();renderAll();
+function equip(id){
+  if(pkAugTarget){
+    const {itemSlotKey,idx}=pkAugTarget;
+    if(!BUILD.augments)BUILD.augments={}; if(!BUILD.augments[itemSlotKey])BUILD.augments[itemSlotKey]=[];
+    BUILD.augments[itemSlotKey][idx]={id,q:5,r:{}};
+    saveBuild();closePicker();renderAll();
+    return;
+  }
+  if(!pkSlot)return;const slotKey=pkSlot.key;BUILD[slotKey]=id;if(BUILD.grades)delete BUILD.grades[slotKey];saveBuild();const it=itemById(id);closePicker();renderAll();
   if(it&&(it.group==='weapons'||it.group==='garment')){const sel=document.getElementById('recipe-select');if(sel)sel.value=slotKey;showRecipe(id);}}
-function unequip(slotKey){delete BUILD[slotKey];saveBuild();renderAll();}
+function unequip(slotKey){delete BUILD[slotKey];if(BUILD.augments)delete BUILD.augments[slotKey];saveBuild();renderAll();}
 // Limite du jeu : 3 capacités + 3 techniques équipées (les attributs passifs ne sont pas limités).
 const SKILL_CAP={Ability:3,Technique:3};
 function countType(t){return (BUILD.skills||[]).filter(x=>{const s=skillById(x.id);return s&&s.type===t;}).length;}
@@ -1424,9 +1690,17 @@ function statRows(stats,levelFilter){
   return (stats||[]).filter(s=>levelFilter===undefined||s.lvl===levelFilter).map(s=>{
     let val, cls='';
     if(typeof s.v==='number'){
-      if(s.op==='Additive' && Math.abs(s.v)<=1 && (s.f||'').includes('%')){val=pct(s.v);}
+      const isPct=(s.f||'').includes('%');
+      if(s.op==='Additive' && Math.abs(s.v)<=1 && isPct){val=pct(s.v);}
       else val=fmt(s.v,s.f);
-      if(s.v<0)cls='neg'; else if(s.v>0&&(s.op==='Additive'))cls='pos';
+      // Stats de pièce (armure/armes) en % : une hausse est un bonus (vert) SAUF pour les stats de
+      // coût/pénalité (cf. AUG_INVERTED_STATS, ex. Coût en endurance de la Ruée — moins = mieux),
+      // où c'est l'inverse. Contrairement aux effets d'augment, ces stats brutes n'ont pas de champ
+      // "op" (pas d'augment) — on se base uniquement sur le signe et le format %.
+      if(s.v!==0 && isPct){
+        const down=s.v<0, inverted=AUG_INVERTED_STATS.has(s.k);
+        cls=(inverted?!down:down)?'neg':'pos';
+      }
     }else val=esc(String(s.v));
     return `<div class="tt-row"><span class="k">${esc(s.n||s.k)}</span><span class="v ${cls}">${val}</span></div>`;
   }).join('');
@@ -1478,6 +1752,7 @@ document.addEventListener('mousemove',e=>{
     try{if(ra&&ra.ok){const ad=await ra.json();AUGMENTS=ad.augments||{};}}catch(e){AUGMENTS={};}
     try{if(rlo&&rlo.ok){const ld=await rlo.json();LOOT=ld.loot||{};}}catch(e){LOOT={};}
     loadBuild();
+    migrateLegacyAugments();
     document.getElementById('boot').style.display='none';
     document.getElementById('app').style.display='block';
     syncUiMode();

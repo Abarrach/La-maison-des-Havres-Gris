@@ -450,10 +450,10 @@
     <span class="nav-sub">Retours de soirée</span>
   </div>
   <div class="nav-tabs">
-    <button class="nav-tab active" onclick="switchView('orga',event)">Organisation</button>
-    <button class="nav-tab" onclick="switchView('sop',event)">Manuel de combat</button>
-    <button class="nav-tab" onclick="switchView('joueur',event)">Retour joueur</button>
-    <button class="nav-tab" id="tab-admin" onclick="switchView('admin',event)">Admin</button>
+    <button class="nav-tab active" data-view="orga" onclick="switchView('orga',event)">Organisation</button>
+    <button class="nav-tab" data-view="sop" onclick="switchView('sop',event)">Manuel de combat</button>
+    <button class="nav-tab" data-view="joueur" onclick="switchView('joueur',event)">Retour joueur</button>
+    <button class="nav-tab" id="tab-admin" data-view="admin" onclick="switchView('admin',event)">Admin</button>
   </div>
 </nav>
 
@@ -906,10 +906,11 @@ function _switch(name, tab) {
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
   if (tab) tab.classList.add('active');
-  else document.querySelectorAll('.nav-tab')[{orga:0,sop:1,joueur:2,admin:3}[name]].classList.add('active');
+  else document.querySelector('.nav-tab[data-view="' + name + '"]')?.classList.add('active');
   if (name === 'joueur') renderJoueur();
   if (name === 'orga')   renderOrga();
   if (name === 'admin')  renderAdmin();
+  history.replaceState(null, '', '#' + name);
 }
 
 // ============================================================
@@ -2027,7 +2028,12 @@ function escAttr(s) { if (!s) return ''; return s.replace(/&/g,'&amp;').replace(
   if (at && !meInfo.can_organize) at.style.display = 'none'; // onglet Admin masqué aux non-organisateurs
   const so = document.getElementById('subtab-orga');
   if (so && meInfo.role === 'admin') so.style.display = ''; // gestion des organisateurs réservée aux admins
-  renderOrga();
+
+  // Ouvre directement l'onglet ciblé par l'URL (ex: debrief.html#joueur), sinon Organisation par défaut
+  const validViews = ['orga', 'sop', 'joueur', 'admin'];
+  let target = (location.hash || '').replace('#', '');
+  if (!validViews.includes(target) || (target === 'admin' && !meInfo.can_organize)) target = 'orga';
+  _switch(target);
 })();
 </script>
 </script>

@@ -237,6 +237,18 @@
     .usr-btn-promote { border-color: #3f6b3b; color: #7fce77; }
     .usr-btn-demote  { border-color: #8b6e3b; color: #e0b96a; }
     .usr-btn-del     { border-color: #7a2f2f; color: #ff8888; padding: 6px 9px; }
+    .usr-check-btn {
+      background: #1a0f05; border: 1px solid #3d2b16; color: #9db4d4;
+      font-size: 0.68em; padding: 6px 12px; border-radius: 3px; cursor: pointer;
+      white-space: nowrap; transition: all .15s;
+    }
+    .usr-check-btn:hover:not(:disabled) { border-color: #3a5a8a; }
+    .usr-check-btn:disabled { opacity: .5; cursor: default; }
+    .usr-check-status { color: #888; font-size: 0.75em; margin: -10px 0 16px; min-height: 1.2em; }
+    .usr-left-guild {
+      color: #ff8888; font-size: 0.72em; font-weight: bold; margin-left: 6px;
+      border: 1px solid #7a2f2f; border-radius: 10px; padding: 1px 8px;
+    }
 
     /* === ACTIVITÉ DES MEMBRES (admin) === */
     .act-row { padding: 5px 0; border-bottom: 1px solid #1e1208; }
@@ -434,12 +446,16 @@
 
   <!-- Gestion des utilisateurs (admin uniquement) -->
   <div class="section" id="users-admin-section" style="display:none;">
-    <div class="section-title">Gestion des utilisateurs</div>
+    <div class="section-title" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+      <span>Gestion des utilisateurs</span>
+      <button class="usr-check-btn" id="discord-check-btn" onclick="checkDiscordMembership()">🔄 Vérifier Discord</button>
+    </div>
     <p class="pg-intro">
       Promouvoir un joueur en <strong style="color:#cda434;">admin</strong> reste effectif même sans le
       rôle Discord requis. Le responsable du site et le chef de guilde ne peuvent être
       ni rétrogradés ni supprimés par un autre admin.
     </p>
+    <div id="discord-check-status" class="usr-check-status"></div>
     <div id="users-admin-list"><div class="order-empty">Chargement…</div></div>
   </div>
 
@@ -870,6 +886,7 @@ function pgBasePath() {
 }
 
 let ALL_USERS_FULL = []; // {user, role, discord_id,...} — chargé une fois, partagé entre les 2 sections admin
+let DISCORD_MEMBERSHIP = null; // {discord_id: bool} — rempli seulement après clic sur "Vérifier Discord" (null = jamais vérifié cette session)
 
 async function loadAdminSections() {
   if (localStorage.getItem("role") !== "admin") return;
@@ -979,9 +996,11 @@ function renderUsersAdmin() {
     const isProtected  = isSiteOwner || isGuildChief;
     const badge = isSiteOwner ? ' <span class="usr-chief">(responsable du site)</span>'
                 : isGuildChief ? ' <span class="usr-chief">(chef de guilde)</span>' : '';
+    const leftGuild = DISCORD_MEMBERSHIP && u.discord_id && DISCORD_MEMBERSHIP[u.discord_id] === false;
+    const leftBadge = leftGuild ? ' <span class="usr-left-guild" title="Absent de la guilde Discord lors de la dernière vérification">⚠ Hors Discord</span>' : '';
     const safe = u.user.replace(/'/g, "\\'").replace(/"/g, "&quot;");
     return `<div class="usr-row">
-      <span class="usr-name" style="color:${isAdmin ? '#f3c44f' : '#f5deb3'}">${u.user}${badge}</span>
+      <span class="usr-name" style="color:${isAdmin ? '#f3c44f' : '#f5deb3'}">${u.user}${badge}${leftBadge}</span>
       <div class="usr-actions">
         ${isProtected ? '' : `<button class="usr-btn${isAdmin ? ' usr-btn-demote' : ' usr-btn-promote'}" onclick="toggleUserRole('${safe}','${u.role}')">${isAdmin ? 'Rétrograder' : 'Promouvoir'}</button>
         <button class="usr-btn usr-btn-del" onclick="deleteUserAccount('${safe}')" title="Supprimer">🗑</button>`}
@@ -1008,6 +1027,33 @@ async function deleteUserAccount(target) {
     if (!j.ok) throw new Error(j.error || "Erreur serveur");
     await loadAdminSections();
   } catch(e) { alert("Échec : " + e.message); }
+}
+
+// Vérification manuelle de l'appartenance Discord (bouton "Vérifier Discord").
+// Volontairement PAS automatique au chargement de la page : sur 1 requête Discord
+// par membre, même par petits lots, ça prend plusieurs secondes — acceptable pour
+// une vérification ponctuelle à la demande, pas pour un chargement de page normal.
+async function checkDiscordMembership() {
+  const btn = document.getElementById("discord-check-btn");
+  const status = document.getElementById("discord-check-status");
+  btn.disabled = true;
+  btn.textContent = "⏳ Vérification…";
+  status.textContent = "Interrogation de l'API Discord (peut prendre quelques secondes)…";
+  try {
+    const res = await fetch("save.php", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ action: "checkDiscordMembership" }) });
+    const j = await res.json();
+    if (!j.ok) throw new Error(j.error || "Erreur serveur");
+    DISCORD_MEMBERSHIP = j.membership || {};
+    const now = new Date().toLocaleString("fr-FR", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" });
+    const leftCount = Object.values(DISCORD_MEMBERSHIP).filter(v => v === false).length;
+    status.textContent = `Dernière vérification : ${now} — ${leftCount} membre(s) absent(s) de la guilde Discord.`;
+    renderUsersAdmin();
+  } catch(e) {
+    status.textContent = "Échec de la vérification : " + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "🔄 Vérifier Discord";
+  }
 }
 
 function renderPagesAdmin(pages) {

@@ -153,6 +153,85 @@ function dco_guild_member(array $cfg, string $discordUserId): array {
 }
 
 /**
+ * Vérifie l'appartenance à la guilde pour PLUSIEURS utilisateurs en un seul appel
+ * (bouton « Vérifier Discord » de Mon Compte — déclenchement MANUEL uniquement).
+ * Trop lent/sensible au rate-limit Discord pour tourner au chargement de la page
+ * (tenté puis abandonné — résultats non déterministes à cause des 429 silencieux).
+ *
+ * Traite par petits lots en parallèle (curl_multi) avec retry sur 429 (Retry-After)
+ * pour rester déterministe même proche de la limite de l'API Discord.
+ *
+ * Renvoie [discord_id => bool in_guild]. Un id resté en erreur transitoire après
+ * tous les retries est OMIS du résultat (absent = « inconnu », à ne pas confondre
+ * avec « hors guilde »).
+ */
+function dco_guild_members_check(array $cfg, array $discordIds): array {
+    $token = $cfg['bot_token'] ?? '';
+    $guild = $cfg['guild_id'] ?? '';
+    $result = [];
+    if ($token === '' || $guild === '') return $result;
+
+    $pending = array_values(array_unique(array_filter($discordIds, fn($id) => $id !== '')));
+    $batchSize = 4;
+    $maxRounds = 4;
+
+    for ($round = 0; $round < $maxRounds && !empty($pending); $round++) {
+        $retryNext = [];
+        $retryAfter = 0.0;
+
+        foreach (array_chunk($pending, $batchSize) as $batch) {
+            $mh = curl_multi_init();
+            $handles = [];
+            foreach ($batch as $id) {
+                $ch = curl_init(DCO_API . "/guilds/{$guild}/members/{$id}");
+                curl_setopt_array($ch, [
+                    CURLOPT_HTTPHEADER     => ['Authorization: Bot ' . $token],
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_HEADER         => true,
+                    CURLOPT_TIMEOUT        => 10,
+                    CURLOPT_CONNECTTIMEOUT => 5,
+                ]);
+                curl_multi_add_handle($mh, $ch);
+                $handles[$id] = $ch;
+            }
+            $running = null;
+            do {
+                $mrc = curl_multi_exec($mh, $running);
+                if ($running > 0) curl_multi_select($mh);
+            } while ($running > 0 && $mrc === CURLM_OK);
+
+            foreach ($handles as $id => $ch) {
+                $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                if ($code === 200) {
+                    $result[$id] = true;
+                } elseif ($code === 404) {
+                    $result[$id] = false;
+                } elseif ($code === 429) {
+                    $retryNext[] = $id;
+                    $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
+                    $header = substr((string)curl_multi_getcontent($ch), 0, $headerSize);
+                    if (preg_match('/Retry-After:\s*([0-9.]+)/i', $header, $m)) {
+                        $retryAfter = max($retryAfter, (float)$m[1]);
+                    }
+                } else {
+                    // erreur transitoire (0/401/403/5xx) → retry plutôt que de conclure "hors guilde"
+                    $retryNext[] = $id;
+                }
+                curl_multi_remove_handle($mh, $ch);
+                curl_close($ch);
+            }
+            curl_multi_close($mh);
+            usleep(300000); // pacing entre lots pour rester sous la limite Discord
+        }
+
+        $pending = $retryNext;
+        if (!empty($pending)) sleep($retryAfter > 0 ? (int)ceil($retryAfter) : 1);
+    }
+
+    return $result;
+}
+
+/**
  * Le membre a-t-il le DROIT D'ACCÈS au site ?
  *   - doit être dans la guilde (in_guild)
  *   - si access_role_ids est vide  → tout membre de la guilde a accès

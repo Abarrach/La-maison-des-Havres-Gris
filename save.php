@@ -193,6 +193,22 @@ switch ($action) {
         echo json_encode(['ok' => true]);
         exit;
 
+    case 'checkDiscordMembership':
+        requireAdmin();
+        $cfg = dco_config();
+        if (!$cfg) jerr("Configuration Discord absente.", 500);
+
+        $usersFile = __DIR__ . '/users_SECURE_9x.json';
+        $users = readJson($usersFile);
+        $ids = [];
+        foreach ($users as $u) {
+            $id = trim((string)($u['discord_id'] ?? ''));
+            if ($id !== '') $ids[] = $id;
+        }
+        $membership = dco_guild_members_check($cfg, $ids);
+        echo json_encode(['ok' => true, 'membership' => $membership]);
+        exit;
+
     // ==========================================
     // CASES POUR LES REQUÊTES DE CRAFT (VEC IMAGE)
     // ==========================================

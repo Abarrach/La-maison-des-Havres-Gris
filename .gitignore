@@ -26,12 +26,12 @@ epice/config.php
 
 # Secret bot Sorties Discord — bot_token (NE JAMAIS COMMITER ; voir epice/discord_sortie_config.example.php)
 epice/discord_sortie_config.php
-# Journal runtime du bot Sorties
-epice/discord_sortie.log
-
 # Données runtime des retours de soirée (recréé par data-api.php)
 epice/data/debriefs.json
 epice/data/organizers.json
+epice/data/sop_content.json
+# Journal runtime du bot Sorties
+epice/data/discord_sortie.log
 # Sorties Discord non-épice (Labo/Farm/Landsraad) — runtime, recréé par discord_sortie.php
 epice/data/discord_sorties.json
 

@@ -12,8 +12,8 @@ $raw   = file_get_contents('php://input');
 $input = json_decode($raw, true) ?? [];
 
 // --- Contrôle d'accès serveur (basé sur la session du site, plus de token en dur) ---
-$organize_actions = ['list', 'open_sorties', 'new_soiree', 'close_soiree', 'reopen_sortie', 'save_assign', 'save_analyse', 'history', 'sortie_detail', 'delete_sortie'];
-$member_actions   = ['init', 'get_assign', 'my_debrief', 'save_debrief', 'public_history', 'public_sortie', 'me', 'my_activity'];
+$organize_actions = ['list', 'open_sorties', 'new_soiree', 'close_soiree', 'reopen_sortie', 'save_assign', 'save_analyse', 'history', 'sortie_detail', 'delete_sortie', 'save_sop_content'];
+$member_actions   = ['init', 'get_assign', 'my_debrief', 'save_debrief', 'public_history', 'public_sortie', 'me', 'my_activity', 'get_sop_content'];
 $admin_only       = ['get_orga', 'set_orga', 'activity_report'];
 if      (in_array($action, $admin_only, true))       epice_require_admin();
 elseif  (in_array($action, $organize_actions, true)) epice_require_organize();
@@ -29,16 +29,26 @@ function read_data(): array {
         ?? ['soiree_active' => null, 'sorties' => []];
 }
 
+// Acquiert un verrou exclusif en NON bloquant, avec quelques retries courts, plutôt qu'un
+// flock() classique qui peut bloquer indéfiniment si un autre process (ex : le bot Discord
+// discord_sortie.php, qui partage ce même fichier) tient le verrou trop longtemps.
+function try_lock($fp, $maxWaitSeconds = 1.5) {
+    $deadline = microtime(true) + $maxWaitSeconds;
+    do {
+        if (flock($fp, LOCK_EX | LOCK_NB)) return true;
+        usleep(50000); // 50ms
+    } while (microtime(true) < $deadline);
+    return false;
+}
+
 function write_data(array $data): void {
     $fp = @fopen(DATA_FILE, 'c+');
     if (!$fp) out(false, [], "Écriture impossible : droits insuffisants sur data/debriefs.json (le serveur web — www-data — doit pouvoir écrire le fichier).");
-    $ok = false;
-    if (flock($fp, LOCK_EX)) {
-        ftruncate($fp, 0); rewind($fp);
-        $ok = fwrite($fp, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) !== false;
-        fflush($fp);
-        flock($fp, LOCK_UN);
-    }
+    if (!try_lock($fp)) { fclose($fp); out(false, [], "Fichier de sorties occupé (accès concurrent). Réessaie dans quelques secondes."); }
+    ftruncate($fp, 0); rewind($fp);
+    $ok = fwrite($fp, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) !== false;
+    fflush($fp);
+    flock($fp, LOCK_UN);
     fclose($fp);
     if (!$ok) out(false, [], "Écriture impossible dans data/debriefs.json (droits serveur).");
 }
@@ -410,6 +420,26 @@ switch ($action) {
         $ok = @file_put_contents(__DIR__ . '/data/organizers.json', json_encode($clean, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) !== false;
         if (!$ok) out(false, [], "Écriture impossible (droits sur data/organizers.json).");
         out(true, ['organizers' => $clean, 'message' => 'Organisateurs enregistrés']);
+
+    // Contenu personnalisé du Manuel de combat (édité directement sur la page par un
+    // organisateur, cf debrief.html #sop-editable). html='' → le front garde son contenu par
+    // défaut livré dans le code, pas besoin de dupliquer le texte par défaut ici.
+    case 'get_sop_content':
+        $p = __DIR__ . '/data/sop_content.json';
+        $html = '';
+        if (file_exists($p)) {
+            $j = json_decode(file_get_contents($p), true);
+            $html = is_array($j) ? (string)($j['html'] ?? '') : '';
+        }
+        out(true, ['html' => $html]);
+
+    case 'save_sop_content':
+        $html = (string)($input['html'] ?? '');
+        $ok = @file_put_contents(__DIR__ . '/data/sop_content.json', json_encode([
+            'html' => $html, 'date' => date('Y-m-d H:i'), 'by' => epice_user(),
+        ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) !== false;
+        if (!$ok) out(false, [], "Écriture impossible (droits sur data/sop_content.json).");
+        out(true, ['message' => 'Manuel de combat enregistré']);
 
     // Rapport admin : qui organise / qui participe aux activités (toutes sorties,
     // épice ET autres types). Réservé admin — jamais exposé aux joueurs (pas de

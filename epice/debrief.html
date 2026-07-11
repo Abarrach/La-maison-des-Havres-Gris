@@ -294,6 +294,8 @@
     .assign-def .pil-pass { grid-column:1 / -1; }
     .btn-faucon { padding:.4rem .7rem; border-radius:2px; font-size:.65rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; cursor:pointer; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-family:'Inter',sans-serif; white-space:nowrap; }
     .btn-faucon.on { background:var(--accent); border-color:var(--accent); color:#0A0800; }
+    .btn-cac { padding:.4rem .7rem; border-radius:2px; font-size:.65rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; cursor:pointer; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-family:'Inter',sans-serif; white-space:nowrap; }
+    .btn-cac.on { background:var(--accent); border-color:var(--accent); color:#0A0800; }
     .ingame-card { background:var(--surface-2); border:1px solid var(--border); border-radius:2px; padding:.7rem .8rem; margin-bottom:.6rem; }
     .ingame-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:.5rem; }
     .ingame-title { font-size:.66rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--text-muted); }
@@ -433,6 +435,21 @@
     .faucon-text { color:var(--text-muted); line-height:1.5; }
     .faucon-text strong { color:var(--text); }
     .info-box { background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:2px; padding:.75rem 1rem; font-size:.8rem; color:var(--text-muted); line-height:1.6; margin-top:.65rem; }
+
+    /* "Ce soir" — chefs et consignes remplis en direct depuis la compo active (Manuel de combat) */
+    .sop-live-empty { font-size:.8rem; color:var(--text-faint); font-style:italic; padding:.4rem 0; }
+    .sop-live-title { font-size:.85rem; font-weight:600; color:var(--text); margin-bottom:.7rem; }
+    .sop-live-chefs { display:flex; flex-wrap:wrap; gap:.6rem; margin-bottom:.5rem; }
+    .sop-chef { display:flex; align-items:center; gap:.5rem; background:var(--surface); border:1px solid var(--border); border-radius:2px; padding:.5rem .8rem; font-size:.82rem; }
+    .sop-chef-role { font-size:.62rem; font-weight:700; letter-spacing:.1em; color:var(--accent); border:1px solid var(--accent-dim); border-radius:2px; padding:.1rem .4rem; }
+    .sop-live-notes { background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:2px; padding:.75rem 1rem; margin-top:.65rem; }
+    .sop-live-notes-title { font-size:.62rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); margin-bottom:.4rem; }
+    .sop-live-notes p { font-size:.82rem; color:var(--text-muted); line-height:1.6; }
+
+    /* Édition directe du Manuel de combat (organisateurs) */
+    .sop-edit-bar { display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; margin-bottom:1.25rem; }
+    .sop-edit-hint { font-size:.72rem; color:var(--text-faint); flex:1 1 220px; }
+    #sop-editable[contenteditable="true"] { outline:2px dashed var(--accent-dim); outline-offset:10px; border-radius:2px; background:rgba(200,146,16,.03); cursor:text; }
     .phase2-divider { border:none; border-top:1px dashed var(--border); margin:1rem 0 .75rem; }
     .phase2-label { text-align:center; font-size:.62rem; letter-spacing:.14em; text-transform:uppercase; color:var(--text-faint); margin-bottom:.75rem; }
   </style>
@@ -486,11 +503,17 @@
           <option value="">— Sélectionne ton rôle —</option>
           <option value="transporteur">Transporteur</option>
           <option value="moissonneur">Moissonneur</option>
-          <option value="defenseur_cac">Défenseur CAC</option>
           <option value="defense">Défense Rapprochée</option>
           <option value="patrouilleur">Patrouilleur</option>
+          <option value="pilote_orni_cac">Pilote Ornithoptère + CaC</option>
+          <!-- Défenseur CAC : rôle retiré (plus rentable de placer un CAC dans le transporteur).
+               Retiré du choix mais gardé dans ROLES{} plus bas pour l'affichage des anciens retours. -->
+          <!-- Formation Faucon (monter à deux sur un orni) : mécanique retirée du jeu, liée à un
+               exploit qui pourrait revenir. Options gardées ici en commentaire, prêtes à être
+               restaurées (cf. la constante FAUCON_MODE_ENABLED dans le code JS plus bas).
           <option value="faucon_b">Formation Faucon — Pilote B</option>
           <option value="faucon_a">Formation Faucon — Passager A</option>
+          -->
         </select>
       </div>
 
@@ -536,7 +559,10 @@
           <label class="check-item"><input type="checkbox" value="deadzone_ok"><div class="check-box"></div><span class="check-item-label">DEADZONE bien tenue</span></label>
           <label class="check-item"><input type="checkbox" value="aerien_ok"><div class="check-box"></div><span class="check-item-label">Personne au sol</span></label>
           <label class="check-item"><input type="checkbox" value="coordination_ok"><div class="check-box"></div><span class="check-item-label">Bonne coordination CDR/CP</span></label>
+          <!-- Formation Faucon réussie : mécanique retirée du jeu (cf FAUCON_MODE_ENABLED). Case
+               gardée en commentaire, faucon_ok reste dans BIEN_LBL{} pour l'affichage des anciens retours.
           <label class="check-item"><input type="checkbox" value="faucon_ok"><div class="check-box"></div><span class="check-item-label">Formation Faucon réussie</span></label>
+          -->
           <label class="check-item"><input type="checkbox" value="repli_ok"><div class="check-box"></div><span class="check-item-label">Repli rapide et organisé</span></label>
           <label class="check-item"><input type="checkbox" value="detection_ok"><div class="check-box"></div><span class="check-item-label">Bonne détection des menaces</span></label>
           <label class="check-item" onclick="toggleAutre('bien-autre', this)"><input type="checkbox" value="bien_autre"><div class="check-box"></div><span class="check-item-label">Autre</span></label>
@@ -590,22 +616,59 @@
   </div>
 </div>
 
-<!-- ===== VUE SOP ===== -->
+<!-- ===== VUE SOP (Briefing / Manuel de combat) ===== -->
 <div id="view-sop" class="view">
   <div class="sop-container">
 
+    <div class="sop-section">
+      <div class="sop-section-title">Ce soir</div>
+      <div id="sop-live"><div class="sop-live-empty">Chargement…</div></div>
+    </div>
+
+    <div id="sop-edit-bar" class="sop-edit-bar" style="display:none">
+      <button id="sop-edit-btn" class="btn btn-ghost" onclick="toggleSopEdit(true)">✎ Modifier cette page</button>
+      <div id="sop-edit-controls" style="display:none;gap:.6rem;flex-wrap:wrap;align-items:center">
+        <span class="sop-edit-hint">Clique dans le texte pour l'éditer directement. Évite de supprimer des blocs entiers — "Réinitialiser" restaure le contenu par défaut si l'affichage casse.</span>
+        <button class="btn btn-accent" onclick="saveSopContent()">💾 Enregistrer</button>
+        <button class="btn btn-ghost" onclick="toggleSopEdit(false)">✕ Annuler</button>
+        <button class="btn btn-danger" onclick="resetSopContent()">↺ Réinitialiser</button>
+      </div>
+      <span id="sop-edit-note" style="font-size:.72rem;color:var(--text-faint)"></span>
+    </div>
+
+    <div id="sop-editable">
+
     <div class="sop-doctrine">
       <div class="sop-doctrine-title">⚠ Doctrine fondamentale</div>
-      <p>Cette sortie est une <strong>opération de récolte en zone PvP</strong>, pas une sortie combat PvP. Le théâtre d'opération est <strong>exclusivement aérien</strong>. Personne ne descend au sol — ni pour poursuivre, ni pour finir un ennemi, ni pour aucune raison. <strong>Descendre au sol = se disperser, s'isoler, mourir.</strong></p>
+      <p>Cette sortie est une <strong>opération de récolte en zone PvP</strong>, pas une chasse aux kills : le mot d'ordre, c'est RÉCOLTE. La Moissonneuse et le Transporteur passent avant tout le reste — si le transporteur rentre plein, la soirée est gagnée ; 50 kills sans l'épice, c'est une soirée perdue. Le théâtre d'opération est <strong>exclusivement aérien</strong>. Personne ne descend au sol — ni pour poursuivre, ni pour finir un ennemi, ni pour aucune raison. <strong>Descendre au sol = se disperser, s'isoler, mourir.</strong></p>
+    </div>
+
+    <div class="sop-section">
+      <div class="sop-section-title">Checklist avant le départ (~1 min)</div>
+      <div class="role-card">
+        <ul>
+          <li>Inventaire : armure (Duralu/Plasta), eau, outils de réparation, missiles/roquettes (large pour les scouts), balises de réapparition.</li>
+          <li><strong>Skins et couleurs CHOAM sur tous les véhicules</strong> — identification visuelle rapide dans la mêlée, non négociable.</li>
+          <li>Push-to-Talk activé pour tout le monde. Les canaux restent calmes tant qu'il n'y a pas de contact.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="sop-section">
+      <div class="sop-section-title">Chaîne de commandement</div>
+      <div class="info-box">
+        Ce sont les <strong>chefs de groupe qui donnent les ordres d'engagement</strong>, jamais un joueur seul — chacun écoute son chef respectif.
+        <ul style="margin-top:.6rem;list-style:none;display:flex;flex-direction:column;gap:.3rem;padding:0">
+          <li>▸ <strong>CS</strong> (Chef de Sortie) — stratégie globale, décide du repli général.</li>
+          <li>▸ <strong>CDR</strong> (Chef Défense Rapprochée) — commande les ornis autour du transporteur.</li>
+          <li>▸ <strong>CP</strong> (Chef Patrouille) — commande les éclaireurs.</li>
+        </ul>
+      </div>
     </div>
 
     <div class="sop-section">
       <div class="sop-section-title">Glossaire — à lire si tu débutes</div>
       <div class="glossary-grid">
-        <div class="gloss-item"><span class="gloss-term">CS</span><span class="gloss-def">Chef de Sortie — commande globale, décide du repli général</span></div>
-        <div class="gloss-item"><span class="gloss-term">CDR</span><span class="gloss-def">Chef Défense Rapprochée — commande les ornis autour du transporteur</span></div>
-        <div class="gloss-item"><span class="gloss-term">CP</span><span class="gloss-def">Chef Patrouille — commande les éclaireurs</span></div>
-        <div class="gloss-item"><span class="gloss-term">CAC</span><span class="gloss-def">Corps-à-corps — combat rapproché (le Défenseur CAC protège le transporteur)</span></div>
         <div class="gloss-item"><span class="gloss-term">DEADZONE</span><span class="gloss-def">Le champ d'épice entier — zone d'exclusion : tout inconnu qui entre est pris pour cible</span></div>
         <div class="gloss-item"><span class="gloss-term">orni</span><span class="gloss-def">Ornithoptère — l'aéronef du jeu (Scout = léger, Assaut = lourd)</span></div>
         <div class="gloss-item"><span class="gloss-term">VBT</span><span class="gloss-def">Vehicle Backup Tool — outil qui range/déploie un orni à la demande</span></div>
@@ -613,19 +676,16 @@
         <div class="gloss-item"><span class="gloss-term">PTT</span><span class="gloss-def">Push-To-Talk — micro activé seulement quand on appuie sur une touche</span></div>
         <div class="gloss-item"><span class="gloss-term">callout</span><span class="gloss-def">Annonce vocale courte et standardisée d'une info en combat</span></div>
         <div class="gloss-item"><span class="gloss-term">down</span><span class="gloss-def">"Je suis mort / à terre"</span></div>
-        <div class="gloss-item"><span class="gloss-term">Faucon</span><span class="gloss-def">Formation Faucon — manœuvre pilote + passager armé sur un orni rapide</span></div>
       </div>
     </div>
 
     <div class="sop-section">
-      <div class="sop-section-title">Brief vocal — avant chaque départ (~2 min)</div>
+      <div class="sop-section-title">Mot d'ordre — à rappeler avant chaque départ</div>
       <div class="brief-block">
         <strong>"Ce soir : sortie récolte, pas combat. On reste dans les airs, personne au sol, jamais.</strong><br><br>
-        Chefs de ce soir : CS = [nom], CDR = [nom], CP = [nom].<br><br>
-        Couleurs de groupe : Récolte = [couleur], Défense = [couleur], Patrouille = [couleur]. Tout inconnu sans nos couleurs = ennemi potentiel. Balises séparées par groupe.<br><br>
-        PTT obligatoire en zone PvP. En engagement : seuls les chefs parlent. Les autres : contact ou down, c'est tout. Callout : pseudo, direction, type, nombre.<br><br>
+        On oublie la défense individuelle — on protège le groupe, on ne joue pas sa vie dans son coin.<br><br>
+        PTT obligatoire en zone PvP. En engagement : seuls les chefs parlent. Les autres : contact ou down, c'est tout.<br><br>
         DEADZONE = tout le champ d'épice. Tout inconnu qui rentre = pris pour cible immédiatement.<br><br>
-        [Si Formation Faucon ce soir] B et A, vous êtes binôme Faucon. B, ton orni rapide est dans le VBT ?<br><br>
         <strong>Questions ? On y va."</strong>
       </div>
     </div>
@@ -636,10 +696,9 @@
         <div class="role-card">
           <div class="role-card-title">🟡 Groupe Récolte</div>
           <ul>
-            <li>Transporteur, Moissonneur et Défenseur CAC : vous ne <strong>combattez jamais en l'air</strong>.</li>
-            <li>Contact signalé → le transporteur embarque la moissonneuse et file vers la base. <strong>Automatique, sans attendre d'ordre.</strong></li>
+            <li>Transporteur et Moissonneur : vous ne <strong>combattez jamais en l'air</strong>.</li>
+            <li>Contact signalé → le transporteur embarque la moissonneuse et file vers la base. <strong>Automatique, sans attendre d'ordre</strong> (cf. Protocole d'urgence).</li>
             <li>Pilote moissonneuse : orni pocket de la couleur défense → sort et escorte le transporteur dès l'engagement.</li>
-            <li><strong>Défenseur CAC</strong> : reste à bord du transporteur. Son rôle = repousser tout ennemi qui aborde le transport pour le découper au laser. Il ne quitte jamais le transporteur, même sous attaque.</li>
           </ul>
         </div>
         <div class="role-card">
@@ -660,14 +719,18 @@
             <li><strong>Ne descend jamais au sol.</strong></li>
           </ul>
         </div>
-        <div class="role-card">
-          <div class="role-card-title">⚡ Binôme Formation Faucon</div>
-          <ul>
-            <li><strong>B</strong> : orni armé sur le terrain + orni rapide dans VBT.</li>
-            <li><strong>A</strong> : orni armé + VBT vide + laser + lance-roquettes.</li>
-            <li>Sur ordre → B déploie rapide, range armé, aux commandes. A range son orni, monte sur les ailes de B.</li>
-          </ul>
-        </div>
+      </div>
+    </div>
+
+    <div class="sop-section">
+      <div class="sop-section-title">Pendant la récolte — le « spotting »</div>
+      <div class="info-box">
+        Contact repéré → callout standardisé (format ci-dessous), <strong>jamais</strong> « il y a un mec ! ». Une fois le spot fait, on attend la consigne du chef :<br>
+        <ul style="margin-top:.5rem;list-style:none;display:flex;flex-direction:column;gap:.25rem;padding:0">
+          <li>▸ « On observe » → personne ne bouge.</li>
+          <li>▸ « X et Y, allez voir » → seuls X et Y y vont.</li>
+          <li>▸ « On engage » → tout le monde suit les cibles désignées par le chef.</li>
+        </ul>
       </div>
     </div>
 
@@ -682,7 +745,7 @@
       <div class="sop-section-title">Contre-mesure — orni avec passager armé</div>
       <div class="info-box">
         <strong>Règle absolue : personne n'engage seul un orni avec passager armé.</strong><br>
-        2 joueurs concentrent le feu sur <strong>l'orni lui-même</strong> (pas le passager) pour le forcer à se poser. Les autres restent en mouvement constant — jamais stationnaire sous un orni ennemi. Si Formation Faucon disponible → déclenchement prioritaire.
+        2 joueurs concentrent le feu sur <strong>l'orni lui-même</strong> (pas le passager) pour le forcer à se poser. Les autres restent en mouvement constant — jamais stationnaire sous un orni ennemi.
       </div>
     </div>
 
@@ -701,7 +764,7 @@
         <ul>
           <li><strong>CDR :</strong> maintien des positions cardinales, pas de mouvement sans ordre.</li>
           <li><strong>CP :</strong> identification — orni seul ou passager armé ?</li>
-          <li>Passager armé confirmé → contre-mesure + Formation Faucon si disponible.</li>
+          <li>Passager armé confirmé → contre-mesure (2 joueurs concentrent le feu sur l'orni).</li>
         </ul>
       </div>
       <div class="scenario sc-rouge">
@@ -716,20 +779,55 @@
     </div>
 
     <div class="sop-section">
+      <div class="sop-section-title">Protocole d'urgence — en cas d'attaque</div>
+      <div class="scenario sc-rouge">
+        <ul>
+          <li><strong>Groupe Moissonneuse/Transporteur :</strong> décroche et part plein Sud, 750 m d'altitude maximum, full turbo.</li>
+          <li><strong>Escortes :</strong> ce sont les chefs de groupe qui décident instantanément de poursuivre l'agresseur ou de sécuriser l'extraction — aucune initiative personnelle.</li>
+          <li><strong>Pris pour cible individuellement :</strong> signale-le calmement. Le chef de groupe décide s'il peut te couvrir sans mettre en péril la récolte. Sinon : tu encaisses, tu te défends comme tu peux, et si tu meurs ce n'est pas grave — tu repars depuis une balise et tu reviens immédiatement dans la rotation.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="sop-section">
       <div class="sop-section-title">Mots-clés d'action</div>
       <div class="kw-grid">
         <div class="kw-row"><span class="kw-tag kw-j">JAUNE</span><span class="kw-desc">Contact suspect — on observe, on ne quitte pas sa position</span></div>
         <div class="kw-row"><span class="kw-tag kw-o">ORANGE</span><span class="kw-desc">Harcèlement aérien — CDR et CP coordonnent</span></div>
         <div class="kw-row"><span class="kw-tag kw-r">ROUGE</span><span class="kw-desc">Attaque organisée — convergence sur le transporteur, repli</span></div>
-        <div class="kw-row"><span class="kw-tag kw-g">FAUCON</span><span class="kw-desc">Binôme A/B se pose et exécute la manœuvre</span></div>
         <div class="kw-row"><span class="kw-tag kw-g">DEADZONE</span><span class="kw-desc">Le champ d'épice entier — tout inconnu est pris pour cible</span></div>
         <div class="kw-row"><span class="kw-tag kw-m">REPLI</span><span class="kw-desc">Retour immédiat à la base, sans discussion</span></div>
         <div class="kw-row"><span class="kw-tag kw-m">DOWN</span><span class="kw-desc">Je suis mort</span></div>
       </div>
     </div>
 
+    </div><!-- /#sop-editable -->
+
   </div>
 </div>
+
+<!-- ============================================================
+  ANCIEN CONTENU « Formation Faucon » (manœuvre à 2 sur un orni,
+  liée à un exploit de montage retiré du jeu) — retiré de la page
+  tant que FAUCON_MODE_ENABLED = false (cf. le code JS), gardé ici au
+  cas où l'exploit reviendrait. Fragments à réinsérer si besoin :
+
+  Glossaire : <div class="gloss-item"><span class="gloss-term">Faucon</span><span class="gloss-def">Formation Faucon — manœuvre pilote + passager armé sur un orni rapide</span></div>
+
+  Fiche de rôle :
+  <div class="role-card">
+    <div class="role-card-title">⚡ Binôme Formation Faucon</div>
+    <ul>
+      <li><strong>B</strong> : orni armé sur le terrain + orni rapide dans VBT.</li>
+      <li><strong>A</strong> : orni armé + VBT vide + laser + lance-roquettes.</li>
+      <li>Sur ordre → B déploie rapide, range armé, aux commandes. A range son orni, monte sur les ailes de B.</li>
+    </ul>
+  </div>
+
+  Contre-mesure (dernière phrase) : "Si Formation Faucon disponible → déclenchement prioritaire."
+  Scénario ORANGE (dernier point) : "Passager armé confirmé → contre-mesure + Formation Faucon si disponible."
+  Mots-clés : <div class="kw-row"><span class="kw-tag kw-g">FAUCON</span><span class="kw-desc">Binôme A/B se pose et exécute la manœuvre</span></div>
+============================================================ -->
 
 <!-- ===== VUE ADMIN ===== -->
 <div id="view-admin" class="view">
@@ -866,9 +964,15 @@ function uiDialog({ title = 'Information', message = '', isConfirm = false, okLa
 function uiConfirm(message, opts = {}) { return uiDialog({ ...opts, message, isConfirm: true }); }
 function uiAlert(message, opts = {}) { return uiDialog({ ...opts, message, isConfirm: false }); }
 
+// Formation Faucon (2 joueurs sur un même orni, l'un armé sur l'aile) : reposait sur une
+// mécanique de montage retirée du jeu — c'était lié à un exploit. Coupée de l'UI tant que la
+// mécanique n'existe pas, mais tout le code (data, fonctions, CSS) reste en place : si l'exploit
+// revient, repasser ce flag à true suffit à retrouver les boutons "✈ Faucon" dans l'assignation.
+const FAUCON_MODE_ENABLED = false;
+
 const SLIDER_LBL  = ['','Critique','Mauvais','Moyen','Bien','Excellent'];
 const CRYSTAL_LBL = ['','Difficile','Moyen','Correct','Bien','Excellent'];
-const ROLES = { transporteur:'Transporteur', moissonneur:'Moissonneur', defenseur_cac:'Défenseur CAC', defense:'Défense Rapprochée', patrouilleur:'Patrouilleur', faucon_b:'Faucon — Pilote', faucon_a:'Faucon — Passager' };
+const ROLES = { transporteur:'Transporteur', moissonneur:'Moissonneur', defenseur_cac:'Défenseur CAC', defense:'Défense Rapprochée', patrouilleur:'Patrouilleur', pilote_orni_cac:'Pilote Ornithoptère + CaC', faucon_b:'Faucon — Pilote', faucon_a:'Faucon — Passager' };
 const AXES  = [ {key:'comms',label:'Clarté des comms'},{key:'deadzone',label:'Respect DEADZONE'},{key:'aerien',label:'Doctrine aérienne'},{key:'coordination',label:'Coordination CDR/CP'} ];
 const BIEN_LBL = { comms_ok:'Comms claires', deadzone_ok:'DEADZONE tenue', aerien_ok:'Personne au sol', coordination_ok:'Bonne coordination', faucon_ok:'Faucon réussi', repli_ok:'Repli organisé', detection_ok:'Bonne détection', bien_autre:'Autre' };
 const PN_LBL   = { friendly_fire:'Tirs fratricides', spam_vocal:'Spam vocal', dispersion:'Dispersion', ordres_flous:'Ordres flous', deadzone_fail:'DEADZONE ratée', sol:'Descente au sol', panique:'Panique', pn_autre:'Autre' };
@@ -910,7 +1014,95 @@ function _switch(name, tab) {
   if (name === 'joueur') renderJoueur();
   if (name === 'orga')   renderOrga();
   if (name === 'admin')  renderAdmin();
+  if (name === 'sop')    renderSop();
   history.replaceState(null, '', '#' + name);
+}
+
+// ============================================================
+// VUE SOP (Manuel de combat / Briefing) — noms de chefs et consignes
+// particulières remplis en direct depuis la compo de la sortie active
+// (Admin > Assignation), pour que la page reflète "les bons noms" du
+// soir sans double-saisie.
+// ============================================================
+// Contenu par défaut (celui livré dans le code) — capturé une seule fois au chargement du
+// script, avant tout remplacement par une version enregistrée. Sert de filet de sécurité
+// pour "Réinitialiser" si un organisateur casse l'affichage en éditant.
+const SOP_DEFAULT_HTML = document.getElementById('sop-editable').innerHTML;
+let sopEditing = false;
+let sopServerHtml = null; // dernière version connue (enregistrée ou défaut) — utilisée par "Annuler"
+
+async function renderSop() {
+  const editBar = document.getElementById('sop-edit-bar');
+  if (editBar) editBar.style.display = meInfo.can_organize ? 'flex' : 'none';
+
+  // Contenu éditable : applique la version enregistrée si elle existe (sinon on garde le défaut
+  // déjà présent dans la page). On ne retouche rien si un organisateur est en train d'éditer.
+  if (!sopEditing) {
+    try {
+      const r = await fetch(`${API}?action=get_sop_content`);
+      const d = await r.json();
+      sopServerHtml = (d.ok && d.html) ? d.html : SOP_DEFAULT_HTML;
+      document.getElementById('sop-editable').innerHTML = sopServerHtml;
+    } catch { sopServerHtml = SOP_DEFAULT_HTML; }
+  }
+
+  const box = document.getElementById('sop-live');
+  if (!box) return;
+  box.innerHTML = '<div class="sop-live-empty">Chargement…</div>';
+  try {
+    const res = await fetch(`${API}?action=get_assign`);
+    const data = await res.json();
+    if (!data.ok || !data.assignation) {
+      box.innerHTML = '<div class="sop-live-empty">Aucune sortie en préparation pour l\'instant — reviens ici une fois qu\'une soirée est ouverte pour voir les chefs et les consignes du soir.</div>';
+      return;
+    }
+    const cm = data.assignation.commandement || {};
+    const notes = (data.assignation.briefing_notes || '').trim();
+    let h = `<div class="sop-live-title">${esc(data.soiree.titre)}${data.soiree.zone ? ' — ' + esc(data.soiree.zone) : ''}</div>`;
+    h += `<div class="sop-live-chefs">
+      <div class="sop-chef"><span class="sop-chef-role">CS</span>${orgaName(cm.cs)}</div>
+      <div class="sop-chef"><span class="sop-chef-role">CDR</span>${orgaName(cm.cdr)}</div>
+      <div class="sop-chef"><span class="sop-chef-role">CP</span>${orgaName(cm.cp)}</div>
+    </div>`;
+    if (notes) h += `<div class="sop-live-notes"><div class="sop-live-notes-title">Consignes particulières de ce soir</div><p>${esc(notes).replace(/\n/g,'<br>')}</p></div>`;
+    box.innerHTML = h;
+  } catch { box.innerHTML = '<div class="sop-live-empty">Impossible de charger les informations de ce soir.</div>'; }
+}
+
+// Bascule le mode édition du Manuel de combat (organisateurs uniquement — le bouton est masqué
+// aux autres, et l'enregistrement est de toute façon vérifié côté serveur).
+function toggleSopEdit(on) {
+  const el = document.getElementById('sop-editable');
+  sopEditing = on;
+  el.contentEditable = on ? 'true' : 'false';
+  document.getElementById('sop-edit-btn').style.display = on ? 'none' : '';
+  document.getElementById('sop-edit-controls').style.display = on ? 'flex' : 'none';
+  if (!on) {
+    el.innerHTML = sopServerHtml || SOP_DEFAULT_HTML; // Annuler = jette les modifs non enregistrées
+    document.getElementById('sop-edit-note').textContent = '';
+  }
+}
+
+async function saveSopContent() {
+  const el = document.getElementById('sop-editable');
+  const note = document.getElementById('sop-edit-note');
+  note.textContent = 'Enregistrement…';
+  try {
+    const r = await apiPost('save_sop_content', { html: el.innerHTML });
+    if (r.ok) {
+      sopServerHtml = el.innerHTML;
+      toggleSopEdit(false); // efface le message en cours avant qu'on affiche la confirmation
+      note.textContent = '✓ Enregistré';
+    } else {
+      note.textContent = 'Erreur : ' + r.error;
+    }
+  } catch { note.textContent = 'Erreur de connexion.'; }
+  setTimeout(() => note.textContent = '', 4000);
+}
+
+async function resetSopContent() {
+  if (!(await uiConfirm('Revenir au contenu par défaut de cette page ? La personnalisation actuelle sera perdue au prochain enregistrement.', { title:'Réinitialiser le Manuel de combat', okLabel:'Réinitialiser', danger:true }))) return;
+  document.getElementById('sop-editable').innerHTML = SOP_DEFAULT_HTML;
 }
 
 // ============================================================
@@ -1327,9 +1519,10 @@ function esc(s){if(!s)return'';return s.replace(/&/g,'&amp;').replace(/</g,'&lt;
 function emptyCompo() {
   return {
     commandement: { cs:'', cdr:'', cp:'' },
-    recolte: [ { transporteur:'', moissonneur:'', defenseur_cac:'' } ],
+    briefing_notes: '',                                                 // consignes particulières lues au brief (couleurs de groupe, etc.)
+    recolte: [ { transporteur:'', moissonneur:'' } ],                    // defenseur_cac retiré (rôle abandonné, plus rentable) — cf normalizeCompo
     defense: { nord:{nom:'',faucon:false,passager:''}, sud:{nom:'',faucon:false,passager:''}, est:{nom:'',faucon:false,passager:''}, ouest:{nom:'',faucon:false,passager:''} },
-    distance: { pilotes: [ { nom:'', faucon:false, passager:'' } ] }, // 1–4 pilotes ; faucon = conducteur + passager (sur l'aile)
+    distance: { pilotes: [ { nom:'', faucon:false, passager:'', cac:false } ] }, // 1–4 pilotes ; faucon = conducteur + passager (sur l'aile) — UI masquée, cf FAUCON_MODE_ENABLED ; cac = Pilote Ornithoptère + CaC
     ingame: [],                                                        // groupes en jeu (max 4) — saisie manuelle, ce qui s'affiche sur la carte
   };
 }
@@ -1338,7 +1531,11 @@ function emptyCompo() {
 function normalizeCompo(c) {
   c = c || {};
   c.commandement = c.commandement || { cs:'', cdr:'', cp:'' };
-  c.recolte = (Array.isArray(c.recolte) && c.recolte.length) ? c.recolte : [ { transporteur:'', moissonneur:'', defenseur_cac:'' } ];
+  c.briefing_notes = typeof c.briefing_notes === 'string' ? c.briefing_notes : '';
+  // Note : les groupes récolte existants peuvent encore porter un defenseur_cac (ancien
+  // format, rôle abandonné) — volontairement PAS nettoyé ici pour rester lisible dans
+  // l'historique (cf renderCompoReadonly). Seul le nouveau groupe par défaut ne l'a plus.
+  c.recolte = (Array.isArray(c.recolte) && c.recolte.length) ? c.recolte : [ { transporteur:'', moissonneur:'' } ];
   c.defense = c.defense || {};
   ['nord','sud','est','ouest'].forEach(k => {
     const v = c.defense[k];
@@ -1536,6 +1733,13 @@ function renderAssignBuilder() {
     <div class="assign-slot"><span class="assign-slot-label">Chef Patrouille (CP)</span><input class="roster-input" value="${escAttr(c.commandement.cp)}" oninput="currentCompo.commandement.cp=this.value"></div>
   </div>`;
 
+  // Briefing du soir (texte libre affiché dans l'onglet Manuel de combat pendant que la sortie est active)
+  h += `<div class="assign-group">
+    <div class="assign-group-head"><span class="assign-group-title">📋 Briefing du soir</span></div>
+    <div class="assign-hint">Affiché aux joueurs dans l'onglet « Manuel de combat » tant que cette sortie est active. Les noms de CS/CDR/CP ci-dessus y apparaissent automatiquement — utilise ce champ pour tout le reste (couleurs de groupe, consignes particulières de la soirée…).</div>
+    <textarea style="min-height:90px" placeholder="Ex. : Couleurs de groupe — Récolte : bleu, Défense : rouge, Patrouille : vert. Zone surveillée côté Nord ce soir." oninput="currentCompo.briefing_notes=this.value">${esc(c.briefing_notes)}</textarea>
+  </div>`;
+
   // Groupes Récolte (dynamique)
   c.recolte.forEach((g, i) => {
     h += `<div class="assign-group">
@@ -1545,36 +1749,37 @@ function renderAssignBuilder() {
       </div>
       <div class="assign-slot"><span class="assign-slot-label">Transporteur</span><input class="roster-input" value="${escAttr(g.transporteur)}" oninput="currentCompo.recolte[${i}].transporteur=this.value"></div>
       <div class="assign-slot"><span class="assign-slot-label">Moissonneur</span><input class="roster-input" value="${escAttr(g.moissonneur)}" oninput="currentCompo.recolte[${i}].moissonneur=this.value"></div>
-      <div class="assign-slot"><span class="assign-slot-label">Défenseur CAC</span><input class="roster-input" value="${escAttr(g.defenseur_cac)}" oninput="currentCompo.recolte[${i}].defenseur_cac=this.value"></div>
     </div>`;
   });
   h += `<button class="btn-mini btn-mini-add" onclick="addRecolte()" style="margin-bottom:.85rem">+ Ajouter un groupe récolte</button>`;
 
-  // Défense Rapprochée (4 cardinaux, chacun peut être un binôme Faucon)
+  // Défense Rapprochée (4 cardinaux, chacun peut être un binôme Faucon si FAUCON_MODE_ENABLED)
   h += `<div class="assign-group">
     <div class="assign-group-head"><span class="assign-group-title">🔵 Défense Rapprochée (4 ornis cardinaux)</span></div>
-    <div class="assign-hint">Un cardinal peut être un binôme Faucon (✈) : son passager est sur l'aile, non groupé.</div>`;
+    ${FAUCON_MODE_ENABLED ? `<div class="assign-hint">Un cardinal peut être un binôme Faucon (✈) : son passager est sur l'aile, non groupé.</div>` : ''}`;
   [['nord','Nord'],['sud','Sud'],['est','Est'],['ouest','Ouest']].forEach(([k,lbl]) => {
     const dd = c.defense[k];
     h += `<div class="assign-def">
       <span class="assign-slot-label">${lbl}</span>
       <input class="pil-nom roster-input" value="${escAttr(dd.nom)}" oninput="currentCompo.defense.${k}.nom=this.value">
-      <button class="btn-faucon ${dd.faucon ? 'on' : ''}" onclick="toggleDefFaucon('${k}')" title="Désigner conducteur Faucon">✈ Faucon</button>
-      ${dd.faucon ? `<input class="pil-pass roster-input" placeholder="Passager (sur l'aile, non groupé)" value="${escAttr(dd.passager)}" oninput="currentCompo.defense.${k}.passager=this.value">` : ''}
+      ${FAUCON_MODE_ENABLED ? `<button class="btn-faucon ${dd.faucon ? 'on' : ''}" onclick="toggleDefFaucon('${k}')" title="Désigner conducteur Faucon">✈ Faucon</button>
+      ${dd.faucon ? `<input class="pil-pass roster-input" placeholder="Passager (sur l'aile, non groupé)" value="${escAttr(dd.passager)}" oninput="currentCompo.defense.${k}.passager=this.value">` : ''}` : ''}
     </div>`;
   });
   h += `</div>`;
 
-  // Groupe à distance (1–4 pilotes ; toggle Faucon par pilote → champ passager)
+  // Groupe à distance (1–4 pilotes ; toggle Faucon par pilote → champ passager, si FAUCON_MODE_ENABLED ;
+  // toggle CaC = spécialisation Pilote Ornithoptère + CaC, propre à la patrouille)
   h += `<div class="assign-group">
     <div class="assign-group-head"><span class="assign-group-title">🔴 Groupe à distance (patrouille)</span></div>
-    <div class="assign-hint">Seuls les pilotes comptent dans le groupe en jeu. Le passager d'un conducteur Faucon est sur l'aile — il n'est pas groupé.</div>`;
+    <div class="assign-hint">Un pilote peut être marqué « CaC » (Pilote Ornithoptère + CaC).${FAUCON_MODE_ENABLED ? ' Le passager d\'un conducteur Faucon est sur l\'aile — il n\'est pas groupé.' : ''}</div>`;
   c.distance.pilotes.forEach((p, i) => {
     h += `<div class="assign-pilote">
       <input class="pil-nom roster-input" placeholder="Pilote ${i+1}" value="${escAttr(p.nom)}" oninput="currentCompo.distance.pilotes[${i}].nom=this.value">
-      <button class="btn-faucon ${p.faucon ? 'on' : ''}" onclick="toggleFaucon(${i})" title="Désigner conducteur Faucon">✈ Faucon</button>
+      <button class="btn-cac ${p.cac ? 'on' : ''}" onclick="togglePiloteCac(${i})" title="Pilote Ornithoptère + CaC">⚔ CaC</button>
+      ${FAUCON_MODE_ENABLED ? `<button class="btn-faucon ${p.faucon ? 'on' : ''}" onclick="toggleFaucon(${i})" title="Désigner conducteur Faucon">✈ Faucon</button>` : ''}
       ${c.distance.pilotes.length > 1 ? `<button class="btn-mini btn-mini-del" onclick="removePilote(${i})">✕</button>` : '<span></span>'}
-      ${p.faucon ? `<input class="pil-pass roster-input" placeholder="Passager (sur l'aile, non groupé)" value="${escAttr(p.passager)}" oninput="currentCompo.distance.pilotes[${i}].passager=this.value">` : ''}
+      ${FAUCON_MODE_ENABLED && p.faucon ? `<input class="pil-pass roster-input" placeholder="Passager (sur l'aile, non groupé)" value="${escAttr(p.passager)}" oninput="currentCompo.distance.pilotes[${i}].passager=this.value">` : ''}
     </div>`;
   });
   h += `<button class="btn-mini btn-mini-add" onclick="addPilote()">+ Ajouter un pilote</button>`;
@@ -1601,11 +1806,12 @@ function renderAssignBuilder() {
   box.innerHTML = h;
 }
 
-function addRecolte()    { currentCompo.recolte.push({transporteur:'',moissonneur:'',defenseur_cac:''}); renderAssignBuilder(); }
+function addRecolte()    { currentCompo.recolte.push({transporteur:'',moissonneur:''}); renderAssignBuilder(); }
 function removeRecolte(i){ currentCompo.recolte.splice(i,1); renderAssignBuilder(); }
 function toggleFaucon(i) { const p = currentCompo.distance.pilotes[i]; p.faucon = !p.faucon; if (!p.faucon) p.passager = ''; renderAssignBuilder(); }
 function toggleDefFaucon(k) { const d = currentCompo.defense[k]; d.faucon = !d.faucon; if (!d.faucon) d.passager = ''; renderAssignBuilder(); }
-function addPilote()     { currentCompo.distance.pilotes.push({nom:'',faucon:false,passager:''}); renderAssignBuilder(); }
+function togglePiloteCac(i) { const p = currentCompo.distance.pilotes[i]; p.cac = !p.cac; renderAssignBuilder(); }
+function addPilote()     { currentCompo.distance.pilotes.push({nom:'',faucon:false,passager:'',cac:false}); renderAssignBuilder(); }
 function removePilote(i) { currentCompo.distance.pilotes.splice(i,1); renderAssignBuilder(); }
 function addIngame()     { currentCompo.ingame.push({membres:['','','','']}); renderAssignBuilder(); }
 function removeIngame(i) { currentCompo.ingame.splice(i,1); renderAssignBuilder(); }
@@ -1627,7 +1833,7 @@ function rosterNames(c) {
 // NON encore placés dans la compo, filtre à la frappe, clavier ↑/↓/Entrée.
 const rosterPop = (function () {
   let pop = null, input = null, suppress = false, active = -1, hideTimer = null;
-  const POSTE_SHORT = { moissonneur:'Moiss.', transporteur:'Transp.', defenseur_cac:'CAC', pilote_orni:'Orni', present:'Présent' };
+  const POSTE_SHORT = { moissonneur:'Moiss.', transporteur:'Transp.', defenseur_cac:'CAC', pilote_orni:'Orni', pilote_orni_cac:'Orni+CaC', present:'Présent' };
 
   function ensure() {
     if (pop) return pop;
@@ -1748,8 +1954,9 @@ function prefillIngame() {
 
 function cleanCompo(c) {
   const cc = JSON.parse(JSON.stringify(c));
+  cc.briefing_notes = (cc.briefing_notes || '').trim();
   cc.distance.pilotes = (cc.distance.pilotes || []).filter(p => p.nom && p.nom.trim());
-  if (!cc.distance.pilotes.length) cc.distance.pilotes = [{nom:'',faucon:false,passager:''}];
+  if (!cc.distance.pilotes.length) cc.distance.pilotes = [{nom:'',faucon:false,passager:'',cac:false}];
   cc.ingame = (cc.ingame || []).map(g => ({membres:(g.membres||[]).filter(x => x && x.trim())})).filter(g => g.membres.length);
   return cc;
 }
@@ -1858,19 +2065,23 @@ function renderCompoReadonly(c) {
 
   // Indicateur formation minimale
   const r0 = c.recolte[0] || {};
-  const recOk = ['transporteur','moissonneur','defenseur_cac'].every(k => r0[k] && r0[k].trim());
+  const recOk = ['transporteur','moissonneur'].every(k => r0[k] && r0[k].trim());
   const defOk = ['nord','sud','est','ouest'].every(k => c.defense[k] && c.defense[k].nom && c.defense[k].nom.trim());
   h += `<div class="orga-minimal ${recOk && defOk ? 'ok' : 'ko'}">${recOk && defOk
     ? '✓ Formation minimale réunie — prêt à partir (Récolte + 4 Défenseurs cardinaux).'
-    : '⚠ Formation minimale incomplète — il faut le groupe Récolte (Transporteur + Moissonneur + CAC) et les 4 Défenseurs cardinaux pour partir.'}</div>`;
+    : '⚠ Formation minimale incomplète — il faut le groupe Récolte (Transporteur + Moissonneur) et les 4 Défenseurs cardinaux pour partir.'}</div>`;
 
   // ── SUR LE TERRAIN ──
   h += `<div class="orga-section-head">📍 Sur le terrain — rôles &amp; placement</div>`;
   c.recolte.forEach((g, i) => {
+    // Défenseur CAC : rôle abandonné (plus rentable de mettre un CAC dans le transporteur),
+    // n'est plus assignable — la ligne ne s'affiche que si une ancienne compo en porte encore un.
+    const cacRow = (g.defenseur_cac && g.defenseur_cac.trim())
+      ? `<div class="orga-row"><span class="orga-role">Défenseur CAC</span>${nm(g.defenseur_cac, c)}</div>` : '';
     h += `<div class="orga-group"><div class="orga-group-title">🟡 Groupe Récolte ${(c.recolte.length>1)?(i+1):''}</div>
       <div class="orga-row"><span class="orga-role">Transporteur</span>${nm(g.transporteur, c)}</div>
       <div class="orga-row"><span class="orga-role">Moissonneur</span>${nm(g.moissonneur, c)}</div>
-      <div class="orga-row"><span class="orga-role">Défenseur CAC</span>${nm(g.defenseur_cac, c)}</div>
+      ${cacRow}
     </div>`;
   });
 
@@ -1892,12 +2103,13 @@ function renderCompoReadonly(c) {
     </div>
   </div>`;
 
-  // Groupe à distance (pilotes + Faucon)
+  // Groupe à distance (pilotes + Faucon + CaC)
   const pilotes = c.distance.pilotes.filter(p => p.nom && p.nom.trim());
   if (pilotes.length) {
     h += `<div class="orga-group"><div class="orga-group-title">🔴 Groupe à distance</div>`;
     pilotes.forEach(p => {
-      h += `<div class="orga-row"><span class="orga-role">${p.faucon ? '✈ Conducteur Faucon' : 'Pilote'}</span>${nm(p.nom, c)}`;
+      const role = p.faucon ? '✈ Conducteur Faucon' : (p.cac ? '⚔ Pilote Ornithoptère + CaC' : 'Pilote');
+      h += `<div class="orga-row"><span class="orga-role">${role}</span>${nm(p.nom, c)}`;
       if (p.faucon && p.passager && p.passager.trim())
         h += ` <span class="orga-pass">+ ${esc(p.passager)} <em>(sur l'aile, non groupé)</em></span>`;
       h += `</div>`;

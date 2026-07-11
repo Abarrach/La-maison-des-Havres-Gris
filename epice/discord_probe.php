@@ -46,11 +46,24 @@ if ($hasCfg) {
     echo "       guild_id            : " . ($cfg['guild_id'] !== '' ? $cfg['guild_id'] : "(vide → commande globale)") . "\n";
 }
 
-// 4. data/ accessible en écriture
+// 4. data/ accessible en écriture (test réel, pas seulement is_writable() qui peut mentir
+// selon les ACL/le user effectif de PHP-FPM)
 $dataDir = __DIR__ . '/data';
-$writable = is_dir($dataDir) && is_writable($dataDir);
-line($writable, "Dossier data/ accessible en écriture",
-    $writable ? "OK" : "le serveur web (www-data) doit pouvoir écrire data/debriefs.json");
+$testFile = $dataDir . '/discord_probe_test.tmp';
+$writeOk = @file_put_contents($testFile, 'probe ' . date('c')) !== false;
+if ($writeOk) @unlink($testFile);
+line($writeOk, "Écriture réelle dans data/ (fichier de test)",
+    $writeOk ? "OK — www-data (uid=" . (function_exists('posix_geteuid') ? posix_geteuid() : '?') . ") peut écrire" : "ÉCHEC — droits insuffisants sur epice/data/ pour l'utilisateur exécutant PHP");
+
+// 5. Le journal existe-t-il déjà, et est-il lisible ?
+$logFile = $dataDir . '/discord_sortie.log';
+if (file_exists($logFile)) {
+    echo "\n--- Dernières lignes de discord_sortie.log ---\n";
+    $lines = @file($logFile);
+    echo implode('', array_slice($lines ?: [], -20));
+} else {
+    echo "\n(discord_sortie.log n'existe pas encore — aucune requête n'a atteint ce point du code jusqu'ici)\n";
+}
 
 echo "\n=== Fin ===\n";
 echo "Quand tout est [OK], renseigne l'URL d'interactions chez Discord puis supprime ce fichier.\n";

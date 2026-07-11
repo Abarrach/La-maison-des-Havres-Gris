@@ -22,18 +22,37 @@ if (!file_exists($CFG_PATH)) { http_response_code(500); echo 'config absente'; e
 $CFG = require $CFG_PATH;
 
 // ---- Journal d'erreurs (silencieux côté Discord) ------------
+// Écrit dans epice/data/ (protégé de l'accès direct par nginx, et confirmé accessible en
+// écriture pour www-data — contrairement à epice/ lui-même dont les droits sont incertains).
 function dlog($msg) {
-    @file_put_contents(__DIR__ . '/discord_sortie.log', date('c') . ' ' . $msg . "\n", FILE_APPEND);
+    $dir = __DIR__ . '/data';
+    if (!is_dir($dir)) @mkdir($dir, 0775, true);
+    @file_put_contents($dir . '/discord_sortie.log', date('c') . ' ' . $msg . "\n", FILE_APPEND);
 }
+
+// Filet de sécurité pour les erreurs FATALES non rattrapables par try/catch
+// (ex: appel de fonction inexistante, épuisement mémoire). Sans ça, Discord
+// affiche juste "Une erreur s'est produite. Réessaie." sans aucune trace côté serveur.
+register_shutdown_function(function () {
+    $err = error_get_last();
+    if ($err && in_array($err['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+        dlog('FATAL (shutdown) : ' . $err['message'] . ' @ ' . $err['file'] . ':' . $err['line']);
+    }
+});
 
 // ---- Postes proposés à l'inscription ------------------------
 //  id technique (stocké) => libellé affiché. Mappés sur la structure
 //  d'assignation de l'outil Activité Guilde (recolte / defense / distance).
+//  'defenseur_cac' : rôle retiré (plus rentable de mettre un CAC dans le
+//  transporteur) — gardé ici pour continuer à afficher/grouper correctement
+//  les inscriptions déjà enregistrées, mais retiré du menu d'inscription
+//  (cf POSTES_SELECTABLE, seul utilisé pour construire le select Discord).
 const POSTES = [
     'moissonneur'  => 'Moissonneur',
     'transporteur' => 'Transporteur',
     'defenseur_cac'=> 'Défenseur CaC',
     'pilote_orni'  => 'Pilote Ornithoptère',
+    'pilote_orni_cac' => 'Pilote Ornithoptère + CaC',
     'present'      => 'Présent (poste à définir)',
 ];
 const POSTE_ICON = [
@@ -41,7 +60,15 @@ const POSTE_ICON = [
     'transporteur' => '🚚',
     'defenseur_cac'=> '⚔️',
     'pilote_orni'  => '🦅',
+    'pilote_orni_cac' => '⚔️',
     'present'      => '✅',
+];
+const POSTES_SELECTABLE = [
+    'moissonneur'  => 'Moissonneur',
+    'transporteur' => 'Transporteur',
+    'pilote_orni'  => 'Pilote Ornithoptère',
+    'pilote_orni_cac' => 'Pilote Ornithoptère + CaC',
+    'present'      => 'Présent (poste à définir)',
 ];
 
 // ---- Types de sortie ----------------------------------------
@@ -67,11 +94,18 @@ $raw       = file_get_contents('php://input');
 $signature = $_SERVER['HTTP_X_SIGNATURE_ED25519']   ?? '';
 $timestamp = $_SERVER['HTTP_X_SIGNATURE_TIMESTAMP'] ?? '';
 
+// Trace inconditionnelle de toute requête reçue — sert à savoir si on arrive bien jusqu'ici
+// (utile pour diagnostiquer un échec qui ne produit aucune autre entrée de log).
+dlog('requête reçue : méthode=' . ($_SERVER['REQUEST_METHOD'] ?? '?') . ' longueur_body=' . strlen($raw) . ' sig=' . ($signature !== '' ? 'présente' : 'absente'));
+
 if (!function_exists('sodium_crypto_sign_verify_detached')) {
     dlog('FATAL: extension sodium absente — signature non vérifiable');
     http_response_code(500); echo 'sodium manquant'; exit;
 }
-if ($signature === '' || $timestamp === '') { http_response_code(401); echo 'signature manquante'; exit; }
+if ($signature === '' || $timestamp === '') {
+    dlog('signature manquante (en-têtes X-Signature-Ed25519 / X-Signature-Timestamp absents)');
+    http_response_code(401); echo 'signature manquante'; exit;
+}
 
 $ok = false;
 try {
@@ -83,17 +117,25 @@ try {
 } catch (Throwable $e) {
     dlog('Erreur vérif signature: ' . $e->getMessage());
 }
-if (!$ok) { http_response_code(401); echo 'signature invalide'; exit; }
-
+if (!$ok) {
+    dlog('signature invalide (public_key configurée ? longueur=' . strlen((string)($CFG['public_key'] ?? '')) . ')');
+    http_response_code(401); echo 'signature invalide'; exit;
+}
 // ============================================================
 //  2) ROUTAGE DE L'INTERACTION
 // ============================================================
 header('Content-Type: application/json; charset=utf-8');
 $body = json_decode($raw, true) ?? [];
 $type = $body['type'] ?? 0;
+dlog('signature valide, type=' . $type . ($type === 5 ? ' custom_id=' . ($body['data']['custom_id'] ?? '?') : ''));
 
 // -- PING : poignée de main de Discord ------------------------
 if ($type === 1) { echo json_encode(['type' => 1]); exit; }
+
+// À partir d'ici, toute exception/erreur Throwable (TypeError, etc.) est rattrapée pour
+// logger le détail dans discord_sortie.log au lieu de laisser Discord afficher un message
+// générique sans aucune trace exploitable côté serveur.
+try {
 
 // -- SLASH COMMAND --------------------------------------------
 if ($type === 2) {
@@ -141,6 +183,11 @@ if ($type === 3) {
 }
 
 http_response_code(400); echo 'type non géré'; exit;
+
+} catch (Throwable $e) {
+    dlog('FATAL (exception) : ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine() . "\n" . $e->getTraceAsString());
+    respond_message("Erreur interne. Réessaie, et préviens un admin si ça persiste.", true);
+}
 
 
 // ============================================================
@@ -205,6 +252,12 @@ function handle_create($body, $stype = 'epice') {
     if ($titre === '') respond_message("Le titre est obligatoire.", true);
 
     [$date, $heure] = parse_when($v['quand'] ?? '');
+    // L'heure (pas seulement la date) est obligatoire : sans elle, la purge auto
+    // (discord_sortie_cleanup.php) ne peut jamais calculer de fin et ignore la sortie pour toujours.
+    // Discord INTERDIT de répondre à un MODAL_SUBMIT par un nouveau modal (rejeté silencieusement,
+    // Discord affiche alors son propre bandeau générique) : on répond par un message avec
+    // récapitulatif, pour permettre un copier-coller rapide dans un nouveau /sortie creer.
+    if ($heure === '') respond_missing_heure($v);
 
     $sortie = [
         'id'          => 'sortie_' . time(),
@@ -233,16 +286,51 @@ function handle_create($body, $stype = 'epice') {
         $d = read_data();
         $d['sorties'][]     = $sortie;
         $d['soiree_active'] = ['id'=>$sortie['id'],'date'=>$date,'titre'=>$titre,'zone'=>$sortie['zone'],'statut'=>'ouverte'];
-        write_data($d);
+        if (!write_data($d)) respond_message("Fichier de sorties occupé (accès concurrent). Réessaie dans quelques secondes.", true);
     } else {
         // AUTRES TYPES : store Discord séparé, n'affecte pas le débrief ni la soirée active.
         $ds = read_dstore();
         $ds['sorties'][] = $sortie;
-        write_dstore($ds);
+        if (!write_dstore($ds)) respond_message("Fichier de sorties occupé (accès concurrent). Réessaie dans quelques secondes.", true);
     }
 
     echo json_encode(['type' => 4, 'data' => build_sortie_message($sortie)]);
+
+    // On répond à Discord tout de suite (rafraîchit sous la limite de 3 s), puis on va
+    // rechercher l'id du message qu'il vient de créer — Discord ne le renvoie PAS dans la
+    // réponse d'interaction elle-même (type 4), il faut le redemander via l'API webhook.
+    // Sans ce message_id, discord_sortie_cleanup.php (purge auto 4 h après la fin) ne sait
+    // jamais QUOI supprimer et ignore silencieusement la sortie pour toujours.
+    if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
+    $mid = fetch_original_message_id($body);
+    if ($mid !== '') {
+        mutate_sortie($sortie['id'], function (&$s) use ($mid) { $s['discord']['message_id'] = $mid; });
+    } else {
+        dlog('handle_create: message_id introuvable pour sortie ' . $sortie['id'] . ' — purge auto impossible pour ce post');
+    }
     exit;
+}
+
+// Récupère l'id du message que Discord vient de créer à partir d'une réponse d'interaction
+// (type 4/7) — endpoint "get original interaction response", authentifié par le token de
+// l'interaction (pas le bot token). Le token n'est valable que ~15 min après l'interaction.
+function fetch_original_message_id($body) {
+    global $CFG;
+    $token = $body['token'] ?? '';
+    $appId = $CFG['app_id'] ?? '';
+    if ($token === '' || $appId === '') return '';
+    $ch = curl_init("https://discord.com/api/v10/webhooks/{$appId}/{$token}/messages/@original");
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CONNECTTIMEOUT => 3,
+        CURLOPT_TIMEOUT        => 5,
+    ]);
+    $res  = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    if ($code !== 200) { dlog('fetch_original_message_id: HTTP ' . $code); return ''; }
+    $j = json_decode((string)$res, true);
+    return (string)($j['id'] ?? '');
 }
 
 // Trouve la sortie par id dans l'un des deux stores (débrief OU store Discord),
@@ -383,6 +471,7 @@ function handle_edit_save($body, $sid) {
     $titre = trim($v['titre'] ?? '');
     if ($titre === '') respond_message("Le titre est obligatoire.", true);
     [$date, $heure] = parse_when($v['quand'] ?? '');
+    if ($heure === '') respond_missing_heure($v);
 
     $updated = mutate_sortie($sid, function (&$s) use ($titre, $date, $heure, $v) {
         $s['titre']       = $titre;
@@ -656,7 +745,7 @@ function build_sortie_message($sortie) {
     if ($usePostes) {
         // ÉPICE : menu déroulant de postes + boutons peut-être / absent / désinscription.
         $options = [];
-        foreach (POSTES as $pid => $plabel) {
+        foreach (POSTES_SELECTABLE as $pid => $plabel) {
             $options[] = ['label' => $plabel, 'value' => $pid, 'emoji' => ['name' => POSTE_ICON[$pid] ?? '✅']];
         }
         $components = [
@@ -705,6 +794,27 @@ function respond_message($text, $ephemeral = false) {
     exit;
 }
 
+// Erreur "heure manquante" — embed rouge avec le détail du problème + récap de ce qui avait
+// été saisi (Discord ne permet pas de rouvrir le formulaire pré-rempli après une soumission
+// de modal, donc on facilite au moins le copier-coller dans un nouveau /sortie creer).
+function respond_missing_heure($v) {
+    $val = fn($k) => trim((string)($v[$k] ?? '')) !== '' ? trim((string)$v[$k]) : '—';
+    $data = ['flags' => 64, 'embeds' => [[
+        'title'       => '⚠ Heure de début manquante',
+        'description' => "Le champ **Date & heure** doit contenir une heure, pas seulement une date.\nFormat attendu : `25-06-2026 21:00`\n\nRelance `/sortie creer` — voici ce que tu avais saisi, pour copier-coller :",
+        'color'       => hexdec('E74C3C'),
+        'fields'      => [
+            ['name' => 'Titre',       'value' => $val('titre'), 'inline' => true],
+            ['name' => 'Date tapée',  'value' => $val('quand'), 'inline' => true],
+            ['name' => 'Zone',        'value' => $val('zone'),  'inline' => true],
+            ['name' => 'Durée',       'value' => $val('duree'), 'inline' => true],
+            ['name' => 'Description', 'value' => $val('desc'),  'inline' => false],
+        ],
+    ]]];
+    echo json_encode(['type' => 4, 'data' => $data]);
+    exit;
+}
+
 // Met à jour le message du composant (type 7) — transforme l'éphémère de confirmation en résultat.
 function respond_update($text) {
     echo json_encode(['type' => 7, 'data' => ['content' => $text, 'components' => []]]);
@@ -745,6 +855,20 @@ function parse_when($s) {
     return [$s, '']; // illisible : on garde le texte brut en "date"
 }
 
+// Acquiert un verrou exclusif en NON bloquant, avec quelques retries courts, plutôt qu'un
+// flock() classique qui peut bloquer indéfiniment si un autre process tient le verrou trop
+// longtemps. Discord n'attend que ~3s la réponse à une interaction : mieux vaut échouer vite
+// et proprement (loggable) que de laisser la requête pendre jusqu'au générique "Une erreur
+// s'est produite. Réessaie." sans la moindre trace côté serveur.
+function try_lock($fp, $maxWaitSeconds = 1.5) {
+    $deadline = microtime(true) + $maxWaitSeconds;
+    do {
+        if (flock($fp, LOCK_EX | LOCK_NB)) return true;
+        usleep(50000); // 50ms
+    } while (microtime(true) < $deadline);
+    return false;
+}
+
 // --- Stockage partagé avec data-api.php (même fichier, même verrou) ---
 function data_file() {
     $dir = __DIR__ . '/data';
@@ -756,16 +880,16 @@ function read_data(): array {
     if (!file_exists($f)) return ['soiree_active' => null, 'sorties' => []];
     return json_decode(file_get_contents($f), true) ?? ['soiree_active' => null, 'sorties' => []];
 }
-function write_data(array $data): void {
+function write_data(array $data): bool {
     $fp = @fopen(data_file(), 'c+');
-    if (!$fp) { dlog('write_data: ouverture impossible (droits ?)'); return; }
-    if (flock($fp, LOCK_EX)) {
-        ftruncate($fp, 0); rewind($fp);
-        fwrite($fp, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-        fflush($fp);
-        flock($fp, LOCK_UN);
-    }
+    if (!$fp) { dlog('write_data: ouverture impossible (droits ?)'); return false; }
+    if (!try_lock($fp)) { dlog('write_data: verrou non acquis (fichier occupé par un autre process)'); fclose($fp); return false; }
+    ftruncate($fp, 0); rewind($fp);
+    fwrite($fp, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    fflush($fp);
+    flock($fp, LOCK_UN);
     fclose($fp);
+    return true;
 }
 
 // --- Store séparé des sorties NON-épice : ne touche pas au débrief ---
@@ -779,14 +903,14 @@ function read_dstore(): array {
     if (!file_exists($f)) return ['sorties' => []];
     return json_decode(file_get_contents($f), true) ?? ['sorties' => []];
 }
-function write_dstore(array $data): void {
+function write_dstore(array $data): bool {
     $fp = @fopen(dstore_file(), 'c+');
-    if (!$fp) { dlog('write_dstore: ouverture impossible (droits ?)'); return; }
-    if (flock($fp, LOCK_EX)) {
-        ftruncate($fp, 0); rewind($fp);
-        fwrite($fp, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-        fflush($fp);
-        flock($fp, LOCK_UN);
-    }
+    if (!$fp) { dlog('write_dstore: ouverture impossible (droits ?)'); return false; }
+    if (!try_lock($fp)) { dlog('write_dstore: verrou non acquis (fichier occupé par un autre process)'); fclose($fp); return false; }
+    ftruncate($fp, 0); rewind($fp);
+    fwrite($fp, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    fflush($fp);
+    flock($fp, LOCK_UN);
     fclose($fp);
+    return true;
 }

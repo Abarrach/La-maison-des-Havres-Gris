@@ -136,34 +136,31 @@ function with_scores_lock(callable $mutator) {
     return $result;
 }
 
-// ---- Webhook Discord (record battu) ----
-function notify_discord_record(string $game, string $player, int $score, int $oldRecord, string $oldHolder): void {
-    $f = __DIR__ . '/data/discord_webhook.txt';
-    if (!file_exists($f)) return;
-    $url = trim(file_get_contents($f));
-    if ($url === '' || !function_exists('curl_init')) return;
-
-    $g = GAMES[$game] ?? null;
-    $gameName = $g ? $g['name'] : $game;
-
-    // Lien direct vers le jeu (le nom de fichier correspond à l'id du jeu),
-    // pour que le clic sur le message ramène droit dessus et relance l'envie de jouer.
-    $link = 'https://havresgris.ddns.net/jeux/' . rawurlencode($game) . '.html';
-
-    $desc = "**{$player}** vient de battre le record sur **{$gameName}** !\n\n"
-          . "🏆 Nouveau record : **{$score}**\n";
-    if ($oldRecord > 0) {
-        $desc .= "📉 Ancien record : {$oldRecord} (par {$oldHolder})\n";
+// ---- Podium (top 3) d'un jeu, à partir d'une liste d'entrées ----
+function podium_top3(array $all, string $gameId): array {
+    $entries = array_values(array_filter($all, fn($e) => ($e['game'] ?? '') === $gameId));
+    usort($entries, fn($a, $b) => ($b['score'] ?? 0) - ($a['score'] ?? 0));
+    return array_slice($entries, 0, 3);
+}
+// Rang (1-3) d'un joueur dans un podium donné, ou null s'il n'y est pas.
+function podium_rank(array $podium, string $player): ?int {
+    foreach ($podium as $i => $e) {
+        if (($e['player'] ?? '') === $player) return $i + 1;
     }
-    $desc .= "\n▶️ [Défie-le sur {$gameName}]({$link})";
+    return null;
+}
 
-    $embed = [
-        'title'       => "🎮 Nouveau record — {$gameName}",
-        'url'         => $link,
-        'description' => $desc,
-        'color'       => hexdec('D4A23B'),
-        'footer'      => ['text' => 'Hub de jeux — Les Havres Gris'],
-    ];
+// ---- Webhook Discord (podium) ----
+function discord_webhook_url(): ?string {
+    $f = __DIR__ . '/data/discord_webhook.txt';
+    if (!file_exists($f)) return null;
+    $url = trim(file_get_contents($f));
+    return ($url === '' || !function_exists('curl_init')) ? null : $url;
+}
+
+function send_discord_embed(array $embed): void {
+    $url = discord_webhook_url();
+    if ($url === null) return;
 
     $ch = curl_init($url);
     curl_setopt_array($ch, [
@@ -176,6 +173,92 @@ function notify_discord_record(string $game, string $player, int $score, int $ol
     ]);
     curl_exec($ch);
     curl_close($ch);
+}
+
+// Relance ajoutée au message quand cette soumission éjecte l'ancien 3ème du podium.
+function ousted_note(?array $ousted, string $gameName, ?array $newPodium): string {
+    if ($ousted === null || !isset($newPodium[2])) return '';
+    $seuil = $newPodium[2]['score'];
+    return "\n\n─────────\n"
+         . "🌪️ **{$ousted['player']}**, le vent de sable vient de t'arracher ta 3ème place ! "
+         . "Score à dépasser pour la reprendre : **{$seuil}**. "
+         . "Le désert ne pardonne qu'aux plus déterminés — retourne sur **{$gameName}** et reprends ce qui t'appartient 🔥";
+}
+
+function notify_discord_rank1(string $game, string $player, int $score, int $oldRecord, string $oldHolder, ?array $ousted, ?array $newPodium): void {
+    $g = GAMES[$game] ?? null;
+    $gameName = $g ? $g['name'] : $game;
+    // Lien direct vers le jeu (le nom de fichier correspond à l'id du jeu),
+    // pour que le clic sur le message ramène droit dessus et relance l'envie de jouer.
+    $link = 'https://havresgris.ddns.net/jeux/' . rawurlencode($game) . '.html';
+
+    if ($oldHolder === $player) {
+        $title = "🥇 Record amélioré — {$gameName}";
+        $desc  = "**{$player}** garde la tête sur **{$gameName}** et repousse encore la limite du désert !\n\n"
+               . "🏆 Nouveau record : **{$score}** (précédent : {$oldRecord})\n\n"
+               . "▶️ [Défie-le sur {$gameName}]({$link})";
+    } else {
+        $title = "🥇 Nouveau record — {$gameName}";
+        $desc  = "**{$player}** s'empare de la 1ère place sur **{$gameName}** ! Le sable a un nouveau maître 🐛\n\n"
+               . "🏆 Nouveau record : **{$score}**\n";
+        if ($oldRecord > 0) {
+            $desc .= "📉 Ancien record : {$oldRecord} (par {$oldHolder})\n";
+        }
+        $desc .= "\n▶️ [Défie-le sur {$gameName}]({$link})";
+    }
+
+    $desc .= ousted_note($ousted, $gameName, $newPodium);
+
+    send_discord_embed([
+        'title'       => $title,
+        'url'         => $link,
+        'description' => $desc,
+        'color'       => hexdec('D4A23B'),
+        'footer'      => ['text' => 'Hub de jeux — Les Havres Gris'],
+    ]);
+}
+
+function notify_discord_rank2(string $game, string $player, int $score, array $newPodium, ?array $ousted): void {
+    $g = GAMES[$game] ?? null;
+    $gameName = $g ? $g['name'] : $game;
+    $link = 'https://havresgris.ddns.net/jeux/' . rawurlencode($game) . '.html';
+    $leader = $newPodium[0]['player'] ?? '?';
+    $gap = max(0, ($newPodium[0]['score'] ?? 0) - $score);
+
+    $desc = "**{$player}** plante sa tente sur le podium de **{$gameName}** et prend la **2ème place** !\n\n"
+          . "⚡ Score : **{$score}**\n"
+          . "🎯 Encore **{$gap}** points avant de renverser **{$leader}** et prendre le pouvoir !\n\n"
+          . "▶️ [Tente ta chance sur {$gameName}]({$link})";
+
+    $desc .= ousted_note($ousted, $gameName, $newPodium);
+
+    send_discord_embed([
+        'title'       => "🥈 2ème place — {$gameName}",
+        'url'         => $link,
+        'description' => $desc,
+        'color'       => hexdec('C0C0C0'),
+        'footer'      => ['text' => 'Hub de jeux — Les Havres Gris'],
+    ]);
+}
+
+function notify_discord_rank3(string $game, string $player, int $score, ?array $ousted, ?array $newPodium): void {
+    $g = GAMES[$game] ?? null;
+    $gameName = $g ? $g['name'] : $game;
+    $link = 'https://havresgris.ddns.net/jeux/' . rawurlencode($game) . '.html';
+
+    $desc = "**{$player}** s'invite sur le podium de **{$gameName}** et arrache la **3ème place** !\n\n"
+          . "⚡ Score : **{$score}**\n\n"
+          . "▶️ [Monte sur le podium toi aussi sur {$gameName}]({$link})";
+
+    $desc .= ousted_note($ousted, $gameName, $newPodium);
+
+    send_discord_embed([
+        'title'       => "🥉 3ème place — {$gameName}",
+        'url'         => $link,
+        'description' => $desc,
+        'color'       => hexdec('CD7F32'),
+        'footer'      => ['text' => 'Hub de jeux — Les Havres Gris'],
+    ]);
 }
 
 // ================================================================
@@ -257,8 +340,9 @@ if ($action === 'submit') {
     $cooldownHit = false;
     $oldRecord = 0; $oldHolder = '';
     $bestPerso = 0;
+    $oldPodium = []; $newPodium = [];
 
-    $result = with_scores_lock(function (array $all) use ($user, $gameId, $g, $score, $dur, $now, &$cooldownHit, &$oldRecord, &$oldHolder, &$bestPerso) {
+    $result = with_scores_lock(function (array $all) use ($user, $gameId, $g, $score, $dur, $now, &$cooldownHit, &$oldRecord, &$oldHolder, &$bestPerso, &$oldPodium, &$newPodium) {
         // Anti-triche : cooldown (pas 2 scores en moins de N secondes)
         foreach ($all as $e) {
             if (($e['player'] ?? '') === $user && ($e['game'] ?? '') === $gameId) {
@@ -269,13 +353,10 @@ if ($action === 'submit') {
             }
         }
 
-        // Record actuel ?
-        foreach ($all as $e) {
-            if (($e['game'] ?? '') === $gameId && ($e['score'] ?? 0) > $oldRecord) {
-                $oldRecord = $e['score'];
-                $oldHolder = $e['player'] ?? '?';
-            }
-        }
+        // Podium (et record) avant cette soumission.
+        $oldPodium = podium_top3($all, $gameId);
+        $oldRecord = $oldPodium[0]['score'] ?? 0;
+        $oldHolder = $oldPodium[0]['player'] ?? '';
 
         // Meilleur score perso ?
         foreach ($all as $e) {
@@ -301,6 +382,10 @@ if ($action === 'submit') {
             ];
         }
 
+        // Podium après cette soumission (identique à l'ancien si le score
+        // ne battait pas le record perso, puisque $all n'a pas bougé).
+        $newPodium = podium_top3($all, $gameId);
+
         return ['data' => $all];
     });
 
@@ -309,15 +394,36 @@ if ($action === 'submit') {
 
     $isNewRecord = $score > $oldRecord;
     $isNewPersonal = $score > $bestPerso;
+    $newRank = podium_rank($newPodium, $user);
+    $oldRank = podium_rank($oldPodium, $user);
 
+    // Ancien 3ème qui vient de se faire sortir du podium par cette soumission
+    // (jamais le joueur qui soumet lui-même : s'il progresse, il n'est pas "éjecté").
+    $ousted = null;
+    if (isset($oldPodium[2])) {
+        $oustedPlayer = $oldPodium[2]['player'] ?? '';
+        if ($oustedPlayer !== '' && $oustedPlayer !== $user && podium_rank($newPodium, $oustedPlayer) === null) {
+            $ousted = $oldPodium[2];
+        }
+    }
+
+    $notifyFn = null;
     if ($isNewRecord) {
+        $notifyFn = fn() => notify_discord_rank1($gameId, $user, $score, $oldRecord, $oldHolder, $ousted, $newPodium);
+    } elseif ($newRank === 2 && $oldRank !== 2) {
+        $notifyFn = fn() => notify_discord_rank2($gameId, $user, $score, $newPodium, $ousted);
+    } elseif ($newRank === 3 && $oldRank !== 3) {
+        $notifyFn = fn() => notify_discord_rank3($gameId, $user, $score, $ousted, $newPodium);
+    }
+
+    if ($notifyFn !== null) {
         if (function_exists('fastcgi_finish_request')) {
-            echo json_encode(['ok' => true, 'new_record' => true, 'new_personal' => true, 'score' => $score]);
+            echo json_encode(['ok' => true, 'new_record' => $isNewRecord, 'new_personal' => $isNewPersonal, 'score' => $score]);
             fastcgi_finish_request();
         }
-        notify_discord_record($gameId, $user, $score, $oldRecord, $oldHolder);
+        $notifyFn();
         if (!function_exists('fastcgi_finish_request')) {
-            echo json_encode(['ok' => true, 'new_record' => true, 'new_personal' => true, 'score' => $score]);
+            echo json_encode(['ok' => true, 'new_record' => $isNewRecord, 'new_personal' => $isNewPersonal, 'score' => $score]);
         }
     } else {
         echo json_encode(['ok' => true, 'new_record' => false, 'new_personal' => $isNewPersonal, 'score' => $score]);

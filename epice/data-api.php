@@ -75,10 +75,17 @@ function roster_from_assign($a): array {
     foreach (['cs','cdr','cp'] as $k) $push($cm[$k] ?? '');
     foreach (($a['recolte'] ?? []) as $g) foreach (['transporteur','moissonneur','defenseur_cac'] as $k) $push($g[$k] ?? '');
     $df = $a['defense'] ?? [];
-    foreach (['nord','sud','est','ouest'] as $k) {
-        $v = $df[$k] ?? '';
-        if (is_array($v)) { $push($v['nom'] ?? ''); $push($v['passager'] ?? ''); } // nouveau format {nom,faucon,passager}
-        else $push($v); // rétro-compat ancien format chaîne
+    // Défense Rapprochée : tableau d'escouades de 4 cardinaux (nouveau format, plusieurs
+    // escouades possibles) ; rétro-compat ancien format = un seul objet à 4 cardinaux
+    // (repéré par la clé 'nord' présente directement à la racine).
+    $squads = (is_array($df) && array_key_exists('nord', $df)) ? [$df] : (is_array($df) ? $df : []);
+    foreach ($squads as $squad) {
+        if (!is_array($squad)) continue;
+        foreach (['nord','sud','est','ouest'] as $k) {
+            $v = $squad[$k] ?? '';
+            if (is_array($v)) { $push($v['nom'] ?? ''); $push($v['passager'] ?? ''); } // {nom,faucon,passager,cac}
+            else $push($v); // rétro-compat plus ancien format encore (chaîne)
+        }
     }
     foreach (($a['distance']['pilotes'] ?? []) as $p) { $push($p['nom'] ?? ''); $push($p['passager'] ?? ''); }
     foreach (($a['ingame'] ?? []) as $g) foreach (($g['membres'] ?? []) as $m) $push($m);

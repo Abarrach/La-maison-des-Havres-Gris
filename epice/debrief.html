@@ -263,7 +263,8 @@
     .btn-mini-add { background:transparent; border-color:var(--accent-dim); color:var(--accent); }
     .btn-mini-del { background:transparent; border-color:#6A2218; color:#C05040; padding:.35rem .55rem; }
     .btn-mini-reopen { background:transparent; border-color:#3A7A4A; color:#5AB06A; }
-    .btn-mini:hover { opacity:.75; }
+    .btn-mini:hover:not(:disabled) { opacity:.75; }
+    .btn-mini:disabled { opacity:.3; cursor:not-allowed; }
 
     /* ORGANISATION (vue joueur) */
     .orga-header { background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:2px; padding:1rem 1.25rem; margin-bottom:1.25rem; }
@@ -287,7 +288,7 @@
     .assign-pilote input { background:var(--surface-2); border:1px solid var(--border); border-radius:2px; padding:.5rem .75rem; font-family:'Inter',sans-serif; font-size:.85rem; color:var(--text); outline:none; }
     .assign-pilote input:focus { border-color:var(--accent-dim); }
     .assign-pilote .pil-pass { grid-column:1 / -1; }
-    .assign-def { display:grid; grid-template-columns:70px 1fr auto; gap:.5rem; margin-bottom:.5rem; align-items:center; }
+    .assign-def { display:grid; grid-template-columns:70px 1fr auto auto; gap:.5rem; margin-bottom:.5rem; align-items:center; }
     .assign-def .assign-slot-label { min-width:auto; }
     .assign-def input { background:var(--surface-2); border:1px solid var(--border); border-radius:2px; padding:.5rem .75rem; font-family:'Inter',sans-serif; font-size:.85rem; color:var(--text); outline:none; }
     .assign-def input:focus { border-color:var(--accent-dim); }
@@ -320,6 +321,7 @@
     .cmp-c { grid-area:c; display:flex; align-items:center; justify-content:center; border-style:dashed; font-size:1.1rem; }
     .cmp-dir { display:block; font-size:.58rem; font-weight:700; color:var(--accent); letter-spacing:.12em; margin-bottom:.25rem; }
     .cmp-faucon { color:var(--accent); font-weight:700; font-size:.72rem; }
+    .cmp-cac { color:var(--accent); font-weight:700; font-size:.72rem; }
     .ingame-ro-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:.6rem; }
     .ingame-ro { background:var(--surface-2); border:1px solid var(--border); border-radius:2px; padding:.6rem .75rem; }
     .ingame-ro-h { font-size:.62rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); margin-bottom:.45rem; padding-bottom:.3rem; border-bottom:1px solid var(--border); }
@@ -1515,13 +1517,22 @@ function esc(s){if(!s)return'';return s.replace(/&/g,'&amp;').replace(/</g,'&lt;
 // ============================================================
 // STRUCTURE D'ASSIGNATION
 // ============================================================
+// Une escouade Défense Rapprochée = 4 cardinaux. cac = Pilote Ornithoptère + CaC
+// (même bascule que pour un pilote de patrouille, cf distance.pilotes).
+function mkDefenseSquad() {
+  return {
+    nord:{nom:'',faucon:false,passager:'',cac:false}, sud:{nom:'',faucon:false,passager:'',cac:false},
+    est:{nom:'',faucon:false,passager:'',cac:false}, ouest:{nom:'',faucon:false,passager:'',cac:false},
+  };
+}
+
 // Modèle de compo par défaut (vide)
 function emptyCompo() {
   return {
     commandement: { cs:'', cdr:'', cp:'' },
     briefing_notes: '',                                                 // consignes particulières lues au brief (couleurs de groupe, etc.)
     recolte: [ { transporteur:'', moissonneur:'' } ],                    // defenseur_cac retiré (rôle abandonné, plus rentable) — cf normalizeCompo
-    defense: { nord:{nom:'',faucon:false,passager:''}, sud:{nom:'',faucon:false,passager:''}, est:{nom:'',faucon:false,passager:''}, ouest:{nom:'',faucon:false,passager:''} },
+    defense: [ mkDefenseSquad() ],                                      // 1 escouade par défaut ; une 2e est débloquée dès 2 groupes Récolte (cf addDefenseSquad)
     distance: { pilotes: [ { nom:'', faucon:false, passager:'', cac:false } ] }, // 1–4 pilotes ; faucon = conducteur + passager (sur l'aile) — UI masquée, cf FAUCON_MODE_ENABLED ; cac = Pilote Ornithoptère + CaC
     ingame: [],                                                        // groupes en jeu (max 4) — saisie manuelle, ce qui s'affiche sur la carte
   };
@@ -1536,13 +1547,21 @@ function normalizeCompo(c) {
   // format, rôle abandonné) — volontairement PAS nettoyé ici pour rester lisible dans
   // l'historique (cf renderCompoReadonly). Seul le nouveau groupe par défaut ne l'a plus.
   c.recolte = (Array.isArray(c.recolte) && c.recolte.length) ? c.recolte : [ { transporteur:'', moissonneur:'' } ];
-  c.defense = c.defense || {};
-  ['nord','sud','est','ouest'].forEach(k => {
-    const v = c.defense[k];
-    if (typeof v === 'string') c.defense[k] = { nom:v, faucon:false, passager:'' };        // migration ancien format (chaîne)
-    else if (!v || typeof v !== 'object') c.defense[k] = { nom:'', faucon:false, passager:'' };
-    else c.defense[k] = { nom:v.nom || '', faucon:!!v.faucon, passager:v.passager || '' };
+  // Défense Rapprochée : migration ancien format (un seul objet à 4 cardinaux) → tableau
+  // d'escouades de 4 (2e escouade possible dès 2 groupes Récolte, cf addDefenseSquad).
+  if (!Array.isArray(c.defense)) c.defense = (c.defense && typeof c.defense === 'object') ? [c.defense] : [];
+  c.defense = c.defense.map(squad => {
+    squad = (squad && typeof squad === 'object') ? squad : {};
+    const out = {};
+    ['nord','sud','est','ouest'].forEach(k => {
+      const v = squad[k];
+      if (typeof v === 'string') out[k] = { nom:v, faucon:false, passager:'', cac:false };  // migration ancien format (chaîne)
+      else if (!v || typeof v !== 'object') out[k] = { nom:'', faucon:false, passager:'', cac:false };
+      else out[k] = { nom:v.nom || '', faucon:!!v.faucon, passager:v.passager || '', cac:!!v.cac };
+    });
+    return out;
   });
+  if (!c.defense.length) c.defense = [ mkDefenseSquad() ];
   if (!c.distance || !Array.isArray(c.distance.pilotes)) {
     const pilotes = [];
     (c.patrouille || []).forEach(b => {
@@ -1753,20 +1772,32 @@ function renderAssignBuilder() {
   });
   h += `<button class="btn-mini btn-mini-add" onclick="addRecolte()" style="margin-bottom:.85rem">+ Ajouter un groupe récolte</button>`;
 
-  // Défense Rapprochée (4 cardinaux, chacun peut être un binôme Faucon si FAUCON_MODE_ENABLED)
-  h += `<div class="assign-group">
-    <div class="assign-group-head"><span class="assign-group-title">🔵 Défense Rapprochée (4 ornis cardinaux)</span></div>
-    ${FAUCON_MODE_ENABLED ? `<div class="assign-hint">Un cardinal peut être un binôme Faucon (✈) : son passager est sur l'aile, non groupé.</div>` : ''}`;
-  [['nord','Nord'],['sud','Sud'],['est','Est'],['ouest','Ouest']].forEach(([k,lbl]) => {
-    const dd = c.defense[k];
-    h += `<div class="assign-def">
-      <span class="assign-slot-label">${lbl}</span>
-      <input class="pil-nom roster-input" value="${escAttr(dd.nom)}" oninput="currentCompo.defense.${k}.nom=this.value">
-      ${FAUCON_MODE_ENABLED ? `<button class="btn-faucon ${dd.faucon ? 'on' : ''}" onclick="toggleDefFaucon('${k}')" title="Désigner conducteur Faucon">✈ Faucon</button>
-      ${dd.faucon ? `<input class="pil-pass roster-input" placeholder="Passager (sur l'aile, non groupé)" value="${escAttr(dd.passager)}" oninput="currentCompo.defense.${k}.passager=this.value">` : ''}` : ''}
-    </div>`;
+  // Défense Rapprochée (escouades de 4 cardinaux, chacun marquable CaC et/ou binôme Faucon
+  // si FAUCON_MODE_ENABLED). Une 2e escouade se débloque dès 2 groupes Récolte présents —
+  // c'est ce qui justifie une 2e vague de défenseurs (cf addDefenseSquad).
+  c.defense.forEach((squad, si) => {
+    h += `<div class="assign-group">
+      <div class="assign-group-head">
+        <span class="assign-group-title">🔵 Défense Rapprochée ${c.defense.length > 1 ? '— Escouade ' + (si+1) : '(4 ornis cardinaux)'}</span>
+        ${c.defense.length > 1 ? `<button class="btn-mini btn-mini-del" onclick="removeDefenseSquad(${si})">✕ Retirer</button>` : ''}
+      </div>
+      ${FAUCON_MODE_ENABLED ? `<div class="assign-hint">Un cardinal peut être un binôme Faucon (✈) : son passager est sur l'aile, non groupé.</div>` : ''}`;
+    [['nord','Nord'],['sud','Sud'],['est','Est'],['ouest','Ouest']].forEach(([k,lbl]) => {
+      const dd = squad[k];
+      h += `<div class="assign-def">
+        <span class="assign-slot-label">${lbl}</span>
+        <input class="pil-nom roster-input" value="${escAttr(dd.nom)}" oninput="currentCompo.defense[${si}].${k}.nom=this.value">
+        <button class="btn-cac ${dd.cac ? 'on' : ''}" onclick="toggleDefCac(${si},'${k}')" title="Pilote Ornithoptère + CaC (comme en patrouille)">⚔ CaC</button>
+        ${FAUCON_MODE_ENABLED ? `<button class="btn-faucon ${dd.faucon ? 'on' : ''}" onclick="toggleDefFaucon(${si},'${k}')" title="Désigner conducteur Faucon">✈ Faucon</button>
+        ${dd.faucon ? `<input class="pil-pass roster-input" placeholder="Passager (sur l'aile, non groupé)" value="${escAttr(dd.passager)}" oninput="currentCompo.defense[${si}].${k}.passager=this.value">` : ''}` : ''}
+      </div>`;
+    });
+    h += `</div>`;
   });
-  h += `</div>`;
+  if (c.defense.length < 2) {
+    const unlocked = c.recolte.length >= 2;
+    h += `<button class="btn-mini btn-mini-add" ${unlocked ? `onclick="addDefenseSquad()"` : 'disabled'} title="${unlocked ? 'Ajoute une 2e escouade de 4 défenseurs' : 'Nécessite 2 groupes Récolte (Transporteur + Moissonneur) présents'}" style="margin-bottom:.85rem">+ Ajouter une escouade Défense Rapprochée</button>`;
+  }
 
   // Groupe à distance (1–4 pilotes ; toggle Faucon par pilote → champ passager, si FAUCON_MODE_ENABLED ;
   // toggle CaC = spécialisation Pilote Ornithoptère + CaC, propre à la patrouille)
@@ -1809,7 +1840,10 @@ function renderAssignBuilder() {
 function addRecolte()    { currentCompo.recolte.push({transporteur:'',moissonneur:''}); renderAssignBuilder(); }
 function removeRecolte(i){ currentCompo.recolte.splice(i,1); renderAssignBuilder(); }
 function toggleFaucon(i) { const p = currentCompo.distance.pilotes[i]; p.faucon = !p.faucon; if (!p.faucon) p.passager = ''; renderAssignBuilder(); }
-function toggleDefFaucon(k) { const d = currentCompo.defense[k]; d.faucon = !d.faucon; if (!d.faucon) d.passager = ''; renderAssignBuilder(); }
+function toggleDefFaucon(si,k) { const d = currentCompo.defense[si][k]; d.faucon = !d.faucon; if (!d.faucon) d.passager = ''; renderAssignBuilder(); }
+function toggleDefCac(si,k) { const d = currentCompo.defense[si][k]; d.cac = !d.cac; renderAssignBuilder(); }
+function addDefenseSquad()    { if (currentCompo.defense.length < 2) currentCompo.defense.push(mkDefenseSquad()); renderAssignBuilder(); }
+function removeDefenseSquad(i){ currentCompo.defense.splice(i,1); renderAssignBuilder(); }
 function togglePiloteCac(i) { const p = currentCompo.distance.pilotes[i]; p.cac = !p.cac; renderAssignBuilder(); }
 function addPilote()     { currentCompo.distance.pilotes.push({nom:'',faucon:false,passager:'',cac:false}); renderAssignBuilder(); }
 function removePilote(i) { currentCompo.distance.pilotes.splice(i,1); renderAssignBuilder(); }
@@ -1823,7 +1857,7 @@ function rosterNames(c) {
   // Inscrits Discord (hors « absent ») en premier, pour proposer directement ceux qui viennent.
   (currentSignups || []).forEach(s => { if ((s.statut || 'present') !== 'absent' && s.name && s.name.trim()) out.push(s.name.trim()); });
   (c.recolte || []).forEach(g => ['transporteur','moissonneur','defenseur_cac'].forEach(k => { if (g[k] && g[k].trim()) out.push(g[k].trim()); }));
-  ['nord','sud','est','ouest'].forEach(k => { const d = c.defense && c.defense[k]; if (d) { if (d.nom && d.nom.trim()) out.push(d.nom.trim()); if (d.passager && d.passager.trim()) out.push(d.passager.trim()); } });
+  (c.defense || []).forEach(squad => ['nord','sud','est','ouest'].forEach(k => { const d = squad[k]; if (d) { if (d.nom && d.nom.trim()) out.push(d.nom.trim()); if (d.passager && d.passager.trim()) out.push(d.passager.trim()); } }));
   ((c.distance && c.distance.pilotes) || []).forEach(p => { if (p.nom && p.nom.trim()) out.push(p.nom.trim()); if (p.passager && p.passager.trim()) out.push(p.passager.trim()); });
   return [...new Set(out)];
 }
@@ -1852,7 +1886,7 @@ const rosterPop = (function () {
     const c = currentCompo || {}, out = [];
     ['cs','cdr','cp'].forEach(k => { const v = c.commandement && c.commandement[k]; if (v && v.trim()) out.push(v.trim().toLowerCase()); });
     (c.recolte || []).forEach(g => ['transporteur','moissonneur','defenseur_cac'].forEach(k => { if (g[k] && g[k].trim()) out.push(g[k].trim().toLowerCase()); }));
-    ['nord','sud','est','ouest'].forEach(k => { const d = c.defense && c.defense[k]; if (d) { if (d.nom && d.nom.trim()) out.push(d.nom.trim().toLowerCase()); if (d.passager && d.passager.trim()) out.push(d.passager.trim().toLowerCase()); } });
+    (c.defense || []).forEach(squad => ['nord','sud','est','ouest'].forEach(k => { const d = squad[k]; if (d) { if (d.nom && d.nom.trim()) out.push(d.nom.trim().toLowerCase()); if (d.passager && d.passager.trim()) out.push(d.passager.trim().toLowerCase()); } }));
     ((c.distance && c.distance.pilotes) || []).forEach(p => { if (p.nom && p.nom.trim()) out.push(p.nom.trim().toLowerCase()); if (p.passager && p.passager.trim()) out.push(p.passager.trim().toLowerCase()); });
     (c.ingame || []).forEach(g => (g.membres || []).forEach(m => { if (m && m.trim()) out.push(m.trim().toLowerCase()); }));
     return new Set(out);
@@ -1940,11 +1974,14 @@ const rosterPop = (function () {
 
 function padTo4(a) { const b = a.slice(0,4); while (b.length < 4) b.push(''); return b; }
 
-// Pré-remplit les groupes en jeu d'après les rôles : Récolte / Défense / pilotes distance / 2e Récolte (passagers Faucon exclus)
+// Pré-remplit les groupes en jeu d'après les rôles : Récolte / chaque escouade Défense / pilotes distance / 2e Récolte (passagers Faucon exclus)
 function prefillIngame() {
   const c = currentCompo, groups = [], rec = c.recolte || [];
   if (rec[0]) { const m = [rec[0].transporteur, rec[0].moissonneur, rec[0].defenseur_cac].filter(x => x && x.trim()); if (m.length) groups.push({membres:padTo4(m)}); }
-  const def = ['nord','sud','est','ouest'].map(k => c.defense && c.defense[k] && c.defense[k].nom).filter(x => x && x.trim()); if (def.length) groups.push({membres:padTo4(def)});
+  (c.defense || []).forEach(squad => {
+    const def = ['nord','sud','est','ouest'].map(k => squad[k] && squad[k].nom).filter(x => x && x.trim());
+    if (def.length) groups.push({membres:padTo4(def)});
+  });
   const pil = ((c.distance && c.distance.pilotes) || []).map(p => p.nom).filter(x => x && x.trim());
   for (let i = 0; i < pil.length; i += 4) groups.push({membres:padTo4(pil.slice(i, i+4))}); // >4 pilotes → plusieurs groupes en jeu
   for (let i = 1; i < rec.length; i++) { const m = [rec[i].transporteur, rec[i].moissonneur, rec[i].defenseur_cac].filter(x => x && x.trim()); if (m.length) groups.push({membres:padTo4(m)}); }
@@ -2066,7 +2103,8 @@ function renderCompoReadonly(c) {
   // Indicateur formation minimale
   const r0 = c.recolte[0] || {};
   const recOk = ['transporteur','moissonneur'].every(k => r0[k] && r0[k].trim());
-  const defOk = ['nord','sud','est','ouest'].every(k => c.defense[k] && c.defense[k].nom && c.defense[k].nom.trim());
+  const def0 = c.defense[0] || {};
+  const defOk = ['nord','sud','est','ouest'].every(k => def0[k] && def0[k].nom && def0[k].nom.trim());
   h += `<div class="orga-minimal ${recOk && defOk ? 'ok' : 'ko'}">${recOk && defOk
     ? '✓ Formation minimale réunie — prêt à partir (Récolte + 4 Défenseurs cardinaux).'
     : '⚠ Formation minimale incomplète — il faut le groupe Récolte (Transporteur + Moissonneur) et les 4 Défenseurs cardinaux pour partir.'}</div>`;
@@ -2085,23 +2123,27 @@ function renderCompoReadonly(c) {
     </div>`;
   });
 
-  // Défense en croix cardinale (un cardinal peut être un binôme Faucon)
-  const cmp = (k, dir, cls) => {
-    const d = c.defense[k] || {};
+  // Défense en croix cardinale (un cardinal peut être marqué CaC et/ou un binôme Faucon).
+  // Une escouade = un groupe de 4 ; une 2e escouade s'affiche séparément si elle existe.
+  const cmp = (squad, k, dir, cls) => {
+    const d = squad[k] || {};
     let inner = `<span class="cmp-dir">${dir}</span>${nm(d.nom, c)}`;
+    if (d.cac) inner += ` <span class="cmp-cac">⚔</span>`;
     if (d.faucon) inner += ` <span class="cmp-faucon">✈</span>`;
     if (d.faucon && d.passager && d.passager.trim()) inner += `<div class="orga-pass" style="margin-top:.2rem">+ ${esc(d.passager)} <em>(aile)</em></div>`;
     return `<div class="cmp ${cls}">${inner}</div>`;
   };
-  h += `<div class="orga-group"><div class="orga-group-title">🔵 Défense Rapprochée — points cardinaux</div>
-    <div class="orga-compass">
-      ${cmp('nord','N','cmp-n')}
-      ${cmp('ouest','O','cmp-o')}
-      <div class="cmp cmp-c">🌀</div>
-      ${cmp('est','E','cmp-e')}
-      ${cmp('sud','S','cmp-s')}
-    </div>
-  </div>`;
+  c.defense.forEach((squad, si) => {
+    h += `<div class="orga-group"><div class="orga-group-title">🔵 Défense Rapprochée${c.defense.length>1?' — Escouade '+(si+1):' — points cardinaux'}</div>
+      <div class="orga-compass">
+        ${cmp(squad,'nord','N','cmp-n')}
+        ${cmp(squad,'ouest','O','cmp-o')}
+        <div class="cmp cmp-c">🌀</div>
+        ${cmp(squad,'est','E','cmp-e')}
+        ${cmp(squad,'sud','S','cmp-s')}
+      </div>
+    </div>`;
+  });
 
   // Groupe à distance (pilotes + Faucon + CaC)
   const pilotes = c.distance.pilotes.filter(p => p.nom && p.nom.trim());

@@ -176,6 +176,7 @@ if ($type === 3) {
     if (strpos($cid, 'maybe:') === 0)    { handle_status($body, substr($cid, 6), 'maybe'); }
     if (strpos($cid, 'absent:') === 0)   { handle_status($body, substr($cid, 7), 'absent'); }
     if (strpos($cid, 'unsignup:') === 0) { handle_unsignup($body, substr($cid, 9)); }
+    if (strpos($cid, 'chef:') === 0)     { handle_toggle_chef($body, substr($cid, 5)); }
     if (strpos($cid, 'edit:') === 0)     { handle_edit_open($body, substr($cid, 5)); }
     if (strpos($cid, 'delok:') === 0)    { handle_delete_confirm($body, substr($cid, 6)); }
     if (strpos($cid, 'del:') === 0)      { handle_delete($body, substr($cid, 4)); }
@@ -401,6 +402,27 @@ function handle_unsignup($body, $sortieId) {
         }));
     });
     if (!$updated) respond_message("Cette sortie n'existe plus.", true);
+    echo json_encode(['type' => 7, 'data' => build_sortie_message($updated)]);
+    exit;
+}
+
+// Bascule « je candidate comme Chef de section » (drapeau optionnel, en plus
+// du poste choisi — ne remplace rien). Réservé à ceux déjà inscrits à un
+// poste, sinon le badge n'aurait aucun endroit où s'afficher.
+function handle_toggle_chef($body, $sortieId) {
+    $user = interaction_user($body);
+    $found = false;
+    $updated = mutate_sortie($sortieId, function (&$s) use ($user, &$found) {
+        foreach ($s['signups'] as &$su) {
+            if (($su['id'] ?? '') === $user['id']) {
+                $su['chef_section'] = empty($su['chef_section']);
+                $found = true;
+                return;
+            }
+        }
+    });
+    if (!$updated) respond_message("Cette sortie n'existe plus.", true);
+    if (!$found) respond_message("Inscris-toi d'abord à un poste, puis candidate comme Chef de section.", true);
     echo json_encode(['type' => 7, 'data' => build_sortie_message($updated)]);
     exit;
 }
@@ -691,7 +713,16 @@ function build_sortie_message($sortie) {
         // ÉPICE : un champ par poste (présents regroupés)
         foreach (POSTES as $pid => $plabel) {
             $names = [];
-            foreach ($signups as $su) { if ($st($su) === 'present' && ($su['poste'] ?? '') === $pid) $names[] = $su['name']; }
+            foreach ($signups as $su) {
+                if ($st($su) !== 'present' || ($su['poste'] ?? '') !== $pid) continue;
+                // 🎖️ : a candidaté comme Chef de section (drapeau optionnel, cf handle_toggle_chef).
+                $names[] = $su['name'] . (!empty($su['chef_section']) ? ' 🎖️' : '');
+            }
+            // Poste retiré du menu (ex. Défenseur CaC) ET personne dessus : le "0" n'a
+            // aucun sens puisque plus personne ne peut le choisir → colonne masquée.
+            // Une inscription historique existante (ancienne sortie, avant retrait)
+            // reste affichée normalement (cf. commentaire sur POSTES plus haut).
+            if (!$names && !array_key_exists($pid, POSTES_SELECTABLE)) continue;
             $icon = POSTE_ICON[$pid] ?? '•';
             $fields[] = [
                 'name'   => "{$icon} {$plabel} (" . count($names) . ")",
@@ -732,7 +763,8 @@ function build_sortie_message($sortie) {
         'description' => $desc,
         'color'       => hexdec('D4A23B'), // doré Dune
         'fields'      => $fields,
-        'footer'      => ['text' => $t['label'] . ' · organisé par ' . ($sortie['createur'] ?? '?') . ' · inscris-toi ci-dessous'],
+        'footer'      => ['text' => $t['label'] . ' · organisé par ' . ($sortie['createur'] ?? '?') . ' · inscris-toi ci-dessous'
+            . ($usePostes ? ' · 🎖️ = candidat Chef de section' : '')],
     ];
 
     // Bannière par type (config 'banners'[type]) avec repli sur 'banner_url'.
@@ -757,6 +789,7 @@ function build_sortie_message($sortie) {
                 ['type' => 2, 'style' => 1, 'label' => 'Peut-être',      'emoji' => ['name' => '❓'], 'custom_id' => "maybe:{$sid}"],
                 ['type' => 2, 'style' => 4, 'label' => 'Absent',         'emoji' => ['name' => '✖️'], 'custom_id' => "absent:{$sid}"],
                 ['type' => 2, 'style' => 2, 'label' => 'Me désinscrire', 'custom_id' => "unsignup:{$sid}"],
+                ['type' => 2, 'style' => 2, 'label' => 'Chef de section', 'emoji' => ['name' => '🎖️'], 'custom_id' => "chef:{$sid}"],
             ]],
         ];
     } else {

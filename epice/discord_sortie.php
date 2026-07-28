@@ -47,10 +47,16 @@ register_shutdown_function(function () {
 //  transporteur) — gardé ici pour continuer à afficher/grouper correctement
 //  les inscriptions déjà enregistrées, mais retiré du menu d'inscription
 //  (cf POSTES_SELECTABLE, seul utilisé pour construire le select Discord).
+//  'orni_assaut' : Orni d'assaut de défense du transporteur — jamais
+//  proposé sur Discord (distribué uniquement côté admin, cf POSTES_SELECTABLE).
+//  Présent dans POSTES pour afficher les inscrits déjà placés dans ce rôle
+//  côté site.
 const POSTES = [
     'moissonneur'  => 'Moissonneur',
     'transporteur' => 'Transporteur',
     'defenseur_cac'=> 'Défenseur CaC',
+    'orni_assaut'  => 'Orni Assaut Défense Transporteur',
+    'orni_scout'   => 'Orni Scout (repérage)',
     'pilote_orni'  => 'Pilote Ornithoptère',
     'pilote_orni_cac' => 'Pilote Ornithoptère + CaC',
     'present'      => 'Présent (poste à définir)',
@@ -59,13 +65,19 @@ const POSTE_ICON = [
     'moissonneur'  => '⛏️',
     'transporteur' => '🚚',
     'defenseur_cac'=> '⚔️',
+    'orni_assaut'  => '🛡️',
+    'orni_scout'   => '👁️',
     'pilote_orni'  => '🦅',
     'pilote_orni_cac' => '⚔️',
     'present'      => '✅',
 ];
+// Sélectionnables côté Discord (menu d'inscription). L'Orni Assaut est
+// volontairement absent : c'est un rôle de confiance distribué à la main par
+// l'organisateur dans le builder admin, jamais choisi librement à l'inscription.
 const POSTES_SELECTABLE = [
     'moissonneur'  => 'Moissonneur',
     'transporteur' => 'Transporteur',
+    'orni_scout'   => 'Orni Scout (repérage)',
     'pilote_orni'  => 'Pilote Ornithoptère',
     'pilote_orni_cac' => 'Pilote Ornithoptère + CaC',
     'present'      => 'Présent (poste à définir)',

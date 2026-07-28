@@ -86,7 +86,11 @@ function roster_from_assign($a): array {
             if (is_array($v)) { $push($v['nom'] ?? ''); $push($v['passager'] ?? ''); } // {nom,faucon,passager,cac}
             else $push($v); // rétro-compat plus ancien format encore (chaîne)
         }
+        // Pilotes d'assaut de défense du transporteur (0..N, ajoutés à la même escouade)
+        foreach (($squad['assauts'] ?? []) as $p) { $push(is_array($p) ? ($p['nom'] ?? '') : $p); }
     }
+    // Repérage — scouts (bloc séparé, plus loin que la patrouille)
+    foreach (($a['recon']['scouts'] ?? []) as $p) { $push(is_array($p) ? ($p['nom'] ?? '') : $p); }
     foreach (($a['distance']['pilotes'] ?? []) as $p) { $push($p['nom'] ?? ''); $push($p['passager'] ?? ''); }
     foreach (($a['ingame'] ?? []) as $g) foreach (($g['membres'] ?? []) as $m) $push($m);
     // rétro-compat ancien format
@@ -270,21 +274,32 @@ switch ($action) {
         write_data($d);
         out(true, ['message' => 'Analyse enregistrée']);
 
-    // Lire l'assignation de la soirée active (public — vue joueur). UNIQUEMENT si ouverte.
+    // Lire les infos de la soirée en cours pour le Manuel de combat (public — vue joueur).
+    // Fallback : si `soiree_active` n'est pas défini (peut arriver après une suppression, ou
+    // quand la sortie a été créée depuis Discord et jamais "promue"), on prend la sortie
+    // ouverte la plus récente. Le briefing s'affiche donc DÈS qu'une sortie est ouverte,
+    // même sans assignation encore remplie — c'est justement l'intérêt d'y lire les consignes
+    // du soir avant que la compo soit finalisée.
     case 'get_assign':
-        $d  = read_data();
-        $a  = $d['soiree_active'] ?? null;
-        $id = $a['id'] ?? null;
-        if (!$id || ($a['statut'] ?? '') !== 'ouverte') out(false, [], 'Aucune soirée active');
-        foreach ($d['sorties'] as $s) {
-            if ($s['id'] === $id) {
-                out(true, [
-                    'soiree'      => ['titre'=>$s['titre'],'date'=>$s['date'],'zone'=>$s['zone']],
-                    'assignation' => $s['assignation'] ?? null
-                ]);
+        $d = read_data();
+        $target = null;
+        $activeId = $d['soiree_active']['id'] ?? null;
+        if ($activeId) {
+            foreach ($d['sorties'] as $s) {
+                if (($s['id'] ?? '') === $activeId && ($s['statut'] ?? '') === 'ouverte') { $target = $s; break; }
             }
         }
-        out(false, [], 'Soirée introuvable');
+        // Aucune sortie active valide → on prend la plus récente encore ouverte.
+        if (!$target) {
+            foreach (array_reverse($d['sorties']) as $s) {
+                if (($s['statut'] ?? '') === 'ouverte') { $target = $s; break; }
+            }
+        }
+        if (!$target) out(false, [], 'Aucune soirée ouverte');
+        out(true, [
+            'soiree'      => ['titre'=>$target['titre'] ?? '','date'=>$target['date'] ?? '','zone'=>$target['zone'] ?? ''],
+            'assignation' => $target['assignation'] ?? null
+        ]);
 
     // Historique PUBLIC (vue joueur) — liste assainie : AUCUN retour, note ni analyse
     case 'public_history':
@@ -375,8 +390,18 @@ switch ($action) {
         $d['sorties'] = array_values(array_filter($d['sorties'], function($s) use ($sid) {
             return ($s['id'] ?? '') !== $sid;
         }));
-        // Si on supprime la sortie active, on désactive
-        if (($d['soiree_active']['id'] ?? null) === $sid) $d['soiree_active'] = null;
+        // Si on supprime la sortie « vedette », on promeut la sortie la plus récente encore
+        // ouverte (même logique que close_soiree). Sans ça, le Manuel de combat côté joueur
+        // ne trouve plus quoi afficher alors qu'il reste des sorties ouvertes en parallèle.
+        if (($d['soiree_active']['id'] ?? null) === $sid) {
+            $d['soiree_active'] = null;
+            foreach (array_reverse($d['sorties']) as $s) {
+                if (($s['statut'] ?? '') === 'ouverte') {
+                    $d['soiree_active'] = ['id'=>$s['id'],'date'=>$s['date'] ?? '','titre'=>$s['titre'] ?? '','zone'=>$s['zone'] ?? '','statut'=>'ouverte'];
+                    break;
+                }
+            }
+        }
         write_data($d);
         out(true, ['message' => 'Sortie supprimée']);
 

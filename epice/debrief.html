@@ -293,6 +293,10 @@
     .assign-def input { background:var(--surface-2); border:1px solid var(--border); border-radius:2px; padding:.5rem .75rem; font-family:'Inter',sans-serif; font-size:.85rem; color:var(--text); outline:none; }
     .assign-def input:focus { border-color:var(--accent-dim); }
     .assign-def .pil-pass { grid-column:1 / -1; }
+    /* Sous-en-tête d'un sous-bloc dans un assign-group (ex : Assauts dans Défense Rapprochée).
+       Doit se voir sans surcharger la hiérarchie de l'assign-group-title principal. */
+    .assign-sub-head { display:flex; align-items:center; gap:.4rem; font-size:.68rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--accent); border-top:1px solid var(--border); margin-top:1rem; padding-top:.75rem; margin-bottom:.35rem; }
+    .assign-sub-hint { font-size:.72rem; color:var(--text-muted); font-style:italic; margin-bottom:.6rem; line-height:1.5; }
     .btn-faucon { padding:.4rem .7rem; border-radius:2px; font-size:.65rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; cursor:pointer; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-family:'Inter',sans-serif; white-space:nowrap; }
     .btn-faucon.on { background:var(--accent); border-color:var(--accent); color:#0A0800; }
     .btn-cac { padding:.4rem .7rem; border-radius:2px; font-size:.65rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; cursor:pointer; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-family:'Inter',sans-serif; white-space:nowrap; }
@@ -316,15 +320,23 @@
     .orga-pass { font-size:.78rem; color:var(--text-muted); }
     .orga-pass em { color:var(--text-faint); font-size:.72rem; font-style:italic; }
     .orga-compass { display:grid; grid-template-columns:repeat(3,1fr); grid-template-areas:". n ." "o c e" ". s ."; gap:.5rem; }
+    /* Sous-bloc « Assaut Défense Transporteur » sous les 4 cardinaux : visuellement séparé de la
+       croix (marge haute + trait) et surligné en vert (couleur du thème réservée aux protecteurs
+       du convoi, distincte de l'accent doré des chefs). */
+    .orga-assaut-sep { margin-top:.9rem; padding-top:.75rem; border-top:1px solid var(--border); }
+    .orga-assaut-head { font-size:.68rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--green); margin-bottom:.4rem; }
     .cmp { background:var(--surface-2); border:1px solid var(--border); border-radius:2px; padding:.55rem .4rem; text-align:center; }
     .cmp-n { grid-area:n; } .cmp-s { grid-area:s; } .cmp-e { grid-area:e; } .cmp-o { grid-area:o; }
     .cmp-c { grid-area:c; display:flex; align-items:center; justify-content:center; border-style:dashed; font-size:1.1rem; }
     .cmp-dir { display:block; font-size:.58rem; font-weight:700; color:var(--accent); letter-spacing:.12em; margin-bottom:.25rem; }
-    .cmp-faucon { color:var(--accent); font-weight:700; font-size:.72rem; }
-    .cmp-cac { color:var(--accent); font-weight:700; font-size:.72rem; }
+    .cmp-faucon { color:var(--accent); font-weight:700; font-size:1.05rem; margin-left:.15rem; text-shadow:0 0 4px rgba(200,146,16,.4); }
+    /* CaC : plus grosse pastille rouge pour se voir sur la petite carte de cardinal. */
+    .cmp-cac { color:#E85030; font-weight:700; font-size:1.15rem; margin-left:.15rem; text-shadow:0 0 6px rgba(232,80,48,.5); }
     .ingame-ro-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:.6rem; }
     .ingame-ro { background:var(--surface-2); border:1px solid var(--border); border-radius:2px; padding:.6rem .75rem; }
-    .ingame-ro-h { font-size:.62rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); margin-bottom:.45rem; padding-bottom:.3rem; border-bottom:1px solid var(--border); }
+    .ingame-ro-h { font-size:.62rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--accent); margin-bottom:.2rem; padding-bottom:.3rem; border-bottom:1px solid var(--border); }
+    /* Sous-titre du rôle du groupe (Groupe transporteur, Patrouille, …) — posé par prefillIngame. */
+    .ingame-ro-role { font-size:.68rem; color:var(--text-muted); font-style:italic; margin-bottom:.35rem; padding-bottom:.25rem; }
     .ingame-ro-m { font-size:.84rem; color:var(--text); padding:.18rem 0; }
 
     /* HISTORIQUE */
@@ -447,11 +459,42 @@
     .sop-live-notes { background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:2px; padding:.75rem 1rem; margin-top:.65rem; }
     .sop-live-notes-title { font-size:.62rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); margin-bottom:.4rem; }
     .sop-live-notes p { font-size:.82rem; color:var(--text-muted); line-height:1.6; }
+    /* Rendu Markdown des consignes (titres, gras, listes copiées depuis Discord) — objectif :
+       hiérarchie visuelle marquée façon Discord, pas un mur de li grisés indistincts. */
+    .sop-live-notes-body { font-size:.85rem; color:var(--text-muted); line-height:1.7; }
+    .sop-live-notes-body h3 {
+      font-size:1.05rem; color:var(--accent); font-weight:700;
+      margin:1rem 0 .5rem; padding-bottom:.3rem; letter-spacing:.02em;
+      border-bottom:1px solid var(--border);
+    }
+    .sop-live-notes-body h3:first-child { margin-top:0; }
+    .sop-live-notes-body p { margin:.4rem 0; color:var(--text); }
+    .sop-live-notes-body ul, .sop-live-notes-body ol { padding-left:0; margin:.4rem 0; list-style:none; }
+    .sop-live-notes-body li { position:relative; padding-left:1.1rem; margin:.3rem 0; color:var(--text); }
+    .sop-live-notes-body li::before {
+      content:'▸'; position:absolute; left:0; top:.05em; color:var(--accent);
+      font-size:.75rem; font-weight:700;
+    }
+    .sop-live-notes-body strong { color:var(--accent); font-weight:600; }
+    .sop-live-notes-body em { color:var(--text); font-style:italic; }
 
     /* Édition directe du Manuel de combat (organisateurs) */
     .sop-edit-bar { display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; margin-bottom:1.25rem; }
     .sop-edit-hint { font-size:.72rem; color:var(--text-faint); flex:1 1 220px; }
     #sop-editable[contenteditable="true"] { outline:2px dashed var(--accent-dim); outline-offset:10px; border-radius:2px; background:rgba(200,146,16,.03); cursor:text; }
+    /* Chaque section devient indépendamment éditable en mode édition (au lieu du conteneur
+       entier) : impossible de fusionner deux blocs en supprimant une ligne intermédiaire,
+       les puces CSS ▸ restent stables tant que la structure <li> n'est pas cassée. */
+    #sop-editable.sop-editing > * { outline:1px dashed rgba(200,146,16,.25); outline-offset:6px; border-radius:2px; }
+    #sop-editable.sop-editing > *[contenteditable="true"]:focus { outline-color:var(--accent); background:rgba(200,146,16,.05); }
+    #sop-editable.sop-editing > *[contenteditable="true"] { min-height:2.4em; cursor:text; }
+    /* Toolbar de mise en forme — visible uniquement pendant l'édition */
+    .sop-format-bar { display:none; gap:.4rem; padding:.5rem .6rem; background:var(--surface); border:1px solid var(--border); border-radius:2px; margin-bottom:.85rem; flex-wrap:wrap; position:sticky; top:56px; z-index:20; }
+    .sop-format-bar.show { display:flex; }
+    .sop-format-bar button { background:var(--surface-2); border:1px solid var(--border); border-radius:2px; color:var(--text); padding:.35rem .6rem; font-size:.75rem; cursor:pointer; font-family:'Inter',sans-serif; transition:border-color .15s, background .15s; }
+    .sop-format-bar button:hover { border-color:var(--accent-dim); background:var(--surface); }
+    .sop-format-bar .sop-fmt-sep { width:1px; background:var(--border); margin:.1rem .2rem; }
+    .sop-format-bar .sop-fmt-hint { font-size:.68rem; color:var(--text-faint); align-self:center; font-style:italic; margin-left:auto; }
     .phase2-divider { border:none; border-top:1px dashed var(--border); margin:1rem 0 .75rem; }
     .phase2-label { text-align:center; font-size:.62rem; letter-spacing:.14em; text-transform:uppercase; color:var(--text-faint); margin-bottom:.75rem; }
   </style>
@@ -506,6 +549,8 @@
           <option value="transporteur">Transporteur</option>
           <option value="moissonneur">Moissonneur</option>
           <option value="defense">Défense Rapprochée</option>
+          <option value="orni_assaut">Orni Assaut Défense Transporteur</option>
+          <option value="orni_scout">Orni Scout (repérage)</option>
           <option value="patrouilleur">Patrouilleur</option>
           <option value="pilote_orni_cac">Pilote Ornithoptère + CaC</option>
           <!-- Défenseur CAC : rôle retiré (plus rentable de placer un CAC dans le transporteur).
@@ -630,12 +675,40 @@
     <div id="sop-edit-bar" class="sop-edit-bar" style="display:none">
       <button id="sop-edit-btn" class="btn btn-ghost" onclick="toggleSopEdit(true)">✎ Modifier cette page</button>
       <div id="sop-edit-controls" style="display:none;gap:.6rem;flex-wrap:wrap;align-items:center">
-        <span class="sop-edit-hint">Clique dans le texte pour l'éditer directement. Évite de supprimer des blocs entiers — "Réinitialiser" restaure le contenu par défaut si l'affichage casse.</span>
+        <span class="sop-edit-hint">Clique dans un bloc pour l'éditer. Les blocs sont indépendants — plus de fusion accidentelle. "Réinitialiser" restaure le contenu par défaut si l'affichage casse.</span>
         <button class="btn btn-accent" onclick="saveSopContent()">💾 Enregistrer</button>
         <button class="btn btn-ghost" onclick="toggleSopEdit(false)">✕ Annuler</button>
         <button class="btn btn-danger" onclick="resetSopContent()">↺ Réinitialiser</button>
       </div>
       <span id="sop-edit-note" style="font-size:.72rem;color:var(--text-faint)"></span>
+    </div>
+
+    <!-- Toolbar de mise en forme (visible uniquement en édition). Utilise document.execCommand :
+         API obsolète mais toujours supportée par tous les navigateurs cibles, largement suffisante
+         pour du gras / titre / liste dans un contenteditable de fortune. -->
+    <div id="sop-format-bar" class="sop-format-bar" role="toolbar" aria-label="Mise en forme">
+      <button type="button" onmousedown="event.preventDefault()" onclick="sopFmt('bold')" title="Gras (Ctrl+B)"><strong>G</strong></button>
+      <button type="button" onmousedown="event.preventDefault()" onclick="sopFmt('italic')" title="Italique (Ctrl+I)"><em>I</em></button>
+      <div class="sop-fmt-sep"></div>
+      <button type="button" onmousedown="event.preventDefault()" onclick="sopFmtBlock('h2')" title="Titre de section">Titre</button>
+      <button type="button" onmousedown="event.preventDefault()" onclick="sopFmtBlock('h3')" title="Sous-titre">Sous-titre</button>
+      <button type="button" onmousedown="event.preventDefault()" onclick="sopFmtBlock('p')" title="Paragraphe normal">¶ Texte</button>
+      <div class="sop-fmt-sep"></div>
+      <button type="button" onmousedown="event.preventDefault()" onclick="sopFmt('insertUnorderedList')" title="Liste à puces">• Liste</button>
+      <div class="sop-fmt-sep"></div>
+      <!-- Couleurs de mise en évidence : palette du thème Dune (accent doré, rouge d'alerte,
+           vert « protecteurs du convoi », beige texte). execCommand('foreColor') pose un
+           <font color> sur la sélection — supporté partout. « Défaut » = removeFormat pour
+           enlever tout style de couleur/gras. -->
+      <button type="button" onmousedown="event.preventDefault()" onclick="sopColor('#C89210')" title="Doré (accent)" style="color:#C89210;font-weight:700">A</button>
+      <button type="button" onmousedown="event.preventDefault()" onclick="sopColor('#E8DEC8')" title="Blanc / texte" style="color:#E8DEC8;font-weight:700">A</button>
+      <button type="button" onmousedown="event.preventDefault()" onclick="sopColor('#B85428')" title="Rouge / alerte" style="color:#B85428;font-weight:700">A</button>
+      <button type="button" onmousedown="event.preventDefault()" onclick="sopColor('#4A9A5A')" title="Vert / protecteurs" style="color:#4A9A5A;font-weight:700">A</button>
+      <button type="button" onmousedown="event.preventDefault()" onclick="sopColor('#E0A828')" title="Jaune vif" style="color:#E0A828;font-weight:700">A</button>
+      <button type="button" onmousedown="event.preventDefault()" onclick="sopColor('#7A5A0A')" title="Marron doré (bordures)" style="color:#7A5A0A;font-weight:700">A</button>
+      <div class="sop-fmt-sep"></div>
+      <button type="button" onmousedown="event.preventDefault()" onclick="sopFmt('removeFormat')" title="Nettoyer le formatage (couleur, gras, italique)">✕ Format</button>
+      <span class="sop-fmt-hint">Sélectionne d'abord le texte, puis clique.</span>
     </div>
 
     <div id="sop-editable">
@@ -974,7 +1047,7 @@ const FAUCON_MODE_ENABLED = false;
 
 const SLIDER_LBL  = ['','Critique','Mauvais','Moyen','Bien','Excellent'];
 const CRYSTAL_LBL = ['','Difficile','Moyen','Correct','Bien','Excellent'];
-const ROLES = { transporteur:'Transporteur', moissonneur:'Moissonneur', defenseur_cac:'Défenseur CAC', defense:'Défense Rapprochée', patrouilleur:'Patrouilleur', pilote_orni_cac:'Pilote Ornithoptère + CaC', faucon_b:'Faucon — Pilote', faucon_a:'Faucon — Passager' };
+const ROLES = { transporteur:'Transporteur', moissonneur:'Moissonneur', defenseur_cac:'Défenseur CAC', defense:'Défense Rapprochée', orni_assaut:'Orni Assaut Défense Transporteur', orni_scout:'Orni Scout (repérage)', patrouilleur:'Patrouilleur', pilote_orni_cac:'Pilote Ornithoptère + CaC', faucon_b:'Faucon — Pilote', faucon_a:'Faucon — Passager' };
 const AXES  = [ {key:'comms',label:'Clarté des comms'},{key:'deadzone',label:'Respect DEADZONE'},{key:'aerien',label:'Doctrine aérienne'},{key:'coordination',label:'Coordination CDR/CP'} ];
 const BIEN_LBL = { comms_ok:'Comms claires', deadzone_ok:'DEADZONE tenue', aerien_ok:'Personne au sol', coordination_ok:'Bonne coordination', faucon_ok:'Faucon réussi', repli_ok:'Repli organisé', detection_ok:'Bonne détection', bien_autre:'Autre' };
 const PN_LBL   = { friendly_fire:'Tirs fratricides', spam_vocal:'Spam vocal', dispersion:'Dispersion', ordres_flous:'Ordres flous', deadzone_fail:'DEADZONE ratée', sol:'Descente au sol', panique:'Panique', pn_autre:'Autre' };
@@ -1054,45 +1127,94 @@ async function renderSop() {
   try {
     const res = await fetch(`${API}?action=get_assign`);
     const data = await res.json();
-    if (!data.ok || !data.assignation) {
+    if (!data.ok) {
       box.innerHTML = '<div class="sop-live-empty">Aucune sortie en préparation pour l\'instant — reviens ici une fois qu\'une soirée est ouverte pour voir les chefs et les consignes du soir.</div>';
       return;
     }
-    const cm = data.assignation.commandement || {};
-    const notes = (data.assignation.briefing_notes || '').trim();
+    // Sortie trouvée mais pas encore de compo (créée sur Discord, pas encore assignée côté site).
+    // On affiche au moins le titre + un message d'attente — évite le « rien à voir » quand
+    // il y a pourtant une sortie ouverte dont on attend la compo.
+    const a = data.assignation || {};
+    const cm = a.commandement || {};
+    const notes = (a.briefing_notes || '').trim();
     let h = `<div class="sop-live-title">${esc(data.soiree.titre)}${data.soiree.zone ? ' — ' + esc(data.soiree.zone) : ''}</div>`;
-    h += `<div class="sop-live-chefs">
-      <div class="sop-chef"><span class="sop-chef-role">CS</span>${orgaName(cm.cs)}</div>
-      <div class="sop-chef"><span class="sop-chef-role">CDR</span>${orgaName(cm.cdr)}</div>
-      <div class="sop-chef"><span class="sop-chef-role">CP</span>${orgaName(cm.cp)}</div>
-    </div>`;
-    if (notes) h += `<div class="sop-live-notes"><div class="sop-live-notes-title">Consignes particulières de ce soir</div><p>${esc(notes).replace(/\n/g,'<br>')}</p></div>`;
+    if (!data.assignation) {
+      h += `<div class="sop-live-empty" style="margin-top:.5rem">Compo en cours d'attribution — les chefs et les consignes du soir apparaîtront ici dès qu'un organisateur aura sauvegardé l'assignation (onglet Admin → Assignation).</div>`;
+    } else {
+      h += `<div class="sop-live-chefs">
+        <div class="sop-chef"><span class="sop-chef-role">CS</span>${orgaName(cm.cs)}</div>
+        <div class="sop-chef"><span class="sop-chef-role">CDR</span>${orgaName(cm.cdr)}</div>
+        <div class="sop-chef"><span class="sop-chef-role">CP</span>${orgaName(cm.cp)}</div>
+      </div>`;
+      // Rendu Markdown pour les consignes du soir : les organisateurs copient souvent du texte
+      // Discord (titres ##, gras **, listes -) — mdToHtml() les convertit en HTML propre, avec
+      // échappement systématique dans inline() → pas d'injection possible.
+      if (notes) h += `<div class="sop-live-notes"><div class="sop-live-notes-title">Consignes particulières de ce soir</div><div class="sop-live-notes-body">${mdToHtml(notes)}</div></div>`;
+    }
     box.innerHTML = h;
   } catch { box.innerHTML = '<div class="sop-live-empty">Impossible de charger les informations de ce soir.</div>'; }
 }
 
 // Bascule le mode édition du Manuel de combat (organisateurs uniquement — le bouton est masqué
 // aux autres, et l'enregistrement est de toute façon vérifié côté serveur).
+//
+// Refonte : au lieu de passer le CONTENEUR entier en contenteditable (qui laisse le navigateur
+// fusionner deux blocs quand on efface la dernière ligne de l'un), on rend chaque enfant DIRECT
+// de #sop-editable indépendamment éditable, et le conteneur reste non-éditable. Résultat :
+// impossible de faire remonter le titre d'une section dans la précédente, et les puces CSS
+// ▸ générées par ::before restent stables tant que la structure interne (ul/li) n'est pas cassée.
 function toggleSopEdit(on) {
   const el = document.getElementById('sop-editable');
   sopEditing = on;
-  el.contentEditable = on ? 'true' : 'false';
+  el.classList.toggle('sop-editing', on);
+  // Chaque bloc = un enfant direct. Non-éditable au niveau conteneur.
+  el.contentEditable = 'false';
+  [...el.children].forEach(child => { child.contentEditable = on ? 'true' : 'false'; });
   document.getElementById('sop-edit-btn').style.display = on ? 'none' : '';
   document.getElementById('sop-edit-controls').style.display = on ? 'flex' : 'none';
+  const fb = document.getElementById('sop-format-bar');
+  if (fb) fb.classList.toggle('show', on);
   if (!on) {
     el.innerHTML = sopServerHtml || SOP_DEFAULT_HTML; // Annuler = jette les modifs non enregistrées
     document.getElementById('sop-edit-note').textContent = '';
   }
 }
 
+// Applique une commande execCommand simple sur la sélection active. document.execCommand est
+// « deprecated » mais reste supporté partout et fait très bien le boulot pour du gras/liste.
+// On ne cible que la sélection utilisateur — pas besoin de connaître le bloc actif.
+function sopFmt(cmd) {
+  document.execCommand(cmd, false, null);
+}
+
+// Change le type de bloc (h2 / h3 / p) de la ligne courante. FormatBlock veut un nom balisé
+// (<h2>) pour rester cohérent d'un navigateur à l'autre.
+function sopFmtBlock(tag) {
+  document.execCommand('formatBlock', false, '<' + tag + '>');
+}
+
+// Applique une couleur de texte sur la sélection. Palette limitée aux couleurs du thème
+// (cf toolbar HTML). execCommand('foreColor') émet un <font color> sur les navigateurs
+// évergreens — pas idéal mais lisible, éditable et compatible avec removeFormat.
+function sopColor(hex) {
+  document.execCommand('styleWithCSS', false, true);   // préférer style="color:…" au vieux <font>
+  document.execCommand('foreColor', false, hex);
+}
+
 async function saveSopContent() {
   const el = document.getElementById('sop-editable');
   const note = document.getElementById('sop-edit-note');
+  // On lit le innerHTML APRÈS avoir retiré les attributs contenteditable des enfants — sinon
+  // on persiste des attributs d'édition dans le fichier de contenu, pollution évitable.
+  [...el.children].forEach(c => c.removeAttribute('contenteditable'));
+  const html = el.innerHTML;
+  // Puis on remet en mode édition pour ne pas bloquer l'utilisateur pendant l'enregistrement.
+  if (sopEditing) [...el.children].forEach(c => c.contentEditable = 'true');
   note.textContent = 'Enregistrement…';
   try {
-    const r = await apiPost('save_sop_content', { html: el.innerHTML });
+    const r = await apiPost('save_sop_content', { html });
     if (r.ok) {
-      sopServerHtml = el.innerHTML;
+      sopServerHtml = html;
       toggleSopEdit(false); // efface le message en cours avant qu'on affiche la confirmation
       note.textContent = '✓ Enregistré';
     } else {
@@ -1104,7 +1226,11 @@ async function saveSopContent() {
 
 async function resetSopContent() {
   if (!(await uiConfirm('Revenir au contenu par défaut de cette page ? La personnalisation actuelle sera perdue au prochain enregistrement.', { title:'Réinitialiser le Manuel de combat', okLabel:'Réinitialiser', danger:true }))) return;
-  document.getElementById('sop-editable').innerHTML = SOP_DEFAULT_HTML;
+  const el = document.getElementById('sop-editable');
+  el.innerHTML = SOP_DEFAULT_HTML;
+  // Après un remplacement du HTML complet, les nouveaux enfants directs perdent leur
+  // attribut contenteditable — on le réapplique si on est encore en mode édition.
+  if (sopEditing) [...el.children].forEach(c => c.contentEditable = 'true');
 }
 
 // ============================================================
@@ -1523,8 +1649,90 @@ function mkDefenseSquad() {
   return {
     nord:{nom:'',faucon:false,passager:'',cac:false}, sud:{nom:'',faucon:false,passager:'',cac:false},
     est:{nom:'',faucon:false,passager:'',cac:false}, ouest:{nom:'',faucon:false,passager:'',cac:false},
+    // Pilotes d'assaut de défense du transporteur — bloc dynamique 0..N, dans la même escouade
+    // que les 4 cardinaux (même chef : le CDR). Distribué uniquement côté admin, jamais choisi
+    // librement sur Discord (cf POSTES_SELECTABLE dans discord_sortie.php).
+    assauts: [],
   };
 }
+
+// Nettoyage du collage dans le champ « Briefing du soir ». Discord recopie ses messages avec :
+//   - le préfixe « > » de blockquote sur chaque ligne (le vrai coupable dans les captures) ;
+//   - parfois « >>> » sur la première ligne d'un blockquote multi-lignes ;
+//   - des espaces insécables (U+00A0) qui rendent la comparaison ligne à ligne fragile.
+// On garde en revanche le Markdown (##, **, -) : c'est lui qui donnera le rendu propre dans
+// « Ce soir » via mdToHtml(). Handler délégué au niveau document → couvre le textarea recréé
+// à chaque renderAssignBuilder() sans qu'on ait à le ré-attacher.
+function cleanDiscordPaste(text) {
+  return (text || '')
+    .replace(/ /g, ' ')                            // NBSP → espace normale
+    .replace(/^\s*>{1,3}\s?/gm, '')                    // « > » / « >>> » en début de ligne (blockquote Discord)
+    .replace(/[ \t]+$/gm, '');                          // trailing spaces
+}
+// Rich copy Discord → text/html contient la vraie structure (<h1>, <ul>, <strong>…) alors que
+// le text/plain associé est déjà aplati (titres et puces mangés — c'est ce qu'a montré /v2).
+// On préfère text/html quand il est structuré et on le reconvertit en Markdown propre.
+function htmlPasteToMd(html) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  function walk(node) {
+    if (node.nodeType === 3) return node.textContent.replace(/ /g, ' ');
+    if (node.nodeType !== 1) return '';
+    const tag = node.tagName.toLowerCase();
+    const inner = [...node.childNodes].map(walk).join('');
+    switch (tag) {
+      case 'h1': return '\n# '   + inner.trim() + '\n\n';
+      case 'h2': return '\n## '  + inner.trim() + '\n\n';
+      case 'h3': return '\n### ' + inner.trim() + '\n\n';
+      case 'h4': case 'h5': case 'h6': return '\n### ' + inner.trim() + '\n\n';
+      case 'strong': case 'b': return '**' + inner + '**';
+      case 'em':     case 'i': return '*'  + inner + '*';
+      case 'code':             return '`'  + inner + '`';
+      case 'br':               return '\n';
+      case 'p': case 'div':    return '\n' + inner + '\n';
+      case 'li':               return '- ' + inner.trim() + '\n';
+      case 'ul': case 'ol':    return '\n' + inner + '\n';
+      case 'blockquote':       return inner;
+      case 'style': case 'script': case 'meta': case 'link': return '';
+      case 'img': {
+        // Discord remplace CHAQUE émoji (même Unicode standard 🛡️ ⚔ 🚁 ✈ 🍺 …) par un
+        // <img alt="🛡️" aria-label="🛡" …> qui pointe vers son propre CDN Twemoji.
+        // Sans traitement spécial ils étaient perdus au paste — on récupère l'alt.
+        // Émoji de guilde custom : alt sera « :nom_emoji: » → mieux que rien, l'utilisateur
+        // peut le remplacer manuellement par un émoji Unicode.
+        const alt = node.getAttribute('alt') || node.getAttribute('aria-label') || '';
+        return alt;
+      }
+      default:                 return inner; // span/font/a… passe-plat
+    }
+  }
+  return walk(doc.body)
+    .replace(/[ \t]+$/gm, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+document.addEventListener('paste', function (e) {
+  const t = e.target;
+  if (!t || !t.classList || !t.classList.contains('briefing-notes-input')) return;
+  const cd = e.clipboardData; if (!cd) return;
+  const html  = cd.getData('text/html');
+  const plain = cd.getData('text/plain');
+  // Vrai HTML structuré (pas juste le <meta charset> que Chrome ajoute autour d'un plain).
+  const looksStructured = html && /<(h[1-6]|ul|ol|li|strong|b|em|i|blockquote)\b/i.test(html);
+  let cleaned;
+  if (looksStructured) {
+    cleaned = htmlPasteToMd(html);
+  } else {
+    cleaned = cleanDiscordPaste(plain);
+    if (cleaned === plain) return; // rien à faire → paste natif
+  }
+  if (cleaned == null) return;
+  e.preventDefault();
+  const s = t.selectionStart, en = t.selectionEnd, v = t.value;
+  t.value = v.slice(0, s) + cleaned + v.slice(en);
+  const pos = s + cleaned.length;
+  t.selectionStart = t.selectionEnd = pos;
+  t.dispatchEvent(new Event('input', { bubbles: true })); // met à jour currentCompo.briefing_notes
+});
 
 // Modèle de compo par défaut (vide)
 function emptyCompo() {
@@ -1534,6 +1742,7 @@ function emptyCompo() {
     recolte: [ { transporteur:'', moissonneur:'' } ],                    // defenseur_cac retiré (rôle abandonné, plus rentable) — cf normalizeCompo
     defense: [ mkDefenseSquad() ],                                      // 1 escouade par défaut ; une 2e est débloquée dès 2 groupes Récolte (cf addDefenseSquad)
     distance: { pilotes: [ { nom:'', faucon:false, passager:'', cac:false } ] }, // 1–4 pilotes ; faucon = conducteur + passager (sur l'aile) — UI masquée, cf FAUCON_MODE_ENABLED ; cac = Pilote Ornithoptère + CaC
+    recon:    { scouts:  [] },                                          // Repérage : scouts (0..N), poussent plus loin que la patrouille pour trouver/tromper l'ennemi
     ingame: [],                                                        // groupes en jeu (max 4) — saisie manuelle, ce qui s'affiche sur la carte
   };
 }
@@ -1559,9 +1768,18 @@ function normalizeCompo(c) {
       else if (!v || typeof v !== 'object') out[k] = { nom:'', faucon:false, passager:'', cac:false };
       else out[k] = { nom:v.nom || '', faucon:!!v.faucon, passager:v.passager || '', cac:!!v.cac };
     });
+    // Pilotes d'assaut (0..N). Rétro-compat : squads d'avant l'ajout n'ont pas la clé.
+    out.assauts = Array.isArray(squad.assauts)
+      ? squad.assauts.map(p => (typeof p === 'string') ? { nom:p } : { nom: (p && p.nom) || '' })
+      : [];
     return out;
   });
   if (!c.defense.length) c.defense = [ mkDefenseSquad() ];
+  // Bloc Repérage — scouts (0..N). Nouvelle section, absente des anciennes compos.
+  if (!c.recon || typeof c.recon !== 'object') c.recon = { scouts: [] };
+  c.recon.scouts = Array.isArray(c.recon.scouts)
+    ? c.recon.scouts.map(p => (typeof p === 'string') ? { nom:p } : { nom: (p && p.nom) || '' })
+    : [];
   if (!c.distance || !Array.isArray(c.distance.pilotes)) {
     const pilotes = [];
     (c.patrouille || []).forEach(b => {
@@ -1756,7 +1974,7 @@ function renderAssignBuilder() {
   h += `<div class="assign-group">
     <div class="assign-group-head"><span class="assign-group-title">📋 Briefing du soir</span></div>
     <div class="assign-hint">Affiché aux joueurs dans l'onglet « Manuel de combat » tant que cette sortie est active. Les noms de CS/CDR/CP ci-dessus y apparaissent automatiquement — utilise ce champ pour tout le reste (couleurs de groupe, consignes particulières de la soirée…).</div>
-    <textarea style="min-height:90px" placeholder="Ex. : Couleurs de groupe — Récolte : bleu, Défense : rouge, Patrouille : vert. Zone surveillée côté Nord ce soir." oninput="currentCompo.briefing_notes=this.value">${esc(c.briefing_notes)}</textarea>
+    <textarea class="briefing-notes-input" style="min-height:90px" placeholder="Ex. : Couleurs de groupe — Récolte : bleu, Défense : rouge, Patrouille : vert. Zone surveillée côté Nord ce soir. Astuce : les titres ##, gras ** et listes - copiés depuis Discord sont automatiquement rendus dans « Ce soir »." oninput="currentCompo.briefing_notes=this.value">${esc(c.briefing_notes)}</textarea>
   </div>`;
 
   // Groupes Récolte (dynamique)
@@ -1792,6 +2010,20 @@ function renderAssignBuilder() {
         ${dd.faucon ? `<input class="pil-pass roster-input" placeholder="Passager (sur l'aile, non groupé)" value="${escAttr(dd.passager)}" oninput="currentCompo.defense[${si}].${k}.passager=this.value">` : ''}` : ''}
       </div>`;
     });
+    // Sous-liste Assauts (dans la même escouade, sous le CDR — placement dynamique 0..N).
+    // Rôle réservé admin, jamais présenté sur Discord (cf POSTES_SELECTABLE).
+    const assauts = squad.assauts || [];
+    h += `<div class="assign-sub-head">🛡️ Ornis Assaut Défense Transporteur</div>
+      <div class="assign-sub-hint">Pilotes attribués par le CDR pour verrouiller l'espace autour du transporteur en vol. Rôle admin, non ouvert à l'inscription libre.</div>`;
+    assauts.forEach((p, ai) => {
+      h += `<div class="assign-def">
+        <span class="assign-slot-label">Assaut ${ai+1}</span>
+        <input class="pil-nom roster-input" value="${escAttr(p.nom)}" oninput="currentCompo.defense[${si}].assauts[${ai}].nom=this.value">
+        <button class="btn-mini btn-mini-del" onclick="removeAssaut(${si},${ai})" title="Retirer ce pilote d'assaut">✕</button>
+        <span></span>
+      </div>`;
+    });
+    h += `<button class="btn-mini btn-mini-add" onclick="addAssaut(${si})" style="margin-top:.3rem">+ Ajouter un pilote d'assaut</button>`;
     h += `</div>`;
   });
   if (c.defense.length < 2) {
@@ -1816,6 +2048,22 @@ function renderAssignBuilder() {
   h += `<button class="btn-mini btn-mini-add" onclick="addPilote()">+ Ajouter un pilote</button>`;
   h += `</div>`;
 
+  // Repérage — scouts (bloc séparé, plus loin que la patrouille). Rôle proposé à
+  // l'inscription Discord (cf POSTES_SELECTABLE) et distribuable ici par l'organisateur.
+  const scouts = (c.recon && c.recon.scouts) || [];
+  h += `<div class="assign-group">
+    <div class="assign-group-head"><span class="assign-group-title">👁️ Repérage — Scouts</span></div>
+    <div class="assign-hint">Les scouts poussent plus loin que la patrouille pour trouver l'ennemi et le tromper (fausses trajectoires, feintes). Groupés en jeu <strong>avec le transporteur</strong> pour ne pas laisser le convoi aveugle.</div>`;
+  scouts.forEach((p, i) => {
+    h += `<div class="assign-pilote">
+      <input class="pil-nom roster-input" placeholder="Scout ${i+1}" value="${escAttr(p.nom)}" oninput="currentCompo.recon.scouts[${i}].nom=this.value">
+      <span></span>
+      ${scouts.length > 1 || p.nom ? `<button class="btn-mini btn-mini-del" onclick="removeScout(${i})">✕</button>` : '<span></span>'}
+    </div>`;
+  });
+  h += `<button class="btn-mini btn-mini-add" onclick="addScout()">+ Ajouter un scout</button>`;
+  h += `</div>`;
+
   // Groupes en jeu (carte) — saisie manuelle, pré-remplissable depuis les rôles
   h += `<div class="assign-group">
     <div class="assign-group-head">
@@ -1824,8 +2072,9 @@ function renderAssignBuilder() {
     </div>
     <div class="assign-hint">Max 4 par groupe. C'est ce que chaque joueur voit sur la carte (on ne voit que son propre groupe). Les inscrits Discord non encore placés sont proposés.</div>`;
   c.ingame.forEach((g, gi) => {
+    const roleLbl = g.label ? `<span style="font-size:.72rem;color:var(--text-muted);font-style:italic;margin-left:.55rem">— ${esc(g.label)}</span>` : '';
     h += `<div class="ingame-card">
-      <div class="ingame-head"><span class="ingame-title">Groupe ${gi+1}</span><button class="btn-mini btn-mini-del" onclick="removeIngame(${gi})">✕</button></div>
+      <div class="ingame-head"><span class="ingame-title">Groupe ${gi+1}${roleLbl}</span><button class="btn-mini btn-mini-del" onclick="removeIngame(${gi})">✕</button></div>
       <div class="ingame-slots">`;
     for (let s = 0; s < 4; s++) {
       h += `<input class="roster-input" placeholder="—" value="${escAttr((g.membres||[])[s] || '')}" oninput="setIngameMember(${gi},${s},this.value)">`;
@@ -1844,6 +2093,10 @@ function toggleDefFaucon(si,k) { const d = currentCompo.defense[si][k]; d.faucon
 function toggleDefCac(si,k) { const d = currentCompo.defense[si][k]; d.cac = !d.cac; renderAssignBuilder(); }
 function addDefenseSquad()    { if (currentCompo.defense.length < 2) currentCompo.defense.push(mkDefenseSquad()); renderAssignBuilder(); }
 function removeDefenseSquad(i){ currentCompo.defense.splice(i,1); renderAssignBuilder(); }
+function addAssaut(si)        { const sq = currentCompo.defense[si]; if (!Array.isArray(sq.assauts)) sq.assauts = []; sq.assauts.push({nom:''}); renderAssignBuilder(); }
+function removeAssaut(si,ai)  { currentCompo.defense[si].assauts.splice(ai,1); renderAssignBuilder(); }
+function addScout()           { if (!currentCompo.recon) currentCompo.recon = { scouts: [] }; currentCompo.recon.scouts.push({nom:''}); renderAssignBuilder(); }
+function removeScout(i)       { currentCompo.recon.scouts.splice(i,1); renderAssignBuilder(); }
 function togglePiloteCac(i) { const p = currentCompo.distance.pilotes[i]; p.cac = !p.cac; renderAssignBuilder(); }
 function addPilote()     { currentCompo.distance.pilotes.push({nom:'',faucon:false,passager:'',cac:false}); renderAssignBuilder(); }
 function removePilote(i) { currentCompo.distance.pilotes.splice(i,1); renderAssignBuilder(); }
@@ -1851,13 +2104,17 @@ function addIngame()     { currentCompo.ingame.push({membres:['','','','']}); re
 function removeIngame(i) { currentCompo.ingame.splice(i,1); renderAssignBuilder(); }
 function setIngameMember(gi, s, v) { const m = currentCompo.ingame[gi].membres; while (m.length < 4) m.push(''); m[s] = v; }
 
-// Liste dédupliquée de tous les joueurs nommés (récolte + défense + pilotes/passagers distance)
+// Liste dédupliquée de tous les joueurs nommés (récolte + défense + pilotes/passagers distance + assauts + scouts)
 function rosterNames(c) {
   const out = [];
   // Inscrits Discord (hors « absent ») en premier, pour proposer directement ceux qui viennent.
   (currentSignups || []).forEach(s => { if ((s.statut || 'present') !== 'absent' && s.name && s.name.trim()) out.push(s.name.trim()); });
   (c.recolte || []).forEach(g => ['transporteur','moissonneur','defenseur_cac'].forEach(k => { if (g[k] && g[k].trim()) out.push(g[k].trim()); }));
-  (c.defense || []).forEach(squad => ['nord','sud','est','ouest'].forEach(k => { const d = squad[k]; if (d) { if (d.nom && d.nom.trim()) out.push(d.nom.trim()); if (d.passager && d.passager.trim()) out.push(d.passager.trim()); } }));
+  (c.defense || []).forEach(squad => {
+    ['nord','sud','est','ouest'].forEach(k => { const d = squad[k]; if (d) { if (d.nom && d.nom.trim()) out.push(d.nom.trim()); if (d.passager && d.passager.trim()) out.push(d.passager.trim()); } });
+    (squad.assauts || []).forEach(p => { if (p.nom && p.nom.trim()) out.push(p.nom.trim()); });
+  });
+  ((c.recon && c.recon.scouts) || []).forEach(p => { if (p.nom && p.nom.trim()) out.push(p.nom.trim()); });
   ((c.distance && c.distance.pilotes) || []).forEach(p => { if (p.nom && p.nom.trim()) out.push(p.nom.trim()); if (p.passager && p.passager.trim()) out.push(p.passager.trim()); });
   return [...new Set(out)];
 }
@@ -1867,7 +2124,7 @@ function rosterNames(c) {
 // NON encore placés dans la compo, filtre à la frappe, clavier ↑/↓/Entrée.
 const rosterPop = (function () {
   let pop = null, input = null, suppress = false, active = -1, hideTimer = null;
-  const POSTE_SHORT = { moissonneur:'Moiss.', transporteur:'Transp.', defenseur_cac:'CAC', pilote_orni:'Orni', pilote_orni_cac:'Orni+CaC', present:'Présent' };
+  const POSTE_SHORT = { moissonneur:'Moiss.', transporteur:'Transp.', defenseur_cac:'CAC', orni_assaut:'Assaut', orni_scout:'Scout', pilote_orni:'Orni', pilote_orni_cac:'Orni+CaC', present:'Présent' };
 
   function ensure() {
     if (pop) return pop;
@@ -1886,7 +2143,11 @@ const rosterPop = (function () {
     const c = currentCompo || {}, out = [];
     ['cs','cdr','cp'].forEach(k => { const v = c.commandement && c.commandement[k]; if (v && v.trim()) out.push(v.trim().toLowerCase()); });
     (c.recolte || []).forEach(g => ['transporteur','moissonneur','defenseur_cac'].forEach(k => { if (g[k] && g[k].trim()) out.push(g[k].trim().toLowerCase()); }));
-    (c.defense || []).forEach(squad => ['nord','sud','est','ouest'].forEach(k => { const d = squad[k]; if (d) { if (d.nom && d.nom.trim()) out.push(d.nom.trim().toLowerCase()); if (d.passager && d.passager.trim()) out.push(d.passager.trim().toLowerCase()); } }));
+    (c.defense || []).forEach(squad => {
+      ['nord','sud','est','ouest'].forEach(k => { const d = squad[k]; if (d) { if (d.nom && d.nom.trim()) out.push(d.nom.trim().toLowerCase()); if (d.passager && d.passager.trim()) out.push(d.passager.trim().toLowerCase()); } });
+      (squad.assauts || []).forEach(p => { if (p.nom && p.nom.trim()) out.push(p.nom.trim().toLowerCase()); });
+    });
+    ((c.recon && c.recon.scouts) || []).forEach(p => { if (p.nom && p.nom.trim()) out.push(p.nom.trim().toLowerCase()); });
     ((c.distance && c.distance.pilotes) || []).forEach(p => { if (p.nom && p.nom.trim()) out.push(p.nom.trim().toLowerCase()); if (p.passager && p.passager.trim()) out.push(p.passager.trim().toLowerCase()); });
     (c.ingame || []).forEach(g => (g.membres || []).forEach(m => { if (m && m.trim()) out.push(m.trim().toLowerCase()); }));
     return new Set(out);
@@ -1974,17 +2235,54 @@ const rosterPop = (function () {
 
 function padTo4(a) { const b = a.slice(0,4); while (b.length < 4) b.push(''); return b; }
 
-// Pré-remplit les groupes en jeu d'après les rôles : Récolte / chaque escouade Défense / pilotes distance / 2e Récolte (passagers Faucon exclus)
+// Pré-remplit les groupes en jeu d'après les rôles, chacun annoté d'un `label` qui décrit à
+// quoi il correspond (Groupe transporteur / Défense rapprochée / Patrouille / Repérage /
+// Récolte). Le label est optionnel — un groupe ajouté manuellement par l'admin n'en a pas,
+// on retombe alors sur « Groupe N » côté affichage (renderCompoReadonly).
+//
+// Ordre du groupe « Groupe transporteur » : Transporteur > Assauts > Scouts > Moiss, cap à 4.
+// Si les Assauts + Scouts saturent, la Moiss est isolée dans son propre groupe et reléguée EN
+// DERNIER (jamais collée juste après le convoi — c'est visuellement trompeur). Les overflows
+// éventuels d'assauts/scouts partent aussi en fin de liste.
 function prefillIngame() {
-  const c = currentCompo, groups = [], rec = c.recolte || [];
-  if (rec[0]) { const m = [rec[0].transporteur, rec[0].moissonneur, rec[0].defenseur_cac].filter(x => x && x.trim()); if (m.length) groups.push({membres:padTo4(m)}); }
-  (c.defense || []).forEach(squad => {
+  const c = currentCompo, groups = [], isolates = [], rec = c.recolte || [];
+  // Tous les assauts / scouts (agrégés depuis les escouades) — ils escortent le transporteur en vol.
+  const allAssauts = [].concat(...(c.defense || []).map(sq => (sq.assauts || []).map(p => p.nom).filter(x => x && x.trim())));
+  const allScouts  = ((c.recon && c.recon.scouts) || []).map(p => p.nom).filter(x => x && x.trim());
+  if (rec[0]) {
+    const transporteur = (rec[0].transporteur || '').trim();
+    const moiss        = (rec[0].moissonneur  || '').trim();
+    const cac          = (rec[0].defenseur_cac || '').trim();  // legacy — inclus juste après le trans si présent
+    // Ordre de priorité : Transporteur, [CAC legacy], Assauts, Scouts.
+    const ordered = [];
+    if (transporteur) ordered.push(transporteur);
+    if (cac)          ordered.push(cac);
+    allAssauts.forEach(n => ordered.push(n));
+    allScouts.forEach(n => ordered.push(n));
+    const conv = ordered.slice(0, 4);
+    const overflow = ordered.slice(4); // rare : plus de 4 personnes en priorité haute → renfort
+    if (moiss) {
+      if (conv.length < 4) conv.push(moiss);
+      else isolates.push({ label:'Moissonneuse (isolée)', membres:padTo4([moiss]) });
+    }
+    if (conv.length) groups.push({ label:'Groupe transporteur', membres:padTo4(conv) });
+    if (overflow.length) isolates.push({ label:'Groupe transporteur — renforts', membres:padTo4(overflow.slice(0,4)) });
+  }
+  (c.defense || []).forEach((squad, si) => {
     const def = ['nord','sud','est','ouest'].map(k => squad[k] && squad[k].nom).filter(x => x && x.trim());
-    if (def.length) groups.push({membres:padTo4(def)});
+    if (def.length) groups.push({ label:'Défense rapprochée' + (c.defense.length > 1 ? ' — escouade ' + (si+1) : ''), membres:padTo4(def) });
   });
   const pil = ((c.distance && c.distance.pilotes) || []).map(p => p.nom).filter(x => x && x.trim());
-  for (let i = 0; i < pil.length; i += 4) groups.push({membres:padTo4(pil.slice(i, i+4))}); // >4 pilotes → plusieurs groupes en jeu
-  for (let i = 1; i < rec.length; i++) { const m = [rec[i].transporteur, rec[i].moissonneur, rec[i].defenseur_cac].filter(x => x && x.trim()); if (m.length) groups.push({membres:padTo4(m)}); }
+  for (let i = 0, n = 0; i < pil.length; i += 4, n++) {
+    const suffix = pil.length > 4 ? ' — ' + (n+1) : '';
+    groups.push({ label:'Patrouille' + suffix, membres:padTo4(pil.slice(i, i+4)) });
+  }
+  for (let i = 1; i < rec.length; i++) {
+    const m = [rec[i].transporteur, rec[i].moissonneur, rec[i].defenseur_cac].filter(x => x && x.trim());
+    if (m.length) groups.push({ label:'Groupe Récolte ' + (i+1), membres:padTo4(m) });
+  }
+  // Isolés / renforts en dernier — repérage visuel clair que ce sont des exceptions.
+  groups.push(...isolates);
   c.ingame = groups;
   renderAssignBuilder();
 }
@@ -1994,7 +2292,16 @@ function cleanCompo(c) {
   cc.briefing_notes = (cc.briefing_notes || '').trim();
   cc.distance.pilotes = (cc.distance.pilotes || []).filter(p => p.nom && p.nom.trim());
   if (!cc.distance.pilotes.length) cc.distance.pilotes = [{nom:'',faucon:false,passager:'',cac:false}];
-  cc.ingame = (cc.ingame || []).map(g => ({membres:(g.membres||[]).filter(x => x && x.trim())})).filter(g => g.membres.length);
+  // Pilotes d'assaut par escouade : on retire les slots vides, la clé reste (peut valoir []).
+  (cc.defense || []).forEach(sq => { sq.assauts = (sq.assauts || []).filter(p => p.nom && p.nom.trim()); });
+  // Scouts (Repérage) : idem, on ne persiste que les slots nommés.
+  if (cc.recon && Array.isArray(cc.recon.scouts)) cc.recon.scouts = cc.recon.scouts.filter(p => p.nom && p.nom.trim());
+  // On préserve le `label` posé par prefillIngame (« Groupe transporteur », « Patrouille »…)
+  // afin qu'il soit affiché sous « Groupe N » côté vue joueur (renderCompoReadonly).
+  cc.ingame = (cc.ingame || []).map(g => {
+    const membres = (g.membres || []).filter(x => x && x.trim());
+    return g.label ? { label:g.label, membres } : { membres };
+  }).filter(g => g.membres.length);
   return cc;
 }
 
@@ -2134,6 +2441,20 @@ function renderCompoReadonly(c) {
     return `<div class="cmp ${cls}">${inner}</div>`;
   };
   c.defense.forEach((squad, si) => {
+    // Bloc « Assaut » sous les 4 cardinaux (si assauts assignés). Rôle admin, cf renderAssignBuilder.
+    // Séparé visuellement des cardinaux par un sous-titre coloré différent (vert « défense
+    // rapprochée du convoi ») + un léger décalage pour ne pas se confondre avec la croix.
+    const assauts = (squad.assauts || []).filter(p => p.nom && p.nom.trim());
+    let assautBlock = '';
+    if (assauts.length) {
+      const rows = assauts.map(p =>
+        `<div class="orga-row"><span class="orga-role" style="color:var(--green);font-weight:600">🛡️ Assaut</span>${nm(p.nom, c)}</div>`
+      ).join('');
+      assautBlock = `<div class="orga-assaut-sep">
+        <div class="orga-assaut-head">🛡️ Assaut Défense Transporteur</div>
+        ${rows}
+      </div>`;
+    }
     h += `<div class="orga-group"><div class="orga-group-title">🔵 Défense Rapprochée${c.defense.length>1?' — Escouade '+(si+1):' — points cardinaux'}</div>
       <div class="orga-compass">
         ${cmp(squad,'nord','N','cmp-n')}
@@ -2142,13 +2463,15 @@ function renderCompoReadonly(c) {
         ${cmp(squad,'est','E','cmp-e')}
         ${cmp(squad,'sud','S','cmp-s')}
       </div>
+      ${assautBlock}
     </div>`;
   });
 
-  // Groupe à distance (pilotes + Faucon + CaC)
+  // Groupe à distance (pilotes + Faucon + CaC) — vient AVANT le Repérage : les patrouilleurs
+  // opèrent proche du convoi, les scouts poussent plus loin encore. On lit du plus près au plus loin.
   const pilotes = c.distance.pilotes.filter(p => p.nom && p.nom.trim());
   if (pilotes.length) {
-    h += `<div class="orga-group"><div class="orga-group-title">🔴 Groupe à distance</div>`;
+    h += `<div class="orga-group"><div class="orga-group-title">🔴 Groupe à distance (patrouille)</div>`;
     pilotes.forEach(p => {
       const role = p.faucon ? '✈ Conducteur Faucon' : (p.cac ? '⚔ Pilote Ornithoptère + CaC' : 'Pilote');
       h += `<div class="orga-row"><span class="orga-role">${role}</span>${nm(p.nom, c)}`;
@@ -2159,13 +2482,27 @@ function renderCompoReadonly(c) {
     h += `</div>`;
   }
 
+  // Repérage — scouts (au plus loin, après la patrouille) : rôle avancé de reconnaissance /
+  // diversion, poussé plus loin dans le désert pour trouver et tromper l'ennemi.
+  const scouts = ((c.recon && c.recon.scouts) || []).filter(p => p.nom && p.nom.trim());
+  if (scouts.length) {
+    h += `<div class="orga-group"><div class="orga-group-title">👁️ Repérage — Scouts (au plus loin)</div>`;
+    scouts.forEach(p => {
+      h += `<div class="orga-row"><span class="orga-role">Scout</span>${nm(p.nom, c)}</div>`;
+    });
+    h += `</div>`;
+  }
+
   // ── GROUPES EN JEU (carte) ──
-  const ig = c.ingame.map(g => ({membres:(g.membres||[]).filter(x => x && x.trim())})).filter(g => g.membres.length);
+  // On garde label + membres. Label = rôle du groupe (Groupe transporteur, Patrouille…)
+  // posé par prefillIngame ; absent si le groupe a été ajouté à la main par l'admin.
+  const ig = c.ingame.map(g => ({label:g.label || '', membres:(g.membres||[]).filter(x => x && x.trim())})).filter(g => g.membres.length);
   if (ig.length) {
     h += `<div class="orga-section-head">🗺️ Groupes en jeu — ce que tu vois sur la carte</div>`;
     h += `<div class="orga-group"><div class="ingame-ro-grid">`;
     ig.forEach((g, i) => {
-      h += `<div class="ingame-ro"><div class="ingame-ro-h">Groupe ${i+1}</div>${g.membres.map(m => `<div class="ingame-ro-m">${esc(m)}${chefHat(m, c)}</div>`).join('')}</div>`;
+      const roleLine = g.label ? `<div class="ingame-ro-role">${esc(g.label)}</div>` : '';
+      h += `<div class="ingame-ro"><div class="ingame-ro-h">Groupe ${i+1}</div>${roleLine}${g.membres.map(m => `<div class="ingame-ro-m">${esc(m)}${chefHat(m, c)}</div>`).join('')}</div>`;
     });
     h += `</div></div>`;
   }

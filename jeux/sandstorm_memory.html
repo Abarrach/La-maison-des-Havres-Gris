@@ -236,7 +236,7 @@ body::before {
     <div class="controls-hint">Mémorise les symboles, trouve les paires — attention aux tempêtes !</div>
 
     <div id="leaderboard">
-        <h3>🏆 Classement</h3>
+        <h3>🗓️ Cette semaine</h3>
         <ul id="lb-list"><li style="color:var(--muted)">Chargement…</li></ul>
     </div>
 </div>
@@ -683,12 +683,12 @@ async function fetchSecret() {
 }
 async function loadLeaderboard() {
     try {
-        const r = await fetch('scores_api.php?action=leaderboard&game=' + GAME_ID + '&limit=10', { credentials: 'same-origin' });
+        const r = await fetch('scores_api.php?action=leaderboard&game=' + GAME_ID + '&limit=10&scope=weekly', { credentials: 'same-origin' });
         const j = await r.json();
         if (!j.ok) return;
         const me = localStorage.getItem('user') || '';
         const ul = document.getElementById('lb-list');
-        if (!j.leaderboard.length) { ul.innerHTML = '<li style="color:var(--muted)">Aucun score</li>'; return; }
+        if (!j.leaderboard.length) { ul.innerHTML = '<li style="color:var(--muted)">Aucun score cette semaine</li>'; return; }
         ul.innerHTML = j.leaderboard.map((e, i) => {
             const medals = ['🥇','🥈','🥉'];
             const rank = medals[i] || (i + 1);

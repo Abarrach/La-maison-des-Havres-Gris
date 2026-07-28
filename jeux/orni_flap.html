@@ -92,7 +92,7 @@ canvas {
     </div>
     <canvas id="game" width="400" height="600"></canvas>
     <div id="leaderboard">
-        <h3>🏆 Classement</h3>
+        <h3>🗓️ Cette semaine</h3>
         <ul id="lb-list"><li style="color:var(--muted)">Chargement…</li></ul>
     </div>
 </div>
@@ -112,8 +112,18 @@ const GRAVITY = 0.38, FLAP_FORCE = -7.2;
 const PIPE_W = 48, GAP = 182;
 const PIPE_SPEED_BASE = 1.75;
 const PIPE_INTERVAL_BASE = 158;
+const PIPE_INTERVAL_MIN = 108;
+const MAX_GAP_SHIFT = 90;
 const BIRD_X = 80, BIRD_W = 36, BIRD_H = 26;
+const BIRD_HIT_HALF_W = 21, BIRD_HIT_HALF_H = 8.5;
 const GROUND_H = 22;
+const COLLECTIBLE_PICKUP_X = 30, COLLECTIBLE_PICKUP_Y = 23;
+
+const ORNI_BODY_SIZE = 256, ORNI_DRAW_SIZE = 80;
+const orniBodySprite = new Image();
+let orniBodyReady = false;
+orniBodySprite.onload = () => { orniBodyReady = true; };
+orniBodySprite.src = 'img/ornithopter_body.png';
 
 // ---- Variété (contre la monotonie) ----
 const SPICE_CHANCE       = 0.5;   // proba d'épice par pilier
@@ -125,6 +135,35 @@ const OSC_AMPLITUDE      = 26;
 const OSC_SPEED          = 0.02;
 const CLOSE_CALL_MARGIN  = 10;
 const WORM_HAZARD_MIN_SCORE = 12; // avant ce score le ver reste un simple décor
+const SECTOR_LENGTH = 8;
+const WEATHER_WARNING_FRAMES = 90;
+
+const SECTORS = [
+    {
+        name: 'MER DE DUNES', icon: '☀', weather: 'sandstorm',
+        sky: ['#3e1a0c', '#7a3818', '#b45a2a', '#d99b4a', '#e8c47a'],
+        tint: 'rgba(245,174,80,0.04)',
+    },
+    {
+        name: 'CANYON PROFOND', icon: '◈', weather: 'gust',
+        sky: ['#23100d', '#54251b', '#8c4028', '#b66a3a', '#d39a5a'],
+        tint: 'rgba(112,35,20,0.10)',
+    },
+    {
+        name: "NUIT D'ARRAKIS", icon: '☾', weather: 'staticstorm',
+        sky: ['#080a18', '#15162c', '#292744', '#55405a', '#9a654e'],
+        tint: 'rgba(28,35,92,0.18)',
+    },
+];
+
+const MISSION_DEFS = [
+    { type: 'gate', target: 8, label: 'Franchir 8 passages' },
+    { type: 'spice', target: 3, label: 'Récolter 3 épices' },
+    { type: 'close', target: 2, label: 'Réaliser 2 frôlements' },
+];
+const CHALLENGE_TOKEN_CHANCE = 0.34;
+const CHALLENGE_Y_TOP = 68;
+const CHALLENGE_Y_BOTTOM = H - GROUND_H - 64;
 
 // ──────────────────────────────────────────────
 //  PALETTE DE COULEURS (Dune améliorée)
@@ -155,13 +194,18 @@ const PAL = {
 // ──────────────────────────────────────────────
 //  ÉTAT GLOBAL
 // ──────────────────────────────────────────────
-let bird, pipes, particles, score, bestScore, gameState, frameCount, speed;
+let bird, pipes, particles, score, bestScore, gameState, frameCount, speed, nextPipeTimer;
 let startTime = 0, scoreSecret = '';
 let lastTime = 0, accumulator = 0;
 let worm = null;
 let spiceItems = [], powerups = [];
 let shielded = false, shieldGrace = 0;
 let combo = 0, comboTimer = 0;
+let gatesPassed = 0, sectorIndex = 0, sectorBannerTimer = 0;
+let weather = null, weatherCooldown = 0;
+let mission = null;
+let challengeItems = [], challengeCooldown = 0;
+let stormInterference = null, stormFlashTimer = 0;
 
 // ──────────────────────────────────────────────
 //  AUDIO
@@ -191,6 +235,11 @@ function sndSpice()  { tone(880, 0.06, 0.08); setTimeout(() => tone(1100, 0.06, 
 function sndShield() { [660, 880, 1100].forEach((f, i) => setTimeout(() => tone(f, 0.08, 0.1), i * 60)); }
 function sndCloseCall() { tone(600, 0.06, 0.06, 'sawtooth'); }
 function sndWormWarn() { for (let i = 0; i < 3; i++) setTimeout(() => tone(800, 0.06, 0.06, 'square'), i * 120); }
+function sndWeatherWarn() { tone(260, 0.12, 0.05, 'triangle'); setTimeout(() => tone(210, 0.16, 0.04, 'triangle'), 140); }
+function sndSector() { [330, 440, 550].forEach((f, i) => setTimeout(() => tone(f, 0.1, 0.05), i * 70)); }
+function sndMission() { [660, 880, 1100].forEach((f, i) => setTimeout(() => tone(f, 0.12, 0.07), i * 80)); }
+function sndContract() { tone(420, .1, .07, 'square'); setTimeout(() => tone(720, .15, .08, 'triangle'), 90); }
+function sndStormCharge() { tone(1250, .08, .08, 'sawtooth'); setTimeout(() => tone(190, .22, .1, 'square'), 55); }
 function sndCrash() {
     try {
         const a = audCtx(), t = a.currentTime;
@@ -210,7 +259,7 @@ function sndCrash() {
 // ──────────────────────────────────────────────
 //  DUNES (3 couches + points fixes)
 // ──────────────────────────────────────────────
-let dunes = [];
+let dunes = [], mesas = [], skyMotes = [];
 function initDunes() {
     dunes = [
         { pts: [], speed: 0.15, color: PAL.sandFar, heightBase: 70 },
@@ -226,6 +275,14 @@ function initDunes() {
             });
         }
     }
+    mesas=Array.from({length:8},(_,i)=>({
+        x:i*78-70,w:58+Math.random()*58,h:55+Math.random()*115,
+        peak:.25+Math.random()*.42,seed:Math.random()*Math.PI*2,
+    }));
+    skyMotes=Array.from({length:34},()=>({
+        x:Math.random()*W,y:70+Math.random()*(H-150),
+        len:5+Math.random()*15,speed:.18+Math.random()*.5,alpha:.04+Math.random()*.12,
+    }));
 }
 
 // ──────────────────────────────────────────────
@@ -241,18 +298,69 @@ function reset() {
     score = 0;
     frameCount = 0;
     speed = PIPE_SPEED_BASE;
+    nextPipeTimer = PIPE_INTERVAL_BASE;
     worm = null;
+    gatesPassed = 0;
+    sectorIndex = 0;
+    sectorBannerTimer = 120;
+    weather = { phase: 'idle', type: null, timer: 0, direction: 0 };
+    weatherCooldown = 360;
+    mission = null;
+    challengeItems = [];
+    challengeCooldown = 2;
+    stormInterference = null;
+    stormFlashTimer = 0;
     startTime = Date.now();
     initDunes();
     updateScoreDisplay();
+}
+
+function chooseMission() {
+    const def = MISSION_DEFS[Math.floor(Math.random() * MISSION_DEFS.length)];
+    mission = { ...def, progress: 0, completed: false, toast: 0, dismissTimer: 0 };
+}
+
+function advanceMission(type, amount = 1) {
+    if (!mission || mission.completed || mission.type !== type) return;
+    mission.progress = Math.min(mission.target, mission.progress + amount);
+    if (mission.progress >= mission.target) {
+        mission.completed = true;
+        mission.toast = 180;
+        mission.dismissTimer = 180;
+        score += 8;
+        updateScoreDisplay();
+        sndMission();
+        emitBurst(W / 2, 145, 28, 118);
+    }
+}
+
+function currentSector() {
+    return SECTORS[sectorIndex];
+}
+
+function updateSector() {
+    const nextIndex = Math.floor(gatesPassed / SECTOR_LENGTH) % SECTORS.length;
+    if (nextIndex === sectorIndex) return;
+    sectorIndex = nextIndex;
+    sectorBannerTimer = 180;
+    weather = { phase: 'idle', type: null, timer: 0, direction: 0 };
+    weatherCooldown = 180;
+    sndSector();
 }
 function updateScoreDisplay() {
     document.getElementById('score-display').textContent = score;
 }
 function spawnPipe() {
+    let challengeSpawned = false;
     const minTop = 55;
     const maxTop = H - GAP - 90;
-    const topH = minTop + Math.random() * (maxTop - minTop);
+    const rawTop = minTop + Math.random() * (maxTop - minTop);
+    const previous = pipes[pipes.length - 1];
+    const topH = previous
+        ? Math.max(minTop, Math.min(maxTop,
+            Math.max(previous.baseTop - MAX_GAP_SHIFT,
+                Math.min(previous.baseTop + MAX_GAP_SHIFT, rawTop))))
+        : rawTop;
     const oscillates = score >= OSCILLATE_MIN_SCORE && Math.random() < OSCILLATE_CHANCE;
     pipes.push({
         x: W + 20, topH, baseTop: topH, scored: false, closeCalled: false,
@@ -267,6 +375,26 @@ function spawnPipe() {
     } else if (Math.random() < SPICE_CHANCE) {
         spiceItems.push({ x: px, y: gapMidY + (Math.random() - 0.5) * (GAP * 0.4), collected: false, sparkle: Math.random() * Math.PI * 2 });
     }
+
+    // Une balise de contrat apparaît entre deux obstacles, volontairement près d'une limite.
+    if (!mission && challengeItems.length === 0 && gatesPassed >= 2 && challengeCooldown <= 0
+        && Math.random() < CHALLENGE_TOKEN_CHANCE) {
+        const highDistance = Math.abs(gapMidY - CHALLENGE_Y_TOP);
+        const lowDistance = Math.abs(gapMidY - CHALLENGE_Y_BOTTOM);
+        const nearerIsHigh = highDistance <= lowDistance;
+        const high = Math.random() < .75 ? nearerIsHigh : !nearerIsHigh;
+        const nextInterval = Math.max(PIPE_INTERVAL_MIN, Math.round(PIPE_INTERVAL_BASE - score * .65));
+        const openDistance = Math.max(150, speed * nextInterval - PIPE_W);
+        challengeItems.push({
+            // 58 % de l'espace libre après le tube : assez de préparation, sans coller au suivant.
+            x: W + 20 + PIPE_W + openDistance * .58,
+            y: high ? CHALLENGE_Y_TOP : CHALLENGE_Y_BOTTOM,
+            phase: Math.random() * Math.PI * 2,
+            edge: high ? 'HAUT' : 'RAS DU SOL',
+        });
+        challengeSpawned = true;
+    }
+    return challengeSpawned;
 }
 
 // ──────────────────────────────────────────────
@@ -291,26 +419,39 @@ function emitSand(x, y, count) {
 //  DESSIN : CIEL
 // ──────────────────────────────────────────────
 function drawSky() {
+    const sector = currentSector();
     const grad = ctx.createLinearGradient(0, 0, 0, H);
-    grad.addColorStop(0, PAL.skyTop);
-    grad.addColorStop(0.3, PAL.skyHigh);
-    grad.addColorStop(0.6, PAL.skyMid);
-    grad.addColorStop(0.85, PAL.skyLow);
-    grad.addColorStop(1, PAL.skyHorizon);
+    grad.addColorStop(0, sector.sky[0]);
+    grad.addColorStop(0.3, sector.sky[1]);
+    grad.addColorStop(0.6, sector.sky[2]);
+    grad.addColorStop(0.85, sector.sky[3]);
+    grad.addColorStop(1, sector.sky[4]);
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, W, H);
 
-    // Soleil avec halo
+    // Soleil ou lunes selon le secteur.
     const sx = 300, sy = 70;
     const glow = ctx.createRadialGradient(sx, sy, 8, sx, sy, 90);
-    glow.addColorStop(0, 'rgba(255,240,200,0.95)');
-    glow.addColorStop(0.3, 'rgba(255,200,100,0.5)');
-    glow.addColorStop(0.7, 'rgba(255,140,40,0.1)');
+    const night = sectorIndex === 2;
+    glow.addColorStop(0, night ? 'rgba(210,220,255,0.85)' : 'rgba(255,240,200,0.95)');
+    glow.addColorStop(0.3, night ? 'rgba(120,145,220,0.25)' : 'rgba(255,200,100,0.5)');
+    glow.addColorStop(0.7, night ? 'rgba(80,100,180,0.06)' : 'rgba(255,140,40,0.1)');
     glow.addColorStop(1, 'rgba(255,80,10,0)');
     ctx.fillStyle = glow;
     ctx.beginPath(); ctx.arc(sx, sy, 90, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = PAL.sun;
-    ctx.beginPath(); ctx.arc(sx, sy, 18, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = night ? '#d8ddf2' : PAL.sun;
+    ctx.beginPath(); ctx.arc(sx, sy, night ? 13 : 18, 0, Math.PI * 2); ctx.fill();
+
+    if (night) {
+        ctx.fillStyle = 'rgba(225,225,255,0.72)';
+        for (let i = 0; i < 34; i++) {
+            const x = (i * 83 + 17) % W, y = 18 + ((i * 47) % 245);
+            const r = i % 7 === 0 ? 1.3 : 0.65;
+            ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.fillStyle = '#bd9c8c';
+        ctx.beginPath(); ctx.arc(250, 105, 5, 0, Math.PI * 2); ctx.fill();
+    }
 
     // Poussière en suspension (bandes horizontales)
     ctx.fillStyle = 'rgba(220,170,100,0.08)';
@@ -318,13 +459,76 @@ function drawSky() {
         const y = 120 + i * 80;
         ctx.fillRect(0, y, W, 6 + i * 3);
     }
+    ctx.fillStyle = sector.tint;
+    ctx.fillRect(0, 0, W, H);
 }
 
 // ──────────────────────────────────────────────
 //  DESSIN : DUNES
 // ──────────────────────────────────────────────
 function drawDunes() {
-    for (const layer of dunes) {
+    const palettes = [
+        ['#80502b', '#a67638', '#c79b4c', '#e0bb64'],
+        ['#321510', '#5b281b', '#814127', '#a76c38'],
+        ['#10142d', '#20284a', '#34395e', '#596080'],
+    ];
+    const colors = palettes[sectorIndex];
+
+    // Les reliefs ont une géométrie propre à chaque secteur, pas seulement une teinte différente.
+    for (const m of mesas) {
+        m.x -= (gameState === 'playing' ? speed / PIPE_SPEED_BASE : .25) * (sectorIndex === 1 ? .18 : .11);
+        if (m.x + m.w < -45) m.x = W + 45 + Math.random() * 55;
+        const base = H - 72;
+        ctx.fillStyle = colors[0];
+        ctx.beginPath();
+        if (sectorIndex === 0) {
+            const top = base - m.h * .72;
+            ctx.moveTo(m.x, base); ctx.lineTo(m.x + m.w * .16, base - m.h * .22);
+            ctx.lineTo(m.x + m.w * .34, top); ctx.lineTo(m.x + m.w * .66, top + 2);
+            ctx.lineTo(m.x + m.w * .84, base - m.h * .2); ctx.lineTo(m.x + m.w, base);
+        } else if (sectorIndex === 1) {
+            const h = m.h * 1.18, top = base - h;
+            ctx.moveTo(m.x, base); ctx.lineTo(m.x + m.w * .08, base - h * .16);
+            ctx.lineTo(m.x + m.w * .18, top + h * .08); ctx.lineTo(m.x + m.w * .72, top);
+            ctx.lineTo(m.x + m.w * .88, base - h * .2); ctx.lineTo(m.x + m.w, base);
+        } else {
+            const peakX = m.x + m.w * (.38 + m.peak * .2), top = base - m.h * .92;
+            ctx.moveTo(m.x, base); ctx.lineTo(peakX - m.w * .1, top + m.h * .18);
+            ctx.lineTo(peakX, top); ctx.lineTo(peakX + m.w * .13, top + m.h * .22);
+            ctx.lineTo(m.x + m.w, base);
+        }
+        ctx.closePath(); ctx.fill();
+
+        ctx.fillStyle = sectorIndex === 2 ? 'rgba(125,150,220,.16)' : 'rgba(235,145,75,.16)';
+        ctx.beginPath(); ctx.moveTo(m.x + m.w * .12, base);
+        ctx.lineTo(m.x + m.w * .4, base - m.h * .68);
+        ctx.lineTo(m.x + m.w * .52, base - m.h * .3);
+        ctx.lineTo(m.x + m.w * .62, base); ctx.closePath(); ctx.fill();
+        if (sectorIndex === 1) {
+            ctx.strokeStyle = 'rgba(231,143,79,.16)'; ctx.lineWidth = 1;
+            for (let s = 1; s <= 3; s++) {
+                const y = base - m.h * s * .2;
+                ctx.beginPath(); ctx.moveTo(m.x + 6, y); ctx.lineTo(m.x + m.w - 5, y + Math.sin(m.seed + s) * 3); ctx.stroke();
+            }
+        }
+    }
+
+    // Grains et filets de sable dans l'air : le ciel reste lisible mais vivant.
+    ctx.save();
+    for(const mote of skyMotes) {
+        mote.x-=mote.speed*(gameState==='playing'?speed/PIPE_SPEED_BASE:.3);
+        if(mote.x+mote.len<0){mote.x=W+Math.random()*30;mote.y=80+Math.random()*(H-170);}
+        ctx.strokeStyle = sectorIndex === 2
+            ? `rgba(160,185,255,${mote.alpha * .8})`
+            : `rgba(255,211,145,${mote.alpha})`;
+        ctx.lineWidth = sectorIndex === 1 ? 1.15 : .8;
+        ctx.beginPath(); ctx.moveTo(mote.x, mote.y);
+        ctx.lineTo(mote.x + mote.len * (sectorIndex === 1 ? 1.7 : 1), mote.y + (sectorIndex === 1 ? 2 : 0)); ctx.stroke();
+    }
+    ctx.restore();
+
+    for (let layerIndex = 0; layerIndex < dunes.length; layerIndex++) {
+        const layer = dunes[layerIndex];
         if (gameState === 'playing') {
             for (const p of layer.pts) p.x -= layer.speed * (speed / PIPE_SPEED_BASE);
         }
@@ -339,24 +543,35 @@ function drawDunes() {
             });
         }
         // Tracé lissé
-        ctx.fillStyle = layer.color;
+        ctx.fillStyle = colors[layerIndex + 1];
         ctx.beginPath();
         ctx.moveTo(0, H);
         for (let i = 0; i < layer.pts.length - 1; i++) {
             const p0 = layer.pts[i], p1 = layer.pts[i + 1];
             const cx = (p0.x + p1.x) / 2;
-            const cy = (p0.y + p1.y) / 2 - 4;
+            const cy = (p0.y + p1.y) / 2 - (sectorIndex === 1 ? 1 : 5);
             ctx.quadraticCurveTo(p0.x, p0.y, cx, cy);
             ctx.quadraticCurveTo(p1.x, p1.y, p1.x, p1.y);
         }
         ctx.lineTo(W, H);
         ctx.closePath(); ctx.fill();
+
+        ctx.strokeStyle = sectorIndex === 2 ? 'rgba(126,151,225,.13)' : 'rgba(255,220,145,.1)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let i = 0; i < layer.pts.length; i++) {
+            const p = layer.pts[i];
+            if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+        }
+        ctx.stroke();
     }
     // Sol dur
-    ctx.fillStyle = PAL.sandDark;
+    ctx.fillStyle = colors[1];
     ctx.fillRect(0, H - GROUND_H, W, GROUND_H);
-    ctx.fillStyle = PAL.sandNear;
+    ctx.fillStyle = colors[3];
     ctx.fillRect(0, H - 4, W, 4);
+    ctx.fillStyle = currentSector().tint;
+    ctx.fillRect(0, H * 0.35, W, H * 0.65);
 }
 
 // ──────────────────────────────────────────────
@@ -366,20 +581,42 @@ function drawPipe(pipe) {
     const topH = pipe.topH;
     const botY = topH + GAP;
     const w = PIPE_W;
+    const schemes = [
+        { shadow: '#251408', mid: '#65401f', light: '#91633a', edge: 'rgba(236,169,92,.24)' },
+        { shadow: '#160806', mid: '#4a1d14', light: '#803b24', edge: 'rgba(255,130,72,.27)' },
+        { shadow: '#070a17', mid: '#181e38', light: '#3d466c', edge: 'rgba(135,169,255,.34)' },
+    ];
+    const rock = schemes[sectorIndex];
 
     // Fonction utilitaire : pilier unique avec texture
     function drawPillar(x, y, h, isTop) {
-        // Corps du pilier
+        // Paroi de canyon irrégulière, pas un cylindre parfait.
         const grad = ctx.createLinearGradient(x, 0, x + w, 0);
-        grad.addColorStop(0, PAL.rock);
-        grad.addColorStop(0.3, PAL.rockLight);
-        grad.addColorStop(0.7, PAL.rock);
-        grad.addColorStop(1, PAL.rockShadow);
+        grad.addColorStop(0, rock.shadow);
+        grad.addColorStop(0.28, rock.light);
+        grad.addColorStop(0.66, rock.mid);
+        grad.addColorStop(1, rock.shadow);
         ctx.fillStyle = grad;
-        ctx.fillRect(x, y, w, h);
+        const steps=Math.max(3,Math.ceil(h/55)), left=[], right=[];
+        for(let i=0;i<=steps;i++) {
+            const yy=y+h*i/steps;
+            const middleBulge = Math.sin(Math.PI * i / steps) * (sectorIndex === 1 ? 7 : 3);
+            const rough = sectorIndex === 1 ? 5.5 : 3.5;
+            left.push({x:x-middleBulge+Math.sin(pipe.seed+i*1.73)*rough,y:yy});
+            right.push({x:x+w+middleBulge+Math.cos(pipe.seed*.7+i*1.31)*rough,y:yy});
+        }
+        ctx.beginPath(); ctx.moveTo(left[0].x,left[0].y);
+        for(let i=1;i<left.length;i++) ctx.lineTo(left[i].x,left[i].y);
+        for(let i=right.length-1;i>=0;i--) ctx.lineTo(right[i].x,right[i].y);
+        ctx.closePath(); ctx.fill();
+
+        // Large facette éclairée qui casse encore la lecture de « tuyau ».
+        ctx.fillStyle = sectorIndex === 2 ? 'rgba(123,151,225,.16)' : 'rgba(230,139,76,.15)';
+        ctx.beginPath(); ctx.moveTo(x+w*.16,y); ctx.lineTo(x+w*.43,y);
+        ctx.lineTo(x+w*.34,y+h); ctx.lineTo(x+w*.08,y+h); ctx.closePath(); ctx.fill();
 
         // Stries horizontales
-        ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+        ctx.strokeStyle = sectorIndex === 2 ? 'rgba(130,165,255,.11)' : 'rgba(0,0,0,0.28)';
         ctx.lineWidth = 1;
         for (let i = 0; i < h; i += 18) {
             ctx.beginPath();
@@ -388,21 +625,38 @@ function drawPipe(pipe) {
             ctx.stroke();
         }
 
-        // Capsule rocheuse (embout)
+        // Arête lumineuse : souligne immédiatement la zone de collision dans les ambiances chargées.
+        ctx.strokeStyle = rock.edge; ctx.lineWidth = sectorIndex === 2 ? 2 : 1.2;
+        ctx.beginPath();
+        const rimX = isTop ? x + w - 1 : x + 1;
+        ctx.moveTo(rimX, y); ctx.lineTo(rimX + Math.sin(pipe.seed) * 2, y + h); ctx.stroke();
+
+        if (sectorIndex === 1) {
+            ctx.strokeStyle = 'rgba(255,158,88,.2)'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(x + w * .72, y + h * .14);
+            ctx.lineTo(x + w * .48, y + h * .33); ctx.lineTo(x + w * .61, y + h * .48); ctx.stroke();
+        } else if (sectorIndex === 2) {
+            ctx.fillStyle = 'rgba(103,145,255,.18)';
+            for (let c = 0; c < 3; c++) {
+                const cy = y + h * (.2 + c * .27);
+                ctx.beginPath(); ctx.moveTo(x + 7, cy); ctx.lineTo(x + 14, cy - 9); ctx.lineTo(x + 17, cy + 3); ctx.closePath(); ctx.fill();
+            }
+        }
+
+        // Lèvre brisée tournée vers le passage.
         const capY = isTop ? y + h : y;
-        ctx.fillStyle = PAL.rockLight;
+        ctx.fillStyle = rock.light;
         ctx.beginPath();
-        ctx.ellipse(x + w / 2, capY, w / 2 + 5, 10, 0, isTop ? Math.PI : 0, isTop ? Math.PI * 2 : Math.PI);
-        ctx.fill();
-        ctx.fillStyle = PAL.rock;
-        ctx.beginPath();
-        ctx.ellipse(x + w / 2, capY, w / 2, 8, 0, isTop ? Math.PI : 0, isTop ? Math.PI * 2 : Math.PI);
-        ctx.fill();
-        // Arête vive
-        ctx.fillStyle = PAL.rockShadow;
-        ctx.beginPath();
-        ctx.ellipse(x + w / 2, capY, w / 2 - 3, 4, 0, isTop ? Math.PI : 0, isTop ? Math.PI * 2 : Math.PI);
-        ctx.fill();
+        ctx.moveTo(x-5,capY);
+        for(let i=0;i<=6;i++) {
+            const xx=x-5+(w+10)*i/6;
+            const tooth=(i%2?5:2)*(isTop?1:-1);
+            ctx.lineTo(xx,capY+tooth);
+        }
+        ctx.lineTo(x+w+4,capY+(isTop?-7:7));
+        ctx.lineTo(x-4,capY+(isTop?-7:7)); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = rock.shadow;
+        ctx.fillRect(x+4,capY+(isTop?-4:1),w-8,3);
     }
 
     drawPillar(pipe.x, 0, topH, true);
@@ -464,12 +718,47 @@ function drawBird() {
     const cx = BIRD_X + BIRD_W / 2, cy = bird.y + BIRD_H / 2;
     ctx.translate(cx, cy);
 
-    // Rotation progressive
-    bird.rot += (Math.min(bird.vy * 2.8, 65) - bird.rot) * 0.12;
+    // La rotation et l'animation sont mises à jour dans le tick physique.
     ctx.rotate(bird.rot * Math.PI / 180);
 
-    // Battement d'ailes
-    if (gameState === 'playing') bird.wingPhase += bird.wingSpeed;
+    if (orniBodyReady) {
+        // Impulsion moteur et halo : donnent une présence au petit sprite sans agrandir sa hitbox.
+        const enginePulse = .65 + Math.sin(frameCount * .7) * .2;
+        const engineGlow = ctx.createRadialGradient(-28, 2, 1, -28, 2, 20);
+        engineGlow.addColorStop(0, `rgba(130,205,255,${enginePulse})`);
+        engineGlow.addColorStop(.35, `rgba(65,135,255,${enginePulse * .42})`);
+        engineGlow.addColorStop(1, 'rgba(30,80,255,0)');
+        ctx.fillStyle = engineGlow; ctx.beginPath(); ctx.ellipse(-28, 2, 22, 7, 0, 0, Math.PI * 2); ctx.fill();
+
+        // Quatre ailes seulement, toutes au-dessus ou au niveau du fuselage.
+        // Les deux paires battent en opposition autour d'une amplitude courte.
+        const flapA=Math.sin(bird.wingPhase)*4.1;
+        const flapB=Math.sin(bird.wingPhase+Math.PI)*4.1;
+        const wings=[
+            [-4,-5,-48,-12+flapA,2.8,.58],[-1,-3,-43,-5+flapB,2.3,.42],
+            [ 1,-5, 47,-12+flapB,2.8,.58],[ 3,-3, 42,-5+flapA,2.3,.42],
+        ];
+        ctx.save(); ctx.lineCap='round'; ctx.globalCompositeOperation='screen';
+        for(const [x0,y0,x1,y1,width,alpha] of wings) {
+            ctx.strokeStyle=`rgba(184,166,112,${alpha})`; ctx.lineWidth=width;
+            ctx.beginPath(); ctx.moveTo(x0,y0);
+            ctx.quadraticCurveTo((x0+x1)*.52,y1-(y1-y0)*.18,x1,y1); ctx.stroke();
+            ctx.strokeStyle=`rgba(244,218,151,${alpha*.32})`; ctx.lineWidth=.7;
+            ctx.beginPath(); ctx.moveTo(x0,y0-1); ctx.lineTo(x1,y1-1); ctx.stroke();
+        }
+        ctx.restore();
+        ctx.drawImage(
+            orniBodySprite,
+            0, 0, ORNI_BODY_SIZE, ORNI_BODY_SIZE,
+            -ORNI_DRAW_SIZE/2, -ORNI_DRAW_SIZE/2, ORNI_DRAW_SIZE, ORNI_DRAW_SIZE
+        );
+        if (gameState === 'playing' && frameCount % 2 === 0)
+            emitSand(cx-BIRD_W/2-5,cy,1);
+        ctx.restore();
+        return;
+    }
+
+    // Ancien dessin procédural conservé si le sprite n'est pas disponible.
     const wingFlap = Math.sin(bird.wingPhase) * 0.55;
 
     // Ombre portée (décalée)
@@ -587,6 +876,30 @@ function drawPowerup(pu) {
     ctx.textBaseline = 'alphabetic';
 }
 
+function drawChallengeItem(item) {
+    item.phase += .07;
+    const pulse = .72 + Math.sin(item.phase) * .22;
+    ctx.save(); ctx.translate(item.x, item.y); ctx.rotate(item.phase * .35);
+    ctx.shadowBlur = 18; ctx.shadowColor = '#ff7a2f';
+    ctx.strokeStyle = `rgba(255,174,74,${pulse})`; ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+        const a = -Math.PI / 2 + i * Math.PI / 3;
+        const px = Math.cos(a) * 15, py = Math.sin(a) * 15;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath(); ctx.stroke();
+    ctx.rotate(-item.phase * .35);
+    ctx.fillStyle = '#fff0b0'; ctx.font = 'bold 16px "Segoe UI", sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('!', 0, -1);
+    ctx.restore();
+
+    ctx.save(); ctx.textAlign = 'center'; ctx.font = 'bold 8px "Segoe UI", sans-serif';
+    ctx.fillStyle = 'rgba(255,213,135,.82)';
+    ctx.fillText('CONTRAT · ' + item.edge, item.x, item.y + (item.y < H / 2 ? 27 : -24));
+    ctx.restore();
+}
+
 // ──────────────────────────────────────────────
 //  PARTICULES (sable)
 // ──────────────────────────────────────────────
@@ -607,6 +920,214 @@ function drawParticles() {
 }
 
 // ──────────────────────────────────────────────
+//  MÉTÉO DYNAMIQUE
+// ──────────────────────────────────────────────
+function weatherLabel() {
+    if (!weather || !weather.type) return '';
+    if (weather.type === 'sandstorm') return 'TEMPÊTE DE SABLE';
+    if (weather.type === 'gust') return weather.direction > 0 ? 'RAFALES DESCENDANTES' : 'RAFALES ASCENDANTES';
+    return 'ORAGE STATIQUE';
+}
+
+function startWeatherWarning() {
+    const type = currentSector().weather;
+    weather = {
+        phase: 'warning', type, timer: WEATHER_WARNING_FRAMES,
+        direction: type === 'gust' ? (Math.random() < 0.5 ? -1 : 1) : 0,
+    };
+    sndWeatherWarn();
+}
+
+function applyStormCharge() {
+    const cx = BIRD_X + BIRD_W / 2, cy = bird.y + BIRD_H / 2;
+    stormFlashTimer = 24;
+    emitBurst(cx, cy, 24, 205);
+    sndStormCharge();
+    if (shielded) {
+        shielded = false;
+        shieldGrace = Math.max(shieldGrace, 12);
+        stormInterference = { timer: 90, multiplier: 1, label: 'CHARGE ABSORBÉE PAR LE BOUCLIER' };
+        sndShield();
+        return;
+    }
+    const weakened = Math.random() < .5;
+    stormInterference = weakened
+        ? { timer: 150, multiplier: .78, label: 'PROPULSEURS AFFAIBLIS' }
+        : { timer: 150, multiplier: 1.18, label: 'PROPULSEURS EN SURTENSION' };
+    bird.vy += weakened ? .45 : -.3;
+}
+
+function updateWeather() {
+    if (weather.phase === 'idle') {
+        weatherCooldown--;
+        if (weatherCooldown <= 0) startWeatherWarning();
+        return;
+    }
+    weather.timer--;
+    if (weather.phase === 'warning' && weather.timer <= 0) {
+        weather.phase = 'active';
+        weather.timer = weather.type === 'sandstorm' ? 240 : 180;
+        weather.strikeTimer = weather.type === 'staticstorm' ? 55 + Math.floor(Math.random() * 31) : 0;
+        weather.struck = false;
+        return;
+    }
+    if (weather.phase === 'active') {
+        // Forces volontairement légères : elles changent le rythme sans prendre le contrôle au joueur.
+        if (weather.type === 'gust') bird.vy += weather.direction * 0.008;
+        if (weather.type === 'staticstorm' && !weather.struck && --weather.strikeTimer <= 0) {
+            weather.struck = true;
+            applyStormCharge();
+        }
+        if (weather.timer <= 0) {
+            weather = { phase: 'idle', type: null, timer: 0, direction: 0 };
+            weatherCooldown = 480 + Math.floor(Math.random() * 241);
+        }
+    }
+}
+
+function emitBurst(x, y, count, hue = 42) {
+    for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const force = 1.2 + Math.random() * 3.2;
+        particles.push({
+            x, y, vx: Math.cos(angle) * force, vy: Math.sin(angle) * force,
+            life: 36 + Math.random() * 28, maxLife: 64,
+            size: 1.8 + Math.random() * 3.2, hue: hue + Math.random() * 24,
+        });
+    }
+}
+
+function drawWeather() {
+    if (gameState !== 'playing' || !weather || weather.phase === 'idle') return;
+    ctx.save();
+    if (weather.phase === 'warning') {
+        const pulse = 0.65 + Math.sin(frameCount * 0.18) * 0.25;
+        const warningTint = weather.type === 'staticstorm' ? '78,105,190' : '205,90,35';
+        ctx.fillStyle = `rgba(${warningTint},${0.08 + pulse * 0.08})`; ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = `rgba(12,6,3,${0.58 + pulse * 0.12})`;
+        ctx.fillRect(42, H - 91, W - 84, 43);
+        ctx.strokeStyle = `rgba(255,190,80,${pulse})`;
+        ctx.lineWidth = 2; ctx.strokeRect(42.5, H - 90.5, W - 85, 42);
+        ctx.textAlign = 'center'; ctx.font = 'bold 14px "Segoe UI", sans-serif';
+        ctx.fillStyle = '#ffd27a';
+        ctx.fillText('⚠  ' + weatherLabel(), W / 2, H - 65);
+        ctx.restore();
+        return;
+    }
+
+    if (weather.type === 'sandstorm') {
+        // Densité en vagues : alternance de courtes accalmies et de murs de sable aveuglants.
+        const wave = (Math.sin(frameCount * .052) + 1) * .5;
+        const density = .34 + Math.pow(wave, 1.8) * .43;
+        ctx.fillStyle = `rgba(151,78,31,${density})`; ctx.fillRect(0, 0, W, H);
+
+        const frontX = ((frameCount * 5.4) % (W + 360)) - 180;
+        const wall = ctx.createLinearGradient(frontX - 155, 0, frontX + 155, 0);
+        wall.addColorStop(0, 'rgba(106,48,18,0)');
+        wall.addColorStop(.42, `rgba(103,45,16,${.18 + wave * .26})`);
+        wall.addColorStop(.6, `rgba(235,157,76,${.2 + wave * .25})`);
+        wall.addColorStop(1, 'rgba(235,157,76,0)');
+        ctx.fillStyle = wall; ctx.fillRect(frontX - 165, 0, 330, H);
+
+        ctx.fillStyle = `rgba(78,33,12,${.12 + wave * .12})`;
+        for (let i = 0; i < 14; i++) {
+            const rawX = i * 83 - frameCount * (3.8 + (i % 3));
+            const cx = ((rawX % (W + 260)) + (W + 260)) % (W + 260) - 100;
+            const cy = 45 + (i * 67 % 520);
+            ctx.beginPath(); ctx.ellipse(cx, cy, 125, 31, -.18, 0, Math.PI * 2); ctx.fill();
+        }
+        // Rafales en grains, réparties sur trois profondeurs pour éviter l'effet « pluie oblique ».
+        const grainLayers = [
+            { count: 105, speed: 2.6, drift: .18, size: .65, alpha: .22 },
+            { count: 82,  speed: 4.7, drift: .34, size: 1.15, alpha: .34 },
+            { count: 48,  speed: 7.4, drift: .52, size: 2.05, alpha: .46 },
+        ];
+        for (let layerIndex = 0; layerIndex < grainLayers.length; layerIndex++) {
+            const layer = grainLayers[layerIndex];
+            ctx.fillStyle = `rgba(255,215,145,${layer.alpha * (.55 + wave * .45)})`;
+            ctx.beginPath();
+            for (let i = 0; i < layer.count; i++) {
+                const span = W + 100;
+                const rawX = i * (61 + layerIndex * 18) - frameCount * layer.speed + layerIndex * 37;
+                const x = ((rawX % span) + span) % span - 50;
+                const seedY = (i * 83 + layerIndex * 127) % H;
+                const y = (seedY + frameCount * layer.drift + Math.sin(i * 2.17 + frameCount * .018) * (7 + layerIndex * 4)) % H;
+                const cluster = .55 + .45 * Math.sin(i * 1.73 + frameCount * .035 + layerIndex);
+                const radius = layer.size * (.7 + cluster * .5);
+                ctx.moveTo(x + radius, y);
+                ctx.arc(x, y, radius, 0, Math.PI * 2);
+            }
+            ctx.fill();
+        }
+    } else if (weather.type === 'gust') {
+        const gustGrad = ctx.createLinearGradient(0, 0, 0, H);
+        gustGrad.addColorStop(0, weather.direction > 0 ? 'rgba(235,170,110,.18)' : 'rgba(255,255,255,0)');
+        gustGrad.addColorStop(1, weather.direction < 0 ? 'rgba(235,170,110,.18)' : 'rgba(255,255,255,0)');
+        ctx.fillStyle = gustGrad; ctx.fillRect(0, 0, W, H);
+        ctx.strokeStyle = 'rgba(255,230,195,0.38)'; ctx.lineWidth = 1.4;
+        for (let i = 0; i < 20; i++) {
+            const x = ((i * 97 - frameCount * 5) % (W + 120)) - 60;
+            const rawY = i * 53 + frameCount * weather.direction * 1.8;
+            const y = ((rawY % H) + H) % H;
+            ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + 35, y + weather.direction * 8, x + 72, y + weather.direction * 18); ctx.stroke();
+        }
+    } else {
+        // Orage statique : éclairs brefs et arcs autour de l'appareil, sans « vagues montantes ».
+        const flashPhase = weather.timer % 58;
+        ctx.fillStyle = `rgba(4,7,25,${.18 + (flashPhase < 5 ? .08 : 0)})`; ctx.fillRect(0, 0, W, H);
+        if (flashPhase < 5) {
+            const flash = (5 - flashPhase) / 5;
+            ctx.fillStyle = `rgba(155,185,255,${flash * .2})`; ctx.fillRect(0, 0, W, H);
+            const boltX = 65 + ((Math.floor(frameCount / 58) * 137) % 285);
+            ctx.strokeStyle = `rgba(195,218,255,${.55 + flash * .35})`; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(boltX, 0);
+            for (let y = 22; y < H * .62; y += 24) ctx.lineTo(boltX + Math.sin(y * .18 + frameCount) * 13, y);
+            ctx.stroke();
+        }
+        if (stormFlashTimer > 0) {
+            const bx = BIRD_X + BIRD_W / 2, by = bird.y + BIRD_H / 2;
+            const strikeAlpha = Math.min(1, stormFlashTimer / 10);
+            ctx.fillStyle = `rgba(120,170,255,${strikeAlpha * .16})`;
+            ctx.beginPath(); ctx.arc(bx, by, 48, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = `rgba(155,196,255,${strikeAlpha * .82})`; ctx.lineWidth = 1.5;
+            for (let a = 0; a < 4; a++) {
+                const start = frameCount * .19 + a * Math.PI * .5;
+                ctx.beginPath();
+                for (let s = 0; s <= 6; s++) {
+                    const ang = start + s * .21, radius = 23 + (s % 2) * 8;
+                    const x = bx + Math.cos(ang) * radius, y = by + Math.sin(ang) * radius;
+                    if (s === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+        }
+    }
+    ctx.fillStyle = 'rgba(7,4,2,0.5)'; ctx.fillRect(W - 165, H - 33, 155, 23);
+    ctx.textAlign = 'right'; ctx.font = 'bold 9px "Segoe UI", sans-serif';
+    ctx.fillStyle = 'rgba(255,224,174,0.82)';
+    ctx.fillText(weatherLabel(), W - 17, H - 18);
+    ctx.restore();
+}
+
+function drawSectorTransition() {
+    if (sectorBannerTimer <= 120) return;
+    const progress = Math.max(0, Math.min(1, (180 - sectorBannerTimer) / 60));
+    const pulse = Math.sin(progress * Math.PI);
+    ctx.save();
+    ctx.fillStyle = sectorIndex === 2
+        ? `rgba(78,103,190,${pulse * .3})`
+        : `rgba(226,116,46,${pulse * .28})`;
+    ctx.fillRect(0, 0, W, H);
+    const curtainX = progress * (W + 220) - 110;
+    const curtain = ctx.createLinearGradient(curtainX - 100, 0, curtainX + 100, 0);
+    curtain.addColorStop(0, 'rgba(255,210,130,0)');
+    curtain.addColorStop(.5, `rgba(255,220,160,${pulse * .42})`);
+    curtain.addColorStop(1, 'rgba(255,210,130,0)');
+    ctx.fillStyle = curtain; ctx.fillRect(curtainX - 110, 0, 220, H);
+    ctx.restore();
+}
+
+// ──────────────────────────────────────────────
 //  HUD & ÉCRANS
 // ──────────────────────────────────────────────
 function drawScore() {
@@ -621,6 +1142,58 @@ function drawScore() {
         ctx.font = 'bold 14px "Segoe UI", sans-serif';
         ctx.fillStyle = '#ff8800';
         ctx.fillText('x' + combo + ' COMBO', W / 2, 88);
+    }
+
+    // Secteur courant et mission : compacts pour préserver la lisibilité du passage.
+    ctx.shadowBlur = 0; ctx.textAlign = 'left';
+    ctx.font = 'bold 10px "Segoe UI", sans-serif'; ctx.fillStyle = 'rgba(255,224,174,0.78)';
+    ctx.fillText(currentSector().icon + ' ' + currentSector().name, 11, 20);
+    if (mission) {
+        ctx.save();
+        if (mission.completed) ctx.globalAlpha = Math.min(1, mission.dismissTimer / 45);
+        ctx.fillStyle = 'rgba(7,4,2,0.58)'; ctx.fillRect(10, 101, 224, 39);
+        ctx.strokeStyle = mission.completed ? 'rgba(110,225,145,0.72)' : 'rgba(205,164,52,0.48)';
+        ctx.strokeRect(10.5, 101.5, 223, 38);
+        ctx.font = 'bold 10px "Segoe UI", sans-serif';
+        ctx.fillStyle = mission.completed ? '#8ee6a8' : '#e4c16d';
+        ctx.fillText((mission.completed ? '✓ ' : 'MISSION  ') + mission.label, 18, 116);
+        ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(18, 124, 186, 6);
+        ctx.fillStyle = mission.completed ? '#65d98b' : PAL.gold;
+        ctx.fillRect(18, 124, 186 * (mission.progress / mission.target), 6);
+        ctx.textAlign = 'right'; ctx.fillStyle = '#f5deb3';
+        ctx.fillText(mission.progress + '/' + mission.target, 225, 131);
+        ctx.restore();
+    } else {
+        ctx.font = 'bold 9px "Segoe UI", sans-serif'; ctx.fillStyle = 'rgba(235,190,105,.7)';
+        ctx.fillText('◇ CHERCHEZ UNE BALISE DE CONTRAT', 11, 113);
+    }
+
+    if (sectorBannerTimer > 0) {
+        const alpha = Math.min(1, sectorBannerTimer / 35);
+        ctx.textAlign = 'center';
+        ctx.fillStyle = `rgba(7,4,2,${0.52 * alpha})`; ctx.fillRect(58, 162, W - 116, 48);
+        ctx.strokeStyle = `rgba(231,190,101,${0.58 * alpha})`; ctx.strokeRect(58.5, 162.5, W - 117, 47);
+        ctx.font = '10px "Segoe UI", sans-serif'; ctx.fillStyle = `rgba(225,195,145,${alpha})`;
+        ctx.fillText('NOUVEAU SECTEUR', W / 2, 178);
+        ctx.font = 'bold 17px "Segoe UI", sans-serif'; ctx.fillStyle = `rgba(255,214,120,${alpha})`;
+        ctx.fillText(currentSector().icon + ' ' + currentSector().name, W / 2, 199);
+    }
+
+    if (mission && mission.toast > 0) {
+        const alpha = Math.min(1, mission.toast / 35);
+        ctx.textAlign = 'center'; ctx.font = 'bold 15px "Segoe UI", sans-serif';
+        ctx.fillStyle = `rgba(115,240,155,${alpha})`;
+        ctx.fillText('MISSION ACCOMPLIE  +8', W / 2, 154);
+    }
+    if (stormInterference) {
+        const alpha = Math.min(1, stormInterference.timer / 25);
+        ctx.textAlign = 'center'; ctx.font = 'bold 11px "Segoe UI", sans-serif';
+        ctx.fillStyle = `rgba(5,9,24,${.68 * alpha})`; ctx.fillRect(64, H - 73, W - 128, 29);
+        ctx.strokeStyle = `rgba(115,165,255,${.62 * alpha})`; ctx.strokeRect(64.5, H - 72.5, W - 129, 28);
+        ctx.fillStyle = stormInterference.multiplier === 1
+            ? `rgba(125,205,255,${alpha})`
+            : `rgba(190,215,255,${alpha})`;
+        ctx.fillText('⚡ ' + stormInterference.label, W / 2, H - 54);
     }
     ctx.restore();
 }
@@ -641,9 +1214,11 @@ function drawMenu() {
     ctx.font = 'bold 16px "Segoe UI", sans-serif';
     ctx.fillStyle = PAL.white;
     ctx.fillText('🖱️ Clique ou [ESPACE]', W / 2, H / 2 + 25);
+    ctx.font = 'bold 11px "Segoe UI", sans-serif'; ctx.fillStyle = '#d8b85e';
+    ctx.fillText('Récupère les balises risquées pour lancer un contrat', W / 2, H / 2 + 52);
     if (bestScore > 0) {
         ctx.font = '13px sans-serif'; ctx.fillStyle = '#7c5e2a';
-        ctx.fillText('🏆 Meilleur : ' + bestScore, W / 2, H / 2 + 55);
+        ctx.fillText('🏆 Meilleur : ' + bestScore, W / 2, H / 2 + 78);
     }
     ctx.restore();
 }
@@ -663,6 +1238,11 @@ function drawDead() {
         ctx.font = '15px sans-serif'; ctx.fillStyle = '#a89060';
         ctx.fillText('🏆 Record : ' + bestScore, W / 2, H / 3 + 75);
     }
+    if (mission) {
+        ctx.font = 'bold 13px sans-serif';
+        ctx.fillStyle = mission.completed ? '#79dc98' : '#b49a60';
+        ctx.fillText((mission.completed ? '✓ Mission accomplie' : 'Mission : ' + mission.progress + '/' + mission.target), W / 2, H / 2 + 10);
+    }
     ctx.font = 'bold 15px "Segoe UI", sans-serif';
     ctx.fillStyle = PAL.white;
     ctx.fillText('🖱️ Clique pour rejouer', W / 2, H / 2 + 35);
@@ -673,13 +1253,14 @@ function drawDead() {
 //  COLLISIONS (tolérance)
 // ──────────────────────────────────────────────
 function collides() {
-    const pad = 5;
-    const bx = BIRD_X + pad, by = bird.y + pad;
-    const bw = BIRD_W - pad * 2, bh = BIRD_H - pad * 2;
-    if (bird.y + pad < 0 || bird.y + BIRD_H - pad > H - GROUND_H) return true;
+    // Fuselage seul : plus large que l'ancienne petite boîte, mais les ailes restent indulgentes.
+    const cx = BIRD_X + BIRD_W / 2, cy = bird.y + BIRD_H / 2;
+    const left = cx - BIRD_HIT_HALF_W, right = cx + BIRD_HIT_HALF_W;
+    const top = cy - BIRD_HIT_HALF_H, bottom = cy + BIRD_HIT_HALF_H;
+    if (top < 0 || bottom > H - GROUND_H) return true;
     for (const p of pipes) {
-        if (bx + bw > p.x && bx < p.x + PIPE_W) {
-            if (by < p.topH || by + bh > p.topH + GAP) return true;
+        if (right > p.x && left < p.x + PIPE_W) {
+            if (top < p.topH || bottom > p.topH + GAP) return true;
         }
     }
     return false;
@@ -725,12 +1306,12 @@ async function fetchSecret() {
 }
 async function loadLeaderboard() {
     try {
-        const r = await fetch('scores_api.php?action=leaderboard&game=' + GAME_ID + '&limit=10', { credentials: 'same-origin' });
+        const r = await fetch('scores_api.php?action=leaderboard&game=' + GAME_ID + '&limit=10&scope=weekly', { credentials: 'same-origin' });
         const j = await r.json();
         if (!j.ok) return;
         const me = localStorage.getItem('user') || '';
         const ul = document.getElementById('lb-list');
-        if (!j.leaderboard.length) { ul.innerHTML = '<li style="color:var(--muted)">Aucun score</li>'; return; }
+        if (!j.leaderboard.length) { ul.innerHTML = '<li style="color:var(--muted)">Aucun score cette semaine</li>'; return; }
         ul.innerHTML = j.leaderboard.map((e, i) => {
             const medals = ['🥇', '🥈', '🥉'];
             const rank = medals[i] || (i + 1);
@@ -762,12 +1343,18 @@ function flap() {
         }
         return;
     }
-    bird.vy = FLAP_FORCE;
+    const flapMultiplier = stormInterference ? stormInterference.multiplier : 1;
+    bird.vy = FLAP_FORCE * flapMultiplier;
     bird.wingPhase = 0;
     sndFlap();
 }
 
-canvas.addEventListener('pointerdown', e => { e.preventDefault(); flap(); });
+document.addEventListener('pointerdown', e => {
+    // Le contrôle fonctionne partout dans la page, sauf sur les liens et contrôles d'interface.
+    if (e.target.closest && e.target.closest('a, button, input, select, textarea')) return;
+    e.preventDefault();
+    flap();
+});
 document.addEventListener('keydown', e => {
     if (e.code === 'Space' || e.code === 'ArrowUp') { e.preventDefault(); flap(); }
 });
@@ -781,14 +1368,35 @@ function tick() {
     frameCount++;
 
     speed = PIPE_SPEED_BASE + Math.min(score * 0.028, 1.7);
+    updateWeather();
     bird.vy += GRAVITY;
     bird.y  += bird.vy;
+    bird.rot += (Math.min(bird.vy*2.8,65)-bird.rot)*.12;
+    bird.wingPhase = (bird.wingPhase + 1.05) % (Math.PI*2);
 
     if (comboTimer > 0) comboTimer--; else combo = 0;
     if (shieldGrace > 0) shieldGrace--;
+    if (stormFlashTimer > 0) stormFlashTimer--;
+    if (stormInterference && --stormInterference.timer <= 0) stormInterference = null;
+    if (sectorBannerTimer > 0) sectorBannerTimer--;
+    if (mission) {
+        if (mission.toast > 0) mission.toast--;
+        if (mission.completed && mission.dismissTimer > 0) {
+            mission.dismissTimer--;
+            if (mission.dismissTimer <= 0) {
+                mission = null;
+                challengeCooldown = 1;
+            }
+        }
+    }
 
-    const interval = Math.max(PIPE_INTERVAL_BASE - score * 0.9, 88);
-    if (frameCount % Math.round(interval) === 0) spawnPipe();
+    nextPipeTimer--;
+    if (nextPipeTimer <= 0) {
+        const challengeSpawned = spawnPipe();
+        const interval = Math.max(PIPE_INTERVAL_MIN, Math.round(PIPE_INTERVAL_BASE - score * 0.65));
+        // Un contrat ouvre une fenêtre supplémentaire pour revenir de la trajectoire risquée.
+        nextPipeTimer = interval + Math.floor(Math.random() * 13) + (challengeSpawned ? 30 : 0);
+    }
 
     const minTop = 55, maxTop = H - GAP - 90;
     for (let i = pipes.length - 1; i >= 0; i--) {
@@ -801,6 +1409,10 @@ function tick() {
         if (!p.scored && p.x + PIPE_W < BIRD_X) {
             p.scored = true;
             score++;
+            gatesPassed++;
+            if (challengeCooldown > 0) challengeCooldown--;
+            advanceMission('gate');
+            updateSector();
             updateScoreDisplay();
             sndScore();
         }
@@ -813,6 +1425,8 @@ function tick() {
                     p.closeCalled = true;
                     combo++; comboTimer = 90;
                     score += 2 * Math.min(combo, 5);
+                    advanceMission('close');
+                    updateScoreDisplay();
                     sndCloseCall();
                 }
             }
@@ -827,8 +1441,10 @@ function tick() {
         sp.x -= speed;
         if (!sp.collected) {
             const dx = sp.x - bcx, dy = sp.y - bcy;
-            if (dx * dx + dy * dy < 300) {
-                sp.collected = true; score += 3; sndSpice(); updateScoreDisplay();
+            const pickup=(dx*dx)/(COLLECTIBLE_PICKUP_X*COLLECTIBLE_PICKUP_X)+(dy*dy)/(COLLECTIBLE_PICKUP_Y*COLLECTIBLE_PICKUP_Y);
+            if (pickup < 1) {
+                sp.collected = true; score += 3; emitBurst(sp.x, sp.y, 14, 40);
+                advanceMission('spice'); sndSpice(); updateScoreDisplay();
             }
         }
         if (sp.x < -20) spiceItems.splice(i, 1);
@@ -838,9 +1454,26 @@ function tick() {
         pu.x -= speed;
         if (!pu.collected) {
             const dx = pu.x - bcx, dy = pu.y - bcy;
-            if (dx * dx + dy * dy < 350) { pu.collected = true; shielded = true; sndShield(); }
+            const pickup=(dx*dx)/(COLLECTIBLE_PICKUP_X*COLLECTIBLE_PICKUP_X)+(dy*dy)/(COLLECTIBLE_PICKUP_Y*COLLECTIBLE_PICKUP_Y);
+            if (pickup < 1) { pu.collected = true; shielded = true; emitBurst(pu.x, pu.y, 18, 195); sndShield(); }
         }
         if (pu.x < -20) powerups.splice(i, 1);
+    }
+    for (let i = challengeItems.length - 1; i >= 0; i--) {
+        const item = challengeItems[i];
+        item.x -= speed;
+        const dx = item.x - bcx, dy = item.y - bcy;
+        if ((dx * dx) / (24 * 24) + (dy * dy) / (22 * 22) < 1) {
+            challengeItems.splice(i, 1);
+            chooseMission();
+            emitBurst(item.x, item.y, 26, 24);
+            sndContract();
+            continue;
+        }
+        if (item.x < -28) {
+            challengeItems.splice(i, 1);
+            challengeCooldown = 1;
+        }
     }
 
     maybeSpawnWorm();
@@ -872,14 +1505,22 @@ function tick() {
 
 function draw() {
     drawSky();
+    ctx.save();
+    if (weather && weather.phase === 'active' && weather.type === 'gust') {
+        ctx.translate(Math.sin(frameCount * .83) * 1.4, Math.cos(frameCount * .61) * 1.1);
+    }
     drawDunes();
     drawParticles();
     for (const p of pipes) drawPipe(p);
     for (const sp of spiceItems) drawSpiceItem(sp);
     for (const pu of powerups) drawPowerup(pu);
+    for (const item of challengeItems) drawChallengeItem(item);
     drawWorm();
     drawBird();
     drawShieldRing();
+    ctx.restore();
+    drawWeather();
+    drawSectorTransition();
     if (gameState === 'playing') drawScore();
     if (gameState === 'menu') drawMenu();
     if (gameState === 'dead') drawDead();

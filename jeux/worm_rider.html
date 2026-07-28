@@ -93,7 +93,7 @@ canvas {
         [Souris / Flèches] Diriger &nbsp;&bull;&nbsp; [Maintenir Espace / Clic] Boost &nbsp;&bull;&nbsp; L'épice fait grandir le ver
     </div>
     <div id="leaderboard">
-        <h3>🏆 Classement</h3>
+        <h3>🗓️ Cette semaine</h3>
         <ul id="lb-list"><li style="color:var(--muted)">Chargement…</li></ul>
     </div>
 </div>
@@ -111,7 +111,7 @@ let lastTime = 0, accumulator = 0;
 
 // ---- État ----
 let worm, obstacles, spiceItems, particles, floatingTexts;
-let distance, spiceCount, bestScore, gameState, frameCount;
+let distance, distanceScore, spiceCount, bestScore, gameState, frameCount;
 let gameSpeed, startTime, scoreSecret;
 let shakeTimer = 0, shakeIntensity = 0;
 let milestone = 0, finalScore = 0;
@@ -119,16 +119,30 @@ let targetY = H / 2; // position cible souris/clavier
 let mouseActive = false;
 let boosting = false, boostWanted = false, boostMeter = 100;
 let combo = 0, comboTimer = 0, closeCallBonus = 0;
+let atmosphereFlash = 0;
+let hitFlash = 0;       // flash rouge bref à l'impact (game feel)
+let deadSince = 0;      // frames écoulées depuis la mort, pour le fondu d'entrée de l'écran de fin
 
 // ---- Physique ----
 const HEAD_X           = 200;   // position X fixe de la tête à l'écran
-const WORM_SPACING     = 9;     // espacement resserré pour que le ver max tienne à l'écran
+const WORM_SPACING     = 8;     // corps compact, proche de l'échelle du ver d'origine
 const WORM_SEGMENTS_BASE = 10;   // longueur de départ
-const WORM_SEGMENTS_MAX  = Math.floor(HEAD_X / WORM_SPACING); // le ver au max reste visible en entier
+const WORM_SEGMENTS_MAX  = Math.floor((HEAD_X + 20) / WORM_SPACING);
 const SPICE_PER_GROWTH   = 2;    // +1 anneau tous les N épices
+// L'épice ne rapporte plus un score fixe isolé de la croissance qu'elle
+// impose : ailleurs (Snake, Slither.io, Temple Run…), taille/risque et score
+// montent toujours ENSEMBLE. Ici, chaque épice augmente un MULTIPLICATEUR
+// appliqué en continu aux points de distance — grandir devient un vrai pari
+// qui rapporte tant qu'on survit, pas juste un risque gratuit pour +5 ponctuels.
+const SPICE_MULT_PER_UNIT = 0.05; // +5 % de multiplicateur de distance par épice
+const SPICE_FLAT_BONUS    = 2;    // petit bonus immédiat au ramassage, en plus du multiplicateur
 const WORM_HEAD_R     = 16;
 const WORM_SEG_R      = 13;
 const WORM_TAIL_R     = 6;
+// Amplitude de l'ondulation vivante superposée à la trajectoire réelle (identique
+// au ressenti "vague fluide" de la version d'origine — pas un hack de raideur,
+// juste un frémissement pour que le ver ne semble jamais figé à l'arrêt.
+const WORM_WAVE_AMPLITUDE = 0.8;
 const HEAD_SMOOTH     = 0.16;
 const BASE_SPEED      = 3;
 const MAX_SPEED       = 7;
@@ -146,11 +160,36 @@ const BOOST_REGEN     = 0.45; // /tick au repos
 // ---- Close call (esquive serrée) ----
 const CLOSE_CALL_MARGIN = 16;
 
+// ---- Sprite premium : tête de Shai-Hulud + cavalier ----
+// Un seul bloc rigide pour la tête ne peut PAS à la fois (a) rester assez
+// épais pour ne pas paraître minuscule, (b) rester assez court pour ne pas
+// être recouvert/recouvrir les plaques voisines, ET (c) suivre la vraie
+// courbe pendant un virage/plongeon — ces 3 contraintes se contredisent
+// pour un bloc unique (déjà tenté 2 fois, cf. historique).
+// Solution : DÉCOUPER le sprite de tête en HEAD_SLICES tranches verticales
+// (comme les plaques du corps), chacune positionnée et tournée EXACTEMENT
+// comme un anneau (segAngle, position réelle) — la tête peut alors se
+// courber avec le reste du ver, sans compression et sans trou, à taille
+// native (pas d'étirement non uniforme).
+const RIDER_SPRITE_W = 633, RIDER_SPRITE_H = 360;
+const RIDER_SOURCE_X = 68;
+const HEAD_SLICES = 4;                              // anneaux couverts par une tranche de tête (0 = museau)
+const HEAD_SCALE = (WORM_HEAD_R * 2) / RIDER_SPRITE_H; // échelle uniforme (pas de déformation) calée sur l'épaisseur voulue
+const riderSprite = new Image();
+let riderSpriteReady = false;
+riderSprite.onload = function () { riderSpriteReady = true; };
+riderSprite.src = 'img/worm_rider_mount.webp';
+const BODY_SPRITE_W = 151, BODY_SPRITE_H = 320;
+const bodySegmentSprite = new Image();
+let bodySegmentReady = false;
+bodySegmentSprite.onload = function () { bodySegmentReady = true; };
+bodySegmentSprite.src = 'img/worm_body_segment.webp';
+
 // ---- Couleurs ----
 const C = {
-    skyTop: '#5C3317', skyMid: '#8B5E3C', skyBot: '#C9972F',
-    sand: '#D2A64A', sandDark: '#A07828', sandLine: '#B8862D',
-    wormBody: '#8B6A3E', wormLight: '#A88050', wormDark: '#5C4020',
+    skyTop: '#2b110d', skyMid: '#8d3d1e', skyBot: '#e29a43',
+    sand: '#D9A94F', sandDark: '#8D5925', sandLine: '#B87932',
+    wormBody: '#75502c', wormLight: '#b0783e', wormDark: '#352111',
     wormMouth: '#C44', wormTeeth: '#DEB887',
     rock: '#4A3520', rockLight: '#6B5030',
     spice: '#FFD700', gold: '#FFCC00', red: '#C44', white: '#F5DEB3',
@@ -223,15 +262,29 @@ function sndCloseCall() {
 // ============================================================
 //  PARALLAX
 // ============================================================
-let bgDunes = [];
+let bgDunes = [], bgMesas = [], airGrains = [];
 function generateBg() {
-    bgDunes = [];
-    for (let i = 0; i < 20; i++)
-        bgDunes.push({ x: i * 80, y: H - 40 + Math.sin(i * 0.7) * 12, sp: 80 });
+    bgDunes = [
+        { speed: .12, base: 326, amp: 22, color: '#7b3f20', points: [] },
+        { speed: .28, base: 350, amp: 28, color: '#a65d2b', points: [] },
+        { speed: .52, base: 374, amp: 18, color: '#c8873d', points: [] },
+    ];
+    for (let layerIndex = 0; layerIndex < bgDunes.length; layerIndex++) {
+        const layer = bgDunes[layerIndex];
+        for (let i = 0; i < 16; i++) {
+            layer.points.push({ x: i * 62 - 70, y: layer.base - Math.sin(i * 1.13 + layerIndex) * layer.amp * (.45 + Math.random() * .55) });
+        }
+    }
+    bgMesas = Array.from({ length: 11 }, function (_, i) {
+        return { x: i * 105 - 80, w: 75 + Math.random() * 70, h: 45 + Math.random() * 105, top: .28 + Math.random() * .35, shade: Math.random() };
+    });
+    airGrains = Array.from({ length: 85 }, function () {
+        return { x: Math.random() * W, y: 35 + Math.random() * (H - 75), size: .4 + Math.random() * 1.5, speed: .25 + Math.random() * 1.2, alpha: .04 + Math.random() * .16 };
+    });
 }
 
 // ============================================================
-//  WORM
+//  WORM — physique de chaîne fluide (historique de trajectoire)
 // ============================================================
 // La tête ne bouge jamais en X à l'écran (c'est le monde qui défile vers
 // elle) — donc chaque anneau garde un décalage X fixe derrière la tête,
@@ -239,7 +292,11 @@ function generateBg() {
 // on garde un historique du Y de la tête indexé par la distance de
 // défilement du jeu (et non le déplacement réel de la tête, qui est
 // presque nul), et chaque anneau relit le Y d'il y a i*WORM_SPACING de
-// distance parcourue. Ça retrace l'ondulation réelle sans jamais se tasser.
+// distance parcourue. Ça retrace l'ondulation réelle sans jamais se tasser
+// — c'est ce mécanisme, PAS un ressort/amorti, qui donne le mouvement
+// organique. Ne jamais réintroduire de lissage/écrêtage supplémentaire sur
+// worm.segs[i] ici : ça a déjà été tenté et c'est précisément ce qui rend
+// le ver raide (double amortissement avec le rendu).
 const TRAIL_STEP = 2; // unités de distance entre deux points enregistrés
 const TRAIL_MAX_LEN = Math.ceil((WORM_SEGMENTS_MAX * WORM_SPACING + 20) / TRAIL_STEP);
 let trail = [];
@@ -313,6 +370,7 @@ function spawnObstacle() {
             type: 'pillars', x: W + 20,
             gapY, gapSize,
             w: 35 + Math.random() * 15,
+            seed: Math.random() * 1000,
             passed: false, closeCalled: false,
         });
     } else if (r < 0.7) {
@@ -323,6 +381,7 @@ function spawnObstacle() {
         obstacles.push({
             type: 'rock', x: W + 20,
             y: ry - rh / 2, w: rw, h: rh,
+            seed: Math.random() * 1000,
             passed: false, closeCalled: false,
         });
     } else if (r < 0.85 && dm > 300) {
@@ -333,6 +392,7 @@ function spawnObstacle() {
             w: 40, h: 18,
             vy: (Math.random() < 0.5 ? 1 : -1) * (0.5 + Math.random()),
             phase: Math.random() * Math.PI * 2,
+            seed: Math.random() * 1000,
             passed: false, closeCalled: false,
         });
     } else {
@@ -342,7 +402,7 @@ function spawnObstacle() {
         obstacles.push({
             type: 'geyser', x: W + 20,
             y: H - gh, w: gw, h: gh,
-            passed: false, closeCalled: false, phase: Math.random() * Math.PI * 2,
+            passed: false, closeCalled: false, phase: Math.random() * Math.PI * 2, seed: Math.random() * 1000,
         });
     }
 }
@@ -372,7 +432,18 @@ function spawnSand(x, y, count) {
             vx: (Math.random()-0.5)*3, vy: (Math.random()-0.5)*3,
             life: 15 + Math.random() * 12, size: 1.5 + Math.random() * 2.5,
             color: Math.random() < 0.5 ? 'rgba(180,150,100,' : 'rgba(210,180,120,',
+            gravity: .025, drag: .97, glow: 0,
         });
+}
+function spawnBurst(x, y, count, hue) {
+    for (let i = 0; i < count; i++) {
+        const a = Math.random() * Math.PI * 2, force = 1.2 + Math.random() * 3.8;
+        particles.push({
+            x, y, vx: Math.cos(a) * force, vy: Math.sin(a) * force,
+            life: 28 + Math.random() * 26, size: 1.2 + Math.random() * 2.8,
+            color: `hsla(${hue + Math.random() * 22},90%,68%,`, gravity: .015, drag: .965, glow: 8,
+        });
+    }
 }
 function addFloatingText(text, x, y, color) {
     floatingTexts.push({ text, x, y, vy: -1.5, life: 50, color, alpha: 1 });
@@ -384,130 +455,204 @@ function addFloatingText(text, x, y, color) {
 function reset() {
     worm = createWorm();
     obstacles = []; spiceItems = []; particles = []; floatingTexts = [];
-    distance = 0; spiceCount = 0; frameCount = 0;
+    distance = 0; distanceScore = 0; spiceCount = 0; frameCount = 0;
     gameSpeed = BASE_SPEED; nextObstacle = 90; milestone = 0;
     shakeTimer = 0; finalScore = 0;
     boosting = false; boostWanted = false; boostMeter = 100;
     combo = 0; comboTimer = 0; closeCallBonus = 0;
+    atmosphereFlash = 0; hitFlash = 0; deadSince = 0;
     startTime = Date.now();
     targetY = H / 2;
     generateBg();
     updateScoreDisplay();
 }
 
-function totalScore() { return Math.floor(distance / 8) + spiceCount * 5 + closeCallBonus; }
+function spiceMultiplier() { return 1 + spiceCount * SPICE_MULT_PER_UNIT; }
+function totalScore() { return Math.floor(distanceScore) + spiceCount * SPICE_FLAT_BONUS + closeCallBonus; }
 function updateScoreDisplay() { document.getElementById('score-display').textContent = totalScore(); }
 
 // ============================================================
 //  DRAWING
 // ============================================================
 function drawSky() {
+    const scroll = gameState === 'playing' ? gameSpeed : .28;
+    const twilight = Math.min(.52, distance / 32000);
     const g = ctx.createLinearGradient(0, 0, 0, H);
-    g.addColorStop(0, C.skyTop); g.addColorStop(0.6, C.skyMid); g.addColorStop(1, C.skyBot);
+    g.addColorStop(0, '#1c0b0c'); g.addColorStop(.32, '#642415');
+    g.addColorStop(.7, '#c35f29'); g.addColorStop(1, '#efb45c');
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
 
-    // Soleil
-    ctx.fillStyle = 'rgba(255,200,60,0.2)';
-    ctx.beginPath(); ctx.arc(650, 55, 45, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = 'rgba(255,215,0,0.5)';
-    ctx.beginPath(); ctx.arc(650, 55, 20, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = '#FFD700';
-    ctx.beginPath(); ctx.arc(650, 55, 10, 0, Math.PI*2); ctx.fill();
+    // Soleil dur et rayons volumétriques.
+    const sunX = 646, sunY = 68;
+    const halo = ctx.createRadialGradient(sunX, sunY, 6, sunX, sunY, 125);
+    halo.addColorStop(0, 'rgba(255,250,215,.96)');
+    halo.addColorStop(.18, 'rgba(255,205,100,.52)');
+    halo.addColorStop(.55, 'rgba(255,125,42,.13)');
+    halo.addColorStop(1, 'rgba(255,90,20,0)');
+    ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(sunX, sunY, 125, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#fff0bd'; ctx.beginPath(); ctx.arc(sunX, sunY, 15, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(255,193,96,.045)';
+    ctx.beginPath(); ctx.moveTo(sunX - 16, sunY + 7); ctx.lineTo(355, H); ctx.lineTo(620, H); ctx.closePath(); ctx.fill();
 
-    // Dunes de fond
-    for (const d of bgDunes) {
-        d.x -= gameSpeed * 0.2;
-        if (d.x < -100) d.x += bgDunes.length * d.sp;
+    // Mesas lointaines, larges et facettées.
+    for (const m of bgMesas) {
+        m.x -= scroll * .075;
+        if (m.x + m.w < -90) m.x = W + 55 + Math.random() * 90;
+        const base = 332, topY = base - m.h;
+        ctx.fillStyle = m.shade > .5 ? '#532319' : '#432019';
+        ctx.beginPath(); ctx.moveTo(m.x, base); ctx.lineTo(m.x + m.w * .12, base - m.h * .2);
+        ctx.lineTo(m.x + m.w * m.top, topY); ctx.lineTo(m.x + m.w * Math.min(.82, m.top + .34), topY + 2);
+        ctx.lineTo(m.x + m.w * .9, base - m.h * .18); ctx.lineTo(m.x + m.w, base); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = 'rgba(226,113,54,.13)';
+        ctx.beginPath(); ctx.moveTo(m.x + m.w * .12, base); ctx.lineTo(m.x + m.w * m.top, topY);
+        ctx.lineTo(m.x + m.w * (m.top + .12), base); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,160,84,.09)'; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(m.x + 7, base - m.h * .27); ctx.lineTo(m.x + m.w - 8, base - m.h * .25); ctx.stroke();
     }
-    ctx.fillStyle = C.sandLine;
-    ctx.beginPath(); ctx.moveTo(0, H);
-    for (const d of bgDunes)
-        ctx.quadraticCurveTo(d.x, d.y, d.x + d.sp / 2, d.y + Math.sin(d.x * 0.01) * 5);
-    ctx.lineTo(W + 50, H); ctx.closePath(); ctx.fill();
 
-    // Sol
-    ctx.fillStyle = C.sand; ctx.fillRect(0, H - 25, W, 25);
-    ctx.fillStyle = C.sandDark; ctx.fillRect(0, H - 25, W, 2);
+    // Trois nappes de dunes parallaxes.
+    for (let layerIndex = 0; layerIndex < bgDunes.length; layerIndex++) {
+        const layer = bgDunes[layerIndex];
+        for (const p of layer.points) p.x -= scroll * layer.speed;
+        while (layer.points[0].x < -95) {
+            layer.points.shift();
+            const last = layer.points[layer.points.length - 1];
+            const i = frameCount + layer.points.length;
+            layer.points.push({ x: last.x + 62, y: layer.base - Math.sin(i * .71 + layerIndex) * layer.amp * (.55 + Math.random() * .35) });
+        }
+        ctx.fillStyle = layer.color;
+        ctx.beginPath(); ctx.moveTo(-20, H);
+        const pts = layer.points;
+        ctx.lineTo(pts[0].x, pts[0].y);
+        for (let i = 0; i < pts.length - 1; i++) {
+            const p = pts[i], n = pts[i + 1];
+            ctx.quadraticCurveTo(p.x, p.y, (p.x + n.x) / 2, (p.y + n.y) / 2);
+        }
+        ctx.lineTo(W + 30, H); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = layerIndex === 2 ? 'rgba(255,218,145,.18)' : 'rgba(255,177,90,.08)';
+        ctx.lineWidth = 1; ctx.stroke();
+    }
+
+    // Sol proche texturé et crêtes balayées par le vent.
+    const ground = ctx.createLinearGradient(0, H - 34, 0, H);
+    ground.addColorStop(0, '#b87531'); ground.addColorStop(1, '#6d3c1d');
+    ctx.fillStyle = ground; ctx.fillRect(0, H - 29, W, 29);
+    ctx.strokeStyle = 'rgba(255,204,118,.18)'; ctx.lineWidth = 1;
+    for (let i = 0; i < 12; i++) {
+        const x = ((i * 83 - distance * .7) % (W + 100) + W + 100) % (W + 100) - 50;
+        ctx.beginPath(); ctx.moveTo(x, H - 22 + i % 4 * 5); ctx.lineTo(x + 34 + i % 3 * 13, H - 23 + i % 4 * 5); ctx.stroke();
+    }
+
+    // Grains en suspension, plus rapides avec le boost.
+    ctx.fillStyle = '#ffd18a';
+    for (const grain of airGrains) {
+        grain.x -= grain.speed * (boosting ? 2.4 : 1);
+        if (grain.x < -8) { grain.x = W + Math.random() * 35; grain.y = 35 + Math.random() * (H - 75); }
+        ctx.globalAlpha = grain.alpha * (boosting ? 1.45 : 1);
+        ctx.beginPath(); ctx.arc(grain.x, grain.y, grain.size, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    if (twilight > 0) {
+        ctx.fillStyle = `rgba(24,28,68,${twilight})`; ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = `rgba(210,220,255,${twilight * .55})`;
+        for (let i = 0; i < 18; i++) { ctx.beginPath(); ctx.arc((i * 149) % W, 18 + (i * 47) % 145, i % 4 ? .6 : 1.2, 0, Math.PI * 2); ctx.fill(); }
+    }
 }
 
 function drawObstacle(ob) {
     if (ob.type === 'pillars') {
         const topH = ob.gapY - ob.gapSize / 2;
         const botY = ob.gapY + ob.gapSize / 2;
-        // Pilier haut
-        ctx.fillStyle = C.rock;
-        ctx.fillRect(ob.x, 0, ob.w, topH);
-        ctx.fillStyle = C.rockLight;
-        ctx.fillRect(ob.x, topH - 8, ob.w, 8);
-        // Stalactites
-        for (let i = 0; i < 3; i++) {
-            const sx = ob.x + 5 + i * (ob.w - 10) / 2;
-            ctx.fillStyle = C.rock;
-            ctx.beginPath(); ctx.moveTo(sx-4, topH); ctx.lineTo(sx, topH+8+Math.random()*4); ctx.lineTo(sx+4, topH); ctx.closePath(); ctx.fill();
+        function drawCliff(y, h, isTop) {
+            const grad = ctx.createLinearGradient(ob.x - 5, 0, ob.x + ob.w + 8, 0);
+            grad.addColorStop(0, '#1c0d09'); grad.addColorStop(.3, '#754021');
+            grad.addColorStop(.58, '#4b2515'); grad.addColorStop(1, '#160a08');
+            ctx.fillStyle = grad;
+            const steps = Math.max(3, Math.ceil(h / 58)), left = [], right = [];
+            for (let i = 0; i <= steps; i++) {
+                const yy = y + h * i / steps;
+                left.push({ x: ob.x + Math.sin(ob.seed + i * 1.7) * 4.5, y: yy });
+                right.push({ x: ob.x + ob.w + Math.cos(ob.seed * .7 + i * 1.31) * 5, y: yy });
+            }
+            ctx.beginPath(); ctx.moveTo(left[0].x, left[0].y);
+            for (let i = 1; i < left.length; i++) ctx.lineTo(left[i].x, left[i].y);
+            for (let i = right.length - 1; i >= 0; i--) ctx.lineTo(right[i].x, right[i].y);
+            ctx.closePath(); ctx.fill();
+            ctx.fillStyle = 'rgba(230,126,62,.14)';
+            ctx.beginPath(); ctx.moveTo(ob.x + ob.w * .15, y); ctx.lineTo(ob.x + ob.w * .46, y);
+            ctx.lineTo(ob.x + ob.w * .34, y + h); ctx.lineTo(ob.x + ob.w * .04, y + h); ctx.closePath(); ctx.fill();
+            ctx.strokeStyle = 'rgba(255,160,86,.12)'; ctx.lineWidth = 1;
+            for (let s = 1; s < steps; s++) {
+                const sy = y + h * s / steps + Math.sin(ob.seed + s) * 4;
+                ctx.beginPath(); ctx.moveTo(ob.x + 3, sy); ctx.lineTo(ob.x + ob.w - 3, sy + 2); ctx.stroke();
+            }
+            const lipY = isTop ? y + h : y;
+            ctx.fillStyle = '#8a4b27'; ctx.beginPath(); ctx.moveTo(ob.x - 6, lipY);
+            for (let i = 0; i <= 7; i++) {
+                const px = ob.x - 6 + (ob.w + 12) * i / 7;
+                ctx.lineTo(px, lipY + (i % 2 ? 7 : 2) * (isTop ? 1 : -1));
+            }
+            ctx.lineTo(ob.x + ob.w + 5, lipY + (isTop ? -7 : 7));
+            ctx.lineTo(ob.x - 5, lipY + (isTop ? -7 : 7)); ctx.closePath(); ctx.fill();
+            ctx.strokeStyle = 'rgba(255,190,105,.2)'; ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.moveTo(ob.x, lipY); ctx.lineTo(ob.x + ob.w, lipY); ctx.stroke();
         }
-        // Pilier bas
-        ctx.fillStyle = C.rock;
-        ctx.fillRect(ob.x, botY, ob.w, H - botY);
-        ctx.fillStyle = C.rockLight;
-        ctx.fillRect(ob.x, botY, ob.w, 6);
-        // Stalagmites
-        for (let i = 0; i < 3; i++) {
-            const sx = ob.x + 5 + i * (ob.w - 10) / 2;
-            ctx.fillStyle = C.rock;
-            ctx.beginPath(); ctx.moveTo(sx-4, botY); ctx.lineTo(sx, botY-6-Math.random()*4); ctx.lineTo(sx+4, botY); ctx.closePath(); ctx.fill();
-        }
+        drawCliff(0, topH, true);
+        drawCliff(botY, H - botY, false);
     } else if (ob.type === 'rock') {
-        ctx.fillStyle = C.rock;
+        const rockGrad = ctx.createLinearGradient(ob.x, ob.y, ob.x + ob.w, ob.y + ob.h);
+        rockGrad.addColorStop(0, '#9b562d'); rockGrad.addColorStop(.42, '#5a2c19'); rockGrad.addColorStop(1, '#24110c');
+        ctx.fillStyle = rockGrad;
         ctx.beginPath();
         ctx.moveTo(ob.x, ob.y + ob.h);
-        ctx.lineTo(ob.x + 3, ob.y + ob.h * 0.2);
-        ctx.lineTo(ob.x + ob.w * 0.4, ob.y);
-        ctx.lineTo(ob.x + ob.w * 0.7, ob.y + ob.h * 0.1);
-        ctx.lineTo(ob.x + ob.w, ob.y + ob.h * 0.3);
+        ctx.lineTo(ob.x + 2, ob.y + ob.h * .35);
+        ctx.lineTo(ob.x + ob.w * .28, ob.y + ob.h * .08);
+        ctx.lineTo(ob.x + ob.w * .57, ob.y);
+        ctx.lineTo(ob.x + ob.w * .82, ob.y + ob.h * .18);
+        ctx.lineTo(ob.x + ob.w, ob.y + ob.h * .43);
         ctx.lineTo(ob.x + ob.w - 2, ob.y + ob.h);
         ctx.closePath(); ctx.fill();
-        ctx.fillStyle = C.rockLight;
+        ctx.fillStyle = 'rgba(230,139,75,.22)';
         ctx.beginPath();
-        ctx.moveTo(ob.x + 3, ob.y + ob.h * 0.2);
-        ctx.lineTo(ob.x + ob.w * 0.4, ob.y);
-        ctx.lineTo(ob.x + ob.w * 0.35, ob.y + ob.h * 0.5);
-        ctx.lineTo(ob.x + 3, ob.y + ob.h);
+        ctx.moveTo(ob.x + 2, ob.y + ob.h * .35); ctx.lineTo(ob.x + ob.w * .57, ob.y);
+        ctx.lineTo(ob.x + ob.w * .42, ob.y + ob.h * .65); ctx.lineTo(ob.x + ob.w * .08, ob.y + ob.h);
         ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = 'rgba(22,8,5,.45)'; ctx.lineWidth = 1.4;
+        ctx.beginPath(); ctx.moveTo(ob.x + ob.w * .57, ob.y); ctx.lineTo(ob.x + ob.w * .48, ob.y + ob.h * .38);
+        ctx.lineTo(ob.x + ob.w * .67, ob.y + ob.h * .63); ctx.stroke();
     } else if (ob.type === 'thopter') {
         ob.phase += 0.15;
         const cx = ob.x + ob.w / 2, cy = ob.y + ob.h / 2;
-        // Fuselage
-        ctx.fillStyle = '#3A2020';
-        ctx.beginPath();
-        ctx.ellipse(cx, cy, ob.w / 2, ob.h / 2, 0, 0, Math.PI * 2);
-        ctx.fill();
-        // Ailes battantes
-        const wingY = Math.sin(ob.phase) * 8;
-        ctx.strokeStyle = '#5A3030'; ctx.lineWidth = 3;
-        ctx.beginPath(); ctx.moveTo(cx - 5, cy); ctx.lineTo(cx - 25, cy + wingY - 5); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(cx + 5, cy); ctx.lineTo(cx + 25, cy - wingY - 5); ctx.stroke();
-        // Œil rouge
-        ctx.fillStyle = '#FF0000';
-        ctx.beginPath(); ctx.arc(cx + ob.w * 0.3, cy, 2.5, 0, Math.PI * 2); ctx.fill();
-        // Traînée
-        ctx.strokeStyle = 'rgba(100,50,30,0.3)'; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(ob.x, cy); ctx.lineTo(ob.x - 15, cy + Math.sin(ob.phase * 2) * 3); ctx.stroke();
+        const flap = Math.sin(ob.phase) * 6;
+        ctx.strokeStyle = 'rgba(200,126,90,.62)'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+        [[-5,-4,-25,-11+flap],[-2,-2,-23,1-flap],[5,-4,27,-11-flap],[3,-2,25,1+flap]].forEach(function (w) {
+            ctx.beginPath(); ctx.moveTo(cx+w[0],cy+w[1]); ctx.lineTo(cx+w[2],cy+w[3]); ctx.stroke();
+        });
+        const bodyGrad = ctx.createLinearGradient(ob.x, cy, ob.x + ob.w, cy);
+        bodyGrad.addColorStop(0, '#211015'); bodyGrad.addColorStop(.55, '#6a2630'); bodyGrad.addColorStop(1, '#1a0b0d');
+        ctx.fillStyle = bodyGrad; ctx.beginPath(); ctx.moveTo(ob.x,cy); ctx.quadraticCurveTo(cx,cy-ob.h*.65,ob.x+ob.w,cy);
+        ctx.quadraticCurveTo(cx,cy+ob.h*.55,ob.x,cy); ctx.fill();
+        ctx.fillStyle = '#ff3b25'; ctx.shadowBlur = 8; ctx.shadowColor = '#ff2a16';
+        ctx.beginPath(); ctx.arc(ob.x + ob.w * .76, cy - 1, 2.4, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+        ctx.strokeStyle = 'rgba(255,128,75,.22)'; ctx.lineWidth = 1;
+        for (let i=0;i<3;i++){ctx.beginPath();ctx.moveTo(ob.x-4-i*8,cy+i-1);ctx.lineTo(ob.x-18-i*13,cy+i*2);ctx.stroke();}
     } else if (ob.type === 'geyser') {
         ob.phase += 0.05;
         const intensity = 0.6 + Math.sin(ob.phase) * 0.4;
-        // Colonne de sable
         const grd = ctx.createLinearGradient(ob.x, ob.y, ob.x, H);
-        grd.addColorStop(0, `rgba(210,180,120,${0.3 * intensity})`);
-        grd.addColorStop(0.5, `rgba(180,150,90,${0.5 * intensity})`);
-        grd.addColorStop(1, C.sand);
+        grd.addColorStop(0, `rgba(255,213,140,${.08 * intensity})`);
+        grd.addColorStop(.35, `rgba(222,150,76,${.42 * intensity})`);
+        grd.addColorStop(1, `rgba(115,61,28,${.88 * intensity})`);
         ctx.fillStyle = grd;
-        ctx.fillRect(ob.x - 3, ob.y, ob.w + 6, ob.h);
-        // Particules au sommet
-        ctx.fillStyle = `rgba(220,190,130,${0.6 * intensity})`;
-        for (let i = 0; i < 4; i++) {
-            const px = ob.x + ob.w / 2 + Math.sin(ob.phase * 3 + i * 2) * (ob.w / 2 + 5);
-            const py = ob.y - 5 + Math.sin(ob.phase * 2 + i) * 8;
-            ctx.beginPath(); ctx.arc(px, py, 3, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(ob.x + ob.w*.15,H); ctx.quadraticCurveTo(ob.x-8,ob.y+ob.h*.45,ob.x+ob.w*.42,ob.y);
+        ctx.quadraticCurveTo(ob.x+ob.w+9,ob.y+ob.h*.45,ob.x+ob.w*.85,H); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = `rgba(255,213,142,${.45 * intensity})`;
+        for (let i = 0; i < 18; i++) {
+            const travel = (frameCount * (1.5+i%3) + i*31) % (ob.h+30);
+            const py = H-travel, spread = 5 + travel/ob.h*ob.w*.8;
+            const px = ob.x+ob.w/2+Math.sin(ob.seed+i*2.4)*spread;
+            ctx.beginPath(); ctx.arc(px,py,1+(i%3)*.65,0,Math.PI*2);ctx.fill();
         }
     }
 }
@@ -515,85 +660,134 @@ function drawObstacle(ob) {
 function drawSpiceItem(sp) {
     if (sp.collected) return;
     sp.sparkle += 0.08;
-    const glow = 0.5 + Math.sin(sp.sparkle) * 0.3;
-    ctx.fillStyle = 'rgba(255,215,0,' + (glow * 0.3) + ')';
-    ctx.beginPath(); ctx.arc(sp.x, sp.y, 10, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = C.spice;
-    ctx.beginPath(); ctx.moveTo(sp.x, sp.y-6); ctx.lineTo(sp.x+5, sp.y); ctx.lineTo(sp.x, sp.y+6); ctx.lineTo(sp.x-5, sp.y); ctx.closePath(); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,' + (glow * 0.5) + ')';
-    ctx.beginPath(); ctx.moveTo(sp.x, sp.y-3); ctx.lineTo(sp.x+2, sp.y); ctx.lineTo(sp.x, sp.y+2); ctx.lineTo(sp.x-2, sp.y); ctx.closePath(); ctx.fill();
+    const glow = .62 + Math.sin(sp.sparkle) * .28;
+    ctx.save(); ctx.shadowBlur = 16; ctx.shadowColor = '#ffb52d';
+    const aura = ctx.createRadialGradient(sp.x,sp.y,1,sp.x,sp.y,15);
+    aura.addColorStop(0,`rgba(255,238,155,${glow*.55})`);aura.addColorStop(1,'rgba(255,150,20,0)');
+    ctx.fillStyle=aura;ctx.beginPath();ctx.arc(sp.x,sp.y,15,0,Math.PI*2);ctx.fill();
+    const crystal=ctx.createLinearGradient(sp.x-5,sp.y-7,sp.x+5,sp.y+7);
+    crystal.addColorStop(0,'#fff4b0');crystal.addColorStop(.38,'#ffca35');crystal.addColorStop(1,'#b75b0d');
+    ctx.fillStyle=crystal;ctx.beginPath();ctx.moveTo(sp.x,sp.y-7);ctx.lineTo(sp.x+5,sp.y-1);
+    ctx.lineTo(sp.x+2,sp.y+7);ctx.lineTo(sp.x-4,sp.y+3);ctx.lineTo(sp.x-5,sp.y-2);ctx.closePath();ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.72)';ctx.beginPath();ctx.moveTo(sp.x,sp.y-5);ctx.lineTo(sp.x+1,sp.y-1);ctx.lineTo(sp.x-3,sp.y+1);ctx.closePath();ctx.fill();
+    ctx.shadowBlur=0;ctx.fillStyle=`rgba(255,226,130,${glow})`;
+    for(let i=0;i<3;i++){const a=sp.sparkle+i*Math.PI*2/3;ctx.beginPath();ctx.arc(sp.x+Math.cos(a)*10,sp.y+Math.sin(a)*7,1,0,Math.PI*2);ctx.fill();}
+    ctx.restore();
+}
+
+// Anneau de secours (utilisé seulement tant que le sprite du corps n'est pas
+// chargé) : garde le rendu identifiable au premier affichage de la page.
+function drawFallbackRing(x, y, angle, r) {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(angle);
+    const armor = ctx.createLinearGradient(0, -r, 0, r);
+    armor.addColorStop(0, '#b67a40'); armor.addColorStop(.42, '#754625'); armor.addColorStop(1, '#352012');
+    ctx.fillStyle = armor;
+    ctx.beginPath(); ctx.ellipse(0, 0, r * .52, r, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+}
+
+// Angle de tangente locale au segment i : direction entre son voisin AVANT
+// (i-1, ou lui-même pour la tête) et son voisin APRÈS (i+1, ou lui-même pour
+// le dernier anneau). Un Math.atan2 exact, recalculé chaque frame à partir
+// des positions RÉELLES (déjà lissées par l'historique de trajectoire dans
+// tick()) — donc une rotation parfaitement continue, jamais quantifiée,
+// jamais amortie une seconde fois ici. C'est cette même fonction qui oriente
+// la tête ET chaque plaque du corps : aucune rupture de logique entre elles.
+function segAngle(segs, i) {
+    const a = segs[Math.max(0, i - 1)];
+    const b = segs[Math.min(segs.length - 1, i + 1)];
+    return Math.atan2(a.y - b.y, a.x - b.x);
+}
+
+// Facteur d'étirement d'un anneau : les plaques/tranches ont une taille
+// pensée pour l'espacement HORIZONTAL entre anneaux (WORM_SPACING) — mais
+// en plongeon/montée serrés, la distance RÉELLE (à vol d'oiseau) entre deux
+// anneaux consécutifs dépasse largement cet espacement (le X reste toujours
+// à WORM_SPACING, c'est le Y qui s'envole). Sans compensation, des plaques
+// à taille fixe n'arrivent plus à se toucher → trous visibles. On mesure
+// donc la distance réelle au voisin le plus loin (avant OU après) et on
+// étire la plaque en conséquence — jamais plus courte qu'avant (stretch
+// >= 1), donc aucun changement en mouvement plat/doux.
+function segStretch(segs, i, x, y) {
+    const prev = segs[Math.max(0, i - 1)];
+    const next = segs[Math.min(segs.length - 1, i + 1)];
+    const dPrev = Math.hypot(x - prev.x, y - prev.y);
+    const dNext = Math.hypot(x - next.x, y - next.y);
+    return Math.min(3, Math.max(1, Math.max(dPrev, dNext) / WORM_SPACING));
+}
+
+// Tranche i (0 = museau) du sprite de tête, à taille native (HEAD_SCALE
+// uniforme, aucune déformation) — le bord DROIT du recadrage source (le
+// museau) correspond à i=0, le bord GAUCHE (où le corps continue) à
+// i=HEAD_SLICES-1, pour raccorder avec la première plaque de corps.
+function drawHeadSlice(x, y, angle, i, stretch) {
+    const srcSliceW = (RIDER_SPRITE_W - RIDER_SOURCE_X) / HEAD_SLICES;
+    const srcX = RIDER_SOURCE_X + (HEAD_SLICES - 1 - i) * srcSliceW;
+    const drawW = srcSliceW * HEAD_SCALE * stretch;
+    const drawH = RIDER_SPRITE_H * HEAD_SCALE;
+    if (riderSpriteReady) {
+        ctx.save(); ctx.translate(x, y); ctx.rotate(angle);
+        ctx.drawImage(riderSprite, srcX, 0, srcSliceW, RIDER_SPRITE_H,
+            -drawW / 2, -drawH * 0.596, drawW, drawH);
+        ctx.restore();
+    } else {
+        drawFallbackRing(x, y, angle, segRadius(i));
+    }
+}
+
+// Plaque de corps générique pour l'anneau i (au-delà des tranches de tête).
+function drawBodyPlate(x, y, angle, i, stretch) {
+    const r = segRadius(i); // même rayon que la collision → cohérence visuelle/physique
+    const plateH = r * 2.15;
+    const plateW = (plateH * BODY_SPRITE_W / BODY_SPRITE_H) * stretch;
+    if (bodySegmentReady) {
+        ctx.save(); ctx.translate(x, y); ctx.rotate(angle);
+        if (i % 2) ctx.scale(-1, 1);
+        // L'asset brut est plus jaune que les plaques arrière de la tête.
+        // Ce filtre l'aligne sur leur brun-ocre sombre sans toucher au sprite.
+        ctx.filter = 'brightness(0.70) saturate(1.22) sepia(0.10)';
+        ctx.drawImage(bodySegmentSprite, 0, 0, BODY_SPRITE_W, BODY_SPRITE_H,
+            -plateW * .56, -plateH / 2, plateW * 1.12, plateH);
+        ctx.restore();
+    } else {
+        drawFallbackRing(x, y, angle, r);
+    }
 }
 
 function drawWorm() {
     const segs = worm.segs;
-    // Corps (du dernier au premier pour que la tête soit par-dessus)
-    for (let i = segs.length - 1; i >= 0; i--) {
-        const s = segs[i], r = segRadius(i);
-        const t = i / (segs.length - 1);
-
-        // Ombre au sol
-        ctx.fillStyle = 'rgba(0,0,0,0.08)';
-        ctx.beginPath(); ctx.ellipse(s.x, H - 22, r * 0.7, 3, 0, 0, Math.PI * 2); ctx.fill();
-
-        // Segment
-        const bodyColor = i === 0 ? C.wormDark : (i % 3 === 0 ? C.wormLight : C.wormBody);
-        ctx.fillStyle = bodyColor;
-        ctx.beginPath(); ctx.arc(s.x, s.y, r, 0, Math.PI * 2); ctx.fill();
-
-        // Anneau de détail
-        if (i > 0 && i % 2 === 0) {
-            ctx.strokeStyle = 'rgba(0,0,0,0.15)'; ctx.lineWidth = 1;
-            ctx.beginPath(); ctx.arc(s.x, s.y, r * 0.85, 0, Math.PI * 2); ctx.stroke();
-        }
-
-        // Reflet
-        ctx.fillStyle = 'rgba(255,230,180,0.12)';
-        ctx.beginPath(); ctx.arc(s.x - r * 0.2, s.y - r * 0.3, r * 0.4, 0, Math.PI * 2); ctx.fill();
-    }
-
-    // Tête — détails
     const head = segs[0];
     const hr = WORM_HEAD_R;
+    const bob = Math.sin(frameCount * .12) * (boosting ? 1.8 : .75);
 
-    // Bouche
-    ctx.fillStyle = C.wormMouth;
-    ctx.beginPath(); ctx.arc(head.x + hr * 0.6, head.y, hr * 0.5, 0, Math.PI * 2); ctx.fill();
-
-    // Dents (cercle de dents autour de la bouche)
-    ctx.fillStyle = C.wormTeeth;
-    for (let t = 0; t < 6; t++) {
-        const ang = t * Math.PI / 3 + frameCount * 0.02;
-        const tx = head.x + hr * 0.6 + Math.cos(ang) * hr * 0.4;
-        const ty = head.y + Math.sin(ang) * hr * 0.4;
-        ctx.beginPath(); ctx.arc(tx, ty, 2, 0, Math.PI * 2); ctx.fill();
+    // Aura de boost, ancrée sur la tête, dessinée AVANT tout le reste
+    // (dessous) pour ne jamais passer par-dessus les tranches/plaques.
+    if (boosting) {
+        const headAngle = segAngle(segs, 0);
+        ctx.save(); ctx.translate(head.x, head.y + bob); ctx.rotate(headAngle);
+        const auraG = ctx.createRadialGradient(-hr, 0, 2, -hr, 0, hr * 3);
+        auraG.addColorStop(0, 'rgba(255,210,120,.23)'); auraG.addColorStop(1, 'rgba(255,120,35,0)');
+        ctx.fillStyle = auraG; ctx.beginPath(); ctx.ellipse(-hr, 0, hr * 3.2, hr * 1.4, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
     }
 
-    // Yeux (petits, sur les côtés)
-    ctx.fillStyle = '#222';
-    ctx.beginPath(); ctx.arc(head.x + 2, head.y - hr * 0.55, 3, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(head.x + 2, head.y + hr * 0.55, 3, 0, Math.PI * 2); ctx.fill();
-
-    // Rider sur le dos (segment 3)
-    if (gameState === 'playing') {
-        const rs = segs[3];
-        const rr = segRadius(3);
-        // Petit personnage
-        ctx.fillStyle = '#2B1D0E';
-        // Corps
-        ctx.fillRect(rs.x - 4, rs.y - rr - 16, 8, 12);
-        // Tête
-        ctx.beginPath(); ctx.arc(rs.x, rs.y - rr - 20, 5, 0, Math.PI * 2); ctx.fill();
-        // Cape
-        ctx.fillStyle = '#5C4A32';
-        ctx.beginPath();
-        ctx.moveTo(rs.x - 4, rs.y - rr - 14);
-        ctx.lineTo(rs.x - 10, rs.y - rr - 8 + Math.sin(frameCount * 0.15) * 2);
-        ctx.lineTo(rs.x - 4, rs.y - rr - 4);
-        ctx.closePath(); ctx.fill();
-        // Crochets (maker hooks)
-        ctx.strokeStyle = '#A08050'; ctx.lineWidth = 1.5;
-        ctx.beginPath(); ctx.moveTo(rs.x - 3, rs.y - rr - 4); ctx.lineTo(rs.x - 6, rs.y - rr + 4); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(rs.x + 3, rs.y - rr - 4); ctx.lineTo(rs.x + 6, rs.y - rr + 4); ctx.stroke();
+    // Chaque anneau — DU DERNIER AU PREMIER, donc la tête (i petit) se
+    // dessine EN DERNIER, par-dessus le très léger chevauchement avec la
+    // plaque voisine (volontaire, comme entre deux plaques de corps —
+    // jamais de trou). Un seul système de coordonnées (worm.segs) pour
+    // TOUT le ver, tête comprise : aucun calcul d'ancrage séparé, donc plus
+    // de risque de décalage/écart, et la tête se courbe avec le reste
+    // puisqu'elle est maintenant découpée en tranches comme le corps.
+    for (let i = segs.length - 1; i >= 0; i--) {
+        const s = segs[i];
+        const angle = segAngle(segs, i);
+        const y = s.y + bob;
+        // Distances mesurées SANS le bob (décalage cosmétique partagé par
+        // tous les anneaux, donc sans effet sur l'écart RÉEL entre eux) —
+        // cohérent avec les positions brutes des voisins.
+        const stretch = segStretch(segs, i, s.x, s.y);
+        if (i < HEAD_SLICES) drawHeadSlice(s.x, y, angle, i, stretch);
+        else drawBodyPlate(s.x, y, angle, i, stretch);
     }
 
     // Invincibilité flash
@@ -606,10 +800,54 @@ function drawWorm() {
 function drawParticles() {
     for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
+        p.vx *= p.drag || 1; p.vy = p.vy * (p.drag || 1) + (p.gravity || 0);
         p.x += p.vx; p.y += p.vy; p.life--;
         if (p.life <= 0) { particles.splice(i, 1); continue; }
-        ctx.fillStyle = p.color + (p.life / 30) + ')';
+        if (p.glow) { ctx.shadowBlur = p.glow; ctx.shadowColor = p.color.replace(/,$/, '1)'); }
+        ctx.fillStyle = p.color + Math.min(1, p.life / 30) + ')';
         ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); ctx.fill();
+        ctx.shadowBlur = 0;
+    }
+}
+
+function drawSpeedEffects() {
+    const baseIntensity = Math.max(0, (gameSpeed - BASE_SPEED) / (MAX_SPEED * BOOST_MULT - BASE_SPEED));
+    const intensity = boosting ? Math.max(.55, baseIntensity) : baseIntensity * .24;
+    if (intensity <= .03) return;
+    ctx.save(); ctx.lineCap = 'round';
+    for (let i = 0; i < (boosting ? 38 : 14); i++) {
+        const span = W + 170;
+        const rawX = i * 79 - distance * (1.2 + i % 3 * .13);
+        const x = ((rawX % span) + span) % span - 85;
+        const y = 25 + ((i * 61 + frameCount * (i % 2 ? .18 : -.12)) % (H - 60));
+        const len = 16 + (i % 6) * 9 + intensity * 38;
+        ctx.strokeStyle = `rgba(255,207,134,${(.045 + (i % 4) * .018) * intensity})`;
+        ctx.lineWidth = .6 + (i % 3) * .4;
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - len, y + 1.5); ctx.stroke();
+    }
+    if (boosting) {
+        const edge = ctx.createLinearGradient(0,0,W,0);
+        edge.addColorStop(0,'rgba(255,122,34,.14)');edge.addColorStop(.22,'rgba(255,122,34,0)');
+        edge.addColorStop(.78,'rgba(255,122,34,0)');edge.addColorStop(1,'rgba(255,122,34,.1)');
+        ctx.fillStyle=edge;ctx.fillRect(0,0,W,H);
+    }
+    ctx.restore();
+}
+
+function drawPostFX() {
+    const twilight=Math.min(.52,distance/32000);
+    if(twilight>0){ctx.fillStyle=`rgba(24,31,78,${twilight*.28})`;ctx.fillRect(0,0,W,H);}
+    const vignette = ctx.createRadialGradient(W/2,H/2,110,W/2,H/2,470);
+    vignette.addColorStop(0,'rgba(0,0,0,0)');vignette.addColorStop(.72,'rgba(20,7,4,.08)');vignette.addColorStop(1,'rgba(8,2,2,.52)');
+    ctx.fillStyle=vignette;ctx.fillRect(0,0,W,H);
+    if (atmosphereFlash > 0) {
+        const a=Math.min(.24,atmosphereFlash/42*.24);
+        ctx.fillStyle=`rgba(255,209,120,${a})`;ctx.fillRect(0,0,W,H);
+    }
+    // Flash rouge bref à l'impact — accentue le choc sans dépendre du secouement seul.
+    if (hitFlash > 0) {
+        ctx.fillStyle = `rgba(200,40,30,${Math.min(.35, hitFlash / 14 * .35)})`;
+        ctx.fillRect(0, 0, W, H);
     }
 }
 
@@ -627,53 +865,71 @@ function drawFloatingTexts() {
 
 function drawHUD() {
     ctx.save();
-    ctx.font = '13px sans-serif'; ctx.fillStyle = 'rgba(255,220,180,0.7)';
-    ctx.fillText(Math.floor(distance / 10) + ' m', 15, 22);
-    ctx.fillStyle = C.spice; ctx.fillText('x' + spiceCount, 15, 40);
-    ctx.beginPath(); ctx.moveTo(8,33); ctx.lineTo(12,37); ctx.lineTo(8,41); ctx.lineTo(4,37); ctx.closePath(); ctx.fill();
-    if (combo > 1) { ctx.fillStyle = C.gold; ctx.fillText('x' + combo + ' COMBO', 15, 58); }
+    ctx.fillStyle='rgba(17,7,5,.66)';ctx.fillRect(12,12,148,56);
+    ctx.strokeStyle='rgba(224,155,73,.34)';ctx.strokeRect(12.5,12.5,147,55);
+    ctx.font='9px "Segoe UI",sans-serif';ctx.fillStyle='rgba(238,196,130,.58)';ctx.fillText('DISTANCE',24,29);
+    ctx.font='bold 22px "Segoe UI",sans-serif';ctx.fillStyle='#ffd176';ctx.fillText(Math.floor(distance/10)+' m',23,51);
+    ctx.font='bold 11px "Segoe UI",sans-serif';ctx.fillStyle='#ffcb3b';ctx.fillText('◆  '+spiceCount,108,51);
+    // Multiplicateur de points de distance — visible pour que le pari
+    // "grandir maintenant paie plus tard" soit compris pendant la partie,
+    // pas juste dans le code.
+    ctx.font='8px "Segoe UI",sans-serif';ctx.fillStyle='rgba(255,203,59,.8)';ctx.fillText('×'+spiceMultiplier().toFixed(2)+' pts distance',23,63);
 
+    ctx.textAlign='center';ctx.font='bold 22px "Segoe UI",sans-serif';ctx.fillStyle='rgba(255,222,160,.9)';
+    ctx.shadowBlur=8;ctx.shadowColor='rgba(0,0,0,.6)';ctx.fillText(totalScore(),W/2,34);ctx.shadowBlur=0;
+    ctx.font='8px "Segoe UI",sans-serif';ctx.fillStyle='rgba(235,190,122,.5)';ctx.fillText('SCORE',W/2,47);
+    if(combo>1){ctx.font='bold 13px "Segoe UI",sans-serif';ctx.fillStyle='#ffb52d';ctx.fillText('FRÔLEMENT  x'+combo,W/2,66);}
+
+    ctx.fillStyle='rgba(17,7,5,.66)';ctx.fillRect(W-169,12,157,56);
+    ctx.strokeStyle='rgba(224,155,73,.34)';ctx.strokeRect(W-168.5,12.5,156,55);
     const sp = Math.min(1, (gameSpeed - BASE_SPEED) / (MAX_SPEED - BASE_SPEED));
-    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(W-80, 10, 65, 6);
-    ctx.fillStyle = sp < 0.5 ? C.gold : sp < 0.8 ? '#E88' : C.red;
-    ctx.fillRect(W-80, 10, 65*sp, 6);
-    ctx.font = '9px sans-serif'; ctx.fillStyle = 'rgba(255,220,180,0.5)'; ctx.textAlign = 'right';
-    ctx.fillText('VITESSE', W-15, 28);
-
-    // Jauge de boost
-    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(W-80, 38, 65, 6);
-    ctx.fillStyle = boosting ? '#66ddff' : (boostMeter > BOOST_MIN_USE ? '#3aa0cc' : '#555');
-    ctx.fillRect(W-80, 38, 65 * (boostMeter/100), 6);
-    ctx.fillText('BOOST', W-15, 56);
+    ctx.textAlign='left';ctx.font='8px "Segoe UI",sans-serif';ctx.fillStyle='rgba(238,196,130,.58)';ctx.fillText('VITESSE',W-157,28);
+    ctx.fillStyle='rgba(255,255,255,.09)';ctx.fillRect(W-108,21,82,7);
+    const speedGrad=ctx.createLinearGradient(W-108,0,W-26,0);speedGrad.addColorStop(0,'#e6a83e');speedGrad.addColorStop(1,'#dc482d');
+    ctx.fillStyle=speedGrad;ctx.fillRect(W-108,21,82*Math.min(1,sp),7);
+    ctx.fillStyle='rgba(255,255,255,.09)';ctx.fillRect(W-157,47,131,8);
+    const boostGrad=ctx.createLinearGradient(W-157,0,W-26,0);boostGrad.addColorStop(0,'#3b7f9c');boostGrad.addColorStop(.65,'#67d7e5');boostGrad.addColorStop(1,'#e8ffff');
+    ctx.fillStyle=boostMeter>BOOST_MIN_USE?boostGrad:'#4d4541';ctx.fillRect(W-157,47,131*(boostMeter/100),8);
+    ctx.font='bold 8px "Segoe UI",sans-serif';ctx.fillStyle=boosting?'#cfffff':'rgba(225,200,165,.65)';ctx.fillText(boosting?'BOOST ACTIF':'BOOST',W-157,43);
     ctx.restore();
 }
 
 function drawMenu() {
-    ctx.fillStyle = 'rgba(10,5,2,0.55)'; ctx.fillRect(0, 0, W, H);
+    const veil=ctx.createLinearGradient(0,0,W,0);veil.addColorStop(0,'rgba(8,3,2,.76)');veil.addColorStop(.5,'rgba(8,3,2,.32)');veil.addColorStop(1,'rgba(8,3,2,.66)');
+    ctx.fillStyle=veil;ctx.fillRect(0,0,W,H);
     ctx.save(); ctx.textAlign = 'center';
-    ctx.font = 'bold 32px sans-serif'; ctx.fillStyle = C.gold;
-    ctx.fillText('WORM RIDER', W/2, H/2-55);
-    ctx.font = '14px sans-serif'; ctx.fillStyle = '#a89060';
-    ctx.fillText('Chevauche Shai-Hulud à travers le désert profond', W/2, H/2-25);
-    ctx.font = '11px sans-serif'; ctx.fillStyle = '#7c5e2a';
-    ctx.fillText('Souris ou ↑↓ pour diriger · Esquive les rochers · Collecte l\'épice', W/2, H/2);
-    ctx.fillText('L\'épice fait grandir le ver (plus dur à faufiler) · Maintiens [Espace] pour un boost', W/2, H/2 + 16);
-    ctx.font = 'bold 18px sans-serif'; ctx.fillStyle = C.white;
-    ctx.fillText('Clique pour commencer', W/2, H/2+35);
-    if (bestScore > 0) { ctx.font = '13px sans-serif'; ctx.fillStyle = '#7c5e2a'; ctx.fillText('Meilleur score : ' + bestScore, W/2, H/2+60); }
+    ctx.font='10px "Segoe UI",sans-serif';ctx.fillStyle='rgba(255,199,105,.58)';ctx.fillText('—  LES SABLES D’ARRAKIS  —',W/2,76);
+    ctx.font='900 43px "Segoe UI",sans-serif';ctx.fillStyle='#ffd071';ctx.shadowBlur=18;ctx.shadowColor='rgba(255,124,35,.34)';ctx.fillText('WORM RIDER',W/2,121);ctx.shadowBlur=0;
+    ctx.strokeStyle='rgba(255,189,90,.36)';ctx.beginPath();ctx.moveTo(W/2-118,136);ctx.lineTo(W/2+118,136);ctx.stroke();
+    ctx.font='14px "Segoe UI",sans-serif';ctx.fillStyle='#d7b17b';ctx.fillText('Chevauche Shai-Hulud à travers le désert profond',W/2,162);
+    ctx.fillStyle='rgba(12,5,3,.64)';ctx.fillRect(W/2-250,184,500,76);ctx.strokeStyle='rgba(205,137,61,.28)';ctx.strokeRect(W/2-249.5,184.5,499,75);
+    ctx.font='11px "Segoe UI",sans-serif';ctx.fillStyle='#b99261';
+    ctx.fillText('SOURIS ou ↑↓  ·  dirige le ver et esquive les reliefs',W/2,207);
+    ctx.fillText('ÉPICE  ·  fait grandir le ver ET son multiplicateur de score',W/2,227);
+    ctx.fillText('MAINTIENS LE CLIC ou [ESPACE]  ·  déclenche le boost',W/2,247);
+    const pulse=.78+Math.sin(frameCount*.07)*.18;ctx.font='bold 17px "Segoe UI",sans-serif';ctx.fillStyle=`rgba(255,232,185,${pulse})`;
+    ctx.fillText('CLIQUE POUR CHEVAUCHER',W/2,296);
+    if(bestScore>0){ctx.font='12px "Segoe UI",sans-serif';ctx.fillStyle='rgba(220,177,105,.64)';ctx.fillText('MEILLEUR SCORE  '+bestScore,W/2,324);}
     ctx.restore();
 }
 
 function drawDead() {
-    ctx.fillStyle = 'rgba(10,5,2,0.6)'; ctx.fillRect(0, 0, W, H);
-    ctx.save(); ctx.textAlign = 'center';
-    ctx.font = 'bold 26px sans-serif'; ctx.fillStyle = C.red; ctx.fillText('ÉCRASÉ !', W/2, H/2-55);
-    ctx.font = 'bold 40px sans-serif'; ctx.fillStyle = C.gold; ctx.fillText(finalScore, W/2, H/2-10);
-    ctx.font = '14px sans-serif'; ctx.fillStyle = '#a89060';
-    ctx.fillText(Math.floor(distance/10) + ' m  ·  ' + spiceCount + ' épice', W/2, H/2+15);
-    if (bestScore > 0) ctx.fillText('Record : ' + bestScore, W/2, H/2+38);
-    ctx.font = 'bold 15px sans-serif'; ctx.fillStyle = C.white;
-    ctx.fillText('Clique pour rejouer', W/2, H/2+70);
+    // Fondu d'entrée : l'écran de fin apparaît progressivement plutôt que
+    // d'un coup, pour laisser le flash d'impact respirer avant le texte.
+    const fadeIn = Math.min(1, deadSince / 18);
+    ctx.save();
+    ctx.fillStyle = `rgba(9,3,3,${.72 * fadeIn})`; ctx.fillRect(0, 0, W, H);
+    ctx.globalAlpha = fadeIn;
+    ctx.textAlign = 'center';
+    ctx.font='bold 13px "Segoe UI",sans-serif';ctx.fillStyle='rgba(220,125,95,.72)';ctx.fillText('LA CHEVAUCHÉE S’ACHÈVE',W/2,105);
+    ctx.font='900 52px "Segoe UI",sans-serif';ctx.fillStyle='#ffca55';ctx.shadowBlur=15;ctx.shadowColor='rgba(255,91,32,.25)';ctx.fillText(finalScore,W/2,163);ctx.shadowBlur=0;
+    ctx.font='10px "Segoe UI",sans-serif';ctx.fillStyle='rgba(227,188,126,.55)';ctx.fillText('SCORE',W/2,180);
+    ctx.fillStyle='rgba(14,6,4,.68)';ctx.fillRect(W/2-150,198,300,48);ctx.strokeStyle='rgba(200,124,58,.28)';ctx.strokeRect(W/2-149.5,198.5,299,47);
+    ctx.font='13px "Segoe UI",sans-serif';ctx.fillStyle='#cba36e';ctx.fillText(Math.floor(distance/10)+' m   ·   '+spiceCount+' épice'+(spiceCount>1?'s':''),W/2,218);
+    if(bestScore>0)ctx.fillText('Record : '+bestScore,W/2,238);
+    if (deadSince > 40) {
+        const pulse=.75+Math.sin(frameCount*.09)*.2;ctx.font='bold 15px "Segoe UI",sans-serif';ctx.fillStyle=`rgba(255,236,200,${pulse})`;ctx.fillText('CLIQUE POUR REJOUER',W/2,285);
+    }
     ctx.restore();
 }
 
@@ -741,6 +997,7 @@ function checkCollisions() {
                 const bonus = 8 * Math.min(combo, 5);
                 closeCallBonus += bonus;
                 addFloatingText('FRÔLÉ +' + bonus, segs[0].x, segs[0].y - 24, C.gold);
+                spawnBurst(segs[0].x, segs[0].y, 8, 45);
                 sndCloseCall();
             }
         }
@@ -758,7 +1015,8 @@ function checkCollisions() {
 //  TICK
 // ============================================================
 function tick() {
-    if (gameState === 'dead') { frameCount++; return; }
+    if (gameState === 'dead') { frameCount++; deadSince++; if (hitFlash > 0) hitFlash--; return; }
+    if (gameState === 'menu') { frameCount++; return; }
     if (gameState !== 'playing') return;
     frameCount++;
 
@@ -777,26 +1035,43 @@ function tick() {
         boostMeter = Math.min(100, boostMeter + BOOST_REGEN);
     }
     distance += gameSpeed;
+    // Points de distance au multiplicateur COURANT (dépend de l'épice déjà
+    // ramassée à cet instant) — grandir tôt dans la course rapporte plus
+    // longtemps, exactement le pari risque/récompense visé.
+    distanceScore += (gameSpeed / 8) * spiceMultiplier();
 
     if (comboTimer > 0) comboTimer--; else combo = 0;
+    if (atmosphereFlash > 0) atmosphereFlash--;
 
     // Milestones
     const dm = Math.floor(distance / 10), nextMs = (milestone + 1) * 500;
-    if (dm >= nextMs) { milestone++; sndMilestone(); addFloatingText(nextMs + ' m !', W/2, H/2-30, C.gold); }
+    if (dm >= nextMs) {
+        milestone++; sndMilestone(); atmosphereFlash = 42;
+        addFloatingText(nextMs + ' m !', W/2, H/2-30, C.gold);
+        spawnBurst(W/2, H/2, 34, 36);
+    }
 
-    // Worm head suit la cible avec lissage
+    // La tête suit la cible avec lissage — c'est la SEULE source de
+    // mouvement ; tout le reste du corps se contente de rejouer son
+    // historique (cf. bloc segments plus bas), aucun ressort séparé.
     worm.headY += (targetY - worm.headY) * HEAD_SMOOTH;
     worm.headY = Math.max(MARGIN_TOP + WORM_HEAD_R, Math.min(H - MARGIN_BOT - WORM_HEAD_R, worm.headY));
     worm.segs[0].y = worm.headY;
-
-    // Le corps garde un décalage X fixe derrière la tête (comme le reste du
-    // décor qui défile) et relit le Y de la tête à i*WORM_SPACING de
-    // distance parcourue en arrière — donc l'ondulation suit le tracé réel
-    // sans jamais se tasser en colonne.
     pushTrail(distance, worm.segs[0].y);
+
+    // L'inclinaison de la tête et de chaque plaque du corps n'est PLUS
+    // calculée ici : drawWorm() la recalcule chaque frame via segAngle()
+    // (Math.atan2 exact entre voisins), directement à partir de worm.segs.
+    // Un seul endroit qui décide de l'orientation visuelle, jamais deux
+    // systèmes qui se contredisent.
+
+    // Chaque anneau relit DIRECTEMENT le Y de la tête d'il y a i*WORM_SPACING
+    // de distance parcourue — reconstruction fidèle de l'ondulation réelle,
+    // plus une micro-vague de vie quand le ver est presque immobile. Aucun
+    // amortissement/écrêtage supplémentaire ici (cf. note plus haut).
     for (let i = 1; i < worm.segs.length; i++) {
         worm.segs[i].x = worm.segs[0].x - i * WORM_SPACING;
-        worm.segs[i].y = yAtTravelDistance(distance - i * WORM_SPACING) + Math.sin(frameCount * 0.06 + i * 0.5) * 0.8;
+        worm.segs[i].y = yAtTravelDistance(distance - i * WORM_SPACING) + Math.sin(frameCount * 0.06 + i * 0.5) * WORM_WAVE_AMPLITUDE;
     }
 
     // Invincibilité
@@ -826,6 +1101,7 @@ function tick() {
             const dx = sp.x - hx, dy = sp.y - hy;
             if (dx*dx + dy*dy < 500) {
                 sp.collected = true; spiceCount++; sndSpice();
+                spawnBurst(sp.x, sp.y, 16, 38);
                 addFloatingText('+1', sp.x, sp.y - 10, C.spice);
                 maybeGrowWorm();
             }
@@ -838,12 +1114,16 @@ function tick() {
         const tail = worm.segs[worm.segs.length - 1];
         spawnSand(tail.x, tail.y, boosting ? 3 : 1);
     }
+    // Gerbe de sable additionnelle juste sous la tête pendant le boost —
+    // le point d'action doit se sentir, pas seulement la queue.
+    if (boosting && frameCount % 3 === 0) spawnSand(hx - 6, hy + 10, 2);
     if (frameCount % 8 === 0) sndRumble();
 
     // Collision
     if (checkCollisions()) {
-        gameState = 'dead'; frameCount = 0; sndCrash();
+        gameState = 'dead'; frameCount = 0; deadSince = 0; hitFlash = 14; sndCrash();
         shakeTimer = 15; shakeIntensity = 8;
+        spawnBurst(worm.segs[0].x, worm.segs[0].y, 38, 12);
         finalScore = totalScore();
         if (finalScore > 0) {
             if (finalScore > bestScore) { bestScore = finalScore; localStorage.setItem('wormrider_best', String(finalScore)); }
@@ -867,10 +1147,13 @@ function draw() {
     for (const ob of obstacles) drawObstacle(ob);
     for (const sp of spiceItems) drawSpiceItem(sp);
     drawParticles();
+    drawSpeedEffects();
     if (gameState === 'playing' || gameState === 'dead') drawWorm();
+    if (gameState === 'menu') drawWorm();
+    drawPostFX();
     drawFloatingTexts();
     if (gameState === 'playing') drawHUD();
-    if (gameState === 'menu') { drawWorm(); drawMenu(); }
+    if (gameState === 'menu') drawMenu();
     if (gameState === 'dead') drawDead();
     ctx.restore();
 }
@@ -897,7 +1180,7 @@ function handleAction() {
         return;
     }
     if (gameState === 'dead') {
-        if (frameCount > 40) { gameState = 'menu'; reset(); }
+        if (deadSince > 40) { gameState = 'menu'; reset(); }
         return;
     }
 }
@@ -968,12 +1251,12 @@ async function fetchSecret() {
 }
 async function loadLeaderboard() {
     try {
-        const r = await fetch('scores_api.php?action=leaderboard&game=' + GAME_ID + '&limit=10', { credentials: 'same-origin' });
+        const r = await fetch('scores_api.php?action=leaderboard&game=' + GAME_ID + '&limit=10&scope=weekly', { credentials: 'same-origin' });
         const j = await r.json();
         if (!j.ok) return;
         const me = localStorage.getItem('user') || '';
         const ul = document.getElementById('lb-list');
-        if (!j.leaderboard.length) { ul.innerHTML = '<li style="color:#7c5e2a">Aucun score</li>'; return; }
+        if (!j.leaderboard.length) { ul.innerHTML = '<li style="color:#7c5e2a">Aucun score cette semaine</li>'; return; }
         ul.innerHTML = j.leaderboard.map(function(e, i) {
             var medals = ['\u{1F947}','\u{1F948}','\u{1F949}'];
             var rank = medals[i] || (i + 1);

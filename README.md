@@ -467,7 +467,10 @@ Créer une sortie épice **directement depuis Discord** et gérer les inscriptio
 ### Hub Jeux (`jeux/hub.html`)
 Mini-jeux de guilde entre membres, avec records et classements. Tuile dédiée dans le menu.
 - **5 mini-jeux** : Orni Flap, Sandstorm Memory, Spice Runner, Worm Rider, Muad'Dib Rescue.
-- **Scores** : sauvegarde automatique par joueur (`jeux/scores_api.php`, stockage JSON), classement par jeu.
+- **Scores** : sauvegarde automatique par joueur (`jeux/scores_api.php`), un score soumis alimente **deux classements en parallèle** : `jeux/data/scores.json` (**Hall of Fame**, all-time, jamais remis à zéro) et `jeux/data/scores_weekly.json` (**classement hebdomadaire**, semaine en cours). Anti-triche (hash + cooldown) tranché **une seule fois** sur le store all-time, pour ne pas pouvoir contourner le cooldown juste après un reset hebdo.
+- **Remise à zéro hebdomadaire** (2026-07-14) : `jeux/weekly_reset.php`, lancé par CRON **chaque mardi 5h**, sous prétexte lore qu'**une tempête de Coriolis vient de balayer Arrakis**. Calcule le champion de la semaine par jeu, poste l'annonce dans Discord (webhook `jeux/data/discord_webhook.txt`, même fichier que les records) avec **deux blocs séparés** (`fields` Discord) : « 🏆 Champions de la semaine » (frais, remis à zéro) et « 🏛️ Hall of Fame — le score à détrôner » (repère all-time, lecture seule de `scores.json`, jamais modifié par ce script — donne un objectif à viser plutôt qu'un classement froid). Archive l'état sortant dans `jeux/data/weekly_archive/<année>-W<semaine>.json` (jamais écrasé), puis vide `scores_weekly.json`. `--dry` pour tester sans rien écrire/poster.
+- **Notif Discord « meneur de la semaine »** (2026-07-14) : en plus du message all-time existant (record battu → embed doré), un **second message distinct** (embed bleu Discord, `notify_discord_weekly_record` dans `scores_api.php`) se déclenche quand un score dépasse le **meneur hebdomadaire** en cours — sans ça, personne ne sait qu'un défi de la semaine est en jeu et personne ne le relève (principe d'interaction demandé). Si le score bat **aussi** le record all-time, seul le message all-time part (pas de double post pour la même perf).
+- **Hub** (`hub.html`) : panneau classement avec bascule **🗓️ Cette semaine** (défaut) / **🏆 Hall of Fame**, note explicative avec compte à rebours avant le prochain reset. Les badges « record » sur les cartes de jeux restent **toujours all-time** (valeur de prestige stable). Le mini-classement **dans chaque jeu** (`orni_flap.html` etc., panneau « 🗓️ Cette semaine ») est lui aussi passé en **hebdomadaire** (`scope=weekly`) — sinon un nouveau joueur ne s'y voit jamais, écrasé par les scores historiques.
 - Chaque jeu est une page HTML autonome (`jeux/<jeu>.html`) protégée par `../auth-guard.js`.
 
 ---
@@ -645,6 +648,17 @@ chmod 775 avatars/ uploads/
 > **Purge des posts de sortie** (`discord_sortie_cleanup.php`) : ajouter un cron (utilisateur `dune`) — supprime le message Discord d'une sortie 4h après sa fin, tous types confondus y compris épice (données conservées). Tester d'abord avec `--dry`. **⚠ Jamais installé en prod à ce jour** (crontab vide, log absent — vérifié le 2026-07-04) : c'est la vraie raison pour laquelle rien ne s'est jamais auto-supprimé, le code lui-même n'a pas de bug de ce côté.
 > ```
 > */15 * * * * php /srv/dune-map/epice/discord_sortie_cleanup.php >> /home/dune/data/sortie_cleanup.log 2>&1
+> ```
+
+> [!IMPORTANT]
+> **Reset hebdomadaire du Hub Jeux** (`jeux/weekly_reset.php`) : ajouter un cron (utilisateur `dune`) — chaque mardi **05:00 UTC** (= 7h à Paris l'été, 6h l'hiver : le serveur tourne en UTC et on n'y touche pas, les resets carte/DD sont calés dessus), vide `jeux/data/scores_weekly.json` et poste l'annonce Discord (tempête de Coriolis). Tester d'abord avec `--dry`.
+> ```
+> 0 5 * * 2 php /srv/dune-map/jeux/weekly_reset.php >> /home/dune/data/weekly_reset.log 2>&1
+> ```
+> **Droits obligatoires** — `scores.json` ET `scores_weekly.json` doivent être en `664 dune:www-data` : le site (`www-data`) écrit les scores, le cron (`dune`) remet à zéro. Un fichier créé par PHP arrive en `644 www-data` → le cron ne peut plus le vider, et l'annonce Discord part quand même (panne silencieuse du 21/07/2026). Depuis, le script refuse de poster s'il ne peut pas écrire. Correction :
+> ```
+> sudo chown dune:www-data jeux/data/scores_weekly.json && sudo chmod 664 jeux/data/scores_weekly.json
+> sudo chmod g+s jeux/data     # les nouveaux fichiers héritent du groupe www-data
 > ```
 
 > [!IMPORTANT]

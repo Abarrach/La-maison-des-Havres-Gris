@@ -89,37 +89,45 @@ function sortie_type($stype): array { return SORTIE_TYPES[$stype] ?? SORTIE_TYPE
 
 // ============================================================
 //  1) VÉRIFICATION DE LA SIGNATURE
+//     — sautée si on est appelé via le dispatcher racine
+//       (discord_interactions.php a déjà vérifié une fois).
+//     — appliquée normalement si ce fichier est atteint en direct
+//       (rétrocompat : ancienne URL Discord toujours fonctionnelle
+//       tant qu'elle n'a pas été repointée).
 // ============================================================
-$raw       = file_get_contents('php://input');
-$signature = $_SERVER['HTTP_X_SIGNATURE_ED25519']   ?? '';
-$timestamp = $_SERVER['HTTP_X_SIGNATURE_TIMESTAMP'] ?? '';
+$raw = file_get_contents('php://input');
 
-// Trace inconditionnelle de toute requête reçue — sert à savoir si on arrive bien jusqu'ici
-// (utile pour diagnostiquer un échec qui ne produit aucune autre entrée de log).
-dlog('requête reçue : méthode=' . ($_SERVER['REQUEST_METHOD'] ?? '?') . ' longueur_body=' . strlen($raw) . ' sig=' . ($signature !== '' ? 'présente' : 'absente'));
+if (!defined('DUNE_INTERACTIONS_DISPATCHED')) {
+    $signature = $_SERVER['HTTP_X_SIGNATURE_ED25519']   ?? '';
+    $timestamp = $_SERVER['HTTP_X_SIGNATURE_TIMESTAMP'] ?? '';
 
-if (!function_exists('sodium_crypto_sign_verify_detached')) {
-    dlog('FATAL: extension sodium absente — signature non vérifiable');
-    http_response_code(500); echo 'sodium manquant'; exit;
-}
-if ($signature === '' || $timestamp === '') {
-    dlog('signature manquante (en-têtes X-Signature-Ed25519 / X-Signature-Timestamp absents)');
-    http_response_code(401); echo 'signature manquante'; exit;
-}
+    // Trace inconditionnelle de toute requête reçue — sert à savoir si on arrive bien jusqu'ici
+    // (utile pour diagnostiquer un échec qui ne produit aucune autre entrée de log).
+    dlog('requête reçue : méthode=' . ($_SERVER['REQUEST_METHOD'] ?? '?') . ' longueur_body=' . strlen($raw) . ' sig=' . ($signature !== '' ? 'présente' : 'absente'));
 
-$ok = false;
-try {
-    $ok = sodium_crypto_sign_verify_detached(
-        sodium_hex2bin($signature),
-        $timestamp . $raw,
-        sodium_hex2bin($CFG['public_key'])
-    );
-} catch (Throwable $e) {
-    dlog('Erreur vérif signature: ' . $e->getMessage());
-}
-if (!$ok) {
-    dlog('signature invalide (public_key configurée ? longueur=' . strlen((string)($CFG['public_key'] ?? '')) . ')');
-    http_response_code(401); echo 'signature invalide'; exit;
+    if (!function_exists('sodium_crypto_sign_verify_detached')) {
+        dlog('FATAL: extension sodium absente — signature non vérifiable');
+        http_response_code(500); echo 'sodium manquant'; exit;
+    }
+    if ($signature === '' || $timestamp === '') {
+        dlog('signature manquante (en-têtes X-Signature-Ed25519 / X-Signature-Timestamp absents)');
+        http_response_code(401); echo 'signature manquante'; exit;
+    }
+
+    $ok = false;
+    try {
+        $ok = sodium_crypto_sign_verify_detached(
+            sodium_hex2bin($signature),
+            $timestamp . $raw,
+            sodium_hex2bin($CFG['public_key'])
+        );
+    } catch (Throwable $e) {
+        dlog('Erreur vérif signature: ' . $e->getMessage());
+    }
+    if (!$ok) {
+        dlog('signature invalide (public_key configurée ? longueur=' . strlen((string)($CFG['public_key'] ?? '')) . ')');
+        http_response_code(401); echo 'signature invalide'; exit;
+    }
 }
 // ============================================================
 //  2) ROUTAGE DE L'INTERACTION

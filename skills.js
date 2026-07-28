@@ -635,6 +635,23 @@ async function loadRequests() {
         const r2=await fetch("bases.json?ts="+Date.now());
         if(r2.ok) allMapBases=await r2.json();
         renderRequestsTab();
+        // ?addImgs=<id> = lien envoyé par l'éphémère de /commande creer (Discord).
+        // On scrolle vers la carte + ouvre le file picker si l'utilisateur est bien le demandeur.
+        // On lit le param à chaque loadRequests (l'onglet peut être activé après le chargement initial).
+        const p=new URLSearchParams(location.search).get('addImgs');
+        if(p){
+            const el=document.getElementById('req-'+p);
+            if(el){
+                el.scrollIntoView({behavior:'smooth',block:'center'});
+                el.style.outline='2px solid #d4a23b'; el.style.outlineOffset='3px';
+                setTimeout(()=>{el.style.outline='';},2500);
+                const btn=el.querySelector('button[onclick^="addRequestImages"]');
+                if(btn){ setTimeout(()=>btn.click(),400); }
+                // On retire le param pour ne pas rouvrir le picker à chaque refresh.
+                const url=new URL(location.href); url.searchParams.delete('addImgs');
+                history.replaceState({},'',url.toString());
+            }
+        }
     }catch(e){console.error(e);}
 }
 
@@ -655,6 +672,7 @@ function renderRequestsTab() {
 function createReqCard(req) {
     const card=document.createElement('div');
     card.className=`req-card status-${req.status}`;
+    card.id=`req-${req.id}`; // ancre pour ?addImgs=<id> venant de Discord
 
     // Normalisation images : ancien format image (string) ou nouveau images (array)
     const imgs=Array.isArray(req.images)&&req.images.length ? req.images : (req.image?[req.image]:[]);
@@ -670,6 +688,11 @@ function createReqCard(req) {
 
     let actions=`<div class="req-actions">`;
     if(req.player===currentUserReq&&req.status!=='done') actions+=`<button class="btn-action" style="background:#a83b3b;color:#fff;padding:6px 10px;" onclick="deleteRequest('${req.id}')" title="Supprimer">🗑️</button>`;
+    // Bouton "Ajouter captures" : uniquement pour le demandeur, sur ses demandes actives, si <4 images.
+    // Utile principalement pour compléter une demande créée depuis Discord (/commande creer, pas d'upload possible dans le modal).
+    if(req.player===currentUserReq&&req.status!=='done'&&imgs.length<4){
+        actions+=`<button class="btn-action" style="background:#3b6fa8;color:#fff;padding:6px 10px;" onclick="addRequestImages('${req.id}')" title="Ajouter des captures">📸 +${4-imgs.length}</button>`;
+    }
     const hasBase=allMapBases.some(b=>b.user===req.player);
     actions+=hasBase?`<a href="map.html?focus=${encodeURIComponent(req.player)}" class="btn-action btn-map">🗺️ Voir Base</a>`:`<span class="btn-action" style="background:#333;color:#777;border:1px solid #444;cursor:help;" title="Pas de base renseignée">🚫 Pas de base</span>`;
     if(req.status!=='done'){
@@ -680,6 +703,27 @@ function createReqCard(req) {
 
     card.innerHTML=info+actions;return card;
 }
+
+// Ouvre un file picker pour compléter une demande existante avec des captures
+// (utilisé principalement pour finir une demande créée depuis Discord).
+window.addRequestImages = function(reqId) {
+    const inp=document.createElement('input');
+    inp.type='file'; inp.accept='image/jpeg,image/png,image/webp'; inp.multiple=true;
+    inp.onchange=async()=>{
+        const files=Array.from(inp.files||[]).slice(0,4);
+        if(!files.length) return;
+        const b64s=await Promise.all(files.map(f=>new Promise((res,rej)=>{
+            const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(f);
+        })));
+        try{
+            const rsp=await fetch("save.php",{method:"POST",headers:{"Content-Type":"application/json"},
+                body:JSON.stringify({action:"addImagesToRequete",id:reqId,user:currentUserReq,images:b64s})});
+            const d=await rsp.json();
+            if(d.ok) loadRequests(); else alert("Erreur : "+d.error);
+        }catch{alert("Erreur réseau.");}
+    };
+    inp.click();
+};
 
 // ================================================================
 // MODAL IMAGE HD

@@ -19,6 +19,17 @@ return [
     'bot_token'  => 'COLLE_TON_BOT_TOKEN_ICI',
     'guild_id'   => '', // ex : '123456789012345678' (Mode dev → clic droit serveur → Copier l'identifiant)
 
+    // Salon où le bot postera les demandes de fabrication (skills.html → tab Commandes).
+    // Renseigné = le site poste via le BOT (encart + boutons ✋/✅/↩️/🗑️ interactifs).
+    // Vide      = fallback sur l'ancien webhook (discord_webhook.txt), sans boutons.
+    // Clic droit sur le salon → Copier l'identifiant (mode dev activé).
+    'commandes_channel_id' => '', // ex : '1518329489862557919'
+
+    // URL de base du site (sans slash final), pour les liens envoyés depuis Discord
+    // (éphémère de /commande creer → "Ajouter des captures"). Utile pour distinguer
+    // prod (racine) et dev (/v2). Vide = fallback sur https://havresgris.ddns.net.
+    'site_url' => '', // ex prod : 'https://havresgris.ddns.net' — dev : 'https://havresgris.ddns.net/v2'
+
     // Bannière par DÉFAUT (image pleine largeur en bas de l'encart). URL publique HTTPS.
     // Utilisée si aucune bannière spécifique n'est définie pour le type ci-dessous.
     // Laisser vide pour ne pas afficher d'image.

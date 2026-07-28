@@ -270,6 +270,7 @@ switch ($action) {
             'status'          => 'pending',
             'crafterAssigned' => null,
             'discordMsgId'    => null,                      // ID du message Discord (pour suppression auto)
+            'discordMsgVia'   => null,                      // 'bot' ou 'webhook' — nécessaire pour router les édits/suppressions ultérieures
             'siteUrl'         => trim($data['siteUrl'] ?? '') // URL du lien (pour rééditer le message plus tard)
         ];
 
@@ -279,24 +280,31 @@ switch ($action) {
         //    Si l'écriture échoue, rien n'est posté sur Discord (pas de message orphelin).
         if (!writeJson($reqFile, $reqs)) jerr("write_error");
 
-        // 2) Envoi automatique sur Discord (silencieux si webhook non configuré).
+        // 2) Envoi automatique sur Discord (silencieux si Discord non configuré).
         //    L'URL du lien est fournie par le navigateur (gère /v2/, http/https, etc.).
+        //    discord_post_request renvoie ['id'=>..., 'via'=>'bot'|'webhook'] ou null.
         $siteUrl = $newReq['siteUrl'];
-        $msgId = discord_post_request($newReq, $siteUrl);
-        if ($msgId) {
-            // On mémorise l'ID du message pour pouvoir le supprimer plus tard
-            $reqs[0]['discordMsgId'] = $msgId;
+        $post    = discord_post_request($newReq, $siteUrl);
+        if ($post && !empty($post['id'])) {
+            $reqs[0]['discordMsgId']  = $post['id'];
+            $reqs[0]['discordMsgVia'] = $post['via'];
             writeJson($reqFile, $reqs); // best-effort : si ça rate, pas grave
         }
 
         $discordReason = $GLOBALS['discord_last_error'] ?? null;
         // Log debug serveur (lisible en SSH : tail -n 20 /chemin/v2/discord_debug.log)
-        if (!$msgId && $discordReason) {
+        if (!$post && $discordReason) {
             @file_put_contents(__DIR__ . '/discord_debug.log',
                 date('Y-m-d H:i:s') . " | " . $discordReason . "\n", FILE_APPEND);
         }
 
-        echo json_encode(['ok' => true, 'id' => $newReq['id'], 'discord' => (bool)$msgId, 'discordReason' => $discordReason]);
+        echo json_encode([
+            'ok'            => true,
+            'id'            => $newReq['id'],
+            'discord'       => (bool)$post,
+            'discordVia'    => $post['via'] ?? null,
+            'discordReason' => $discordReason,
+        ]);
         exit;
 
     case 'updateRequete':
@@ -349,6 +357,61 @@ switch ($action) {
         }
         exit;
 
+    case 'addImagesToRequete':
+        // Ajoute des captures à une demande existante (utilisé pour compléter les
+        // demandes créées depuis Discord via /commande creer — Discord n'autorise
+        // que du texte dans les modals). Réservé au demandeur ou à un admin.
+        $id     = $data['id']   ?? null;
+        $user   = trim($data['user'] ?? '');
+        $b64List = is_array($data['images'] ?? null) ? $data['images'] : [];
+        if (!$id || !$user) jerr("missing_data");
+        if (empty($b64List)) jerr("no_images");
+
+        $reqFile = __DIR__ . '/requetes.json';
+        $reqs = readJson($reqFile);
+
+        $idx = null;
+        foreach ($reqs as $i => $r) { if (($r['id'] ?? '') === $id) { $idx = $i; break; } }
+        if ($idx === null) jerr("requete_not_found");
+
+        $isAdmin = (($_SESSION['role'] ?? '') === 'admin');
+        if ($reqs[$idx]['player'] !== $user && !$isAdmin) jerr("not_authorized", 403);
+
+        // Total max 4 images (existantes + nouvelles). On refuse si dépassement.
+        $existing = is_array($reqs[$idx]['images'] ?? null) ? $reqs[$idx]['images'] : ($reqs[$idx]['image'] ? [$reqs[$idx]['image']] : []);
+        $room = 4 - count($existing);
+        if ($room <= 0) jerr("max_images_reached");
+        $b64List = array_slice($b64List, 0, $room);
+
+        // Création du dossier uploads si nécessaire
+        $uploadDir = __DIR__ . '/uploads/';
+        if (!is_dir($uploadDir)) { mkdir($uploadDir, 0777, true); @chmod($uploadDir, 0777); }
+
+        $newUrls = [];
+        foreach ($b64List as $b64) {
+            if (!$b64) continue;
+            if (!preg_match('/^data:image\/(\w+);base64,/', $b64, $m)) continue;
+            $ext = strtolower($m[1]);
+            if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) continue;
+            $bin = base64_decode(substr($b64, strpos($b64, ',') + 1));
+            $filename = uniqid('img_') . '.' . $ext;
+            if (file_put_contents($uploadDir . $filename, $bin)) $newUrls[] = 'uploads/' . $filename;
+        }
+        if (empty($newUrls)) jerr("no_valid_image");
+
+        $merged = array_merge($existing, $newUrls);
+        $reqs[$idx]['images'] = $merged;
+        $reqs[$idx]['image']  = $merged[0]; // legacy
+        if (!writeJson($reqFile, $reqs)) jerr("write_error");
+
+        // Réédite le message Discord pour afficher la vignette maintenant qu'il y en a une.
+        if (!empty($reqs[$idx]['discordMsgId'])) {
+            discord_edit_message($reqs[$idx]['discordMsgId'], $reqs[$idx], $reqs[$idx]['siteUrl'] ?? '');
+        }
+
+        echo json_encode(['ok' => true, 'images' => $merged]);
+        exit;
+
     case 'deleteRequete':
         $id   = $data['id']   ?? null;
         $user = trim($data['user'] ?? '');
@@ -367,8 +430,10 @@ switch ($action) {
         $newReqs = array_filter($reqs, fn($r) => $r['id'] !== $id);
         if (!writeJson($reqFile, array_values($newReqs))) jerr("write_error");
 
-        // On efface aussi le message Discord associé (silencieux si absent)
-        if (!empty($target['discordMsgId'])) discord_delete_message($target['discordMsgId']);
+        // On efface aussi le message Discord associé (silencieux si absent).
+        // On passe la demande pour que discord_delete_message route via bot ou webhook
+        // selon 'discordMsgVia' (les anciennes entrées sans ce champ tombent en webhook).
+        if (!empty($target['discordMsgId'])) discord_delete_message($target['discordMsgId'], $target);
 
         echo json_encode(['ok' => true]);
         exit;

@@ -133,7 +133,17 @@ const OSCILLATE_MIN_SCORE = 8;
 const OSCILLATE_CHANCE   = 0.4;
 const OSC_AMPLITUDE      = 26;
 const OSC_SPEED          = 0.02;
-const CLOSE_CALL_MARGIN  = 10;
+// Frôlement — DÉGAGEMENT mesuré depuis le BORD de la hitbox, pas depuis le centre de l'orni.
+// L'ancienne version comparait la marge à la distance CENTRE↔lèvre du tuyau, alors que la
+// collision, elle, se déclenche au bord (BIRD_HIT_HALF_H = 8.5 px plus loin). Résultat : la
+// bande réellement exploitable ne faisait que `10 - 8.5 = 1.5 px`, soit 1,8 % de la hauteur
+// de vol utile — et comme un coup d'aile déplace l'orni de 7,2 px en une frame, on la
+// franchissait sans jamais l'occuper. Le bonus n'était donc jamais tentable volontairement :
+// il ne tombait que par hasard, au sommet d'un arc où la vitesse verticale s'annule.
+// Exprimé en dégagement, la constante dit enfin ce qu'elle veut dire : « passé à moins de
+// N px du tuyau », et reste juste si la hitbox change un jour.
+const CLOSE_CALL_CLEARANCE = 12;  // ~14,5 % du vol utile récompensé, bande > déplacement/frame
+const CLOSE_CALL_REACH     = 10;  // fenêtre HORIZONTALE d'éligibilité autour du pilier
 const WORM_HAZARD_MIN_SCORE = 12; // avant ce score le ver reste un simple décor
 const SECTOR_LENGTH = 8;
 const WEATHER_WARNING_FRAMES = 90;
@@ -1562,9 +1572,15 @@ function tick() {
         // Frôlement : on a longé un bord du trou de très près sans le toucher
         if (!p.closeCalled && !p.scored) {
             const bx = BIRD_X + BIRD_W / 2, by = bird.y + BIRD_H / 2;
-            if (bx > p.x - CLOSE_CALL_MARGIN && bx < p.x + PIPE_W + CLOSE_CALL_MARGIN) {
-                const distTop = by - p.topH, distBot = (p.topH + GAP) - by;
-                if ((distTop > 0 && distTop < CLOSE_CALL_MARGIN) || (distBot > 0 && distBot < CLOSE_CALL_MARGIN)) {
+            if (bx > p.x - CLOSE_CALL_REACH && bx < p.x + PIPE_W + CLOSE_CALL_REACH) {
+                // Dégagement réel entre le BORD de la hitbox et la lèvre du tuyau — même
+                // référentiel que collides(), donc la bande annoncée est celle qu'on peut
+                // vraiment occuper (cf. commentaire sur CLOSE_CALL_CLEARANCE).
+                const clearTop = (by - BIRD_HIT_HALF_H) - p.topH;
+                const clearBot = (p.topH + GAP) - (by + BIRD_HIT_HALF_H);
+                const grazeTop = clearTop >= 0 && clearTop < CLOSE_CALL_CLEARANCE;
+                const grazeBot = clearBot >= 0 && clearBot < CLOSE_CALL_CLEARANCE;
+                if (grazeTop || grazeBot) {
                     p.closeCalled = true;
                     combo++; comboTimer = 90;
                     const gain = 2 * Math.min(combo, 5);
@@ -1577,7 +1593,7 @@ function tick() {
                     //  · texte flottant au point exact du passage, taille et couleur selon le combo
                     //  · trauma qui monte avec la série → les gros combos font vibrer l'écran
                     //  · étincelles éjectées le long du bord frôlé, dans le sens du frottement
-                    const edgeY = distTop > 0 && distTop < CLOSE_CALL_MARGIN ? p.topH : p.topH + GAP;
+                    const edgeY = grazeTop ? p.topH : p.topH + GAP;
                     const hot = Math.min(combo, 5) / 5;                    // 0 → 1 selon l'intensité de la série
                     addFloater(bx + 6, edgeY + (edgeY < by ? -14 : 20),
                         '+' + gain, hot > .6 ? '#ff9d3c' : '#ffd257', 14 + hot * 6);

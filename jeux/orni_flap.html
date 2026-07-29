@@ -231,19 +231,24 @@ const TRAUMA_MAX_OFFSET = 13;    // px de déplacement au trauma maximal
 const TRAUMA_MAX_ROT = 0.016;    // rad — une pointe de roulis vend mieux le choc qu'une translation seule
 function addTrauma(amount) { trauma = Math.min(1, trauma + amount); }
 
-// Barème calibré EN PIXELS, pas à l'intuition : l'amplitude vaut trauma² × 13, donc le carré
-// écrase brutalement les petites valeurs (0.15 de trauma ⇒ 0.3 px, soit rien du tout à l'écran).
-// Toute valeur sous ~0.30 est invisible et ne sert à rien. D'où ces paliers, du plus léger au
-// plus violent, chacun choisi pour l'amplitude qu'il produit réellement :
+// DOCTRINE : le tremblement d'écran DÉPLACE l'image, donc il dégrade la lecture de la
+// position. On ne s'autorise ce déplacement QUE lorsque la précision n'a plus d'importance.
+//
+// Première version : tout événement positif secouait l'écran, frôlement compris. Or un
+// frôlement se produit AU MOMENT où l'on enfile le trou, et la secousse durait 9 à 11 frames,
+// soit 33 à 43 % des 26 frames de traversée du pilier, pour 3 à 5 px de déplacement. Pire,
+// l'amplitude croissait avec le combo : chaque frôlement réussi rendait le suivant plus
+// difficile à placer. Le jus se mettait à combattre le jeu au lieu de l'habiller — c'est
+// exactement ce qu'il ne doit jamais faire (il s'ajoute par-dessus ce qui marche, il n'en
+// devient jamais un élément porteur).
+//
+// Les événements en plein vol reçoivent donc un retour NON DÉPLAÇANT : hitstop, étincelles,
+// texte flottant, pulse du combo, lèvre du tuyau qui s'illumine. Tout aussi présent, mais
+// l'image ne bouge pas d'un pixel tant qu'il faut piloter.
 const SHAKE = {
-    rattrapage: 0.30,   // ~1.2 px — on devine que ça passe juste
-    epice:      0.34,   // ~1.5 px — ponctuation discrète, l'événement est fréquent
-    frolement:  0.44,   // ~2.5 px — lisible sans gêner (monte à ~4.7 px en grosse série)
-    contrat:    0.46,   // ~2.7 px
-    bouclier:   0.48,   // ~3.0 px — on ramasse un objet rare
-    mission:    0.62,   // ~5.0 px — plus gros gain du jeu (+8)
-    degat:      0.72,   // ~6.7 px — on vient de perdre son bouclier
-    crash:      1.00,   // 13 px   — événement terminal, plafond assumé
+    // — Précision suspendue : là, on peut secouer.
+    degat: 0.72,   // ~6.7 px — bouclier perdu, suivi de 25 frames d'invulnérabilité
+    crash: 1.00,   // 13 px   — la partie est finie, plus rien à piloter
 };
 
 // Hitstop : on gèle le monde quelques frames sur un impact. C'est ce qui donne du POIDS —
@@ -402,7 +407,7 @@ function advanceMission(type, amount = 1) {
         sndMission();
         emitBurst(W / 2, 145, 28, 118);
         // Plus gros gain unitaire du jeu (+8) : il lui fallait une ponctuation à la hauteur.
-        addHitstop(6); addTrauma(SHAKE.mission); addFlash(0.42, 130);
+        addHitstop(5); addFlash(0.42, 130);   // pas de secousse : on est encore en train de piloter
     }
 }
 
@@ -733,6 +738,31 @@ function drawPipe(pipe) {
 
     drawPillar(pipe.x, 0, topH, true);
     drawPillar(pipe.x, botY, H - botY, false);
+
+    // Lèvre illuminée après un frôlement : remplace le tremblement d'écran, qui gênait
+    // la lecture au pire moment (cf. doctrine sur SHAKE). L'effet est local, marque
+    // l'endroit exact de l'exploit, et s'intensifie avec la série sans jamais bouger l'image.
+    if (pipe.grazeGlow > 0) {
+        const t = pipe.grazeGlow / 16;
+        const hot = pipe.grazeHot || 0;
+        const lipY = pipe.grazeTop ? topH : botY;
+        ctx.save();
+        ctx.globalCompositeOperation = 'screen';
+        const halo = ctx.createLinearGradient(0, lipY - 26, 0, lipY + 26);
+        const col = hot > .6 ? '255,170,70' : '255,214,110';
+        halo.addColorStop(0,   `rgba(${col},0)`);
+        halo.addColorStop(0.5, `rgba(${col},${0.5 * t})`);
+        halo.addColorStop(1,   `rgba(${col},0)`);
+        ctx.fillStyle = halo;
+        ctx.fillRect(pipe.x - 5, lipY - 26, w + 10, 52);
+        ctx.strokeStyle = `rgba(255,238,190,${0.9 * t})`;
+        ctx.lineWidth = 2 + hot * 1.6;
+        ctx.beginPath();
+        ctx.moveTo(pipe.x - 3, lipY);
+        ctx.lineTo(pipe.x + w + 3, lipY);
+        ctx.stroke();
+        ctx.restore();
+    }
 }
 
 // ──────────────────────────────────────────────
@@ -1500,7 +1530,6 @@ function flap() {
     bird.vy = FLAP_FORCE * flapMultiplier;
     bird.wingPhase = 0;
     addSquash(1);                                  // étirement vertical : l'appareil « se tend » vers le haut
-    if (impactRatio > 0.45) addTrauma(SHAKE.rattrapage * impactRatio); // rattrapage in extremis
     emitSand(BIRD_X + BIRD_W / 2 - 12, bird.y + BIRD_H / 2 + 4, 3); // souffle sous l'appareil
     sndFlap();
 }
@@ -1559,6 +1588,7 @@ function tick() {
     for (let i = pipes.length - 1; i >= 0; i--) {
         const p = pipes[i];
         p.x -= speed;
+        if (p.grazeGlow > 0) p.grazeGlow--;
         if (p.oscillates) {
             p.oscPhase += OSC_SPEED;
             p.topH = Math.max(minTop, Math.min(maxTop, p.baseTop + Math.sin(p.oscPhase) * OSC_AMPLITUDE));
@@ -1612,7 +1642,13 @@ function tick() {
                     const hot = Math.min(combo, 5) / 5;                    // 0 → 1 selon l'intensité de la série
                     addFloater(bx + 6, edgeY + (edgeY < by ? -14 : 20),
                         '+' + gain, hot > .6 ? '#ff9d3c' : '#ffd257', 14 + hot * 6);
-                    addTrauma(SHAKE.frolement + hot * 0.18);   // ~2.5 px seul, ~4.7 px en grosse série
+                    // AUCUNE secousse ici : on est en plein passage du pilier, l'image doit
+                    // rester parfaitement lisible. À la place, la lèvre frôlée s'illumine —
+                    // ça pointe exactement l'endroit où l'exploit a eu lieu, ça récompense
+                    // à la hauteur du combo, et ça ne déplace pas un seul pixel.
+                    p.grazeGlow = 16;
+                    p.grazeTop  = grazeTop;
+                    p.grazeHot  = hot;
                     comboFlash = 12;
                     for (let k = 0; k < 6 + Math.round(hot * 8); k++) {
                         particles.push({
@@ -1642,7 +1678,7 @@ function tick() {
                 // Dosage volontairement faible : un ramassage se produit souvent, s'il
                 // secouait autant qu'un crash le jeu deviendrait épuisant. 2 frames de gel
                 // suffisent à « accrocher » la collecte.
-                addHitstop(2); addTrauma(SHAKE.epice);
+                addHitstop(2);                    // gel seul : pas de déplacement en plein vol
                 addFloater(sp.x, sp.y - 12, '+3', '#ffc14d', 13);
             }
         }
@@ -1656,7 +1692,7 @@ function tick() {
             const pickup=(dx*dx)/(COLLECTIBLE_PICKUP_X*COLLECTIBLE_PICKUP_X)+(dy*dy)/(COLLECTIBLE_PICKUP_Y*COLLECTIBLE_PICKUP_Y);
             if (pickup < 1) {
                 pu.collected = true; shielded = true; emitBurst(pu.x, pu.y, 18, 195); sndShield();
-                addHitstop(3); addTrauma(SHAKE.bouclier); addFlash(0.28, 200);
+                addHitstop(3); addFlash(0.28, 200);
                 addFloater(pu.x, pu.y - 14, 'BOUCLIER', '#7fd4ff', 14);
             }
         }
@@ -1671,7 +1707,7 @@ function tick() {
             chooseMission();
             emitBurst(item.x, item.y, 26, 24);
             sndContract();
-            addHitstop(3); addTrauma(SHAKE.contrat);
+            addHitstop(3);
             addFloater(item.x, item.y - 16, 'CONTRAT', '#e4c16d', 14);
             continue;
         }

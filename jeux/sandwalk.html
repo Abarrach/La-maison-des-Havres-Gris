@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>La Marche du Désert — Hub Jeux</title>
+<link rel="stylesheet" href="../style.css">
+<style>
+:root {
+    --bg: #0a0402;
+    --gold: #cda434;
+    --text: #f5deb3;
+    --muted: #7c5e2a;
+    --danger: #c4553c;
+    --calm: #4a9a5a;
+}
+html, body {
+    overflow: hidden; height: 100%; margin: 0;
+    touch-action: none; -webkit-tap-highlight-color: transparent;
+    user-select: none; -webkit-user-select: none;
+}
+body {
+    background: var(--bg); color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    display: flex; flex-direction: column; align-items: center;
+}
+.topbar {
+    width: 100%; display: flex; align-items: center; gap: 14px;
+    padding: 10px 16px; box-sizing: border-box;
+    border-bottom: 1px solid #2a1c0c;
+}
+.topbar a { color: var(--muted); text-decoration: none; font-size: .8rem; letter-spacing: .1em; text-transform: uppercase; }
+.topbar a:hover { color: var(--gold); }
+.topbar .title { font-family: 'Cinzel', Georgia, serif; color: var(--gold); font-size: .95rem; letter-spacing: .22em; text-transform: uppercase; }
+
+#stage { position: relative; width: 100%; max-width: 900px; flex: 1; display: grid; place-items: center; }
+canvas { display: block; background: #0a0503; border: 1px solid #2a1c0c; max-width: 100%; height: auto; touch-action: none; }
+
+/* ---- HUD ---- */
+#hud {
+    position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: calc(100% - 24px); max-width: 860px;
+    display: flex; gap: 10px; flex-wrap: wrap; justify-content: space-between;
+    pointer-events: none; font-size: .74rem;
+}
+.hud-cell { background: rgba(8,5,2,.72); border: 1px solid #33230f; border-radius: 2px; padding: 5px 10px; }
+.hud-cell b { display: block; font-size: .58rem; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.hud-cell span { font-size: 1rem; font-weight: 700; color: var(--gold); }
+#combo-cell span { color: #ff9d3c; }
+
+/* ---- Overlays ---- */
+.overlay {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    background: rgba(6,3,1,.9); backdrop-filter: blur(3px); text-align: center; padding: 20px;
+}
+.overlay.hidden { display: none; }
+.panel { max-width: 470px; }
+.panel h1 { font-family: 'Cinzel', Georgia, serif; color: var(--gold); font-size: 1.6rem; letter-spacing: .14em; margin: 0 0 4px; text-transform: uppercase; }
+.panel .kicker { font-size: .62rem; letter-spacing: .3em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+.panel p { font-size: .86rem; line-height: 1.65; color: #d9c9a4; margin: 0 0 14px; }
+.panel .rule { display: flex; align-items: center; gap: 10px; text-align: left; font-size: .82rem; margin: 9px 0; color: #d9c9a4; }
+.panel .rule i { flex: 0 0 22px; font-style: normal; font-size: 1.1rem; text-align: center; }
+.btn {
+    background: linear-gradient(#e2bb56, #b8862a); color: #22160a; border: none;
+    padding: 11px 26px; border-radius: 2px; font-weight: 800; font-size: .88rem;
+    letter-spacing: .1em; text-transform: uppercase; cursor: pointer; font-family: inherit;
+}
+.btn:hover { filter: brightness(1.09); }
+.btn.ghost { background: transparent; color: var(--muted); border: 1px solid #3a2a12; }
+.btn.ghost:hover { color: var(--gold); border-color: var(--gold); }
+.big-score { font-family: 'Cinzel', Georgia, serif; font-size: 2.6rem; color: var(--gold); line-height: 1; margin: 6px 0; }
+.stat-line { font-size: .76rem; color: var(--muted); margin-bottom: 16px; }
+.judge-recap { display: flex; gap: 12px; justify-content: center; margin: 12px 0 4px; font-size: .72rem; }
+.judge-recap div b { display: block; font-size: 1.05rem; }
+
+/* ---- Classement ---- */
+#lb { width: 100%; max-width: 900px; padding: 14px 16px 26px; box-sizing: border-box; }
+#lb h2 { font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; font-weight: 700; }
+#lb ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+#lb li { display: flex; gap: 10px; font-size: .8rem; padding: 5px 9px; background: #120b04; border: 1px solid #241806; border-radius: 2px; }
+#lb li .rk { color: var(--muted); min-width: 20px; }
+#lb li .nm { flex: 1; color: var(--text); }
+#lb li .sc { color: var(--gold); font-weight: 700; }
+#lb li.me { border-color: var(--gold); }
+</style>
+</head>
+<body>
+<script src="../auth-guard.js"></script>
+
+<div class="topbar">
+    <a href="hub.html">← Hub Jeux</a>
+    <span class="title">La Marche du Désert</span>
+</div>
+
+<div id="stage">
+    <canvas id="game" width="900" height="500"></canvas>
+
+    <div id="hud">
+        <div class="hud-cell"><b>Score</b><span id="hud-score">0</span></div>
+        <div class="hud-cell"><b>Combo</b><span id="hud-combo">×1</span></div>
+        <div class="hud-cell"><b>Étape</b><span id="hud-stage">1</span></div>
+        <div class="hud-cell"><b>Précision</b><span id="hud-acc">—</span></div>
+    </div>
+
+    <!-- MENU -->
+    <div class="overlay" id="ov-menu">
+        <div class="panel">
+            <div class="kicker">Épreuve fremen</div>
+            <h1>La Marche du Désert</h1>
+            <p>Marcher au pas régulier, c'est appeler Shai-Hulud. Suis la <strong>marche irrégulière</strong> : un appui à chaque empreinte, jamais deux intervalles semblables.</p>
+            <div class="rule"><i>⬤</i><span>Appuie sur <strong>Espace</strong> (ou touche l'écran) quand l'empreinte atteint le repère.</span></div>
+            <div class="rule"><i>👁</i><span>Un pas juste endort le ver. Un pas manqué — ou un appui dans le vide — l'éveille.</span></div>
+            <div class="rule"><i>🪨</i><span>S'il s'éveille tout à fait, cours au rocher : martèle pour t'y hisser.</span></div>
+            <button class="btn" id="btn-start">Entrer dans le désert</button>
+        </div>
+    </div>
+
+    <!-- FIN D'ÉTAPE -->
+    <div class="overlay hidden" id="ov-stage">
+        <div class="panel">
+            <div class="kicker">Dune franchie</div>
+            <h1 id="stage-title">Étape 1 franchie</h1>
+            <div class="big-score" id="stage-score">0</div>
+            <div class="stat-line" id="stage-stats"></div>
+            <button class="btn" id="btn-next">Poursuivre</button>
+        </div>
+    </div>
+
+    <!-- GAME OVER -->
+    <div class="overlay hidden" id="ov-over">
+        <div class="panel">
+            <div class="kicker" id="over-kicker">Le sable a parlé</div>
+            <h1 id="over-title">Shai-Hulud t'a trouvé</h1>
+            <div class="big-score" id="over-score">0</div>
+            <div class="stat-line" id="over-stats"></div>
+            <div class="judge-recap" id="over-recap"></div>
+            <button class="btn" id="btn-retry">Repartir</button>
+            <button class="btn ghost" id="btn-hub" onclick="location.href='hub.html'">Hub</button>
+        </div>
+    </div>
+</div>
+
+<div id="lb">
+    <h2>🗓️ Cette semaine</h2>
+    <ol id="lb-list"><li><span class="nm">Chargement…</span></li></ol>
+</div>
+
+<script>
+(function () {
+'use strict';
+
+// ══════════════════════════════════════════════════════════════
+//  LA MARCHE DU DÉSERT
+//  Jeu de rythme à UNE touche. Le thème EST la mécanique : la partition
+//  est volontairement irrégulière, parce que marcher en cadence attire le ver.
+//
+//  DÉCISION TECHNIQUE CENTRALE — le jugement se fait sur l'HORODATAGE RÉEL de
+//  l'événement d'entrée (performance.now()), jamais sur un numéro de frame.
+//  À 60 fps une frame vaut 16,7 ms : juger par frame quantifierait la précision
+//  à 16,7 ms et rendrait toute fenêtre fine littéralement inatteignable (c'est
+//  exactement le défaut qui rendait le frôlement d'Orni Flap impossible à viser).
+// ══════════════════════════════════════════════════════════════
+
+const GAME_ID = 'sandwalk';
+const cv = document.getElementById('game');
+const ctx = cv.getContext('2d');
+const W = cv.width, H = cv.height;
+
+// ---- Fenêtres de jugement (ms, de part et d'autre de l'empreinte) -----------
+// Références du genre : PARFAIT ±15-30 ms, GREAT ±30-40, GOOD ±50-70, OK ±100.
+// On est ici volontairement ~3× plus permissif : c'est un jeu de guilde joué au
+// clavier ou au doigt, pas une borne d'arcade. Chaque palier reste > 16,7 ms
+// (une frame) pour qu'il soit atteignable quel que soit le hasard d'affichage.
+const JUDGE = [
+    { key: 'parfait', label: 'PARFAIT', window: 45,  points: 100, color: '#ffd257', attention: -7 },
+    { key: 'bon',     label: 'BON',     window: 95,  points: 55,  color: '#8ee6a8', attention: -3 },
+    { key: 'juste',   label: 'JUSTE',   window: 150, points: 20,  color: '#e0a828', attention: +2 },
+];
+const MISS_WINDOW = JUDGE[JUDGE.length - 1].window;  // au-delà : pas manqué
+const MISS_ATTENTION = 14;      // laisser passer une empreinte réveille franchement le ver
+const FALSE_STEP_ATTENTION = 9; // appuyer dans le vide aussi (anti-martèlement)
+
+// ---- Défilement / lecture --------------------------------------------------
+const TARGET_X = 210;           // abscisse du repère, sous les pieds du marcheur
+const LEAD_MS = 1750;           // temps d'anticipation visible à l'écran
+const PX_PER_MS_BASE = (W - TARGET_X - 40) / LEAD_MS;
+
+// ---- Étapes ----------------------------------------------------------------
+// Chaque étape est plus rapide (intervalles plus courts) et plus irrégulière.
+// `notes` monte doucement : une étape doit rester une bouchée, pas un marathon.
+const STAGES = [
+    { notes: 16, minGap: 620, maxGap: 1050, spread: 0.30, speed: 1.00 },
+    { notes: 20, minGap: 560, maxGap: 980,  spread: 0.38, speed: 1.06 },
+    { notes: 24, minGap: 500, maxGap: 900,  spread: 0.46, speed: 1.12 },
+    { notes: 28, minGap: 450, maxGap: 820,  spread: 0.54, speed: 1.20 },
+    { notes: 32, minGap: 400, maxGap: 750,  spread: 0.62, speed: 1.28 },
+];
+function stageConfig(i) {
+    if (i < STAGES.length) return STAGES[i];
+    // Au-delà : on continue de resserrer, mais avec un plancher — sinon la
+    // partition devient plus rapide que le temps de réaction humain (~250 ms).
+    const over = i - STAGES.length + 1;
+    return {
+        notes: 32 + over * 2,
+        minGap: Math.max(300, 400 - over * 18),
+        maxGap: Math.max(520, 750 - over * 26),
+        spread: Math.min(0.78, 0.62 + over * 0.04),
+        speed: Math.min(1.75, 1.28 + over * 0.06),
+    };
+}
+
+// ---- Attention du ver ------------------------------------------------------
+const ATTENTION_MAX = 100;
+const ATTENTION_DRIFT = -0.22;  // par frame : le désert s'apaise lentement de lui-même
+const ALERT_MASH_NEEDED = 14;   // appuis pour se hisser sur le rocher
+const ALERT_MS = 3600;          // temps accordé pour y parvenir
+
+// ---- État ------------------------------------------------------------------
+let phase = 'menu';    // menu | marche | alerte | etape | over
+let notes = [];
+let stageIndex = 0, score = 0, combo = 0, bestCombo = 0;
+let attention = 0;
+let tally = { parfait: 0, bon: 0, juste: 0, manque: 0, faux: 0 };
+let stageStartScore = 0;
+let songStart = 0;     // performance.now() de référence de l'étape
+let lastFrame = 0;
+let alertUntil = 0, mashCount = 0, alertsSurvived = 0;
+let popups = [];       // retours de jugement flottants
+let dust = [];         // particules de sable
+let walkPhase = 0, walkKick = 0;
+let shake = 0;         // uniquement en phase d'alerte (là, la précision ne compte plus)
+let startTime = 0, scoreSecret = '';
+
+// ══════════════════════════════════════════════════════════════
+//  AUDIO — percussions générées, aucune piste à synchroniser.
+//  Choix assumé : sans bande-son, il n'y a pas de dérive audio/vidéo à corriger,
+//  et thématiquement on écoute le désert, on ne danse pas sur une musique.
+// ══════════════════════════════════════════════════════════════
+let actx = null;
+function audio() {
+    if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
+    if (actx.state === 'suspended') actx.resume();
+    return actx;
+}
+function tone(freq, dur, vol, type, freqEnd) {
+    const a = audio(); if (!a) return;
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = type || 'sine';
+    o.frequency.setValueAtTime(freq, a.currentTime);
+    if (freqEnd) o.frequency.exponentialRampToValueAtTime(Math.max(1, freqEnd), a.currentTime + dur);
+    g.gain.setValueAtTime(vol, a.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + dur);
+    o.connect(g); g.connect(a.destination);
+    o.start(); o.stop(a.currentTime + dur);
+}
+function noise(dur, vol, filterHz) {
+    const a = audio(); if (!a) return;
+    const n = Math.floor(a.sampleRate * dur);
+    const buf = a.createBuffer(1, n, a.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+    const src = a.createBufferSource(); src.buffer = buf;
+    const f = a.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = filterHz || 1200;
+    const g = a.createGain(); g.gain.value = vol;
+    src.connect(f); f.connect(g); g.connect(a.destination);
+    src.start();
+}
+const sndStep    = () => { noise(0.09, 0.16, 900); tone(150, 0.07, 0.05, 'sine', 90); };
+const sndPerfect = () => { sndStep(); tone(880, 0.07, 0.05, 'triangle'); setTimeout(() => tone(1320, 0.06, 0.035, 'triangle'), 35); };
+const sndMiss    = () => { tone(150, 0.22, 0.09, 'sawtooth', 60); noise(0.18, 0.1, 400); };
+const sndFalse   = () => tone(110, 0.14, 0.07, 'square', 70);
+const sndAlert   = () => { for (let i = 0; i < 3; i++) setTimeout(() => tone(70, 0.3, 0.12, 'sawtooth', 45), i * 190); };
+const sndMash    = () => { noise(0.05, 0.12, 1600); tone(430, 0.05, 0.04, 'square'); };
+const sndSaved   = () => [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => tone(f, 0.16, 0.07, 'triangle'), i * 85));
+const sndDoom    = () => { tone(90, 1.1, 0.16, 'sawtooth', 32); noise(1.0, 0.16, 320); };
+const sndStage   = () => [440, 587, 740].forEach((f, i) => setTimeout(() => tone(f, 0.18, 0.06), i * 95));
+
+// ══════════════════════════════════════════════════════════════
+//  GÉNÉRATION DE LA PARTITION
+//  Règle fremen : jamais deux intervalles semblables de suite. On l'impose
+//  vraiment (écart minimal entre deux gaps consécutifs) au lieu de compter sur
+//  le hasard — sinon le générateur produit régulièrement des passages en
+//  cadence, qui sont à la fois faux thématiquement et étrangement plus faciles.
+// ══════════════════════════════════════════════════════════════
+function buildChart(cfg) {
+    const out = [];
+    let t = 1500;                       // respiration avant la première empreinte
+    let prevGap = null;
+    for (let i = 0; i < cfg.notes; i++) {
+        let gap, tries = 0;
+        do {
+            gap = cfg.minGap + Math.random() * (cfg.maxGap - cfg.minGap);
+            tries++;
+        } while (prevGap !== null && Math.abs(gap - prevGap) < (cfg.maxGap - cfg.minGap) * cfg.spread && tries < 40);
+        out.push({ time: t, judged: false, result: null, foot: i % 2 ? 'd' : 'g' });
+        t += gap;
+        prevGap = gap;
+    }
+    return out;
+}
+
+// ══════════════════════════════════════════════════════════════
+//  CYCLE DE JEU
+// ══════════════════════════════════════════════════════════════
+function show(id) { document.getElementById(id).classList.remove('hidden'); }
+function hide(id) { document.getElementById(id).classList.add('hidden'); }
+
+function startRun() {
+    stageIndex = 0; score = 0; combo = 0; bestCombo = 0;
+    tally = { parfait: 0, bon: 0, juste: 0, manque: 0, faux: 0 };
+    alertsSurvived = 0;
+    startTime = Date.now();
+    fetchSecret();
+    hide('ov-menu'); hide('ov-over'); hide('ov-stage');
+    startStage();
+}
+
+function startStage() {
+    const cfg = stageConfig(stageIndex);
+    notes = buildChart(cfg);
+    // L'attention repart à zéro à chaque étape (on a franchi la dune), mais la SÉRIE
+    // se conserve volontairement : c'est ce qui rend le multiplicateur ×5 atteignable,
+    // la première étape ne comptant que 16 empreintes.
+    attention = 0;
+    popups = []; dust = []; shake = 0;
+    stageStartScore = score;
+    phase = 'marche';
+    songStart = performance.now();
+    hide('ov-stage');
+    updateHUD();
+}
+
+function endStage() {
+    phase = 'etape';
+    sndStage();
+    const gained = score - stageStartScore;
+    document.getElementById('stage-title').textContent = `Étape ${stageIndex + 1} franchie`;
+    document.getElementById('stage-score').textContent = gained;
+    document.getElementById('stage-stats').textContent =
+        `Précision ${accuracy()}%  ·  meilleure série ×${bestCombo}  ·  total ${score}`;
+    show('ov-stage');
+}
+
+function nextStage() { stageIndex++; startStage(); }
+
+function gameOver(caught) {
+    phase = 'over';
+    if (caught) sndDoom(); else sndSaved();
+    document.getElementById('over-kicker').textContent = caught ? 'Le sable a parlé' : 'Marche interrompue';
+    document.getElementById('over-title').textContent = caught ? 'Shai-Hulud t\'a trouvé' : 'Tu quittes le désert';
+    document.getElementById('over-score').textContent = score;
+    document.getElementById('over-stats').textContent =
+        `Étape ${stageIndex + 1}  ·  précision ${accuracy()}%  ·  série ×${bestCombo}  ·  ${alertsSurvived} éveil(s) déjoué(s)`;
+    document.getElementById('over-recap').innerHTML =
+        `<div style="color:#ffd257"><b>${tally.parfait}</b>parfaits</div>
+         <div style="color:#8ee6a8"><b>${tally.bon}</b>bons</div>
+         <div style="color:#e0a828"><b>${tally.juste}</b>justes</div>
+         <div style="color:#c4553c"><b>${tally.manque + tally.faux}</b>fautes</div>`;
+    show('ov-over');
+    if (score > 0) submitScore(score);
+}
+
+function accuracy() {
+    const good = tally.parfait * 1 + tally.bon * 0.65 + tally.juste * 0.28;
+    const total = tally.parfait + tally.bon + tally.juste + tally.manque + tally.faux;
+    return total ? Math.round(good / total * 100) : 0;
+}
+
+function updateHUD() {
+    document.getElementById('hud-score').textContent = score;
+    document.getElementById('hud-combo').textContent = '×' + comboMult();
+    document.getElementById('hud-stage').textContent = stageIndex + 1;
+    document.getElementById('hud-acc').textContent = (tally.parfait + tally.bon + tally.juste + tally.manque) ? accuracy() + '%' : '—';
+}
+function comboMult() { return Math.min(5, 1 + Math.floor(combo / 6)); }
+
+// ══════════════════════════════════════════════════════════════
+//  ENTRÉE — jugée sur l'horodatage de l'ÉVÉNEMENT, pas sur la frame courante
+// ══════════════════════════════════════════════════════════════
+function press(eventTime) {
+    if (phase === 'menu' || phase === 'over' || phase === 'etape') return;
+    walkKick = 1;
+
+    if (phase === 'alerte') {
+        mashCount++;
+        sndMash();
+        spawnDust(TARGET_X, H - 96, 4);
+        if (mashCount >= ALERT_MASH_NEEDED) {
+            alertsSurvived++;
+            score += 250 * comboMult();
+            popup('SAUVÉ', '#8ee6a8', 26);
+            attention = 26;                  // on redescend, sans repartir de zéro
+            phase = 'marche';
+            // On décale la partition : le temps passé en alerte ne doit pas
+            // faire défiler (et donc rater) les empreintes restantes.
+            const lost = performance.now() - (alertUntil - ALERT_MS);
+            notes.forEach(n => { if (!n.judged) n.time += lost; });
+            songStart += 0;
+            sndSaved();
+            updateHUD();
+        }
+        return;
+    }
+
+    // Phase de marche : on cherche l'empreinte la plus proche dans le temps.
+    const t = eventTime - songStart;
+    let best = null, bestDelta = Infinity;
+    for (const n of notes) {
+        if (n.judged) continue;
+        const d = Math.abs(n.time - t);
+        if (d < bestDelta) { bestDelta = d; best = n; }
+    }
+    if (!best || bestDelta > MISS_WINDOW) {
+        // Appui dans le vide : c'est ce qui interdit le martèlement.
+        tally.faux++; combo = 0;
+        attention += FALSE_STEP_ATTENTION;
+        popup('FAUX PAS', '#c4553c', 15);
+        sndFalse();
+        updateHUD();
+        return;
+    }
+    const j = JUDGE.find(x => bestDelta <= x.window) || JUDGE[JUDGE.length - 1];
+    best.judged = true; best.result = j.key;
+    tally[j.key]++;
+    combo++; bestCombo = Math.max(bestCombo, combo);
+    score += j.points * comboMult();
+    attention = Math.max(0, attention + j.attention);
+    popup(j.label, j.color, j.key === 'parfait' ? 22 : 18);
+    spawnDust(TARGET_X, H - 96, j.key === 'parfait' ? 9 : 5);
+    if (j.key === 'parfait') sndPerfect(); else sndStep();
+    updateHUD();
+}
+
+function popup(text, color, size) {
+    popups.push({ text, color, size, life: 46, maxLife: 46, x: TARGET_X, y: H - 150 });
+}
+function spawnDust(x, y, n) {
+    for (let i = 0; i < n; i++) {
+        dust.push({
+            x: x + (Math.random() - .5) * 22, y: y + (Math.random() - .5) * 8,
+            vx: -0.6 - Math.random() * 1.9, vy: -0.5 - Math.random() * 1.5,
+            life: 26 + Math.random() * 22, maxLife: 48,
+            size: 1 + Math.random() * 2.4,
+        });
+    }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  SIMULATION
+// ══════════════════════════════════════════════════════════════
+function update(now, dt) {
+    walkPhase += dt * 0.004 * (phase === 'alerte' ? 3.4 : 1);
+    if (walkKick > 0) walkKick = Math.max(0, walkKick - dt * 0.006);
+    if (shake > 0) shake = Math.max(0, shake - dt * 0.004);
+
+    for (let i = dust.length - 1; i >= 0; i--) {
+        const p = dust[i];
+        p.x += p.vx; p.y += p.vy; p.vy += 0.02; p.life--;
+        if (p.life <= 0) dust.splice(i, 1);
+    }
+    for (let i = popups.length - 1; i >= 0; i--) {
+        const p = popups[i];
+        p.y -= 0.85; p.life--;
+        if (p.life <= 0) popups.splice(i, 1);
+    }
+
+    if (phase === 'alerte') {
+        shake = 0.75;
+        if (now > alertUntil) gameOver(true);
+        return;
+    }
+    if (phase !== 'marche') return;
+
+    const t = now - songStart;
+
+    // Empreintes dépassées sans appui → pas manqué
+    for (const n of notes) {
+        if (!n.judged && t - n.time > MISS_WINDOW) {
+            n.judged = true; n.result = 'manque';
+            tally.manque++; combo = 0;
+            attention += MISS_ATTENTION;
+            popup('MANQUÉ', '#c4553c', 17);
+            sndMiss();
+            updateHUD();
+        }
+    }
+
+    // Ordre important : on BORNE, on TESTE le seuil, et seulement après on apaise.
+    //  · borne haute : sans elle l'attention peut dépasser 100 (plusieurs fautes dans
+    //    la même frame) et la jauge se dessine alors en dehors de sa barre.
+    //  · test avant apaisement : sinon une attention pile à 100 est ramenée à 99,78
+    //    par la dérive dans la même frame, et l'éveil ne se déclenche jamais.
+    attention = Math.min(ATTENTION_MAX, attention);
+    if (attention >= ATTENTION_MAX) {
+        phase = 'alerte';
+        mashCount = 0;
+        alertUntil = now + ALERT_MS;
+        shake = 0.75;            // dès CETTE frame : sinon le choc arrive une frame en retard
+        sndAlert();
+        popup('IL VIENT', '#c4553c', 26);
+        return;
+    }
+
+    // Le désert s'apaise doucement quand on marche juste
+    attention = Math.max(0, attention + ATTENTION_DRIFT * (dt / 16.7));
+
+    // Étape terminée quand toutes les empreintes sont jugées et l'écran vidé
+    if (notes.every(n => n.judged) && t > notes[notes.length - 1].time + 500) endStage();
+}
+
+// ══════════════════════════════════════════════════════════════
+//  RENDU
+// ══════════════════════════════════════════════════════════════
+function draw(now) {
+    ctx.clearRect(0, 0, W, H);
+    ctx.save();
+    // Le tremblement n'existe QUE pendant l'alerte : là, la précision rythmique
+    // ne compte plus (on martèle), donc secouer l'image ne pénalise plus le geste.
+    if (shake > 0) {
+        const s = shake * shake;
+        ctx.translate((Math.random() * 2 - 1) * 9 * s, (Math.random() * 2 - 1) * 7 * s);
+    }
+    drawSky();
+    drawDunes(now);
+    if (phase === 'marche' || phase === 'alerte' || phase === 'etape') {
+        drawTrack(now);
+        drawWalker();
+        drawDust();
+        drawAttention();
+        drawPopups();
+    }
+    if (phase === 'alerte') drawAlert(now);
+    ctx.restore();
+}
+
+function drawSky() {
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    const hot = Math.min(1, attention / ATTENTION_MAX);
+    g.addColorStop(0, `rgb(${18 + hot * 40}, ${10 + hot * 6}, ${5})`);
+    g.addColorStop(0.45, `rgb(${52 + hot * 60}, ${28 + hot * 10}, ${10})`);
+    g.addColorStop(0.72, `rgb(${132 + hot * 50}, ${86 + hot * 12}, ${38})`);
+    g.addColorStop(1, '#2a1a0a');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    // soleil bas
+    ctx.fillStyle = 'rgba(255,228,170,.16)';
+    ctx.beginPath(); ctx.arc(W * 0.76, H * 0.42, 46, 0, Math.PI * 2); ctx.fill();
+}
+
+const duneSeeds = Array.from({ length: 3 }, (_, l) => ({
+    amp: 16 + l * 9, y: H * (0.60 + l * 0.09), speed: 0.012 + l * 0.016,
+    col: ['#6b4a24', '#8a6030', '#a87b3c'][l],
+}));
+function drawDunes(now) {
+    for (const d of duneSeeds) {
+        ctx.fillStyle = d.col;
+        ctx.beginPath(); ctx.moveTo(0, H);
+        for (let x = 0; x <= W; x += 12) {
+            const y = d.y + Math.sin((x + now * d.speed * 10) * 0.006) * d.amp
+                          + Math.sin((x + now * d.speed * 6) * 0.013) * d.amp * 0.4;
+            ctx.lineTo(x, y);
+        }
+        ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
+    }
+}
+
+function drawTrack(now) {
+    const cfg = stageConfig(stageIndex);
+    const pxms = PX_PER_MS_BASE * cfg.speed;
+    const t = now - songStart;
+    const baseY = H - 96;
+
+    // sente : bande de sable damé
+    ctx.fillStyle = 'rgba(20,12,5,.34)';
+    ctx.fillRect(0, baseY - 20, W, 40);
+    ctx.strokeStyle = 'rgba(205,164,52,.16)';
+    ctx.beginPath(); ctx.moveTo(0, baseY - 20); ctx.lineTo(W, baseY - 20); ctx.stroke();
+
+    // repère d'appui
+    const pulse = 0.55 + Math.sin(now * 0.006) * 0.18;
+    ctx.save();
+    ctx.strokeStyle = `rgba(205,164,52,${pulse})`; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(TARGET_X, baseY - 26); ctx.lineTo(TARGET_X, baseY + 26); ctx.stroke();
+    ctx.fillStyle = `rgba(205,164,52,${pulse * 0.22})`;
+    ctx.beginPath(); ctx.ellipse(TARGET_X, baseY, 20, 9, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+
+    // empreintes à venir
+    for (const n of notes) {
+        const x = TARGET_X + (n.time - t) * pxms;
+        if (x < -40 || x > W + 40) continue;
+        const y = baseY + (n.foot === 'g' ? -11 : 11);
+        if (n.judged) {
+            if (n.result === 'manque') { ctx.fillStyle = 'rgba(196,85,60,.34)'; }
+            else { ctx.fillStyle = 'rgba(142,230,168,.26)'; }
+        } else {
+            // plus l'empreinte approche, plus elle se dessine nettement
+            const prox = Math.max(0, Math.min(1, 1 - Math.abs(x - TARGET_X) / (W - TARGET_X)));
+            ctx.fillStyle = `rgba(245,222,179,${0.22 + prox * 0.62})`;
+        }
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(n.foot === 'g' ? -0.12 : 0.12);
+        ctx.beginPath(); ctx.ellipse(0, 0, 9, 5.5, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(6, n.foot === 'g' ? -3 : 3, 3.4, 2.4, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+    }
+}
+
+function drawWalker() {
+    const baseY = H - 96;
+    const bob = Math.sin(walkPhase * 2) * 2.4 - walkKick * 3.5;
+    const x = TARGET_X;
+    ctx.save();
+    ctx.translate(x, baseY + bob);
+    ctx.strokeStyle = '#e8dcc0'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+    // jambes en opposition
+    const swing = Math.sin(walkPhase * 2) * 7;
+    ctx.beginPath(); ctx.moveTo(0, -26); ctx.lineTo(swing * 0.5, 0); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, -26); ctx.lineTo(-swing * 0.5, 0); ctx.stroke();
+    // tronc + capuche
+    ctx.beginPath(); ctx.moveTo(0, -26); ctx.lineTo(0, -50); ctx.stroke();
+    ctx.fillStyle = '#cbb994';
+    ctx.beginPath(); ctx.arc(0, -57, 7.5, 0, Math.PI * 2); ctx.fill();
+    // cape
+    ctx.fillStyle = 'rgba(120,88,44,.72)';
+    ctx.beginPath();
+    ctx.moveTo(-1, -52); ctx.lineTo(-13 - swing * 0.3, -14); ctx.lineTo(4, -20); ctx.closePath(); ctx.fill();
+    ctx.restore();
+}
+
+function drawDust() {
+    ctx.save();
+    for (const p of dust) {
+        const a = p.life / p.maxLife;
+        ctx.fillStyle = `rgba(226,196,140,${a * 0.55})`;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size * a, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+}
+
+function drawPopups() {
+    ctx.save();
+    ctx.textAlign = 'center';
+    for (const p of popups) {
+        const a = p.life / p.maxLife;
+        ctx.globalAlpha = Math.min(1, a * 1.7);
+        ctx.font = `800 ${p.size}px "Segoe UI", sans-serif`;
+        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(8,4,1,.8)';
+        ctx.strokeText(p.text, p.x, p.y);
+        ctx.fillStyle = p.color; ctx.fillText(p.text, p.x, p.y);
+    }
+    ctx.restore();
+}
+
+// Jauge d'attention : un œil qui s'ouvre. Plus lisible qu'une barre de vie et
+// ça dit exactement ce qui se joue — le ver écoute.
+function drawAttention() {
+    const r = attention / ATTENTION_MAX;
+    const x = W - 96, y = 74, w = 132, h = 9;
+    ctx.save();
+    ctx.textAlign = 'right';
+    ctx.font = '700 9px "Segoe UI", sans-serif';
+    ctx.fillStyle = 'rgba(205,164,52,.7)';
+    ctx.fillText('ATTENTION DU VER', x + 36, y - 12);
+    ctx.fillStyle = 'rgba(255,255,255,.12)';
+    ctx.fillRect(x - w + 36, y, w, h);
+    const col = r < 0.4 ? '#4a9a5a' : r < 0.75 ? '#e0a828' : '#c4553c';
+    ctx.fillStyle = col;
+    ctx.fillRect(x - w + 36, y, w * r, h);
+    if (r > 0.75) {
+        ctx.globalAlpha = 0.4 + Math.sin(performance.now() * 0.02) * 0.35;
+        ctx.fillStyle = '#c4553c';
+        ctx.fillRect(x - w + 36, y, w, h);
+    }
+    ctx.restore();
+}
+
+function drawAlert(now) {
+    const left = Math.max(0, alertUntil - now);
+    ctx.save();
+    ctx.fillStyle = `rgba(120,20,8,${0.16 + Math.sin(now * 0.02) * 0.08})`;
+    ctx.fillRect(0, 0, W, H);
+    ctx.textAlign = 'center';
+    ctx.font = '900 38px "Cinzel", Georgia, serif';
+    ctx.fillStyle = '#ff9d3c';
+    ctx.fillText('SHAI-HULUD', W / 2, 118);
+    ctx.font = '700 15px "Segoe UI", sans-serif';
+    ctx.fillStyle = '#f5deb3';
+    ctx.fillText('MARTÈLE POUR ATTEINDRE LE ROCHER', W / 2, 148);
+    // jauge de martèlement
+    const bw = 320, bx = (W - bw) / 2, by = 168;
+    ctx.fillStyle = 'rgba(255,255,255,.14)'; ctx.fillRect(bx, by, bw, 14);
+    ctx.fillStyle = '#e2bb56';
+    ctx.fillRect(bx, by, bw * Math.min(1, mashCount / ALERT_MASH_NEEDED), 14);
+    ctx.strokeStyle = 'rgba(226,187,86,.6)'; ctx.strokeRect(bx + .5, by + .5, bw - 1, 13);
+    // temps restant
+    ctx.font = '700 12px "Segoe UI", sans-serif';
+    ctx.fillStyle = left < 1200 ? '#c4553c' : 'rgba(245,222,179,.75)';
+    ctx.fillText((left / 1000).toFixed(1) + ' s', W / 2, by + 34);
+    ctx.restore();
+}
+
+// ══════════════════════════════════════════════════════════════
+//  BOUCLE
+// ══════════════════════════════════════════════════════════════
+function loop(now) {
+    requestAnimationFrame(loop);
+    if (!lastFrame) { lastFrame = now; return; }
+    const dt = Math.min(now - lastFrame, 60);
+    lastFrame = now;
+    update(now, dt);
+    draw(now);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  ENTRÉES
+// ══════════════════════════════════════════════════════════════
+// On prend l'horodatage de l'ÉVÉNEMENT (e.timeStamp, même base que
+// performance.now()) : il est daté au moment réel de l'appui, pas au moment où
+// la boucle le traite. C'est ce qui permet des fenêtres inférieures à la frame.
+function eventTime(e) {
+    const ts = e && typeof e.timeStamp === 'number' && e.timeStamp > 0 ? e.timeStamp : performance.now();
+    // Certains navigateurs datent encore en epoch : on retombe alors sur l'horloge de perf.
+    return ts > 1e12 ? performance.now() : ts;
+}
+document.addEventListener('keydown', e => {
+    if (e.code === 'Space' || e.code === 'ArrowUp' || e.code === 'Enter') {
+        if (e.target && e.target.closest && e.target.closest('button, a, input')) return;
+        e.preventDefault();
+        if (e.repeat) return;               // maintenir la touche ne compte pas
+        press(eventTime(e));
+    }
+});
+cv.addEventListener('pointerdown', e => { e.preventDefault(); press(eventTime(e)); });
+document.getElementById('btn-start').addEventListener('click', startRun);
+document.getElementById('btn-retry').addEventListener('click', startRun);
+document.getElementById('btn-next').addEventListener('click', nextStage);
+
+// ══════════════════════════════════════════════════════════════
+//  SCORES (mêmes conventions que les autres jeux du hub)
+// ══════════════════════════════════════════════════════════════
+async function sha256(msg) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+async function fetchSecret() {
+    try {
+        const r = await fetch('scores_api.php', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'secret', game: GAME_ID }),
+        });
+        const j = await r.json();
+        if (j.ok && j.secret) scoreSecret = j.secret;
+    } catch (e) {}
+}
+async function submitScore(s) {
+    try {
+        if (!scoreSecret) await fetchSecret();
+        if (!scoreSecret) return;
+        const dur = Math.floor((Date.now() - startTime) / 1000);
+        const hash = await sha256(GAME_ID + s + dur + scoreSecret);
+        const r = await fetch('scores_api.php', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'submit', game: GAME_ID, score: s, duration: dur, hash }),
+        });
+        const j = await r.json();
+        if (!j.ok) console.warn('[sandwalk] score non enregistré côté serveur :', j.error || 'raison inconnue');
+        loadLeaderboard();
+    } catch (e) {}
+}
+function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+async function loadLeaderboard() {
+    const box = document.getElementById('lb-list');
+    try {
+        const r = await fetch(`scores_api.php?action=leaderboard&game=${GAME_ID}&limit=10&scope=weekly`);
+        const j = await r.json();
+        if (!j.ok || !j.scores || !j.scores.length) { box.innerHTML = '<li><span class="nm">Aucun score cette semaine — sois le premier.</span></li>'; return; }
+        const me = (localStorage.getItem('user') || '').toLowerCase();
+        box.innerHTML = j.scores.map((s, i) => {
+            const mine = (s.user || '').toLowerCase() === me;
+            return `<li class="${mine ? 'me' : ''}"><span class="rk">${i + 1}</span><span class="nm">${esc(s.user)}</span><span class="sc">${s.score}</span></li>`;
+        }).join('');
+    } catch (e) { box.innerHTML = '<li><span class="nm">Classement indisponible.</span></li>'; }
+}
+
+// ── Export pour le banc d'essai headless (voir scratchpad). Sans effet en jeu. ──
+window.__sandwalk = {
+    get phase() { return phase; }, set phase(v) { phase = v; },
+    get notes() { return notes; }, get score() { return score; },
+    get combo() { return combo; }, get attention() { return attention; }, set attention(v) { attention = v; },
+    get tally() { return tally; }, get stageIndex() { return stageIndex; },
+    get mashCount() { return mashCount; }, get shake() { return shake; },
+    get songStart() { return songStart; }, set songStart(v) { songStart = v; },
+    press, update, buildChart, stageConfig, startRun, startStage,
+    JUDGE, MISS_WINDOW, ATTENTION_MAX, ALERT_MASH_NEEDED, ALERT_MS, STAGES,
+    comboMult, accuracy,
+};
+
+loadLeaderboard();
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

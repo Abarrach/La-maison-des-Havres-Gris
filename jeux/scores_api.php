@@ -50,6 +50,21 @@ const GAMES = [
         'max_score' => 50000,
         'cooldown'  => 2,
     ],
+    // Jeu de rythme : 100 pts par empreinte × multiplicateur de série (max 5), plus
+    // 1250 par éveil du ver déjoué. Les étapes s'enchaînent SANS FIN, donc le score
+    // n'a aucune borne théorique. Repères calculés (parcours sans la moindre faute) :
+    //   6 étapes → 84 500 · 10 étapes → 167 500 · 14 étapes → 266 500
+    // Une partie réaliste (4-6 étapes, ~85 % de précision) tourne autour de 25 000.
+    // Le plafond est donc posé à 300 000 : il couvre un parcours sans-faute d'une
+    // quinzaine d'étapes — au-delà, personne ne tiendra un jeu de rythme d'affilée —
+    // tout en rejetant encore les scores manifestement forgés. Ne PAS le serrer :
+    // un score au-dessus du plafond est rejeté sec (`invalid_score`) sans que le
+    // joueur en soit averti, et c'est le meilleur joueur qu'on pénalise en silence.
+    'sandwalk' => [
+        'name'      => 'La Marche du Désert',
+        'max_score' => 300000,
+        'cooldown'  => 2,
+    ],
 ];
 
 // ---- Secret pour le hash anti-triche ----

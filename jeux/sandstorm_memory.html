@@ -5,15 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Sandstorm Memory — Hub Jeux</title>
 <link rel="stylesheet" href="../style.css">
+<link rel="preload" as="image" type="image/webp" href="img/sandstorm_cards_vehicles.webp">
+<link rel="preload" as="image" type="image/webp" href="img/sandstorm_cards_arrakis.webp">
+<link rel="preload" as="image" type="image/webp" href="img/sandstorm_cards_sietch.webp">
+<link rel="preload" as="image" type="image/webp" href="img/popout_shai_hulud.webp">
+<link rel="preload" as="image" type="image/webp" href="img/popout_ornithopter.webp">
 <style>
 :root {
-    --bg: #0a0402;
-    --gold: #cda434;
-    --text: #f5deb3;
-    --muted: #7c5e2a;
-    --card-bg: #1f1106;
-    --card-front-bg: #140a04;
-    --storm-color: rgba(180, 120, 40, 0.6);
+    --bg: #080604;
+    --gold: #e7b75c;
+    --gold-bright: #ffd88a;
+    --text: #f6ead4;
+    --muted: #a98b62;
+    --cyan: #4bd8e8;
+    --danger: #e86f43;
+    --card-w: 112px;
+    --card-h: 148px;
 }
 html, body {
     height: 100%; margin: 0;
@@ -30,16 +37,28 @@ body::before {
                 linear-gradient(180deg, rgba(20,10,0,0.8) 0%, rgba(8,4,2,0.95) 100%);
     pointer-events: none; z-index: 0;
 }
+body::after {
+    content: ''; position: fixed; inset: -20%; pointer-events: none; z-index: 0;
+    opacity: .28; mix-blend-mode: screen;
+    background-image:
+        radial-gradient(circle at 12% 20%, rgba(255,215,140,.8) 0 1px, transparent 2px),
+        radial-gradient(circle at 75% 40%, rgba(255,198,96,.55) 0 1px, transparent 2px),
+        radial-gradient(circle at 38% 78%, rgba(255,224,170,.45) 0 1px, transparent 2px);
+    background-size: 170px 130px, 230px 190px, 130px 210px;
+    animation: desertDrift 24s linear infinite;
+}
+@keyframes desertDrift { to { transform: translate3d(9%, -4%, 0); } }
 #game-wrapper {
     position: relative; z-index: 1;
     display: flex; flex-direction: column; align-items: center; gap: 12px;
-    padding: 20px 10px 40px;
+    padding: 18px 10px 50px;
 }
 .game-header {
     display: flex; align-items: center; gap: 14px;
     width: 100%; max-width: 640px; padding: 10px 16px; box-sizing: border-box;
-    background: rgba(0,0,0,0.4); border: 1px solid #3d2b16; border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.35);
+    background: linear-gradient(100deg, rgba(13,10,7,.92), rgba(43,27,13,.72));
+    border: 1px solid rgba(231,183,92,.28); border-radius: 2px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.5), inset 3px 0 0 var(--gold);
 }
 .game-header .back-link {
     color: var(--gold); text-decoration: none; font-weight: bold; font-size: 0.82em;
@@ -49,54 +68,67 @@ body::before {
 }
 .game-header .back-link:hover { background: var(--gold); color: #000; border-color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.4); }
 .game-header .game-title {
-    font-size: 1.1em; font-weight: bold; color: var(--gold);
-    text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 0 10px rgba(205,164,52,0.3);
+    font-size: 1.08em; font-weight: 650; color: var(--gold-bright);
+    text-transform: uppercase; letter-spacing: 3px; text-shadow: 0 0 18px rgba(205,164,52,.3);
 }
+.game-header .chapter { margin-left:auto; color:#806b4d; font-size:.62em; letter-spacing:2px; text-transform:uppercase; }
 
 /* HUD */
 .hud {
-    display: flex; gap: 20px; align-items: center; justify-content: center;
-    flex-wrap: wrap; font-size: 0.9em;
-    background: rgba(0,0,0,0.3); padding: 8px 18px; border-radius: 8px;
-    backdrop-filter: blur(4px);
+    display: flex; gap: 0; align-items: stretch; justify-content: center;
+    flex-wrap: wrap; font-size: .88em; overflow:hidden;
+    background: rgba(8,7,5,.82); padding: 0; border: 1px solid rgba(231,183,92,.22); border-radius: 2px;
+    backdrop-filter: blur(10px); box-shadow: 0 12px 30px rgba(0,0,0,.25);
 }
-.hud-item { text-align: center; }
-.hud-label { color: var(--muted); font-size: 0.7em; text-transform: uppercase; letter-spacing: 1px; }
-.hud-val { color: var(--gold); font-weight: bold; font-size: 1.3em; }
+.hud-item { text-align:center; min-width:68px; padding:7px 12px; border-right:1px solid rgba(231,183,92,.11); }
+.hud-label { color: var(--muted); font-size: .63em; text-transform: uppercase; letter-spacing: 1.5px; }
+.hud-val { color: var(--gold-bright); font-weight:650; font-size:1.2em; font-variant-numeric:tabular-nums; }
 .hud-val.lives { color: #ff6644; }
 .hud-val.combo { color: #ff8800; }
+.storm-meter { width:72px; height:3px; margin:4px auto 0; background:#251a10; overflow:hidden; }
+.storm-meter > i { display:block; height:100%; width:0; background:linear-gradient(90deg,var(--gold),var(--danger)); transition:width .35s; box-shadow:0 0 8px var(--danger); }
+.prescience-btn { border:0; border-left:1px solid rgba(231,183,92,.15); padding:7px 15px; background:rgba(21,16,10,.9); color:#736b5b; cursor:not-allowed; text-transform:uppercase; letter-spacing:1px; font-size:.64em; }
+.prescience-btn strong { display:block; font-size:1.55em; line-height:1.15; }
+.prescience-btn.ready { cursor:pointer; color:#76efff; background:linear-gradient(180deg,rgba(28,85,94,.35),rgba(7,27,31,.55)); animation:prescienceGlow 1.5s ease-in-out infinite alternate; }
+@keyframes prescienceGlow { to { box-shadow:inset 0 0 20px rgba(75,216,232,.25), 0 0 18px rgba(75,216,232,.14); } }
 
 /* Board container */
 #board-container {
     position: relative;
     margin: 10px 0;
-    border-radius: 12px;
+    border-radius: 3px;
     overflow: hidden;
     box-shadow: 0 0 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(205,164,52,0.2);
-    background: rgba(20,10,5,0.3);
-    backdrop-filter: blur(2px);
+    background:
+      linear-gradient(rgba(8,6,4,.82),rgba(20,12,6,.82)),
+      repeating-linear-gradient(120deg,transparent 0 28px,rgba(231,183,92,.035) 29px 30px);
+    backdrop-filter: blur(5px); border:1px solid rgba(231,183,92,.18);
 }
+#board-container::before, #board-container::after { content:''; position:absolute; z-index:2; width:32px; height:32px; pointer-events:none; }
+#board-container::before { left:8px; top:8px; border-left:1px solid var(--gold); border-top:1px solid var(--gold); }
+#board-container::after { right:8px; bottom:8px; border-right:1px solid var(--gold); border-bottom:1px solid var(--gold); }
 #board {
-    display: grid; gap: 10px; justify-content: center; justify-items: center;
-    padding: 20px; perspective: 800px;
+    display: grid; gap: 14px; justify-content: center; justify-items: center;
+    padding: 30px; perspective: 1200px;
     min-height: 300px;
 }
 
 /* Cartes */
 .card {
-    width: 80px; height: 100px; position: relative; cursor: pointer;
-    transform-style: preserve-3d; transition: transform 0.5s cubic-bezier(0.4,0,0.2,1), box-shadow 0.3s;
+    width:var(--card-w); height:var(--card-h); position:relative; cursor:pointer;
+    transform-style:preserve-3d; transition:transform .38s cubic-bezier(.22,.68,.25,1);
     will-change: transform;
 }
 .card:hover {
-    box-shadow: 0 0 12px rgba(205,164,52,0.3);
+    transform:translateY(-3px);
 }
-.card.flipped { transform: rotateY(180deg); }
+.card.flipped { transform:rotateY(180deg); }
+.card.flipped:hover { transform:rotateY(180deg) translateY(-3px); }
 .card.matched {
-    transform: rotateY(180deg);
-    box-shadow: 0 0 18px rgba(255,215,0,0.6);
-    border-color: var(--gold);
+    transform:rotateY(180deg) scale(.96);
 }
+.card.matched .card-art { filter:saturate(.45) brightness(.72); }
+.card.matched::after { content:'✓'; position:absolute; z-index:5; right:5px; top:5px; width:18px; height:18px; border-radius:50%; display:grid; place-items:center; color:#061315; background:var(--cyan); font-weight:900; transform:rotateY(180deg); box-shadow:0 0 12px var(--cyan); }
 .card.shake {
     animation: cardShake 0.5s ease;
 }
@@ -108,36 +140,224 @@ body::before {
     80% { transform: rotateY(0deg) translateX(4px); }
 }
 .card-face {
-    position: absolute; inset: 0; backface-visibility: hidden; border-radius: 8px;
+    position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden; border-radius:3px;
     display: flex; align-items: center; justify-content: center; flex-direction: column;
-    overflow: hidden;
+    overflow:hidden; transition:filter .16s, box-shadow .16s;
 }
+.card:hover .card-face { filter:brightness(1.1); box-shadow:0 0 16px rgba(231,183,92,.24); }
 .card-back {
-    background: linear-gradient(145deg, #2a1a0b, #120905);
-    border: 2px solid #3d2b16;
-    box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+    background:
+      radial-gradient(circle at 50% 50%, transparent 0 15%, rgba(231,183,92,.16) 16% 17%, transparent 18% 28%, rgba(231,183,92,.1) 29% 30%, transparent 31%),
+      conic-gradient(from 45deg, #17100a, #2b1c0d, #100b07, #362210, #17100a);
+    border:1px solid #806033; box-shadow:inset 0 0 0 4px #0b0805,inset 0 0 0 5px rgba(231,183,92,.28),0 8px 18px rgba(0,0,0,.5);
 }
 .card-back::after {
-    content: '🌀';
-    font-size: 28px;
-    opacity: 0.25;
-    color: var(--gold);
+    content:'✦'; display:grid; place-items:center; width:38px; height:38px; border:1px solid rgba(231,183,92,.45); transform:rotate(45deg); color:var(--gold); font-size:16px; text-shadow:0 0 10px var(--gold);
 }
 .card-back::before {
     content: '';
     position: absolute;
-    inset: 4px;
-    border: 1px dashed rgba(205,164,52,0.2);
-    border-radius: 4px;
+    inset:6px; border:1px solid rgba(231,183,92,.17); border-radius:1px;
 }
 .card-front {
-    background: radial-gradient(ellipse at center, #1f1106 0%, #0d0602 100%);
-    border: 2px solid #5c4a28;
+    background:#100b07; border:1px solid #9d7742;
     transform: rotateY(180deg);
     box-shadow: inset 0 0 30px rgba(0,0,0,0.6);
 }
-.card-symbol { font-size: 34px; line-height: 1; text-shadow: 0 0 10px rgba(255,215,0,0.5); }
-.card-name { font-size: 0.55em; color: #a89060; margin-top: 4px; text-align: center; line-height: 1.1; }
+.card-art { position:absolute; inset:0; background-size:300% 200%; background-repeat:no-repeat; filter:saturate(.94) contrast(1.04); transform:scale(1.01); }
+.card-front::after { content:''; position:absolute; inset:0; background:linear-gradient(180deg,transparent 48%,rgba(5,4,3,.35) 62%,rgba(5,4,3,.96) 100%); pointer-events:none; }
+.card-meta { position:absolute; z-index:2; left:7px; right:5px; bottom:6px; text-align:left; transform:translateZ(1px); }
+.card-name { display:block; color:#fff0d1; font-size:.56em; font-weight:700; text-transform:uppercase; letter-spacing:.65px; line-height:1.15; text-shadow:0 1px 3px #000; }
+.card-type { display:block; margin-top:2px; color:#d2a55d; font-size:.42em; text-transform:uppercase; letter-spacing:1px; }
+.card.revealed-by-power .card-front { box-shadow:inset 0 0 20px rgba(75,216,232,.5),0 0 18px rgba(75,216,232,.4); border-color:var(--cyan); }
+.card.popout-source .card-front { animation:sourceCardPulse 1.45s ease-out; }
+@keyframes sourceCardPulse { 25%{box-shadow:0 0 25px rgba(75,216,232,.72),inset 0 0 22px rgba(75,216,232,.32)} 100%{box-shadow:inset 0 0 30px rgba(0,0,0,.6)} }
+
+/* Pop-out 2.5D — une signature animée pour chacune des 18 archives */
+.match-popout {
+    position:fixed; inset:0; z-index:40; pointer-events:none; overflow:hidden;
+    display:grid; place-items:center; perspective:1000px; isolation:isolate;
+    background:radial-gradient(circle at 50% 52%,rgba(8,6,4,.08),rgba(8,5,2,.24) 62%,transparent 100%);
+}
+.match-popout::before {
+    content:''; position:absolute; width:58%; aspect-ratio:1; border-radius:50%;
+    background:radial-gradient(circle,rgba(80,225,240,.2),rgba(218,155,67,.12) 35%,transparent 69%);
+    opacity:0; animation:popoutAura 2.15s ease-out forwards;
+}
+.match-popout .popout-subject {
+    position:absolute; z-index:3; display:block; object-fit:contain; opacity:0;
+    transform-origin:50% 82%; will-change:transform,opacity;
+    backface-visibility:hidden; -webkit-backface-visibility:hidden;
+}
+.match-popout.worm .popout-subject {
+    height:min(82vh,730px); max-width:58vw;
+    animation:wormEmergence 2.1s linear forwards;
+}
+.match-popout.orni .popout-subject {
+    width:min(64vw,760px); max-height:62vh; transform-origin:50% 50%;
+    animation:orniFlyout 2.3s linear forwards;
+}
+.match-popout.ride .popout-subject { width:min(58vw,620px); transform-origin:50% 72%; animation:bikeRideSmooth 2.05s linear forwards; }
+.match-popout.titan .popout-subject { width:min(68vw,720px); animation:titanArrival 2.1s cubic-bezier(.16,.65,.25,1) forwards; }
+.match-popout.relic .popout-subject { width:min(48vw,500px); animation:relicReveal 1.9s cubic-bezier(.2,.68,.22,1) forwards; }
+.match-popout.fauna .popout-subject { width:min(42vw,430px); animation:faunaScamper 1.9s ease-out forwards; }
+.match-popout.bloom .popout-subject { width:min(56vw,580px); animation:bloomBurst 2.05s cubic-bezier(.17,.67,.22,1) forwards; }
+.match-popout.vortex .popout-subject { width:min(48vw,500px); animation:vortexReveal 2.15s linear forwards; }
+.match-popout.celestial .popout-subject { width:min(62vw,620px); animation:moonRise 2.2s cubic-bezier(.18,.64,.22,1) forwards; }
+.match-popout .eclipse-shadow {
+    position:absolute; z-index:4; width:min(62vw,620px); display:block; object-fit:contain;
+    opacity:0; pointer-events:none; will-change:transform,opacity,clip-path;
+    filter:brightness(.075) sepia(.28) contrast(1.2);
+    animation:
+        moonRise 2.2s cubic-bezier(.18,.64,.22,1) forwards,
+        eclipsePhase 2.2s ease-in-out forwards;
+}
+.match-popout.diorama .popout-subject { width:min(62vw,640px); animation:dioramaRise 2.1s cubic-bezier(.18,.7,.2,1) forwards; }
+.match-popout.vision .popout-subject { width:min(56vw,560px); animation:visionPulse 2.05s ease-out forwards; }
+.match-popout.tech .popout-subject { width:min(50vw,520px); animation:techCharge 2.05s cubic-bezier(.2,.66,.22,1) forwards; }
+.match-popout.fx-thumper .popout-subject { animation:thumperSink 2.25s cubic-bezier(.18,.7,.24,1) forwards; }
+.match-popout.fx-shield .popout-subject { animation:shieldMechanicalStart 2.3s cubic-bezier(.2,.68,.24,1) forwards; }
+.popout-rift {
+    position:absolute; z-index:2; left:50%; bottom:12%; width:48%; height:13%; transform:translateX(-50%) scaleX(.25);
+    border-radius:50%; opacity:0; border:2px solid rgba(255,205,120,.74);
+    background:radial-gradient(ellipse,rgba(255,178,61,.35),rgba(100,55,13,.18) 48%,transparent 72%);
+    box-shadow:0 0 20px rgba(255,170,50,.42),inset 0 0 20px rgba(255,205,120,.28);
+    animation:riftOpen 2s ease-out forwards;
+}
+.match-popout.orni .popout-rift { left:87%; bottom:20%; width:28%; height:18%; border-color:rgba(83,225,240,.74); box-shadow:0 0 32px rgba(75,216,232,.58),inset 0 0 30px rgba(75,216,232,.24); animation:orniPortal 1.4s ease-out forwards; }
+.dust-cloud {
+    position:absolute; left:50%; bottom:-5%; width:min(92vw,1120px); height:42vh; transform:translateX(-50%) scale(.35);
+    border-radius:50%; opacity:0; pointer-events:none; will-change:transform,opacity;
+    background:
+      radial-gradient(ellipse at 22% 68%,rgba(210,146,61,.68),transparent 27%),
+      radial-gradient(ellipse at 45% 48%,rgba(178,113,42,.72),transparent 34%),
+      radial-gradient(ellipse at 68% 64%,rgba(226,168,82,.62),transparent 31%),
+      radial-gradient(ellipse at 82% 48%,rgba(139,78,28,.55),transparent 26%);
+    filter:blur(13px); animation:dustBillow 2.15s ease-out forwards;
+}
+.dust-cloud.back { z-index:1; }
+.dust-cloud.front { z-index:4; bottom:-12%; width:min(105vw,1300px); height:31vh; opacity:0; filter:blur(18px); animation-delay:.12s; }
+.popout-particle {
+    --dx:0px; --dy:-100px; --delay:0s; position:absolute; left:50%; bottom:22%;
+    z-index:5; width:var(--size,6px); height:var(--size,6px); border-radius:50%; background:#efb55a; opacity:0;
+    box-shadow:0 0 8px currentColor; animation:popoutParticle 1.65s var(--delay) ease-out forwards;
+}
+.match-popout.orni .popout-particle { left:66%; bottom:39%; width:var(--size,3px); height:calc(var(--size,3px) * 6); border-radius:4px; color:#75efff; background:currentColor; transform:rotate(58deg); }
+.scene-element { position:absolute; pointer-events:none; opacity:0; will-change:transform,opacity; }
+.bike-spray {
+    z-index:4; left:50%; top:58%; width:32vw; height:18vh; border-radius:50%;
+    background:radial-gradient(ellipse at 32% 70%,rgba(240,184,98,.82),rgba(169,104,39,.48) 34%,transparent 72%);
+    filter:blur(7px); transform-origin:30% 75%; animation:bikeSprayTravel 2.05s linear forwards;
+}
+.bike-spray.front { width:21vw; height:12vh; top:55%; animation-delay:.04s; filter:blur(5px); }
+.thumper-sand {
+    z-index:4; left:50%; top:61%; width:min(48vw,510px); height:14vh; border-radius:50%;
+    background:radial-gradient(ellipse,rgba(237,180,94,.86),rgba(151,88,31,.56) 46%,transparent 73%);
+    filter:blur(6px); animation:thumperSandClose 2.25s ease-out forwards;
+}
+.thumper-pulse {
+    z-index:2; left:50%; top:62%; width:12vw; height:4vw; min-width:90px; min-height:30px;
+    border:3px solid rgba(235,175,81,.82); border-radius:50%; box-shadow:0 0 18px rgba(228,151,54,.58);
+    animation:thumperPulse 1.05s var(--delay,0s) ease-out forwards;
+}
+.water-flow {
+    z-index:5; left:calc(50% + var(--x,0px)); top:25%; width:2px; height:45%; border-radius:4px;
+    background:linear-gradient(180deg,transparent,#c9fdff 18%,#4ce2ee 58%,transparent);
+    box-shadow:0 0 7px #43dce9,0 0 14px rgba(67,220,233,.48); transform-origin:50% 0;
+    animation:waterCircuit 1.18s var(--delay,0s) ease-in-out forwards;
+}
+.shield-ring {
+    z-index:2; left:50%; top:50%; width:11vmin; height:11vmin; border:2px solid rgba(101,239,255,.88); border-radius:50%;
+    box-shadow:0 0 15px #51e4f2,inset 0 0 12px rgba(83,225,240,.46);
+    animation:shieldRingExpand 1.28s var(--delay,0s) cubic-bezier(.12,.55,.25,1) forwards;
+}
+.shield-impact {
+    z-index:6; inset:0; background:radial-gradient(circle,transparent 0 61%,rgba(132,244,255,.18) 67%,rgba(101,230,244,.78) 73%,transparent 78%);
+    animation:shieldFieldImpact 2.3s ease-in-out forwards;
+}
+.shield-collapse {
+    z-index:5; left:50%; top:50%; width:94vmax; height:94vmax; border:4px solid rgba(126,245,255,.82); border-radius:50%;
+    box-shadow:0 0 40px #4ce5f3,inset 0 0 42px rgba(68,217,235,.4);
+    animation:shieldImplosion 2.3s cubic-bezier(.55,.02,.72,.35) forwards;
+}
+.popout-caption {
+    position:absolute; z-index:6; left:50%; bottom:5%; transform:translate(-50%,12px); opacity:0;
+    color:#ffe3ae; font-size:.7em; font-weight:750; text-transform:uppercase; letter-spacing:4px;
+    text-shadow:0 2px 7px #000,0 0 16px rgba(231,183,92,.55); white-space:nowrap;
+    animation:popoutCaption 2.1s ease-out forwards;
+}
+.match-popout.orni .popout-caption { color:#aaf5ff; text-shadow:0 2px 7px #000,0 0 16px rgba(75,216,232,.65); animation-duration:2.3s; }
+.match-popout:not(.worm):not(.orni) .popout-caption { color:var(--accent,#ffe3ae); text-shadow:0 2px 7px #000,0 0 18px var(--accent,#dca34e); }
+@keyframes wormEmergence {
+    0% { opacity:0; transform:translate3d(0,72vh,0) scale(.45) rotateX(20deg); animation-timing-function:cubic-bezier(.14,.7,.2,1); }
+    12% { opacity:1; }
+    50% { opacity:1; transform:translate3d(0,5vh,0) scale(.91) rotateX(1deg); animation-timing-function:cubic-bezier(.24,.58,.28,1); }
+    78% { opacity:1; transform:translate3d(0,-3vh,0) scale(1.01) rotateX(-3deg); animation-timing-function:ease-out; }
+    92% { opacity:1; transform:translate3d(0,-6vh,0) scale(1.035) rotateX(-4deg); }
+    100% { opacity:0; transform:translate3d(0,-10vh,0) scale(1.055) rotateX(-5deg); }
+}
+@keyframes orniFlyout {
+    0% { opacity:0; transform:translate3d(92vw,34vh,0) scale(.28) rotateZ(17deg) rotateY(18deg); animation-timing-function:cubic-bezier(.2,.55,.28,1); }
+    7% { opacity:1; }
+    28% { opacity:1; transform:translate3d(39vw,14vh,0) scale(.58) rotateZ(12deg) rotateY(10deg); animation-timing-function:cubic-bezier(.2,.65,.28,1); }
+    53% { opacity:1; transform:translate3d(4vw,-1vh,0) scale(.98) rotateZ(5deg) rotateY(2deg); animation-timing-function:cubic-bezier(.25,.5,.35,1); }
+    72% { opacity:1; transform:translate3d(-18vw,-11vh,0) scale(1.04) rotateZ(1deg) rotateY(-4deg); animation-timing-function:cubic-bezier(.3,.45,.4,1); }
+    90% { opacity:1; transform:translate3d(-52vw,-27vh,0) scale(.76) rotateZ(-7deg) rotateY(-10deg); }
+    100% { opacity:0; transform:translate3d(-94vw,-48vh,0) scale(.42) rotateZ(-13deg) rotateY(-16deg); }
+}
+@keyframes rideSweep { 0%{opacity:0;transform:translate3d(-72vw,18vh,0) scale(.42) rotateY(16deg) rotateZ(-5deg)} 18%{opacity:1} 58%{opacity:1;transform:translate3d(0,-1vh,0) scale(1.02) rotateY(-4deg)} 82%{opacity:1;transform:translate3d(9vw,-4vh,0) scale(1.06)} 100%{opacity:0;transform:translate3d(52vw,-9vh,0) scale(.76) rotateY(-15deg)} }
+@keyframes titanArrival { 0%{opacity:0;transform:translate3d(0,38vh,-300px) scale(.4) rotateX(12deg)} 28%{opacity:1} 68%{opacity:1;transform:translate3d(0,-1vh,0) scale(1.03) rotateX(0)} 88%{opacity:1;transform:scale(1.06)} 100%{opacity:0;transform:scale(1.1)} }
+@keyframes relicReveal { 0%{opacity:0;transform:translate3d(0,15vh,0) scale(.3) rotateY(-80deg)} 30%{opacity:1} 65%{opacity:1;transform:translate3d(0,-2vh,0) scale(1.03) rotateY(7deg)} 84%{opacity:1;transform:translate3d(0,-3vh,0) scale(1) rotateY(0)} 100%{opacity:0;transform:translate3d(0,-8vh,0) scale(1.08)} }
+@keyframes faunaScamper { 0%{opacity:0;transform:translate3d(-58vw,19vh,0) scale(.35) rotateZ(-8deg)} 19%{opacity:1} 49%{opacity:1;transform:translate3d(-5vw,-1vh,0) scale(.95) rotateZ(3deg)} 70%{opacity:1;transform:translate3d(4vw,-5vh,0) scale(1.08) rotateZ(-2deg)} 100%{opacity:0;transform:translate3d(48vw,12vh,0) scale(.58) rotateZ(8deg)} }
+@keyframes bloomBurst { 0%{opacity:0;transform:translate3d(0,34vh,0) scale(.18)} 22%{opacity:1} 58%{opacity:1;transform:translate3d(0,-2vh,0) scale(1.08)} 78%{opacity:1;transform:scale(.98)} 100%{opacity:0;transform:translate3d(0,-8vh,0) scale(1.22)} }
+@keyframes vortexReveal { 0%{opacity:0;transform:scale(.25) rotate(-16deg)} 27%{opacity:.94} 62%{opacity:1;transform:scale(1.02) rotate(5deg)} 84%{opacity:.9;transform:scale(1.08) rotate(-3deg)} 100%{opacity:0;transform:scale(1.18) rotate(7deg)} }
+@keyframes moonRise { 0%{opacity:0;transform:translate3d(0,50vh,-300px) scale(.25)} 32%{opacity:1} 72%{opacity:1;transform:translate3d(0,-4vh,0) scale(1)} 90%{opacity:1;transform:translate3d(0,-7vh,0) scale(1.035)} 100%{opacity:0;transform:translate3d(0,-10vh,0) scale(1.06)} }
+@keyframes eclipsePhase {
+    0%,20% { clip-path:ellipse(0% 58% at -5% 50%); }
+    39% { clip-path:ellipse(39% 58% at 15% 50%); }
+    54%,62% { clip-path:ellipse(72% 61% at 36% 50%); }
+    80% { clip-path:ellipse(40% 58% at 82% 50%); }
+    100% { clip-path:ellipse(0% 58% at 105% 50%); }
+}
+@keyframes dioramaRise { 0%{opacity:0;transform:translate3d(0,28vh,-240px) scale(.3) rotateX(34deg)} 28%{opacity:1} 66%{opacity:1;transform:translate3d(0,-1vh,0) scale(1.02) rotateX(7deg) rotateY(-4deg)} 86%{opacity:1;transform:translate3d(0,-3vh,0) scale(1.04) rotateX(4deg) rotateY(3deg)} 100%{opacity:0;transform:translate3d(0,-7vh,0) scale(1.1) rotateX(2deg)} }
+@keyframes visionPulse { 0%{opacity:0;transform:scale(.2) rotateY(70deg)} 30%{opacity:1} 58%{opacity:1;transform:scale(1.05) rotateY(0)} 72%{opacity:.72;transform:scale(.96)} 83%{opacity:1;transform:scale(1.04)} 100%{opacity:0;transform:scale(1.18)} }
+@keyframes techCharge { 0%{opacity:0;transform:translate3d(0,20vh,0) scale(.28) rotateY(-50deg)} 28%{opacity:1} 62%{opacity:1;transform:translate3d(0,-1vh,0) scale(1.03) rotateY(6deg)} 82%{opacity:1;transform:translate3d(0,-3vh,0) scale(1) rotateY(-3deg)} 100%{opacity:0;transform:translate3d(0,-6vh,0) scale(1.1) rotateY(0)} }
+@keyframes thumperSink {
+    0%{opacity:0;transform:translate3d(0,-48vh,0) scale(.58) rotateZ(-5deg)} 18%{opacity:1}
+    38%{transform:translate3d(0,2vh,0) scale(1.05) rotateZ(1deg)} 47%{transform:translate3d(0,-1vh,0) scale(.98)}
+    72%{opacity:1;transform:translate3d(0,4vh,0) scale(1)} 88%{opacity:.92;transform:translate3d(0,29vh,0) scale(.84)}
+    100%{opacity:0;transform:translate3d(0,52vh,0) scale(.58)}
+}
+@keyframes thumperPulse { 0%{opacity:0;transform:translate(-50%,-50%) scale(.15)} 15%{opacity:1} 100%{opacity:0;transform:translate(-50%,-50%) scale(8.5)} }
+@keyframes thumperSandClose { 0%,28%{opacity:0;transform:translate(-50%,-50%) scale(.25)} 43%{opacity:.9;transform:translate(-50%,-50%) scale(.8)} 76%{opacity:.68;transform:translate(-50%,-50%) scale(1.1)} 100%{opacity:0;transform:translate(-50%,-50%) scale(.35)} }
+@keyframes waterCircuit { 0%{opacity:0;transform:translateY(-22px) scaleY(.06)} 24%{opacity:1} 72%{opacity:.95;transform:translateY(0) scaleY(1)} 100%{opacity:0;transform:translateY(32px) scaleY(.2)} }
+@keyframes shieldMechanicalStart { 0%{opacity:0;transform:translateY(18vh) scale(.35) rotateY(-65deg)} 24%{opacity:1} 43%{transform:translateY(0) scale(.94) rotateY(8deg)} 53%{transform:scale(1.04) rotateY(-3deg)} 68%{opacity:1;transform:scale(1)} 84%{opacity:1;transform:scale(.94)} 100%{opacity:0;transform:scale(.08) rotateZ(9deg);filter:brightness(2.4)} }
+@keyframes shieldRingExpand { 0%{opacity:0;transform:translate(-50%,-50%) scale(.15)} 14%{opacity:1} 78%{opacity:.88} 100%{opacity:0;transform:translate(-50%,-50%) scale(15)} }
+@keyframes shieldFieldImpact { 0%,62%{opacity:0;transform:scale(.82)} 70%{opacity:1;transform:scale(1)} 78%{opacity:.36;transform:scale(1.025)} 100%{opacity:0;transform:scale(.25)} }
+@keyframes shieldImplosion { 0%,70%{opacity:0;transform:translate(-50%,-50%) scale(1)} 76%{opacity:.92} 100%{opacity:0;transform:translate(-50%,-50%) scale(.015)} }
+@keyframes bikeRideSmooth {
+    0%{opacity:0;transform:translate3d(92vw,14vh,0) scale(.52) rotateZ(3deg)}
+    8%{opacity:1} 22%{transform:translate3d(56vw,8vh,0) scale(.69) rotateZ(2deg)}
+    42%{transform:translate3d(20vw,2vh,0) scale(.91) rotateZ(0)}
+    58%{opacity:1;transform:translate3d(-4vw,-1vh,0) scale(1.02) rotateZ(-1deg)}
+    76%{transform:translate3d(-34vw,-5vh,0) scale(.92) rotateZ(-2deg)}
+    92%{opacity:1;transform:translate3d(-69vw,-10vh,0) scale(.7) rotateZ(-3deg)}
+    100%{opacity:0;transform:translate3d(-94vw,-14vh,0) scale(.58) rotateZ(-4deg)}
+}
+@keyframes bikeSprayTravel {
+    0%{opacity:0;transform:translate3d(104vw,12vh,0) scale(.35) rotate(7deg)} 10%{opacity:.42}
+    42%{opacity:.94;transform:translate3d(28vw,2vh,0) scale(.88) rotate(3deg)}
+    65%{opacity:.86;transform:translate3d(-12vw,-2vh,0) scale(1.12) rotate(0)}
+    100%{opacity:0;transform:translate3d(-90vw,-11vh,0) scale(.68) rotate(-6deg)}
+}
+@keyframes riftOpen { 0%{opacity:0} 22%{opacity:1;transform:translateX(-50%) scaleX(1)} 72%{opacity:.85;transform:translateX(-50%) scaleX(.8)} 100%{opacity:0;transform:translateX(-50%) scaleX(.12)} }
+@keyframes orniPortal { 0%{opacity:0;transform:translateX(-50%) scale(.15) rotate(-11deg)} 18%{opacity:1;transform:translateX(-50%) scale(1) rotate(-11deg)} 72%{opacity:.7;transform:translateX(-50%) scale(.86) rotate(-11deg)} 100%{opacity:0;transform:translateX(-50%) scale(.1) rotate(-11deg)} }
+@keyframes dustBillow { 0%{opacity:0;transform:translateX(-50%) scale(.25)} 18%{opacity:.2} 45%{opacity:.94;transform:translateX(-50%) scale(.9)} 74%{opacity:.72;transform:translateX(-50%) scale(1.08)} 100%{opacity:0;transform:translateX(-50%) scale(1.28) translateY(-8%)} }
+@keyframes popoutAura { 10%{opacity:0} 35%{opacity:1;transform:scale(.88)} 100%{opacity:0;transform:scale(1.4)} }
+@keyframes popoutParticle { 10%{opacity:0;transform:translate(0,0) scale(.5)} 30%{opacity:1} 100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.15)} }
+@keyframes popoutCaption { 35%{opacity:0;transform:translate(-50%,12px)} 52%,78%{opacity:1;transform:translate(-50%,0)} 100%{opacity:0;transform:translate(-50%,-8px)} }
+@keyframes wormCameraShake { 0%,100%{transform:translate(0,0)} 18%{transform:translate(-3px,2px)} 34%{transform:translate(4px,-2px)} 51%{transform:translate(-2px,-1px)} 67%{transform:translate(2px,1px)} 82%{transform:translate(-1px,0)} }
+body.worm-impact #game-wrapper { animation:wormCameraShake .72s cubic-bezier(.25,.7,.35,1); }
 
 /* Tempête canvas */
 #storm-canvas {
@@ -146,10 +366,10 @@ body::before {
 }
 .storm-warning {
     position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
-    z-index: 20; color: var(--gold); font-size: 1.6em; font-weight: bold;
+    z-index:20; color:#ffe1a4; font-size:1.35em; font-weight:700;
     text-shadow: 0 0 20px rgba(255,200,50,0.9);
     text-align: center; opacity: 0; transition: opacity 0.3s;
-    pointer-events: none; letter-spacing: 2px;
+    pointer-events:none; letter-spacing:4px; width:90%; padding:15px 8px; background:linear-gradient(90deg,transparent,rgba(30,15,4,.8),transparent); border-top:1px solid rgba(255,210,120,.2); border-bottom:1px solid rgba(255,210,120,.2);
 }
 .storm-warning.visible { opacity: 1; animation: stormPulse 0.8s infinite alternate; }
 @keyframes stormPulse {
@@ -160,12 +380,21 @@ body::before {
 /* Overlays */
 .overlay {
     position: fixed; inset: 0; z-index: 50;
-    background: rgba(8,4,2,0.9);
+    background:
+      radial-gradient(circle at 50% 40%,rgba(80,48,17,.22),transparent 35%),
+      linear-gradient(135deg,rgba(5,4,3,.97),rgba(17,11,6,.96));
     display: flex; align-items: center; justify-content: center;
     flex-direction: column; text-align: center;
     backdrop-filter: blur(5px);
     animation: fadeIn 0.3s ease;
 }
+.overlay-panel { width:min(560px,calc(100vw - 34px)); padding:42px 34px 34px; box-sizing:border-box; border:1px solid rgba(231,183,92,.3); border-radius:2px; background:rgba(12,9,6,.76); box-shadow:0 30px 100px #000,inset 0 0 60px rgba(118,72,21,.08); position:relative; }
+.overlay-panel::before { content:'ARRAKIS SURVIVAL ARCHIVE'; position:absolute; top:12px; left:0; right:0; color:#735b3a; font-size:.58em; letter-spacing:3px; }
+.eyebrow { color:var(--cyan); font-size:.65em; letter-spacing:4px; text-transform:uppercase; margin-bottom:9px; }
+.feature-row { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:18px 0 5px; }
+.feature { padding:10px 5px; border:1px solid rgba(231,183,92,.13); background:rgba(231,183,92,.035); }
+.feature b { display:block; color:var(--gold-bright); font-size:1.05em; }
+.feature span { color:#8c7554; font-size:.65em; text-transform:uppercase; letter-spacing:.8px; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 .overlay h2 { color: var(--gold); font-size: 2em; margin: 0 0 10px; text-shadow: 0 0 15px rgba(205,164,52,0.5); }
 .overlay .sub { color: #a89060; font-size: 0.95em; margin-bottom: 20px; }
@@ -200,14 +429,48 @@ body::before {
 #lb-list li .pts { color: var(--gold); font-weight: bold; min-width: 44px; text-align: right; }
 #lb-list li.me .name { color: var(--gold); }
 
-.controls-hint { font-size: 0.75em; color: var(--muted); text-align: center; }
+.controls-hint { font-size:.72em; color:var(--muted); text-align:center; letter-spacing:.5px; }
 
 /* Responsive */
 @media (max-width: 600px) {
-    .card { width: 60px; height: 78px; }
-    .card-symbol { font-size: 24px; }
-    .card-name { font-size: 0.5em; }
-    #board { gap: 6px; padding: 10px; }
+    :root { --card-w:clamp(49px,14vw,56px); --card-h:clamp(67px,18.6vw,75px); }
+    #board[data-cols="4"] { --card-w:clamp(70px,19.2vw,82px); --card-h:clamp(92px,25.5vw,108px); }
+    #board[data-cols="5"] { --card-w:clamp(57px,15.5vw,66px); --card-h:clamp(76px,20.6vw,88px); }
+    .game-header .chapter { display:none; }
+    .game-header .game-title { font-size:.85em; letter-spacing:1.5px; }
+    .hud-item { min-width:51px; padding:6px 5px; }
+    .prescience-btn { padding:6px 8px; }
+    .card-name { font-size:.42em; left:4px; }
+    .card-type { display:none; }
+    #board { gap:7px; padding:18px 9px; }
+    .overlay-panel { padding:38px 18px 25px; }
+    .match-popout { inset:0; }
+    .match-popout.worm .popout-subject { height:72vh; max-width:78vw; }
+    .match-popout.orni .popout-subject { width:94vw; max-height:58vh; }
+    .match-popout.ride .popout-subject,
+    .match-popout.titan .popout-subject,
+    .match-popout.bloom .popout-subject,
+    .match-popout.vortex .popout-subject,
+    .match-popout.celestial .popout-subject,
+    .match-popout.diorama .popout-subject,
+    .match-popout.vision .popout-subject { width:92vw; }
+    .match-popout.fauna .popout-subject,
+    .match-popout.relic .popout-subject,
+    .match-popout.tech .popout-subject { width:82vw; }
+    .popout-caption { font-size:.52em; letter-spacing:2px; }
+}
+@media (min-width: 601px) and (max-width: 850px) {
+    :root { --card-w:92px; --card-h:122px; }
+    #board[data-cols="4"] { --card-w:118px; --card-h:154px; }
+    #board[data-cols="5"] { --card-w:102px; --card-h:134px; }
+    #board { gap:10px; padding:24px 18px; }
+}
+@media (min-width: 851px) {
+    #board[data-cols="4"] { --card-w:142px; --card-h:184px; gap:18px; padding:34px; }
+    #board[data-cols="5"] { --card-w:124px; --card-h:162px; gap:15px; padding:32px; }
+    #board[data-cols="4"] .card-name { font-size:.7em; }
+    #board[data-cols="4"] .card-type { font-size:.5em; }
+    #board[data-cols="5"] .card-name { font-size:.62em; }
 }
 </style>
 </head>
@@ -216,7 +479,8 @@ body::before {
 <div id="game-wrapper">
     <div class="game-header">
         <a href="hub.html" class="back-link">&larr; Hub Jeux</a>
-        <span class="game-title">🌪️ Sandstorm Memory</span>
+        <span class="game-title">Sandstorm Memory</span>
+        <span class="chapter">Archives d'Arrakis</span>
     </div>
 
     <div class="hud" id="hud" style="display:none">
@@ -225,12 +489,14 @@ body::before {
         <div class="hud-item"><div class="hud-label">Combo</div><div class="hud-val combo" id="hud-combo">x1</div></div>
         <div class="hud-item"><div class="hud-label">Vies</div><div class="hud-val lives" id="hud-lives">❤❤❤</div></div>
         <div class="hud-item"><div class="hud-label">Temps</div><div class="hud-val" id="hud-time">0:00</div></div>
+        <div class="hud-item"><div class="hud-label">Tempête</div><div class="hud-val" id="hud-storm">—</div><div class="storm-meter"><i id="storm-meter-fill"></i></div></div>
+        <button class="prescience-btn" id="btn-prescience" type="button" disabled><strong>◉</strong><span>Prescience</span></button>
     </div>
 
     <div id="board-container">
         <div id="board"></div>
         <canvas id="storm-canvas"></canvas>
-        <div class="storm-warning" id="storm-warning">🌪️ TEMPÊTE DE SABLE !</div>
+        <div class="storm-warning" id="storm-warning">TEMPÊTE DE CORIOLIS</div>
     </div>
 
     <div class="controls-hint">Mémorise les symboles, trouve les paires — attention aux tempêtes !</div>
@@ -243,25 +509,38 @@ body::before {
 
 <!-- Overlays -->
 <div class="overlay" id="menu-overlay">
-    <h2>🌪️ Sandstorm Memory</h2>
-    <div class="sub">Mémorise les symboles de Dune — les tempêtes mélangent les cartes !</div>
-    <div class="detail">🃏 Niveaux progressifs · 🌀 Tempêtes de sable · ⚡ Combos</div>
-    <div class="detail">3 vies par niveau · Temps bonus · Symboles cachés</div>
-    <button id="btn-start">Commencer</button>
+    <div class="overlay-panel">
+        <div class="eyebrow">Épreuve de mémorisation</div>
+        <h2>Sandstorm Memory</h2>
+        <div class="sub">Explore les archives visuelles d'Arrakis. Forme les paires avant que la tempête ne brouille tes souvenirs.</div>
+        <div class="feature-row">
+            <div class="feature"><b>18</b><span>cartes uniques</span></div>
+            <div class="feature"><b>6</b><span>paliers</span></div>
+            <div class="feature"><b>◉</b><span>prescience</span></div>
+        </div>
+        <div class="detail">Enchaîne 3 paires pour charger la Prescience. Les tempêtes remélangent uniquement les cartes encore cachées.</div>
+        <button id="btn-start">Entrer dans l'épreuve</button>
+    </div>
 </div>
 
 <div class="overlay" id="level-overlay" style="display:none">
-    <h2 id="level-title">Niveau terminé !</h2>
-    <div class="score-big" id="level-score">0</div>
-    <div class="detail" id="level-detail"></div>
-    <button id="btn-next">Niveau suivant</button>
+    <div class="overlay-panel">
+        <div class="eyebrow">Mémoire préservée</div>
+        <h2 id="level-title">Niveau terminé !</h2>
+        <div class="score-big" id="level-score">0</div>
+        <div class="detail" id="level-detail"></div>
+        <button id="btn-next">Niveau suivant</button>
+    </div>
 </div>
 
 <div class="overlay" id="gameover-overlay" style="display:none">
-    <h2>Englouti par la tempête !</h2>
-    <div class="score-big" id="final-score">0</div>
-    <div class="detail" id="final-detail"></div>
-    <button id="btn-retry">Rejouer</button>
+    <div class="overlay-panel">
+        <div class="eyebrow">Archives perdues</div>
+        <h2>Englouti par la tempête</h2>
+        <div class="score-big" id="final-score">0</div>
+        <div class="detail" id="final-detail"></div>
+        <button id="btn-retry">Rejouer</button>
+    </div>
 </div>
 
 <script>
@@ -272,25 +551,83 @@ const stormCanvas = document.getElementById('storm-canvas');
 const stormCtx = stormCanvas.getContext('2d');
 const stormWarning = document.getElementById('storm-warning');
 
-// ---- Symboles Dune ----
-const ALL_SYMBOLS = [
-    { icon: '🐛', name: 'Shai-Hulud' },
-    { icon: '🦅', name: 'Ornithoptère' },
-    { icon: '💎', name: 'Épice' },
-    { icon: '🗡️', name: 'Crysknife' },
-    { icon: '🛡️', name: 'Bouclier' },
-    { icon: '👁️', name: 'Œil d\'Ibad' },
-    { icon: '🏜️', name: 'Désert' },
-    { icon: '🌙', name: 'Lune' },
-    { icon: '⚔️', name: 'Combat' },
-    { icon: '🏛️', name: 'Sietch' },
-    { icon: '⚡', name: 'Thumper' },
-    { icon: '🌀', name: 'Coriolis' },
-    { icon: '🧪', name: 'Eau de vie' },
-    { icon: '🎭', name: 'Bene Gesserit' },
-    { icon: '👑', name: 'Empereur' },
-    { icon: '🚀', name: 'Heighliner' },
+// Le navigateur télécharge et décode les trois planches pendant que le joueur
+// lit l'écran d'accueil. Le premier retournement n'a donc plus à attendre le
+// décodage WebP ni l'envoi de la texture au GPU.
+const CARD_SHEETS = [
+    'img/sandstorm_cards_vehicles.webp',
+    'img/sandstorm_cards_arrakis.webp',
+    'img/sandstorm_cards_sietch.webp',
+    'img/popout_shai_hulud.webp',
+    'img/popout_ornithopter.webp',
+    'img/popout_moto.webp',
+    'img/popout_harvester.webp',
+    'img/popout_stillsuit.webp',
+    'img/popout_crysknife.webp',
+    'img/popout_thumper.webp',
+    'img/popout_muaddib.webp',
+    'img/popout_spice_bloom.webp',
+    'img/popout_coriolis.webp',
+    'img/popout_oasis.webp',
+    'img/popout_moon.webp',
+    'img/popout_sietch.webp',
+    'img/popout_aql.webp',
+    'img/popout_windtrap.webp',
+    'img/popout_ibad_eye.webp',
+    'img/popout_shield_generator.webp',
+    'img/popout_water_reserve.webp',
 ];
+let cardSheetsDecoded = false;
+const cardSheetsReady = Promise.all(CARD_SHEETS.map(src => {
+    const img = new Image();
+    img.src = src;
+    return typeof img.decode === 'function'
+        ? img.decode().catch(() => {})
+        : new Promise(resolve => { img.onload = img.onerror = resolve; });
+})).then(() => { cardSheetsDecoded = true; });
+
+// ---- Archives visuelles originales (3 planches de 6 cartes) ----
+const ALL_SYMBOLS = [
+    { name:'Ornithoptère éclaireur', type:'Véhicule', sheet:'img/sandstorm_cards_vehicles.webp', x:0,   y:0 },
+    { name:'Moto des sables',       type:'Véhicule', sheet:'img/sandstorm_cards_vehicles.webp', x:50,  y:0 },
+    { name:'Moissonneuse',           type:'Véhicule', sheet:'img/sandstorm_cards_vehicles.webp', x:100, y:0 },
+    { name:'Distille',               type:'Survie',   sheet:'img/sandstorm_cards_vehicles.webp', x:0,   y:100 },
+    { name:'Crysknife',              type:'Arme',     sheet:'img/sandstorm_cards_vehicles.webp', x:50,  y:100 },
+    { name:'Marteleur',              type:'Outil',    sheet:'img/sandstorm_cards_vehicles.webp', x:100, y:100 },
+    { name:'Shai-Hulud',             type:'Menace',   sheet:'img/sandstorm_cards_arrakis.webp',  x:0,   y:0 },
+    { name:"Muad'Dib",              type:'Faune',    sheet:'img/sandstorm_cards_arrakis.webp',  x:50,  y:0 },
+    { name:"Floraison d'épice",     type:'Ressource',sheet:'img/sandstorm_cards_arrakis.webp',  x:100, y:0 },
+    { name:'Tempête de Coriolis',    type:'Phénomène',sheet:'img/sandstorm_cards_arrakis.webp',  x:0,   y:100 },
+    { name:'Oasis cachée',           type:'Survie',   sheet:'img/sandstorm_cards_arrakis.webp',  x:50,  y:100 },
+    { name:"Lune d'Arrakis",        type:'Repère',   sheet:'img/sandstorm_cards_arrakis.webp',  x:100, y:100 },
+    { name:'Sietch',                 type:'Lieu',     sheet:'img/sandstorm_cards_sietch.webp',   x:0,   y:0 },
+    { name:"Épreuve de l'Aql",      type:'Lieu',     sheet:'img/sandstorm_cards_sietch.webp',   x:50,  y:0 },
+    { name:'Piège à vent',           type:'Base',     sheet:'img/sandstorm_cards_sietch.webp',   x:100, y:0 },
+    { name:"Œil de l'Ibad",         type:'Mystère',  sheet:'img/sandstorm_cards_sietch.webp',   x:0,   y:100 },
+    { name:'Générateur de bouclier', type:'Technologie',sheet:'img/sandstorm_cards_sietch.webp', x:50,  y:100 },
+    { name:"Réserve d'eau",         type:'Survie',   sheet:'img/sandstorm_cards_sietch.webp',   x:100, y:100 },
+];
+
+const POPOUTS = {
+    'Shai-Hulud': { kind:'worm', fx:'worm', src:'img/popout_shai_hulud.webp', caption:'SHAI-HULUD · ÉMERGENCE', accent:'#efb55a' },
+    'Ornithoptère éclaireur': { kind:'orni', fx:'orni', src:'img/popout_ornithopter.webp', caption:'ORNITHOPTÈRE · ENVOL', accent:'#75efff' },
+    'Moto des sables': { kind:'ride', fx:'bike', src:'img/popout_moto.webp', caption:'MOTO DES SABLES · PLEIN GAZ', accent:'#e8a64c' },
+    'Moissonneuse': { kind:'titan', fx:'harvester', src:'img/popout_harvester.webp', caption:'MOISSONNEUSE · DÉPLOIEMENT', accent:'#f1b862' },
+    'Distille': { kind:'relic', fx:'stillsuit', src:'img/popout_stillsuit.webp', caption:'DISTILLE · CIRCUIT FERMÉ', accent:'#83d9e8' },
+    'Crysknife': { kind:'relic', fx:'crystal', src:'img/popout_crysknife.webp', caption:'CRYSKNIFE · DENT DU DÉSERT', accent:'#e8efff' },
+    'Marteleur': { kind:'relic', fx:'thumper', src:'img/popout_thumper.webp', caption:'MARTELEUR · APPEL DES PROFONDEURS', accent:'#e0a24c' },
+    "Muad'Dib": { kind:'fauna', fx:'mouse', src:'img/popout_muaddib.webp', caption:"MUAD'DIB · PAS DU DÉSERT", accent:'#e7c38a' },
+    "Floraison d'épice": { kind:'bloom', fx:'spice', src:'img/popout_spice_bloom.webp', caption:"FLORAISON D'ÉPICE · RÉSONANCE", accent:'#ff9d31' },
+    'Tempête de Coriolis': { kind:'vortex', fx:'coriolis', src:'img/popout_coriolis.webp', caption:'CORIOLIS · ŒIL DE LA TEMPÊTE', accent:'#e69b49' },
+    'Oasis cachée': { kind:'diorama', fx:'oasis', src:'img/popout_oasis.webp', caption:'OASIS CACHÉE · SOURCE VIVANTE', accent:'#62e9e8' },
+    "Lune d'Arrakis": { kind:'celestial', fx:'moon', src:'img/popout_moon.webp', caption:"LUNE D'ARRAKIS · ALIGNEMENT", accent:'#ffe2a8' },
+    'Sietch': { kind:'diorama', fx:'sietch', src:'img/popout_sietch.webp', caption:'SIETCH · REFUGE DE PIERRE', accent:'#e8ad5d' },
+    "Épreuve de l'Aql": { kind:'diorama', fx:'aql', src:'img/popout_aql.webp', caption:"ÉPREUVE DE L'AQL · ÉVEIL", accent:'#63ddec' },
+    'Piège à vent': { kind:'tech', fx:'windtrap', src:'img/popout_windtrap.webp', caption:'PIÈGE À VENT · CAPTURE', accent:'#e9b56e' },
+    "Œil de l'Ibad": { kind:'vision', fx:'ibad', src:'img/popout_ibad_eye.webp', caption:"ŒIL DE L'IBAD · PRESCIENCE", accent:'#4bd8ee' },
+    'Générateur de bouclier': { kind:'tech', fx:'shield', src:'img/popout_shield_generator.webp', caption:'BOUCLIER · CHAMP HOLTZMAN', accent:'#55efff' },
+    "Réserve d'eau": { kind:'relic', fx:'water', src:'img/popout_water_reserve.webp', caption:"RÉSERVE D'EAU · VIE PRÉSERVÉE", accent:'#5ce5f2' },
+};
 
 // ---- Niveaux ----
 const LEVELS = [
@@ -312,6 +649,7 @@ let levelStartTime = 0, gameStartTime = 0;
 let stormScheduled = false, stormCount = 0, matchesSinceStorm = 0;
 let bestScore = 0, scoreSecret = '';
 let stormParticles = [], stormActive = false, stormAnimFrame = 0;
+let prescienceReady = false, prescienceUsed = false;
 
 // ---- Sons ----
 let audioCtx = null;
@@ -331,6 +669,127 @@ function sndStorm() {
     src.buffer = buf; g.gain.setValueAtTime(0.12, t); g.gain.exponentialRampToValueAtTime(0.001, t+0.8);
     const bp = a.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 400; bp.Q.value = 1;
     src.connect(bp); bp.connect(g); g.connect(a.destination); src.start(t);
+}
+function makeNoiseBuffer(a, duration, brown) {
+    const length = Math.ceil(a.sampleRate * duration);
+    const buffer = a.createBuffer(1, length, a.sampleRate);
+    const data = buffer.getChannelData(0);
+    let previous = 0;
+    for (let i = 0; i < length; i++) {
+        const white = Math.random() * 2 - 1;
+        if (brown) {
+            previous = previous * .985 + white * .015;
+            data[i] = Math.max(-1, Math.min(1, previous * 5.2));
+        } else {
+            data[i] = white;
+        }
+    }
+    return buffer;
+}
+function sndWormEmergence() {
+    try {
+        const a = aud(), t = a.currentTime, duration = 2.15;
+        const master = a.createGain();
+        const compressor = a.createDynamicsCompressor();
+        compressor.threshold.value = -20; compressor.knee.value = 18; compressor.ratio.value = 4;
+        master.gain.setValueAtTime(.001, t);
+        master.gain.exponentialRampToValueAtTime(.34, t + .18);
+        master.gain.setValueAtTime(.3, t + 1.25);
+        master.gain.exponentialRampToValueAtTime(.001, t + duration);
+        master.connect(compressor); compressor.connect(a.destination);
+
+        const rumble = a.createBufferSource(), low = a.createBiquadFilter(), rumbleGain = a.createGain();
+        rumble.buffer = makeNoiseBuffer(a, duration, true);
+        low.type = 'lowpass'; low.frequency.setValueAtTime(185, t); low.frequency.exponentialRampToValueAtTime(72, t + duration);
+        low.Q.value = .8; rumbleGain.gain.value = .72;
+        rumble.connect(low); low.connect(rumbleGain); rumbleGain.connect(master); rumble.start(t); rumble.stop(t + duration);
+
+        const sub = a.createOscillator(), subGain = a.createGain();
+        sub.type = 'sine'; sub.frequency.setValueAtTime(54, t); sub.frequency.exponentialRampToValueAtTime(31, t + 1.7);
+        subGain.gain.setValueAtTime(.001, t); subGain.gain.exponentialRampToValueAtTime(.42, t + .3); subGain.gain.exponentialRampToValueAtTime(.001, t + 2.05);
+        sub.connect(subGain); subGain.connect(master); sub.start(t); sub.stop(t + duration);
+
+        const impact = a.createBufferSource(), impactLow = a.createBiquadFilter(), impactGain = a.createGain();
+        impact.buffer = makeNoiseBuffer(a, .65, false); impactLow.type = 'lowpass'; impactLow.frequency.value = 115;
+        impactGain.gain.setValueAtTime(.001, t + .38); impactGain.gain.exponentialRampToValueAtTime(.9, t + .405); impactGain.gain.exponentialRampToValueAtTime(.001, t + .95);
+        impact.connect(impactLow); impactLow.connect(impactGain); impactGain.connect(master); impact.start(t + .38); impact.stop(t + 1.05);
+    } catch(e) {}
+}
+function sndOrniFlyby() {
+    try {
+        const a = aud(), t = a.currentTime, duration = 2.35;
+        const master = a.createGain(), panner = a.createStereoPanner ? a.createStereoPanner() : null;
+        master.gain.setValueAtTime(.001, t); master.gain.exponentialRampToValueAtTime(.19, t + .2);
+        master.gain.setValueAtTime(.2, t + 1.35); master.gain.exponentialRampToValueAtTime(.001, t + duration);
+        if (panner) {
+            panner.pan.setValueAtTime(.95, t); panner.pan.linearRampToValueAtTime(-.95, t + duration);
+            master.connect(panner); panner.connect(a.destination);
+        } else master.connect(a.destination);
+
+        const wind = a.createBufferSource(), windFilter = a.createBiquadFilter(), windGain = a.createGain();
+        const noise = makeNoiseBuffer(a, duration, false);
+        wind.buffer = noise; windFilter.type = 'bandpass'; windFilter.Q.value = .7;
+        windFilter.frequency.setValueAtTime(260, t); windFilter.frequency.exponentialRampToValueAtTime(1500, t + 1.25); windFilter.frequency.exponentialRampToValueAtTime(520, t + duration);
+        windGain.gain.value = .75; wind.connect(windFilter); windFilter.connect(windGain); windGain.connect(master); wind.start(t); wind.stop(t + duration);
+
+        const engine = a.createOscillator(), engineFilter = a.createBiquadFilter(), engineGain = a.createGain();
+        engine.type = 'sawtooth'; engine.frequency.setValueAtTime(78, t); engine.frequency.exponentialRampToValueAtTime(235, t + 1.25); engine.frequency.exponentialRampToValueAtTime(145, t + duration);
+        engineFilter.type = 'lowpass'; engineFilter.frequency.value = 720; engineFilter.Q.value = 2.2;
+        engineGain.gain.value = .09; engine.connect(engineFilter); engineFilter.connect(engineGain); engineGain.connect(master); engine.start(t); engine.stop(t + duration);
+
+        const wings = a.createBufferSource(), wingFilter = a.createBiquadFilter(), wingGain = a.createGain();
+        wings.buffer = noise; wingFilter.type = 'highpass'; wingFilter.frequency.value = 780;
+        wingGain.gain.setValueAtTime(.001, t);
+        for (let beat = .22; beat < 1.9; beat += .19) {
+            wingGain.gain.setValueAtTime(.001, t + beat);
+            wingGain.gain.exponentialRampToValueAtTime(.16, t + beat + .018);
+            wingGain.gain.exponentialRampToValueAtTime(.001, t + beat + .1);
+        }
+        wings.connect(wingFilter); wingFilter.connect(wingGain); wingGain.connect(master); wings.start(t); wings.stop(t + duration);
+    } catch(e) {}
+}
+function sndArchiveSignature(kind, fx) {
+    try {
+        const a = aud(), t = a.currentTime, duration = 1.95;
+        const master = a.createGain(), filter = a.createBiquadFilter();
+        const profiles = {
+            ride:[95,420,'bandpass',.17], titan:[48,120,'lowpass',.25], relic:[180,980,'bandpass',.12],
+            fauna:[260,1350,'highpass',.1], bloom:[120,1700,'bandpass',.18], vortex:[75,760,'bandpass',.21],
+            celestial:[55,340,'lowpass',.16], diorama:[72,520,'lowpass',.18], vision:[110,1450,'bandpass',.14], tech:[85,1100,'bandpass',.15]
+        };
+        const fxProfiles = {
+            bike:[72,680,'bandpass',.19], harvester:[38,105,'lowpass',.27], crystal:[340,2100,'highpass',.12],
+            thumper:[42,86,'lowpass',.25], mouse:[420,1850,'highpass',.085], spice:[190,2300,'bandpass',.17],
+            coriolis:[64,920,'bandpass',.24], windtrap:[230,1900,'bandpass',.16], shield:[72,1450,'bandpass',.17],
+            water:[210,1250,'bandpass',.11], aql:[95,980,'bandpass',.14]
+        };
+        const p = fxProfiles[fx] || profiles[kind] || profiles.relic;
+        master.gain.setValueAtTime(.001,t); master.gain.exponentialRampToValueAtTime(p[3],t+.16);
+        master.gain.setValueAtTime(p[3],t+1.18); master.gain.exponentialRampToValueAtTime(.001,t+duration);
+        filter.type=p[2]; filter.Q.value=kind==='vision'||kind==='tech' ? 3.2 : .8;
+        filter.frequency.setValueAtTime(p[0],t); filter.frequency.exponentialRampToValueAtTime(p[1],t+1.05);
+        filter.frequency.exponentialRampToValueAtTime(Math.max(55,p[0]*.8),t+duration);
+        filter.connect(master); master.connect(a.destination);
+
+        const noise=a.createBufferSource(); noise.buffer=makeNoiseBuffer(a,duration,kind==='titan'||kind==='celestial'||kind==='diorama');
+        noise.connect(filter); noise.start(t); noise.stop(t+duration);
+
+        const osc=a.createOscillator(), og=a.createGain();
+        osc.type=kind==='tech'||kind==='vision' ? 'sine' : 'triangle';
+        osc.frequency.setValueAtTime(kind==='titan'?42:kind==='celestial'?58:92,t);
+        osc.frequency.exponentialRampToValueAtTime(kind==='tech'?360:kind==='vision'?520:145,t+1.1);
+        og.gain.setValueAtTime(.001,t); og.gain.exponentialRampToValueAtTime(kind==='titan'?.13:.065,t+.25); og.gain.exponentialRampToValueAtTime(.001,t+duration);
+        osc.connect(og); og.connect(master); osc.start(t); osc.stop(t+duration);
+
+        if (kind==='ride'||kind==='fauna') {
+            const pan=a.createStereoPanner ? a.createStereoPanner() : null;
+            if (pan) {
+                master.disconnect(); master.connect(pan); pan.connect(a.destination);
+                pan.pan.setValueAtTime(fx==='bike' ? .85 : -.85,t);
+                pan.pan.linearRampToValueAtTime(fx==='bike' ? -.85 : .85,t+duration);
+            }
+        }
+    } catch(e) {}
 }
 function sndLevelComplete() { [523,659,784,1047,1319].forEach((f,i) => tone(f, 0.2, 0.08, 'sine', f, i*0.1)); }
 function sndGameOver() { [400,350,300,200].forEach((f,i) => tone(f, 0.2, 0.06, 'sawtooth', f*0.8, i*0.15)); }
@@ -375,11 +834,22 @@ function buildBoard() {
     matchesSinceStorm = 0; stormCount = 0;
     flipped = []; locked = false; gameOver_ = false;
     stormScheduled = cfg.storm;
+    prescienceReady = false; prescienceUsed = false;
 
-    const symbols = shuffle([...ALL_SYMBOLS]).slice(0, cfg.pairs);
+    let symbols;
+    if (level === 0) {
+        const showcaseNames = new Set(['Shai-Hulud', 'Ornithoptère éclaireur']);
+        const showcase = ALL_SYMBOLS.filter(s => showcaseNames.has(s.name));
+        const remaining = shuffle(ALL_SYMBOLS.filter(s => !showcaseNames.has(s.name)))
+            .slice(0, cfg.pairs - showcase.length);
+        symbols = shuffle([...showcase, ...remaining]);
+    } else {
+        symbols = shuffle([...ALL_SYMBOLS]).slice(0, cfg.pairs);
+    }
     const cardData = shuffle([...symbols, ...symbols]);
 
-    board.style.gridTemplateColumns = `repeat(${cfg.cols}, 80px)`;
+    board.dataset.cols = cfg.cols;
+    board.style.gridTemplateColumns = `repeat(${cfg.cols}, var(--card-w))`;
     board.innerHTML = '';
     cards = [];
 
@@ -389,16 +859,25 @@ function buildBoard() {
         card.innerHTML = `
             <div class="card-face card-back"></div>
             <div class="card-face card-front">
-                <span class="card-symbol">${sym.icon}</span>
-                <span class="card-name">${sym.name}</span>
+                <span class="card-art" style="background-image:url('${sym.sheet}');background-position:${sym.x}% ${sym.y}%"></span>
+                <span class="card-meta"><span class="card-name">${sym.name}</span><span class="card-type">${sym.type}</span></span>
             </div>`;
         card.dataset.index = i;
         card.dataset.symbolId = sym.name;
+        card.tabIndex = 0;
+        card.setAttribute('role', 'button');
+        card.setAttribute('aria-label', 'Carte cachée');
         // On relit l'index dans dataset.index au moment du clic (pas de closure
         // figée sur i) : après une tempête, les cartes non appariées changent
         // de position dans le tableau `cards`, et dataset.index est mis à jour
         // en conséquence — sinon un clic finissait par retourner la mauvaise carte.
         card.addEventListener('click', () => onCardClick(parseInt(card.dataset.index, 10)));
+        card.addEventListener('keydown', e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onCardClick(parseInt(card.dataset.index, 10));
+            }
+        });
         board.appendChild(card);
         cards.push({ el: card, symbol: sym.name, matched: false });
     });
@@ -448,18 +927,20 @@ function onCardClick(idx) {
             cards[a].matched = cards[b].matched = true;
             const comboBonus = Math.min(comboStreak, 5);
             score += 100 * comboBonus;
+            if (comboStreak >= 3 && !prescienceUsed) prescienceReady = true;
             if (comboStreak >= 3) sndCombo(); else sndMatch();
 
             setTimeout(() => {
                 cards[a].el.classList.add('matched');
                 cards[b].el.classList.add('matched');
+                const featuredPopout = playMatchPopout(cards[a].symbol, [cards[a].el, cards[b].el]);
                 flipped = [];
                 locked = false;
                 updateHUD();
                 if (stormScheduled && matchesSinceStorm >= (getLevelConfig().stormAt || 4) && matched < totalPairs) {
                     triggerStorm();
                 }
-                if (matched >= totalPairs) setTimeout(levelComplete, 400);
+                if (matched >= totalPairs) setTimeout(levelComplete, featuredPopout ? 2450 : 400);
             }, 350);
         } else {
             comboStreak = 0;
@@ -484,11 +965,134 @@ function onCardClick(idx) {
     }
 }
 
+// ---- Dioramas 2.5D : collection complète des 18 paires ----
+let activePopout = null;
+function addSceneElement(effect, className, properties) {
+    const element = document.createElement('i');
+    element.className = `scene-element ${className}`;
+    Object.entries(properties || {}).forEach(([name, value]) => element.style.setProperty(name, value));
+    effect.appendChild(element);
+    return element;
+}
+function playMatchPopout(symbol, sourceCards) {
+    const config = POPOUTS[symbol];
+    if (!config) return false;
+
+    if (activePopout) activePopout.remove();
+    sourceCards.forEach(el => el.classList.add('popout-source'));
+
+    const effect = document.createElement('div');
+    effect.className = `match-popout ${config.kind} fx-${config.fx}`;
+    effect.style.setProperty('--accent', config.accent || '#efb55a');
+    effect.setAttribute('aria-hidden', 'true');
+
+    if (config.kind === 'worm' || config.kind === 'orni') {
+        const rift = document.createElement('span');
+        rift.className = 'popout-rift';
+        effect.appendChild(rift);
+    }
+
+    if (config.kind === 'worm') {
+        for (const layer of ['back', 'front']) {
+            const dust = document.createElement('span');
+            dust.className = `dust-cloud ${layer}`;
+            effect.appendChild(dust);
+        }
+    }
+
+    if (config.fx === 'bike') {
+        addSceneElement(effect, 'bike-spray');
+        addSceneElement(effect, 'bike-spray front');
+    }
+    if (config.fx === 'thumper') {
+        addSceneElement(effect, 'thumper-sand');
+        for (let i = 0; i < 3; i++) {
+            addSceneElement(effect, 'thumper-pulse', {'--delay': (.62 + i * .28) + 's'});
+        }
+    }
+    if (config.fx === 'stillsuit') {
+        for (let i = 0; i < 4; i++) {
+            addSceneElement(effect, 'water-flow', {
+                '--x': (-72 + i * 48) + 'px',
+                '--delay': (.52 + i * .14) + 's'
+            });
+        }
+    }
+    if (config.fx === 'shield') {
+        for (let i = 0; i < 4; i++) {
+            addSceneElement(effect, 'shield-ring', {'--delay': (.34 + i * .13) + 's'});
+        }
+        addSceneElement(effect, 'shield-impact');
+        addSceneElement(effect, 'shield-collapse');
+    }
+
+    const particleCount = config.kind === 'worm' ? 48 : config.kind === 'orni' ? 30 : 0;
+    for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('i');
+        particle.className = 'popout-particle';
+        if (config.kind === 'worm') {
+            const angle = (Math.PI * 2 * i / particleCount) + (Math.random() - .5) * .45;
+            const distance = 95 + Math.random() * 260;
+            particle.style.setProperty('--dx', Math.cos(angle) * distance + 'px');
+            particle.style.setProperty('--dy', (-25 - Math.abs(Math.sin(angle)) * distance * .75) + 'px');
+            particle.style.setProperty('--size', (3 + Math.random() * 9) + 'px');
+            particle.style.setProperty('--delay', (.08 + Math.random() * .38) + 's');
+        } else if (config.kind === 'orni') {
+            particle.style.setProperty('--dx', (150 + Math.random() * 370) + 'px');
+            particle.style.setProperty('--dy', (35 + Math.random() * 150) + 'px');
+            particle.style.setProperty('--size', (1.5 + Math.random() * 2.5) + 'px');
+            particle.style.setProperty('--delay', (.18 + Math.random() * 1.1) + 's');
+        }
+        effect.appendChild(particle);
+    }
+
+    const subject = document.createElement('img');
+    subject.className = 'popout-subject';
+    subject.src = config.src;
+    subject.alt = '';
+    effect.appendChild(subject);
+
+    if (config.fx === 'moon') {
+        const shadow = document.createElement('img');
+        shadow.className = 'eclipse-shadow';
+        shadow.src = config.src;
+        shadow.alt = '';
+        effect.appendChild(shadow);
+    }
+
+    const caption = document.createElement('span');
+    caption.className = 'popout-caption';
+    caption.textContent = config.caption;
+    effect.appendChild(caption);
+
+    document.body.appendChild(effect);
+    activePopout = effect;
+    if (config.kind === 'worm') {
+        document.body.classList.remove('worm-impact');
+        void document.body.offsetWidth;
+        document.body.classList.add('worm-impact');
+        setTimeout(() => document.body.classList.remove('worm-impact'), 760);
+        sndWormEmergence();
+    } else if (config.kind === 'orni') {
+        sndOrniFlyby();
+    } else {
+        sndArchiveSignature(config.kind, config.fx);
+    }
+    setTimeout(() => {
+        sourceCards.forEach(el => el.classList.remove('popout-source'));
+        effect.remove();
+        if (activePopout === effect) activePopout = null;
+    }, 2400);
+    return true;
+}
+
 // ---- Tempête de sable ----
 function triggerStorm() {
     locked = true;
     matchesSinceStorm = 0;
     stormCount++;
+    updateHUD();
+    stormWarning.textContent = 'TEMPÊTE DE CORIOLIS';
     stormWarning.classList.add('visible');
     sndStorm();
 
@@ -558,6 +1162,24 @@ function triggerStorm() {
     }, 1800);
 }
 
+// ---- Prescience : récompense une série de 3 paires sans erreur ----
+function activatePrescience() {
+    if (!prescienceReady || prescienceUsed || locked || flipped.length) return;
+    prescienceReady = false;
+    prescienceUsed = true;
+    locked = true;
+    tone(420, .7, .045, 'sine', 1100);
+    const hidden = cards.filter(c => !c.matched);
+    hidden.forEach(c => {
+        c.el.classList.add('flipped', 'revealed-by-power');
+    });
+    updateHUD();
+    setTimeout(() => {
+        hidden.forEach(c => c.el.classList.remove('flipped', 'revealed-by-power'));
+        locked = false;
+    }, 1250);
+}
+
 function animateStorm() {
     if (!stormActive) {
         stormAnimFrame = 0;
@@ -621,13 +1243,39 @@ function updateHUD() {
     document.getElementById('hud-lives').textContent = '❤'.repeat(lives) + '🖤'.repeat(maxLives - lives);
     const elapsed = Math.floor((Date.now() - (levelStartTime || Date.now())) / 1000);
     document.getElementById('hud-time').textContent = Math.floor(elapsed/60) + ':' + String(elapsed%60).padStart(2,'0');
+    const cfg = getLevelConfig();
+    const stormAt = cfg.stormAt || 0;
+    const stormHud = document.getElementById('hud-storm');
+    const fill = document.getElementById('storm-meter-fill');
+    if (!cfg.storm) {
+        stormHud.textContent = 'CALME';
+        stormHud.style.color = '#7f735f';
+        fill.style.width = '0%';
+    } else {
+        const remaining = Math.max(0, stormAt - matchesSinceStorm);
+        stormHud.textContent = remaining === 1 ? 'IMMINENTE' : remaining + ' paire' + (remaining > 1 ? 's' : '');
+        stormHud.style.color = remaining <= 1 ? '#e86f43' : '#e7b75c';
+        fill.style.width = Math.min(100, matchesSinceStorm / stormAt * 100) + '%';
+    }
+    const power = document.getElementById('btn-prescience');
+    power.disabled = !prescienceReady;
+    power.classList.toggle('ready', prescienceReady);
+    power.querySelector('span').textContent = prescienceReady ? 'Prête !' : (prescienceUsed ? 'Utilisée' : 'Prescience');
 }
 setInterval(() => {
     if (document.getElementById('hud').style.display !== 'none') updateHUD();
 }, 500);
 
 // ---- Démarrage ----
-function startGame() {
+async function startGame() {
+    const startButton = document.getElementById('btn-start');
+    if (!cardSheetsDecoded) {
+        startButton.disabled = true;
+        startButton.textContent = 'Préparation des archives…';
+        await cardSheetsReady;
+        startButton.disabled = false;
+        startButton.textContent = "Entrer dans l'épreuve";
+    }
     score = 0; level = 0; gameStartTime = Date.now();
     startLevel();
 }
@@ -643,6 +1291,7 @@ function nextLevel() { level++; startLevel(); }
 
 document.getElementById('btn-start').addEventListener('click', startGame);
 document.getElementById('btn-next').addEventListener('click', nextLevel);
+document.getElementById('btn-prescience').addEventListener('click', activatePrescience);
 document.getElementById('btn-retry').addEventListener('click', () => {
     document.getElementById('gameover-overlay').style.display = 'none';
     document.getElementById('menu-overlay').style.display = '';

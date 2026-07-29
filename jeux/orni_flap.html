@@ -207,6 +207,61 @@ let mission = null;
 let challengeItems = [], challengeCooldown = 0;
 let stormInterference = null, stormFlashTimer = 0;
 
+// ── JUS / GAME FEEL ──────────────────────────────
+// Modèle "trauma" (Squirrel Eiserloh) plutôt qu'un timer de shake : on ACCUMULE du trauma
+// (0→1), il décroît linéairement, et l'amplitude réelle = trauma². Le carré fait que deux
+// petits chocs rapprochés restent discrets alors qu'un gros choc tape fort — et la sortie
+// s'éteint en douceur au lieu de couper net.
+let trauma = 0;
+const TRAUMA_DECAY = 0.055;      // un trauma plein s'éteint en ~0.3 s ; un petit choc en ~0.1 s
+const TRAUMA_MAX_OFFSET = 13;    // px de déplacement au trauma maximal
+const TRAUMA_MAX_ROT = 0.016;    // rad — une pointe de roulis vend mieux le choc qu'une translation seule
+function addTrauma(amount) { trauma = Math.min(1, trauma + amount); }
+
+// Barème calibré EN PIXELS, pas à l'intuition : l'amplitude vaut trauma² × 13, donc le carré
+// écrase brutalement les petites valeurs (0.15 de trauma ⇒ 0.3 px, soit rien du tout à l'écran).
+// Toute valeur sous ~0.30 est invisible et ne sert à rien. D'où ces paliers, du plus léger au
+// plus violent, chacun choisi pour l'amplitude qu'il produit réellement :
+const SHAKE = {
+    rattrapage: 0.30,   // ~1.2 px — on devine que ça passe juste
+    epice:      0.34,   // ~1.5 px — ponctuation discrète, l'événement est fréquent
+    frolement:  0.44,   // ~2.5 px — lisible sans gêner (monte à ~4.7 px en grosse série)
+    contrat:    0.46,   // ~2.7 px
+    bouclier:   0.48,   // ~3.0 px — on ramasse un objet rare
+    mission:    0.62,   // ~5.0 px — plus gros gain du jeu (+8)
+    degat:      0.72,   // ~6.7 px — on vient de perdre son bouclier
+    crash:      1.00,   // 13 px   — événement terminal, plafond assumé
+};
+
+// Hitstop : on gèle le monde quelques frames sur un impact. C'est ce qui donne du POIDS —
+// le cerveau lit la pause comme de la résistance. 60-80 ms sur un impact destructif.
+let hitstop = 0;
+function addHitstop(frames) { hitstop = Math.max(hitstop, frames); }
+
+// Squash & stretch de l'orni : squashT décroît de 1→0, l'étirement suit un ease-out quad.
+// Signe positif = étiré verticalement (montée), négatif = aplati (impact/chute).
+let squashT = 0, squashDir = 1;
+function addSquash(dir) { squashT = 1; squashDir = dir; }
+
+// Flash plein écran (crash, gros événement) — décroît vite, sinon ça devient pénible.
+let flashT = 0, flashHue = 0;
+function addFlash(amount, hue = 0) { flashT = Math.min(1, flashT + amount); flashHue = hue; }
+
+// Pulse du compteur de combo à chaque frôlement (le HUD ne bougeait pas d'un pixel).
+let comboFlash = 0;
+
+// Textes flottants ("FRÔLEMENT +6") : le frôlement est la mécanique signature du jeu et
+// n'avait AUCUN retour visuel — seulement un son. On matérialise le gain là où il se produit.
+let floaters = [];
+function addFloater(x, y, text, color = '#ffcc00', size = 15) {
+    floaters.push({ x, y, text, color, size, life: 52, maxLife: 52, vy: -1.15 });
+}
+
+// Débris de crash : contrairement aux particules de sable (qui s'effacent), ceux-ci tombent
+// et RESTENT au sol le temps de l'écran de mort. La permanence est un des points de Nijman :
+// laisser une trace prouve que l'impact a eu lieu.
+let debris = [];
+
 // ──────────────────────────────────────────────
 //  AUDIO
 // ──────────────────────────────────────────────
@@ -310,6 +365,8 @@ function reset() {
     challengeCooldown = 2;
     stormInterference = null;
     stormFlashTimer = 0;
+    trauma = 0; hitstop = 0; squashT = 0; flashT = 0; comboFlash = 0;
+    floaters = []; debris = [];
     startTime = Date.now();
     initDunes();
     updateScoreDisplay();
@@ -331,6 +388,8 @@ function advanceMission(type, amount = 1) {
         updateScoreDisplay();
         sndMission();
         emitBurst(W / 2, 145, 28, 118);
+        // Plus gros gain unitaire du jeu (+8) : il lui fallait une ponctuation à la hauteur.
+        addHitstop(6); addTrauma(SHAKE.mission); addFlash(0.42, 130);
     }
 }
 
@@ -721,6 +780,16 @@ function drawBird() {
     // La rotation et l'animation sont mises à jour dans le tick physique.
     ctx.rotate(bird.rot * Math.PI / 180);
 
+    // Squash & stretch : l'appareil s'étire à la verticale quand il grimpe (coup d'aile) et
+    // s'aplatit à l'impact. C'est le principe n°1 de l'animation Disney — il donne
+    // l'impression d'un corps qui encaisse, là où un sprite rigide reste inerte.
+    // Ease-out quad sur le retour, et l'axe secondaire ne compense qu'à 60% (conserve du volume).
+    if (squashT > 0) {
+        const e = squashT * squashT;                 // décroissance quadratique = retour vif puis doux
+        const amp = 0.16 * e * squashDir;
+        ctx.scale(1 - amp * 0.6, 1 + amp);
+    }
+
     if (orniBodyReady) {
         // Impulsion moteur et halo : donnent une présence au petit sprite sans agrandir sa hitbox.
         const enginePulse = .65 + Math.sin(frameCount * .7) * .2;
@@ -906,15 +975,67 @@ function drawChallengeItem(item) {
 function drawParticles() {
     ctx.save();
     ctx.globalCompositeOperation = 'screen';
+    // Pendant un hitstop, les particules se figent avec le reste du monde : une explosion
+    // suspendue en l'air pendant le gel vend beaucoup mieux l'impact qu'un nuage qui
+    // continue de s'étaler tout seul.
+    const frozen = hitstop > 0;
     for (let i = particles.length - 1; i >= 0; i--) {
         const p = particles[i];
-        p.x += p.vx; p.y += p.vy; p.life--;
+        if (!frozen) { p.x += p.vx; p.y += p.vy; p.life--; }
         if (p.life <= 0 || p.x < -15) { particles.splice(i, 1); continue; }
         const alpha = (p.life / p.maxLife) * 0.7;
         ctx.fillStyle = `hsla(${p.hue}, 65%, 65%, ${alpha})`;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
         ctx.fill();
+    }
+    ctx.restore();
+}
+
+// Débris de crash : morceaux de coque qui retombent, rebondissent une fois et RESTENT.
+// Ils ne s'effacent jamais tant qu'on n'a pas relancé — c'est la « permanence » de Nijman :
+// la carcasse au sol prouve que le crash a eu lieu, l'écran de mort n'est plus abstrait.
+function drawDebris() {
+    const frozen = hitstop > 0;
+    const ground = H - 34;
+    ctx.save();
+    for (const d of debris) {
+        if (!frozen && !d.rested) {
+            d.vy += 0.42;            // gravité un peu plus forte que celle de l'orni : ça tombe sec
+            d.x += d.vx; d.y += d.vy;
+            d.rot += d.vr;
+            d.vx *= 0.99;
+            if (d.y >= ground) {
+                d.y = ground;
+                if (Math.abs(d.vy) > 2.2) { d.vy *= -0.32; d.vx *= 0.55; d.vr *= 0.4; } // un seul rebond franc
+                else { d.rested = true; d.vy = 0; d.vx = 0; d.vr = 0; }
+            }
+        }
+        ctx.save();
+        ctx.translate(d.x, d.y);
+        ctx.rotate(d.rot);
+        ctx.fillStyle = d.color;
+        ctx.fillRect(-d.w / 2, -d.h / 2, d.w, d.h);
+        ctx.restore();
+    }
+    ctx.restore();
+}
+
+function drawFloaters() {
+    if (!floaters.length) return;
+    ctx.save();
+    ctx.textAlign = 'center';
+    for (const f of floaters) {
+        const t = f.life / f.maxLife;
+        // Petit « pop » d'échelle à l'apparition puis fondu : attire l'œil sans le retenir.
+        const pop = 1 + (1 - Math.min(1, (1 - t) * 6)) * 0.35;
+        ctx.globalAlpha = Math.min(1, t * 1.8);
+        ctx.font = `bold ${f.size * pop}px "Segoe UI", sans-serif`;
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(8,4,1,0.75)';
+        ctx.strokeText(f.text, f.x, f.y);
+        ctx.fillStyle = f.color;
+        ctx.fillText(f.text, f.x, f.y);
     }
     ctx.restore();
 }
@@ -1139,9 +1260,25 @@ function drawScore() {
     ctx.fillText(score, W / 2, 65);
     if (combo > 1) {
         ctx.shadowBlur = 0;
+        // Le compteur enfle brièvement à chaque frôlement puis retombe : sans ce pulse,
+        // rien ne signale au joueur QUAND sa série vient de progresser.
+        const cf = comboFlash / 12;
+        ctx.save();
+        ctx.translate(W / 2, 88);
+        ctx.scale(1 + cf * 0.4, 1 + cf * 0.4);
         ctx.font = 'bold 14px "Segoe UI", sans-serif';
-        ctx.fillStyle = '#ff8800';
-        ctx.fillText('x' + combo + ' COMBO', W / 2, 88);
+        ctx.fillStyle = cf > 0 ? '#ffd257' : '#ff8800';
+        ctx.fillText('x' + combo + ' COMBO', 0, 0);
+        ctx.restore();
+        // Jauge de fenêtre de combo : matérialise le temps qu'il reste pour enchaîner.
+        // Le comboTimer existait déjà mais était invisible — le joueur ne pouvait pas jouer avec.
+        if (comboTimer > 0) {
+            const wRatio = comboTimer / 90, barW = 54;
+            ctx.fillStyle = 'rgba(255,255,255,0.14)';
+            ctx.fillRect(W / 2 - barW / 2, 94, barW, 3);
+            ctx.fillStyle = wRatio < 0.3 ? '#c4553c' : '#ff9d3c';
+            ctx.fillRect(W / 2 - barW / 2, 94, barW * wRatio, 3);
+        }
     }
 
     // Secteur courant et mission : compacts pour préserver la lisibilité du passage.
@@ -1344,8 +1481,14 @@ function flap() {
         return;
     }
     const flapMultiplier = stormInterference ? stormInterference.multiplier : 1;
+    // Un flap qui vient d'une grosse chute doit se sentir plus fort qu'un flap de maintien :
+    // on module l'étirement selon la vitesse encaissée juste avant le coup d'aile.
+    const impactRatio = Math.min(1, Math.max(0, bird.vy) / 9);
     bird.vy = FLAP_FORCE * flapMultiplier;
     bird.wingPhase = 0;
+    addSquash(1);                                  // étirement vertical : l'appareil « se tend » vers le haut
+    if (impactRatio > 0.45) addTrauma(SHAKE.rattrapage * impactRatio); // rattrapage in extremis
+    emitSand(BIRD_X + BIRD_W / 2 - 12, bird.y + BIRD_H / 2 + 4, 3); // souffle sous l'appareil
     sndFlap();
 }
 
@@ -1424,10 +1567,30 @@ function tick() {
                 if ((distTop > 0 && distTop < CLOSE_CALL_MARGIN) || (distBot > 0 && distBot < CLOSE_CALL_MARGIN)) {
                     p.closeCalled = true;
                     combo++; comboTimer = 90;
-                    score += 2 * Math.min(combo, 5);
+                    const gain = 2 * Math.min(combo, 5);
+                    score += gain;
                     advanceMission('close');
                     updateScoreDisplay();
                     sndCloseCall();
+                    // FEEDBACK DU FRÔLEMENT — c'est la mécanique signature du jeu (jusqu'à +10 pts)
+                    // et elle n'avait qu'un bip. On la rend lisible et gratifiante :
+                    //  · texte flottant au point exact du passage, taille et couleur selon le combo
+                    //  · trauma qui monte avec la série → les gros combos font vibrer l'écran
+                    //  · étincelles éjectées le long du bord frôlé, dans le sens du frottement
+                    const edgeY = distTop > 0 && distTop < CLOSE_CALL_MARGIN ? p.topH : p.topH + GAP;
+                    const hot = Math.min(combo, 5) / 5;                    // 0 → 1 selon l'intensité de la série
+                    addFloater(bx + 6, edgeY + (edgeY < by ? -14 : 20),
+                        '+' + gain, hot > .6 ? '#ff9d3c' : '#ffd257', 14 + hot * 6);
+                    addTrauma(SHAKE.frolement + hot * 0.18);   // ~2.5 px seul, ~4.7 px en grosse série
+                    comboFlash = 12;
+                    for (let k = 0; k < 6 + Math.round(hot * 8); k++) {
+                        particles.push({
+                            x: bx + Math.random() * 14, y: edgeY + (Math.random() - .5) * 5,
+                            vx: -2.4 - Math.random() * 2.6, vy: (Math.random() - .5) * 1.6,
+                            life: 16 + Math.random() * 14, maxLife: 30,
+                            size: .9 + Math.random() * 1.7, hue: 34 + hot * 14,
+                        });
+                    }
                 }
             }
         }
@@ -1445,6 +1608,11 @@ function tick() {
             if (pickup < 1) {
                 sp.collected = true; score += 3; emitBurst(sp.x, sp.y, 14, 40);
                 advanceMission('spice'); sndSpice(); updateScoreDisplay();
+                // Dosage volontairement faible : un ramassage se produit souvent, s'il
+                // secouait autant qu'un crash le jeu deviendrait épuisant. 2 frames de gel
+                // suffisent à « accrocher » la collecte.
+                addHitstop(2); addTrauma(SHAKE.epice);
+                addFloater(sp.x, sp.y - 12, '+3', '#ffc14d', 13);
             }
         }
         if (sp.x < -20) spiceItems.splice(i, 1);
@@ -1455,7 +1623,11 @@ function tick() {
         if (!pu.collected) {
             const dx = pu.x - bcx, dy = pu.y - bcy;
             const pickup=(dx*dx)/(COLLECTIBLE_PICKUP_X*COLLECTIBLE_PICKUP_X)+(dy*dy)/(COLLECTIBLE_PICKUP_Y*COLLECTIBLE_PICKUP_Y);
-            if (pickup < 1) { pu.collected = true; shielded = true; emitBurst(pu.x, pu.y, 18, 195); sndShield(); }
+            if (pickup < 1) {
+                pu.collected = true; shielded = true; emitBurst(pu.x, pu.y, 18, 195); sndShield();
+                addHitstop(3); addTrauma(SHAKE.bouclier); addFlash(0.28, 200);
+                addFloater(pu.x, pu.y - 14, 'BOUCLIER', '#7fd4ff', 14);
+            }
         }
         if (pu.x < -20) powerups.splice(i, 1);
     }
@@ -1468,6 +1640,8 @@ function tick() {
             chooseMission();
             emitBurst(item.x, item.y, 26, 24);
             sndContract();
+            addHitstop(3); addTrauma(SHAKE.contrat);
+            addFloater(item.x, item.y - 16, 'CONTRAT', '#e4c16d', 14);
             continue;
         }
         if (item.x < -28) {
@@ -1480,12 +1654,20 @@ function tick() {
 
     if (shieldGrace <= 0 && (collides() || collidesWorm())) {
         if (shielded) {
-            // Le bouclier absorbe le choc : on rebondit et on repart, une seule fois
+            // Le bouclier absorbe le choc : on rebondit et on repart, une seule fois.
+            // Feedback dédié : le joueur doit COMPRENDRE qu'il vient de consommer sa vie
+            // gratuite, pas juste entendre un son au milieu de l'action.
             shielded = false;
             shieldGrace = 25;
             bird.vy = FLAP_FORCE;
             sndShield();
             emitSand(bcx, bcy, 10);
+            addHitstop(5);                    // ~83 ms : on sent le choc encaissé
+            addTrauma(SHAKE.degat);
+            addFlash(0.5, 200);               // flash bleu = couleur du bouclier
+            addSquash(-1);                    // l'appareil s'écrase puis se retend
+            addFloater(bcx, bcy - 30, 'BOUCLIER PERDU', '#7fd4ff', 13);
+            emitBurst(bcx, bcy, 22, 195);
         } else {
             gameState = 'dead';
             frameCount = 0;
@@ -1497,8 +1679,31 @@ function tick() {
                 }
                 submitScore(score);
             }
-            // Particules d'explosion
+            // CRASH — l'événement le plus important du jeu méritait mieux qu'un nuage de sable.
+            addHitstop(9);                    // ~150 ms : plus long que les autres, c'est terminal
+            addTrauma(SHAKE.crash);           // plafond : 13 px de secousse
+            addFlash(1);
+            addSquash(-1);
             emitSand(bcx, bcy, 25);
+            emitBurst(bcx, bcy, 30, 26);
+            // Débris projetés DANS LE SENS de l'impact (vers l'arrière + selon la vitesse
+            // verticale au moment du choc) plutôt qu'en étoile symétrique : une explosion
+            // radiale ne dit rien de la trajectoire, une gerbe orientée raconte le crash.
+            const dirY = Math.max(-1, Math.min(1, bird.vy / 9));
+            for (let k = 0; k < 14; k++) {
+                debris.push({
+                    x: bcx + (Math.random() - .5) * 16,
+                    y: bcy + (Math.random() - .5) * 12,
+                    vx: -1.5 - Math.random() * 4.5,
+                    vy: dirY * 3.5 + (Math.random() - .65) * 5.5,
+                    vr: (Math.random() - .5) * .34,
+                    rot: Math.random() * Math.PI,
+                    w: 2.5 + Math.random() * 5,
+                    h: 1.5 + Math.random() * 3.5,
+                    color: ['#8a6030', '#5a3a20', '#3d2410', '#b8a670'][Math.floor(Math.random() * 4)],
+                    rested: false,
+                });
+            }
         }
     }
 }
@@ -1509,7 +1714,19 @@ function draw() {
     if (weather && weather.phase === 'active' && weather.type === 'gust') {
         ctx.translate(Math.sin(frameCount * .83) * 1.4, Math.cos(frameCount * .61) * 1.1);
     }
+    // Screenshake : amplitude = trauma² (petits chocs discrets, gros chocs francs), appliqué
+    // ICI pour ne secouer QUE le monde — le score et les panneaux d'UI restent stables, sinon
+    // le HUD devient illisible au pire moment.
+    if (trauma > 0) {
+        const s = trauma * trauma;
+        ctx.translate(
+            (Math.random() * 2 - 1) * TRAUMA_MAX_OFFSET * s,
+            (Math.random() * 2 - 1) * TRAUMA_MAX_OFFSET * s
+        );
+        ctx.rotate((Math.random() * 2 - 1) * TRAUMA_MAX_ROT * s);
+    }
     drawDunes();
+    drawDebris();
     drawParticles();
     for (const p of pipes) drawPipe(p);
     for (const sp of spiceItems) drawSpiceItem(sp);
@@ -1518,6 +1735,7 @@ function draw() {
     drawWorm();
     drawBird();
     drawShieldRing();
+    drawFloaters();   // dans la couche monde : le texte suit le point exact du frôlement
     ctx.restore();
     drawWeather();
     drawSectorTransition();
@@ -1531,6 +1749,31 @@ function draw() {
     vignette.addColorStop(1, 'rgba(6,3,1,0.4)');
     ctx.fillStyle = vignette;
     ctx.fillRect(0, 0, W, H);
+
+    // Flash d'impact — tout en dernier, par-dessus la vignette, pour qu'il domine vraiment
+    // l'image l'instant où il tape. Courbe au carré = extinction franche, pas de traîne molle.
+    if (flashT > 0) {
+        const a = flashT * flashT * 0.62;
+        ctx.fillStyle = flashHue
+            ? `hsla(${flashHue}, 90%, 72%, ${a})`
+            : `rgba(255,244,214,${a})`;
+        ctx.fillRect(0, 0, W, H);
+    }
+}
+
+// Timers de jus : tournent TOUJOURS, y compris pendant un hitstop. C'est volontaire —
+// le screenshake et le flash doivent jouer PENDANT le gel, sinon le gel ressemble à un
+// freeze technique au lieu d'un impact.
+function decayJuice() {
+    if (trauma  > 0) trauma  = Math.max(0, trauma  - TRAUMA_DECAY);
+    if (squashT > 0) squashT = Math.max(0, squashT - 0.085);
+    if (flashT  > 0) flashT  = Math.max(0, flashT  - 0.12);
+    if (comboFlash > 0) comboFlash--;
+    for (let i = floaters.length - 1; i >= 0; i--) {
+        const f = floaters[i];
+        f.y += f.vy; f.vy *= 0.94; f.life--;
+        if (f.life <= 0) floaters.splice(i, 1);
+    }
 }
 
 function loop(now) {
@@ -1539,7 +1782,13 @@ function loop(now) {
     const dt = Math.min(now - lastTime, 100);
     lastTime = now;
     accumulator += dt;
-    while (accumulator >= FRAME_DUR) { tick(); accumulator -= FRAME_DUR; }
+    while (accumulator >= FRAME_DUR) {
+        // Hitstop : on saute la simulation du monde, mais le jus continue de vivre.
+        if (hitstop > 0) hitstop--;
+        else tick();
+        decayJuice();
+        accumulator -= FRAME_DUR;
+    }
     draw();
 }
 

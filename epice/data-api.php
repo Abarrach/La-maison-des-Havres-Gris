@@ -66,6 +66,31 @@ function lc($s): string {
     return function_exists('mb_strtolower') ? mb_strtolower((string)$s) : strtolower((string)$s);
 }
 
+// Renvoie l'id de la sortie "vedette" à utiliser pour toute action grand-public
+// (Retour joueur, Manuel de combat, mise à jour de retour…). Ne dépend PLUS strictement
+// de `soiree_active` : si ce miroir est nul, obsolète ou pointe vers une sortie disparue,
+// on retombe automatiquement sur la sortie OUVERTE la plus récente. Retourne '' si aucune.
+//
+// Ce miroir a un historique d'incohérence (suppression manuelle, race, ancien code sans
+// fallback dans close_soiree/delete_sortie…). Plutôt que d'attendre qu'il soit toujours
+// juste, on le vérifie et on répare à la volée pour ne jamais bloquer un retour joueur
+// alors qu'il y a bien une sortie ouverte visible dans le sélecteur d'assignation.
+function active_sortie_id(array $d): string {
+    $activeId = $d['soiree_active']['id'] ?? '';
+    if ($activeId !== '') {
+        foreach ($d['sorties'] as $s) {
+            if (($s['id'] ?? '') === $activeId && ($s['statut'] ?? '') === 'ouverte') {
+                return $activeId; // le miroir est bon, rien à faire
+            }
+        }
+    }
+    // Miroir cassé (null / sortie disparue / clôturée) → on prend la plus récente ouverte.
+    foreach (array_reverse($d['sorties']) as $s) {
+        if (($s['statut'] ?? '') === 'ouverte') return $s['id'] ?? '';
+    }
+    return '';
+}
+
 // Liste dédupliquée des participants à partir de l'assignation (pour la liste déroulante joueur)
 function roster_from_assign($a): array {
     if (!is_array($a)) return [];
@@ -105,21 +130,23 @@ function roster_from_assign($a): array {
 switch ($action) {
 
     case 'init':
-        $d = read_data();
-        $a = $d['soiree_active'] ?? null;
-        if (!$a || $a['statut'] !== 'ouverte') out(false, [], 'Aucune soirée ouverte');
-        $assign = null;
-        foreach ($d['sorties'] as $s) { if ($s['id'] === $a['id']) { $assign = $s['assignation'] ?? null; break; } }
-        out(true, ['soiree' => $a, 'participants' => roster_from_assign($assign)]);
+        $d  = read_data();
+        $id = active_sortie_id($d);
+        if ($id === '') out(false, [], 'Aucune soirée ouverte');
+        $target = null;
+        foreach ($d['sorties'] as $s) { if (($s['id'] ?? '') === $id) { $target = $s; break; } }
+        if (!$target) out(false, [], 'Aucune soirée ouverte');
+        $soiree = ['id'=>$target['id'],'date'=>$target['date'] ?? '','titre'=>$target['titre'] ?? '','zone'=>$target['zone'] ?? '','statut'=>'ouverte'];
+        out(true, ['soiree' => $soiree, 'participants' => roster_from_assign($target['assignation'] ?? null)]);
 
     // Retour existant d'un joueur (public — pour pré-remplir / modifier)
     case 'my_debrief':
         $pseudo = trim($_GET['pseudo'] ?? '');
         $d  = read_data();
-        $id = $d['soiree_active']['id'] ?? null;
-        if (!$pseudo || !$id) out(true, ['debrief' => null]);
+        $id = active_sortie_id($d);
+        if (!$pseudo || $id === '') out(true, ['debrief' => null]);
         foreach ($d['sorties'] as $s) {
-            if ($s['id'] === $id) {
+            if (($s['id'] ?? '') === $id) {
                 foreach ($s['debriefs'] ?? [] as $db) {
                     if (lc(trim($db['pseudo'] ?? '')) === lc($pseudo)) out(true, ['debrief' => $db]);
                 }
@@ -132,8 +159,8 @@ switch ($action) {
         $note   = intval($input['note'] ?? 0);
         if (!$pseudo || $note < 1 || $note > 5) out(false, [], 'Pseudo et note obligatoires');
         $d  = read_data();
-        $id = $d['soiree_active']['id'] ?? null;
-        if (!$id) out(false, [], 'Aucune soirée ouverte');
+        $id = active_sortie_id($d);
+        if ($id === '') out(false, [], 'Aucune soirée ouverte');
         $debrief = [
             'timestamp'    => date('H:i'),
             'pseudo'       => $pseudo,
@@ -171,8 +198,9 @@ switch ($action) {
     case 'list':
         $d   = read_data();
         $sid = trim($_GET['sid'] ?? ($input['sid'] ?? ''));
-        $id  = $sid !== '' ? $sid : ($d['soiree_active']['id'] ?? null);
-        if (!$id) out(false, [], 'Aucune soirée active');
+        // Sans sid explicite, on utilise le helper (tolère un `soiree_active` cassé).
+        $id  = $sid !== '' ? $sid : active_sortie_id($d);
+        if ($id === '') out(false, [], 'Aucune soirée active');
         $sortie = null;
         foreach ($d['sorties'] as $s) { if (($s['id'] ?? '') === $id) { $sortie = $s; break; } }
         if (!$sortie) out(false, [], 'Sortie introuvable');
@@ -264,37 +292,26 @@ switch ($action) {
     // Sauvegarder l'analyse IA de la soirée active (admin)
     case 'save_analyse':
         $d  = read_data();
-        $id = $d['soiree_active']['id'] ?? null;
-        if (!$id) out(false, [], 'Aucune soirée active');
+        $id = active_sortie_id($d);
+        if ($id === '') out(false, [], 'Aucune soirée active');
         $txt = trim($input['analyse'] ?? '');
         foreach ($d['sorties'] as &$s) {
-            if ($s['id'] === $id) { $s['analyse'] = ['texte' => $txt, 'date' => date('Y-m-d H:i')]; break; }
+            if (($s['id'] ?? '') === $id) { $s['analyse'] = ['texte' => $txt, 'date' => date('Y-m-d H:i')]; break; }
         }
         unset($s);
         write_data($d);
         out(true, ['message' => 'Analyse enregistrée']);
 
     // Lire les infos de la soirée en cours pour le Manuel de combat (public — vue joueur).
-    // Fallback : si `soiree_active` n'est pas défini (peut arriver après une suppression, ou
-    // quand la sortie a été créée depuis Discord et jamais "promue"), on prend la sortie
-    // ouverte la plus récente. Le briefing s'affiche donc DÈS qu'une sortie est ouverte,
-    // même sans assignation encore remplie — c'est justement l'intérêt d'y lire les consignes
-    // du soir avant que la compo soit finalisée.
+    // Utilise le helper active_sortie_id() : accepte que le miroir `soiree_active` soit cassé
+    // et retombe sur la sortie ouverte la plus récente. Le briefing s'affiche donc DÈS qu'une
+    // sortie est ouverte, même sans assignation encore remplie.
     case 'get_assign':
-        $d = read_data();
+        $d  = read_data();
+        $id = active_sortie_id($d);
+        if ($id === '') out(false, [], 'Aucune soirée ouverte');
         $target = null;
-        $activeId = $d['soiree_active']['id'] ?? null;
-        if ($activeId) {
-            foreach ($d['sorties'] as $s) {
-                if (($s['id'] ?? '') === $activeId && ($s['statut'] ?? '') === 'ouverte') { $target = $s; break; }
-            }
-        }
-        // Aucune sortie active valide → on prend la plus récente encore ouverte.
-        if (!$target) {
-            foreach (array_reverse($d['sorties']) as $s) {
-                if (($s['statut'] ?? '') === 'ouverte') { $target = $s; break; }
-            }
-        }
+        foreach ($d['sorties'] as $s) { if (($s['id'] ?? '') === $id) { $target = $s; break; } }
         if (!$target) out(false, [], 'Aucune soirée ouverte');
         out(true, [
             'soiree'      => ['titre'=>$target['titre'] ?? '','date'=>$target['date'] ?? '','zone'=>$target['zone'] ?? ''],

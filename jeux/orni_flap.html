@@ -142,7 +142,10 @@ const OSC_SPEED          = 0.02;
 // il ne tombait que par hasard, au sommet d'un arc où la vitesse verticale s'annule.
 // Exprimé en dégagement, la constante dit enfin ce qu'elle veut dire : « passé à moins de
 // N px du tuyau », et reste juste si la hitbox change un jour.
-const CLOSE_CALL_CLEARANCE = 12;  // ~14,5 % du vol utile récompensé, bande > déplacement/frame
+// Valeur retenue après essai en main : 12 restait trop sec parce que la trajectoire est une
+// PARABOLE — on ne tient jamais une altitude, on la traverse. 14 laisse le temps d'ajuster
+// l'arc sans transformer le bonus en acquis (cf. aussi la détection balayée dans tick()).
+const CLOSE_CALL_CLEARANCE = 14;  // ~17 % du vol utile récompensé
 const CLOSE_CALL_REACH     = 10;  // fenêtre HORIZONTALE d'éligibilité autour du pilier
 const WORM_HAZARD_MIN_SCORE = 12; // avant ce score le ver reste un simple décor
 const SECTOR_LENGTH = 8;
@@ -354,7 +357,7 @@ function initDunes() {
 //  OBJETS
 // ──────────────────────────────────────────────
 function reset() {
-    bird = { y: H / 2.5, vy: 0, rot: 0, wingPhase: 0, wingSpeed: 0.22 };
+    bird = { y: H / 2.5, prevY: H / 2.5, vy: 0, rot: 0, wingPhase: 0, wingSpeed: 0.22 };
     pipes = [];
     particles = [];
     spiceItems = []; powerups = [];
@@ -1523,6 +1526,7 @@ function tick() {
     speed = PIPE_SPEED_BASE + Math.min(score * 0.028, 1.7);
     updateWeather();
     bird.vy += GRAVITY;
+    bird.prevY = bird.y;          // position d'avant le déplacement : sert au frôlement balayé
     bird.y  += bird.vy;
     bird.rot += (Math.min(bird.vy*2.8,65)-bird.rot)*.12;
     bird.wingPhase = (bird.wingPhase + 1.05) % (Math.PI*2);
@@ -1578,8 +1582,19 @@ function tick() {
                 // vraiment occuper (cf. commentaire sur CLOSE_CALL_CLEARANCE).
                 const clearTop = (by - BIRD_HIT_HALF_H) - p.topH;
                 const clearBot = (p.topH + GAP) - (by + BIRD_HIT_HALF_H);
-                const grazeTop = clearTop >= 0 && clearTop < CLOSE_CALL_CLEARANCE;
-                const grazeBot = clearBot >= 0 && clearBot < CLOSE_CALL_CLEARANCE;
+                // DÉTECTION BALAYÉE : on ne teste pas seulement la position à l'instant de la
+                // frame, mais tout le SEGMENT parcouru depuis la précédente. La trajectoire
+                // étant une parabole, l'orni ne tient jamais une altitude : il traverse la
+                // bande. À 7 px/frame en piqué il pouvait la franchir ENTRE deux images sans
+                // jamais y être échantillonné — le geste était réussi mais non crédité, ce qui
+                // donnait l'impression d'un bonus capricieux. On mesure donc le dégagement
+                // MINIMAL atteint pendant la frame, tout en exigeant que la position finale
+                // soit dégagée (sinon c'est une collision, gérée plus bas).
+                const byPrev = (bird.prevY !== undefined ? bird.prevY : bird.y) + BIRD_H / 2;
+                const clearTopPrev = (byPrev - BIRD_HIT_HALF_H) - p.topH;
+                const clearBotPrev = (p.topH + GAP) - (byPrev + BIRD_HIT_HALF_H);
+                const grazeTop = clearTop >= 0 && Math.min(clearTop, clearTopPrev) < CLOSE_CALL_CLEARANCE;
+                const grazeBot = clearBot >= 0 && Math.min(clearBot, clearBotPrev) < CLOSE_CALL_CLEARANCE;
                 if (grazeTop || grazeBot) {
                     p.closeCalled = true;
                     combo++; comboTimer = 90;

@@ -13,9 +13,12 @@
   --green:#4A9A5A; --red:#B85428;
 }
 *,*::before,*::after { box-sizing:border-box; }
-html { background:var(--bg); }
+/* style.css impose `html,body{height:100%}` + `body{overflow:hidden}` pour les pages
+   plein écran du site : sans cette surcharge, cette page-ci ne défile pas du tout.
+   Même contournement que jeux/hub.html. */
+html { background:var(--bg); height:auto; overflow:auto; }
 body {
-  margin:0; min-height:100vh; color:var(--text);
+  margin:0; height:auto; min-height:100vh; overflow-y:auto; color:var(--text);
   font-family:'Segoe UI',system-ui,sans-serif; padding-bottom:4rem;
   background:radial-gradient(ellipse 90% 60% at 20% 10%,rgba(120,70,10,.16),transparent 55%),var(--bg);
 }
@@ -81,6 +84,9 @@ tr:hover td { background:rgba(200,146,16,.04); }
    d'où vient l'information (donnée du jeu vs note personnelle). */
 .dm { font-size:.72rem; color:var(--green); padding:.15rem .45rem 0; letter-spacing:.01em; cursor:help; }
 .dm b { color:#7fd48f; }
+/* Source de drop (sans probabilité) : ton plus sobre que le lieu nommé, pour que la
+   hiérarchie d'information se lise — un lieu chiffré vaut mieux qu'une simple zone. */
+.src { font-size:.71rem; color:#b89a5e; padding:.1rem .45rem 0; cursor:help; }
 .appris td { opacity:.5; }
 .appris .nom { text-decoration:line-through; }
 .note { font-size:.72rem; color:var(--faint); font-style:italic; margin-top:.5rem; }
@@ -181,9 +187,13 @@ function norm(s) {
     .trim();
 }
 function infoPlan(nom) { return index[norm(nom)] || null; }
+// Deux niveaux d'information dataminée, à ne pas confondre :
+//  · `l` = lieu NOMMÉ avec probabilité (donjon, station) — le jeu y liste ses objets
+//  · `s` = source (grotte, épave, Désert Profond…) — on sait où ça tombe, pas avec quelle chance
 function lieuConnu(nom) { const i = infoPlan(nom); return i && i.l && i.l.length ? i.l : null; }
-// « A-t-on une piste ? » = saisie manuelle OU lieu dataminé.
-function aUnLieu(nom) { return !!(etat.lieux[nom] || lieuConnu(nom)); }
+function sourcesConnues(nom) { const i = infoPlan(nom); return i && i.s && i.s.length ? i.s : null; }
+// « A-t-on une piste ? » = saisie manuelle OU information dataminée, quelle qu'elle soit.
+function aUnLieu(nom) { return !!(etat.lieux[nom] || lieuConnu(nom) || sourcesConnues(nom)); }
 
 async function chargerIndex() {
   try {
@@ -321,7 +331,7 @@ function majStats() {
   const A = apprisSet();
   const restants = etat.plans.filter(p => !A.has(p.nom));
   const avecLieu = restants.filter(p => aUnLieu(p.nom)).length;
-  const dataminés = restants.filter(p => lieuConnu(p.nom)).length;
+  const dataminés = restants.filter(p => lieuConnu(p.nom) || sourcesConnues(p.nom)).length;
   document.getElementById('stats').innerHTML =
       stat('Manquants', restants.length)
     + stat('Piste connue', avecLieu + ' / ' + restants.length)
@@ -381,14 +391,22 @@ function rendre() {
     } else {
       // Lieu dataminé affiché sous le champ : information dérivée, jamais écrite dans
       // les données de l'utilisateur — sa saisie reste la source de vérité.
-      const dm = lieuConnu(p.nom);
+      const dm = lieuConnu(p.nom), src = sourcesConnues(p.nom);
       let bloc = '<input class="lieu-in" data-lieu="' + esc(p.nom) + '" value="' + esc(etat.lieux[p.nom] || '')
-        + '" placeholder="' + (dm ? 'ta note (facultatif)' : 'donjon, station, marchand…') + '">';
+        + '" placeholder="' + (dm || src ? 'ta note (facultatif)' : 'donjon, station, marchand…') + '">';
       if (dm) {
         const princ = dm[0];
         const autres = dm.length > 1 ? ' <span style="opacity:.65">+' + (dm.length - 1) + ' autre' + (dm.length > 2 ? 's' : '') + '</span>' : '';
         bloc += '<div class="dm" title="' + esc(dm.map(x => x.o + ' — ' + x.c + ' %').join('\n')) + '">'
               + '◆ ' + esc(princ.o) + ' <b>' + princ.c + ' %</b>' + autres + '</div>';
+      }
+      if (src) {
+        // Sans probabilité, volontairement : pour ces conteneurs elle dépend du pool éligible
+        // au moment du tirage, l'afficher serait un faux chiffre.
+        const vus = src.slice(0, 3), reste = src.length - vus.length;
+        bloc += '<div class="src" title="' + esc(src.join('\n')) + '">▸ '
+              + vus.map(esc).join(' · ')
+              + (reste > 0 ? ' <span style="opacity:.6">+' + reste + '</span>' : '') + '</div>';
       }
       h += '<td>' + bloc + '</td>'
         + '<td><button class="act" data-appris="' + esc(p.nom) + '">✓ Appris</button></td>';

@@ -53,6 +53,13 @@ const st = (() => { const j = JSON.parse(fs.readFileSync(LOC, 'utf8')); return (
 const entrees = st.KeysToEntries || {};
 const loot = fs.existsSync(LOOT) ? (JSON.parse(fs.readFileSync(LOOT, 'utf8')).loot || {}) : {};
 
+// Sources de drop (build_plan_sources_from_datamine.js) : « où ça peut tomber », sans
+// probabilité. Les tables de butin nomment les schématiques avec un suffixe `_schematic`
+// que les clés de localisation n'ont pas — d'où la double tentative de correspondance.
+const SRC = path.join(RACINE, 'plan_sources.json');
+const srcMap = fs.existsSync(SRC) ? (JSON.parse(fs.readFileSync(SRC, 'utf8')).sources || {}) : {};
+function sourcesDe(id) { return srcMap[id + '_schematic'] || srcMap[id] || null; }
+
 const plans = {};
 let nbDirect = 0, nbSchem = 0, nbCollision = 0;
 
@@ -84,10 +91,14 @@ for (const [cle, valeur] of Object.entries(entrees)) {
 
   plans[k] = { n: nom, id };
   if (lieux.length) plans[k].l = lieux;
+  const s = sourcesDe(id);
+  if (s && s.length) plans[k].s = s;
   if (direct) nbDirect++; else nbSchem++;
 }
 
 const avecLieu = Object.values(plans).filter(p => p.l).length;
+const avecSource = Object.values(plans).filter(p => p.s).length;
+const avecInfo = Object.values(plans).filter(p => p.l || p.s).length;
 const out = {
   generated_at: new Date().toISOString(),
   source: 'ST_Localization_Items (datamine FModel) + stuff_loot.json',
@@ -97,6 +108,7 @@ const out = {
       + 'Aucun lieu n\'est déduit ni approximé — absence de lieu = information non disponible.',
   count: Object.keys(plans).length,
   with_location: avecLieu,
+  with_source: avecSource,
   plans,
 };
 fs.writeFileSync(SORTIE, JSON.stringify(out));
@@ -105,5 +117,7 @@ console.log(`plans_index.json écrit — ${Math.round(fs.statSync(SORTIE).size /
 console.log(`  noms indexés          : ${out.count}`);
 console.log(`    · identifiant direct : ${nbDirect}  (lieu potentiellement résoluble)`);
 console.log(`    · identifiant schéma : ${nbSchem}  (nom reconnu, pas de lieu rattachable)`);
-console.log(`  avec un lieu connu    : ${avecLieu}`);
+console.log(`  avec un lieu précis   : ${avecLieu}  (lieux nommés, avec probabilité)`);
+console.log(`  avec une source       : ${avecSource}  (grotte, épave, désert profond…)`);
+console.log(`  avec au moins une info: ${avecInfo}`);
 if (nbCollision) console.log(`  libellés en double    : ${nbCollision} (arbitrage : on garde celui qui porte un lieu)`);

@@ -794,6 +794,16 @@
             <li><strong>Ne descend jamais au sol.</strong></li>
           </ul>
         </div>
+        <div class="role-card">
+          <div class="role-card-title">👁️ Scouts (Repérage)</div>
+          <ul>
+            <li><strong>Les premiers yeux de la sortie</strong> — bien au-delà des patrouilleurs, ≈ 5000 de l'équipe récolte.</li>
+            <li>Voir avant d'être vu : orni léger turbo, <strong>vitesse et altitude priment sur l'armement.</strong></li>
+            <li><strong>On n'engage pas.</strong> Un scout qui tire perd sa position, et le convoi perd ses yeux.</li>
+            <li>Repéré ? On décroche <strong>à l'opposé du champ</strong> pour emmener l'ennemi ailleurs.</li>
+            <li>Groupé en jeu avec le transporteur : le convoi doit voir ce que le scout voit.</li>
+          </ul>
+        </div>
       </div>
     </div>
 
@@ -1106,6 +1116,22 @@ const SOP_DEFAULT_HTML = document.getElementById('sop-editable').innerHTML;
 let sopEditing = false;
 let sopServerHtml = null; // dernière version connue (enregistrée ou défaut) — utilisée par "Annuler"
 
+// Empreinte du manuel LIVRÉ (celui du code). Enregistrée à chaque sauvegarde, elle permet
+// de détecter qu'une nouvelle version du manuel de référence est arrivée depuis.
+//
+// Pourquoi : une version enregistrée écrase intégralement le contenu du fichier, donc dès
+// qu'un organisateur a cliqué « Enregistrer » une fois, toute amélioration livrée par la
+// suite devient invisible — pour toujours, et sans que personne ne s'en aperçoive. On ne
+// peut pas fusionner automatiquement (ce serait écraser le travail des organisateurs), mais
+// on peut au moins PRÉVENIR. Hash djb2 : on compare des versions, on ne sécurise rien.
+function sopFingerprint(s) {
+    let h = 5381;
+    for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+    return (h >>> 0).toString(36);
+}
+const SOP_DEFAULT_FP = sopFingerprint(SOP_DEFAULT_HTML);
+let sopBaseChanged = false;
+
 async function renderSop() {
   const editBar = document.getElementById('sop-edit-bar');
   if (editBar) editBar.style.display = meInfo.can_organize ? 'flex' : 'none';
@@ -1117,7 +1143,12 @@ async function renderSop() {
       const r = await fetch(`${API}?action=get_sop_content`);
       const d = await r.json();
       sopServerHtml = (d.ok && d.html) ? d.html : SOP_DEFAULT_HTML;
+      // Le manuel livré a-t-il évolué depuis la dernière sauvegarde ? On ne prévient que
+      // si l'empreinte est CONNUE et différente : une sauvegarde antérieure à ce mécanisme
+      // n'en a pas, et on ne va pas afficher une alerte pour un simple manque d'information.
+      sopBaseChanged = !!(d.ok && d.html && d.base_version && d.base_version !== SOP_DEFAULT_FP);
       document.getElementById('sop-editable').innerHTML = sopServerHtml;
+      renderSopUpdateNotice();
     } catch { sopServerHtml = SOP_DEFAULT_HTML; }
   }
 
@@ -1153,6 +1184,59 @@ async function renderSop() {
     }
     box.innerHTML = h;
   } catch { box.innerHTML = '<div class="sop-live-empty">Impossible de charger les informations de ce soir.</div>'; }
+}
+
+// Bandeau « le manuel livré a changé ». Volontairement informatif et NON destructif : on
+// ne propose aucune fusion automatique, qui écraserait le travail des organisateurs. On
+// signale, on montre ce qui a été livré, et on laisse recopier ce qui intéresse.
+function renderSopUpdateNotice() {
+    let el = document.getElementById('sop-update-notice');
+    if (!sopBaseChanged || !meInfo.can_organize) { if (el) el.remove(); return; }
+    if (el) return;
+    el = document.createElement('div');
+    el.id = 'sop-update-notice';
+    el.style.cssText = 'background:rgba(200,146,16,.09);border:1px solid var(--accent-dim);'
+        + 'border-left:3px solid var(--accent);border-radius:2px;padding:.7rem .9rem;margin-bottom:1rem;'
+        + 'font-size:.78rem;color:var(--text-muted);line-height:1.6';
+    el.innerHTML = '<strong style="color:var(--accent)">Le manuel de référence a été mis à jour</strong> '
+        + 'depuis votre dernière sauvegarde — vos modifications restent affichées et intactes. '
+        + '<button class="btn btn-ghost" style="margin-left:.5rem;padding:.25rem .6rem;font-size:.7rem" '
+        + 'onclick="openSopReference()">Voir la version livrée</button>';
+    const bar = document.getElementById('sop-edit-bar');
+    bar.parentNode.insertBefore(el, bar);
+}
+
+// Ouvre le manuel LIVRÉ en lecture seule, pour comparer et recopier à la main.
+// Panneau autonome plutôt que la modale du site : `uiDialog` pose son message en
+// textContent (donc pas de HTML) et `openModal` est réservée à la création de soirée.
+// On ne touche JAMAIS au contenu en place depuis ici.
+function openSopReference() {
+    if (document.getElementById('sop-ref-overlay')) return;
+    const ov = document.createElement('div');
+    ov.id = 'sop-ref-overlay';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:400;background:rgba(6,3,1,.86);'
+        + 'backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:4vh 3vw';
+    const box = document.createElement('div');
+    box.style.cssText = 'background:var(--surface);border:1px solid var(--accent-dim);border-radius:2px;'
+        + 'max-width:900px;width:100%;max-height:92vh;display:flex;flex-direction:column';
+    box.innerHTML =
+        '<div style="display:flex;align-items:center;gap:1rem;padding:.85rem 1.1rem;border-bottom:1px solid var(--border)">'
+      + '<span style="font-family:\'Cinzel\',serif;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);flex:1">'
+      + 'Manuel de référence livré avec le site</span>'
+      + '<button class="btn btn-ghost" id="sop-ref-close" style="padding:.3rem .8rem;font-size:.72rem">Fermer</button></div>'
+      + '<div style="padding:.6rem 1.1rem;font-size:.74rem;color:var(--text-faint);font-style:italic;border-bottom:1px solid var(--border)">'
+      + 'Lecture seule — rien n\'est modifié. Recopie ce qui t\'intéresse dans la page, puis enregistre. '
+      + '« Réinitialiser » remplacerait au contraire TOUT le contenu par celui-ci.</div>'
+      + '<div style="overflow:auto;padding:1.1rem" id="sop-ref-body"></div>';
+    ov.appendChild(box);
+    document.body.appendChild(ov);
+    document.getElementById('sop-ref-body').innerHTML = SOP_DEFAULT_HTML;
+    const close = () => ov.remove();
+    document.getElementById('sop-ref-close').onclick = close;
+    ov.onclick = e => { if (e.target === ov) close(); };
+    document.addEventListener('keydown', function esc(e) {
+        if (e.key === 'Escape') { close(); document.removeEventListener('keydown', esc); }
+    });
 }
 
 // Bascule le mode édition du Manuel de combat (organisateurs uniquement — le bouton est masqué
@@ -1212,9 +1296,13 @@ async function saveSopContent() {
   if (sopEditing) [...el.children].forEach(c => c.contentEditable = 'true');
   note.textContent = 'Enregistrement…';
   try {
-    const r = await apiPost('save_sop_content', { html });
+    // base_version = empreinte du manuel LIVRÉ au moment de cette sauvegarde. C'est elle
+    // qui permettra de détecter, plus tard, qu'une nouvelle version a été livrée depuis.
+    const r = await apiPost('save_sop_content', { html, base_version: SOP_DEFAULT_FP });
     if (r.ok) {
       sopServerHtml = html;
+      sopBaseChanged = false;          // on vient de s'aligner sur le manuel livré courant
+      renderSopUpdateNotice();
       toggleSopEdit(false); // efface le message en cours avant qu'on affiche la confirmation
       note.textContent = '✓ Enregistré';
     } else {

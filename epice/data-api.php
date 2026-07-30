@@ -476,16 +476,24 @@ switch ($action) {
     case 'get_sop_content':
         $p = __DIR__ . '/data/sop_content.json';
         $html = '';
+        $base = '';
         if (file_exists($p)) {
             $j = json_decode(file_get_contents($p), true);
             $html = is_array($j) ? (string)($j['html'] ?? '') : '';
+            // Empreinte du manuel livré au moment de la sauvegarde. Absente sur les
+            // fichiers antérieurs à ce mécanisme : le front n'alerte alors pas (pas
+            // d'information ≠ mise à jour disponible).
+            $base = is_array($j) ? (string)($j['base_version'] ?? '') : '';
         }
-        out(true, ['html' => $html]);
+        out(true, ['html' => $html, 'base_version' => $base]);
 
     case 'save_sop_content':
         $html = (string)($input['html'] ?? '');
         $ok = @file_put_contents(__DIR__ . '/data/sop_content.json', json_encode([
             'html' => $html, 'date' => date('Y-m-d H:i'), 'by' => epice_user(),
+            // Sert à détecter plus tard qu'une nouvelle version du manuel a été livrée
+            // (cf. bandeau d'information côté debrief.html — on prévient, on n'écrase pas).
+            'base_version' => (string)($input['base_version'] ?? ''),
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) !== false;
         if (!$ok) out(false, [], "Écriture impossible (droits sur data/sop_content.json).");
         out(true, ['message' => 'Manuel de combat enregistré']);

@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plans manquants — Havres Gris</title>
+<link rel="stylesheet" href="style.css">
+<style>
+:root {
+  --bg:#0B0805; --surface:#181008; --surface-2:#221508; --border:#3C2C14;
+  --accent:#C89210; --accent-dim:#7A5A0A;
+  --text:#E8DEC8; --muted:#7A6A4A; --faint:#3A2E18;
+  --green:#4A9A5A; --red:#B85428;
+}
+*,*::before,*::after { box-sizing:border-box; }
+html { background:var(--bg); }
+body {
+  margin:0; min-height:100vh; color:var(--text);
+  font-family:'Segoe UI',system-ui,sans-serif; padding-bottom:4rem;
+  background:radial-gradient(ellipse 90% 60% at 20% 10%,rgba(120,70,10,.16),transparent 55%),var(--bg);
+}
+.nav { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; padding:.85rem 1.5rem;
+  border-bottom:1px solid var(--border); background:rgba(11,8,5,.9); position:sticky; top:0; z-index:50; }
+.nav a { color:var(--muted); text-decoration:none; font-size:.7rem; letter-spacing:.14em; text-transform:uppercase;
+  border:1px solid var(--border); border-radius:2px; padding:.4rem .9rem; }
+.nav a:hover { color:var(--accent); border-color:var(--accent-dim); }
+.nav .t { font-family:'Cinzel',Georgia,serif; color:var(--accent); font-size:.82rem; letter-spacing:.24em; text-transform:uppercase; }
+.wrap { max-width:1180px; margin:0 auto; padding:1.6rem 1.25rem 0; }
+
+.card { background:var(--surface); border:1px solid var(--border); border-radius:2px; padding:1.1rem 1.2rem; margin-bottom:1rem; }
+.card h2 { margin:0 0 .5rem; font-size:.66rem; letter-spacing:.15em; text-transform:uppercase; color:var(--accent); font-weight:700; }
+.hint { font-size:.76rem; color:var(--muted); line-height:1.6; margin:0 0 .8rem; }
+textarea { width:100%; min-height:130px; background:var(--surface-2); border:1px solid var(--border); border-radius:2px;
+  color:var(--text); padding:.7rem .9rem; font-family:ui-monospace,Consolas,monospace; font-size:.8rem; resize:vertical; outline:none; }
+textarea:focus { border-color:var(--accent-dim); }
+.btn { background:linear-gradient(#e2bb56,#b8862a); color:#22160a; border:none; padding:.55rem 1.2rem; border-radius:2px;
+  font-weight:800; font-size:.74rem; letter-spacing:.1em; text-transform:uppercase; cursor:pointer; font-family:inherit; }
+.btn:hover { filter:brightness(1.09); }
+.btn.ghost { background:transparent; color:var(--muted); border:1px solid var(--border); }
+.btn.ghost:hover { color:var(--accent); border-color:var(--accent-dim); }
+.btn.danger { background:transparent; color:var(--red); border:1px solid #5a2a18; }
+.row { display:flex; gap:.5rem; flex-wrap:wrap; align-items:center; }
+
+.stats { display:flex; gap:.6rem; flex-wrap:wrap; margin-bottom:1rem; }
+.stat { background:var(--surface); border:1px solid var(--border); border-radius:2px; padding:.5rem .9rem; min-width:104px; }
+.stat b { display:block; font-size:.56rem; letter-spacing:.13em; text-transform:uppercase; color:var(--muted); }
+.stat span { font-size:1.25rem; font-weight:800; color:var(--accent); }
+.stat.ok span { color:var(--green); }
+
+.filters { display:flex; gap:.45rem; flex-wrap:wrap; align-items:center; margin-bottom:.8rem; }
+.filters input[type=search] { flex:1 1 220px; min-width:180px; background:var(--surface-2); border:1px solid var(--border);
+  border-radius:2px; color:var(--text); padding:.45rem .8rem; font-size:.82rem; outline:none; font-family:inherit; }
+.chip { background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:2px;
+  padding:.32rem .75rem; font-size:.7rem; cursor:pointer; font-family:inherit; }
+.chip:hover { border-color:var(--accent-dim); color:var(--text); }
+.chip.on { background:rgba(200,146,16,.14); border-color:var(--accent); color:var(--accent); font-weight:700; }
+
+table { width:100%; border-collapse:collapse; }
+th { text-align:left; font-size:.58rem; letter-spacing:.13em; text-transform:uppercase; color:var(--muted);
+  padding:.45rem .6rem; border-bottom:1px solid var(--border); font-weight:700; white-space:nowrap; }
+td { padding:.4rem .6rem; border-bottom:1px solid rgba(60,44,20,.45); font-size:.84rem; vertical-align:middle; }
+tr:hover td { background:rgba(200,146,16,.04); }
+.tier { font-size:.62rem; letter-spacing:.06em; text-transform:uppercase; border:1px solid var(--border);
+  border-radius:2px; padding:.1rem .4rem; white-space:nowrap; }
+.t-Copper{color:#c98b5a;border-color:#6b4526}.t-Iron{color:#b8b0a4;border-color:#4d4a44}
+.t-Steel{color:#9fb6c4;border-color:#3f5460}.t-Aluminum{color:#cfd6dd;border-color:#5a636b}
+.t-Duraluminum{color:#8fd0e0;border-color:#2f5f6b}.t-Plastanium{color:#d49be6;border-color:#5c3468}
+.cat { font-size:.7rem; color:var(--muted); }
+.nom { font-weight:600; }
+.lieu-in { width:100%; background:transparent; border:1px solid transparent; border-radius:2px; color:var(--text);
+  padding:.28rem .45rem; font-size:.82rem; font-family:inherit; outline:none; }
+.lieu-in:hover { border-color:var(--border); }
+.lieu-in:focus { border-color:var(--accent-dim); background:var(--surface-2); }
+.lieu-in::placeholder { color:var(--faint); font-style:italic; }
+.act { background:transparent; border:1px solid var(--border); color:var(--muted); border-radius:2px;
+  padding:.22rem .55rem; font-size:.68rem; cursor:pointer; font-family:inherit; white-space:nowrap; }
+.act:hover { color:var(--green); border-color:var(--green); }
+.act.undo:hover { color:var(--accent); border-color:var(--accent-dim); }
+.empty { text-align:center; color:var(--muted); font-size:.86rem; padding:2.4rem 1rem; font-style:italic; line-height:1.7; }
+/* Lieu dataminé : visuellement distinct d'une saisie, pour qu'on sache toujours
+   d'où vient l'information (donnée du jeu vs note personnelle). */
+.dm { font-size:.72rem; color:var(--green); padding:.15rem .45rem 0; letter-spacing:.01em; cursor:help; }
+.dm b { color:#7fd48f; }
+.appris td { opacity:.5; }
+.appris .nom { text-decoration:line-through; }
+.note { font-size:.72rem; color:var(--faint); font-style:italic; margin-top:.5rem; }
+.flash { background:rgba(74,154,90,.12); border:1px solid var(--green); border-left:3px solid var(--green);
+  border-radius:2px; padding:.6rem .85rem; font-size:.8rem; color:var(--text); margin-bottom:.8rem; }
+.flash.warn { background:rgba(200,146,16,.1); border-color:var(--accent-dim); border-left-color:var(--accent); }
+@media(max-width:640px){ .hide-s { display:none; } .wrap { padding:1rem .7rem 0; } }
+</style>
+</head>
+<body>
+<script src="auth-guard.js"></script>
+
+<nav class="nav">
+  <a href="menu.html">← Portail</a>
+  <span class="t">Plans manquants</span>
+</nav>
+
+<div class="wrap">
+
+  <div id="flash"></div>
+
+  <div class="card">
+    <h2>Coller la liste de l'addon</h2>
+    <p class="hint">
+      Copie l'export de l'addon et colle-le ici. Les plans qui <strong>disparaissent</strong> d'un collage
+      à l'autre sont considérés comme appris et basculent automatiquement dans l'historique —
+      les lieux que tu as saisis sont toujours conservés.
+    </p>
+    <textarea id="paste" placeholder="Copper Products&#10;14&#10;&#10;Aren's Boots&#10;&#10;armor&#10;…"></textarea>
+    <div class="row" style="margin-top:.6rem">
+      <button class="btn" id="btn-import">Analyser et enregistrer</button>
+      <button class="btn ghost" id="btn-export">Sauvegarder mes lieux (fichier)</button>
+      <button class="btn ghost" id="btn-import-file">Restaurer une sauvegarde</button>
+      <input type="file" id="file-in" accept=".json" hidden>
+      <span style="flex:1"></span>
+      <button class="btn danger" id="btn-reset">Tout effacer</button>
+    </div>
+    <p class="note" id="maj"></p>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="card">
+    <div class="filters">
+      <input type="search" id="q" placeholder="Rechercher un plan ou un lieu…">
+      <button class="chip" data-f="tier" data-v="">Tous tiers</button>
+      <span id="chips-tier"></span>
+    </div>
+    <div class="filters">
+      <span id="chips-cat"></span>
+      <span style="flex:1"></span>
+      <button class="chip" id="chip-nolieu">Aucune piste</button>
+      <button class="chip" id="chip-appris">Voir les appris</button>
+    </div>
+    <div id="table"></div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+'use strict';
+
+// ══════════════════════════════════════════════════════════════════════════
+//  PLANS MANQUANTS — carnet personnel, entièrement local (localStorage).
+//
+//  Les lieux viennent de DEUX sources qui ne se mélangent jamais :
+//   · `plans_index.json` — dataminé (table de chaînes du jeu + tables de butin).
+//     Fiable, avec probabilité, mais ne couvre aujourd'hui que les lieux NOMMÉS,
+//     soit une minorité des plans.
+//   · ce que TU saisis — prioritaire sur le dataminé, jamais écrasé.
+//  On n'écrit jamais un lieu dataminé dans tes données : il reste affiché comme
+//  information dérivée. Le jour où l'extraction couvrira plus de plans, tes notes
+//  ne seront pas en conflit avec elle, et rien à re-saisir.
+//
+//  Aucun lieu n'est deviné ni approximé : pas d'information = case vide.
+// ══════════════════════════════════════════════════════════════════════════
+
+const CLE = 'dune_plans_manquants_v1';
+const TIERS = ['Copper', 'Iron', 'Steel', 'Aluminum', 'Duraluminum', 'Plastanium'];
+const TIERS_FR = { Copper:'Cuivre', Iron:'Fer', Steel:'Acier', Aluminum:'Aluminium', Duraluminum:'Duralu', Plastanium:'Plasta' };
+const CATS = ['armor', 'weapons', 'utility', 'vehicles'];
+const CATS_FR = { armor:'Armure', weapons:'Arme', utility:'Utilitaire', vehicles:'Véhicule' };
+
+// État persistant. `lieux` et `appris` survivent à tous les recollages : ce sont
+// les seules données que l'utilisateur produit lui-même, on ne les perd jamais.
+let etat = { plans: [], lieux: {}, appris: [], maj: null };
+let filtres = { tier: '', cat: '', q: '', sansLieu: false, voirAppris: false };
+
+// Index dataminé (nom anglais normalisé → { n, id, l:[{o,c,t}] }). Chargé au démarrage ;
+// la page reste parfaitement utilisable s'il est absent — on retombe sur la saisie manuelle.
+let index = {};
+function norm(s) {
+  return String(s).toLowerCase()
+    .replace(/[‘’`´]/g, "'")
+    .replace(/\s+/g, ' ')
+    .replace(/[^a-z0-9' ]/g, '')
+    .trim();
+}
+function infoPlan(nom) { return index[norm(nom)] || null; }
+function lieuConnu(nom) { const i = infoPlan(nom); return i && i.l && i.l.length ? i.l : null; }
+// « A-t-on une piste ? » = saisie manuelle OU lieu dataminé.
+function aUnLieu(nom) { return !!(etat.lieux[nom] || lieuConnu(nom)); }
+
+async function chargerIndex() {
+  try {
+    const r = await fetch('plans_index.json', { cache: 'no-cache' });
+    const j = await r.json();
+    if (j && j.plans) { index = j.plans; rendre(); }
+  } catch (e) { /* index absent : carnet 100 % manuel, aucun impact */ }
+}
+
+function charger() {
+  try {
+    const j = JSON.parse(localStorage.getItem(CLE) || 'null');
+    if (j && Array.isArray(j.plans)) etat = Object.assign(etat, j);
+  } catch (e) { /* stockage illisible : on repart d'un carnet vide */ }
+}
+function sauver() { try { localStorage.setItem(CLE, JSON.stringify(etat)); } catch (e) { flash('Sauvegarde impossible (stockage du navigateur plein ?)', true); } }
+
+// ── Analyse de l'export addon ────────────────────────────────────────────
+// Format observé : « <Tier> Products », un compteur, puis pour chaque plan son
+// nom, une ligne vide, sa catégorie, et parfois des lignes de grade G0..G5.
+// Les sets sont annotés « armor - 5 items ».
+function analyser(txt) {
+  const out = [];
+  let tier = null;
+  for (const brut of String(txt).replace(/ /g, ' ').split(/\r?\n/)) {
+    const l = brut.trim();
+    if (!l) continue;
+    const mt = l.match(/^(\w+)\s+Products$/i);
+    if (mt && TIERS.some(t => t.toLowerCase() === mt[1].toLowerCase())) {
+      tier = TIERS.find(t => t.toLowerCase() === mt[1].toLowerCase());
+      continue;
+    }
+    if (/^\d+$/.test(l)) continue;            // compteur du tier
+    if (/^G\d+$/i.test(l)) continue;          // grades G0..G5
+    const cat = CATS.find(c => l === c || l.toLowerCase().startsWith(c + ' -'));
+    if (cat) {                                 // la catégorie suit le nom
+      if (out.length) { out[out.length - 1].cat = cat; out[out.length - 1].detail = l.includes('-') ? l : ''; }
+      continue;
+    }
+    out.push({ nom: l, tier, cat: null, detail: '' });
+  }
+  return out.filter(p => p.nom && p.tier);
+}
+
+function flash(msg, warn) {
+  document.getElementById('flash').innerHTML =
+    '<div class="flash' + (warn ? ' warn' : '') + '">' + msg + '</div>';
+}
+
+// ── Import ───────────────────────────────────────────────────────────────
+function importer() {
+  const txt = document.getElementById('paste').value;
+  if (!txt.trim()) { flash('Colle d\'abord la liste de l\'addon.', true); return; }
+  const nouveaux = analyser(txt);
+  if (!nouveaux.length) {
+    flash('Aucun plan reconnu — le format ne ressemble pas à l\'export attendu. ' +
+          'Il doit commencer par une ligne du type « Copper Products ».', true);
+    return;
+  }
+
+  const avant = new Set(etat.plans.map(p => p.nom));
+  const apres = new Set(nouveaux.map(p => p.nom));
+  // Un plan qui a disparu de la liste ne manque plus : il a été appris.
+  const disparus = [...avant].filter(n => !apres.has(n));
+  const dejaAppris = new Set(etat.appris.map(a => a.nom));
+  const date = new Date().toISOString().slice(0, 10);
+  let ajoutes = 0;
+  for (const n of disparus) {
+    if (dejaAppris.has(n)) continue;
+    const p = etat.plans.find(x => x.nom === n) || { nom: n };
+    etat.appris.push({ nom: n, tier: p.tier || null, cat: p.cat || null, date });
+    ajoutes++;
+  }
+  // Un plan réapparu (mauvais export précédent, ou reset in-game) sort de l'historique.
+  const revenus = etat.appris.filter(a => apres.has(a.nom)).map(a => a.nom);
+  if (revenus.length) etat.appris = etat.appris.filter(a => !apres.has(a.nom));
+
+  const premier = etat.plans.length === 0;
+  etat.plans = nouveaux;
+  etat.maj = new Date().toISOString();
+  sauver();
+
+  const parts = [];
+  parts.push('<strong>' + nouveaux.length + ' plans manquants</strong> enregistrés.');
+  if (premier) parts.push('Carnet initialisé — tu peux remplir les lieux au fur et à mesure.');
+  if (ajoutes) parts.push('<strong>' + ajoutes + '</strong> plan' + (ajoutes > 1 ? 's' : '') +
+    ' ' + (ajoutes > 1 ? 'ont disparu de la liste et sont passés' : 'a disparu de la liste et est passé') + ' en « appris ».');
+  if (revenus.length) parts.push('<strong>' + revenus.length + '</strong> de nouveau manquant' +
+    (revenus.length > 1 ? 's' : '') + ' — retiré' + (revenus.length > 1 ? 's' : '') + ' de l\'historique.');
+  flash(parts.join(' '));
+  document.getElementById('paste').value = '';
+  rendre();
+}
+
+// ── Actions ──────────────────────────────────────────────────────────────
+function marquerAppris(nom) {
+  const p = etat.plans.find(x => x.nom === nom);
+  if (!etat.appris.some(a => a.nom === nom))
+    etat.appris.push({ nom, tier: p ? p.tier : null, cat: p ? p.cat : null, date: new Date().toISOString().slice(0, 10) });
+  sauver(); rendre();
+}
+function annulerAppris(nom) {
+  etat.appris = etat.appris.filter(a => a.nom !== nom);
+  sauver(); rendre();
+}
+function setLieu(nom, val) {
+  const v = String(val || '').trim();
+  if (v) etat.lieux[nom] = v; else delete etat.lieux[nom];
+  sauver(); majStats();
+}
+
+// ── Rendu ────────────────────────────────────────────────────────────────
+function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+function apprisSet() { return new Set(etat.appris.map(a => a.nom)); }
+
+function visibles() {
+  const A = apprisSet();
+  const q = filtres.q.toLowerCase();
+  if (filtres.voirAppris) {
+    return etat.appris.slice().sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+      .filter(p => !q || p.nom.toLowerCase().includes(q));
+  }
+  return etat.plans.filter(p => {
+    if (A.has(p.nom)) return false;
+    if (filtres.tier && p.tier !== filtres.tier) return false;
+    if (filtres.cat && p.cat !== filtres.cat) return false;
+    if (filtres.sansLieu && aUnLieu(p.nom)) return false;
+    if (q && !(p.nom.toLowerCase().includes(q) || (etat.lieux[p.nom] || '').toLowerCase().includes(q))) return false;
+    return true;
+  });
+}
+
+function majStats() {
+  const A = apprisSet();
+  const restants = etat.plans.filter(p => !A.has(p.nom));
+  const avecLieu = restants.filter(p => aUnLieu(p.nom)).length;
+  const dataminés = restants.filter(p => lieuConnu(p.nom)).length;
+  document.getElementById('stats').innerHTML =
+      stat('Manquants', restants.length)
+    + stat('Piste connue', avecLieu + ' / ' + restants.length)
+    + stat('Dont dataminés', dataminés)
+    + stat('À chercher', restants.length - avecLieu)
+    + stat('Appris', etat.appris.length, true);
+}
+function stat(l, v, ok) { return '<div class="stat' + (ok ? ' ok' : '') + '"><b>' + l + '</b><span>' + v + '</span></div>'; }
+
+function rendre() {
+  majStats();
+
+  // Puces de filtre — les compteurs se calculent sur ce qui reste à trouver.
+  const A = apprisSet();
+  const restants = etat.plans.filter(p => !A.has(p.nom));
+  const cnt = (k, v) => restants.filter(p => p[k] === v).length;
+  document.getElementById('chips-tier').innerHTML = TIERS
+    .filter(t => cnt('tier', t))
+    .map(t => '<button class="chip' + (filtres.tier === t ? ' on' : '') + '" data-tier="' + t + '">'
+      + TIERS_FR[t] + ' <span style="opacity:.6">' + cnt('tier', t) + '</span></button>').join(' ');
+  document.getElementById('chips-cat').innerHTML =
+    '<button class="chip' + (!filtres.cat ? ' on' : '') + '" data-cat="">Toutes catégories</button> '
+    + CATS.filter(c => cnt('cat', c)).map(c => '<button class="chip' + (filtres.cat === c ? ' on' : '') + '" data-cat="' + c + '">'
+      + CATS_FR[c] + ' <span style="opacity:.6">' + cnt('cat', c) + '</span></button>').join(' ');
+  document.getElementById('chip-nolieu').classList.toggle('on', filtres.sansLieu);
+  document.getElementById('chip-appris').classList.toggle('on', filtres.voirAppris);
+  document.getElementById('maj').textContent = etat.maj
+    ? 'Dernier collage : ' + new Date(etat.maj).toLocaleString('fr-FR') + ' · ' + etat.plans.length + ' plans dans la liste'
+    : '';
+
+  const list = visibles();
+  const box = document.getElementById('table');
+  if (!etat.plans.length && !etat.appris.length) {
+    box.innerHTML = '<div class="empty">Aucune liste pour l\'instant.<br>Colle l\'export de ton addon ci-dessus pour démarrer le carnet.</div>';
+    return;
+  }
+  if (!list.length) {
+    box.innerHTML = '<div class="empty">' + (filtres.voirAppris
+      ? 'Aucun plan appris pour l\'instant.'
+      : 'Aucun plan ne correspond à ces filtres.') + '</div>';
+    return;
+  }
+
+  const appris = filtres.voirAppris;
+  let h = '<table><thead><tr><th style="width:80px">Tier</th><th>Plan</th>'
+        + '<th class="hide-s" style="width:92px">Catégorie</th>'
+        + (appris ? '<th style="width:110px">Appris le</th>' : '<th style="width:38%">Où le trouver</th>')
+        + '<th style="width:96px"></th></tr></thead><tbody>';
+  for (const p of list) {
+    h += '<tr' + (appris ? ' class="appris"' : '') + '>'
+      + '<td><span class="tier t-' + (p.tier || '') + '">' + (TIERS_FR[p.tier] || p.tier || '—') + '</span></td>'
+      + '<td class="nom">' + esc(p.nom) + (p.detail ? ' <span class="cat">(' + esc(p.detail) + ')</span>' : '') + '</td>'
+      + '<td class="hide-s cat">' + (CATS_FR[p.cat] || p.cat || '—') + '</td>';
+    if (appris) {
+      h += '<td class="cat">' + esc(p.date || '—') + '</td>'
+        + '<td><button class="act undo" data-undo="' + esc(p.nom) + '">↩ Manquant</button></td>';
+    } else {
+      // Lieu dataminé affiché sous le champ : information dérivée, jamais écrite dans
+      // les données de l'utilisateur — sa saisie reste la source de vérité.
+      const dm = lieuConnu(p.nom);
+      let bloc = '<input class="lieu-in" data-lieu="' + esc(p.nom) + '" value="' + esc(etat.lieux[p.nom] || '')
+        + '" placeholder="' + (dm ? 'ta note (facultatif)' : 'donjon, station, marchand…') + '">';
+      if (dm) {
+        const princ = dm[0];
+        const autres = dm.length > 1 ? ' <span style="opacity:.65">+' + (dm.length - 1) + ' autre' + (dm.length > 2 ? 's' : '') + '</span>' : '';
+        bloc += '<div class="dm" title="' + esc(dm.map(x => x.o + ' — ' + x.c + ' %').join('\n')) + '">'
+              + '◆ ' + esc(princ.o) + ' <b>' + princ.c + ' %</b>' + autres + '</div>';
+      }
+      h += '<td>' + bloc + '</td>'
+        + '<td><button class="act" data-appris="' + esc(p.nom) + '">✓ Appris</button></td>';
+    }
+    h += '</tr>';
+  }
+  box.innerHTML = h + '</tbody></table>';
+}
+
+// ── Sauvegarde / restauration du carnet ──────────────────────────────────
+// Le carnet ne vit que dans CE navigateur : vider les données du site le perd.
+// L'export fichier est le seul filet, et permet aussi de passer d'un poste à l'autre.
+function exporter() {
+  const blob = new Blob([JSON.stringify(etat, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'plans-manquants-' + new Date().toISOString().slice(0, 10) + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function restaurer(fichier) {
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const j = JSON.parse(r.result);
+      if (!j || typeof j !== 'object' || !Array.isArray(j.plans)) throw new Error('format');
+      etat = { plans: j.plans || [], lieux: j.lieux || {}, appris: j.appris || [], maj: j.maj || null };
+      sauver(); rendre();
+      flash('Carnet restauré : ' + etat.plans.length + ' plans, '
+        + Object.keys(etat.lieux).length + ' lieux, ' + etat.appris.length + ' appris.');
+    } catch (e) { flash('Fichier illisible — ce n\'est pas une sauvegarde de cette page.', true); }
+  };
+  r.readAsText(fichier);
+}
+
+// ── Branchements ─────────────────────────────────────────────────────────
+document.getElementById('btn-import').addEventListener('click', importer);
+document.getElementById('btn-export').addEventListener('click', exporter);
+document.getElementById('btn-import-file').addEventListener('click', () => document.getElementById('file-in').click());
+document.getElementById('file-in').addEventListener('change', e => { if (e.target.files[0]) restaurer(e.target.files[0]); e.target.value = ''; });
+document.getElementById('btn-reset').addEventListener('click', () => {
+  if (!confirm('Effacer la liste, les lieux saisis ET l\'historique des plans appris ?\n\nCette action est irréversible — pense à sauvegarder d\'abord.')) return;
+  etat = { plans: [], lieux: {}, appris: [], maj: null };
+  sauver(); rendre(); flash('Carnet vidé.', true);
+});
+document.getElementById('q').addEventListener('input', e => { filtres.q = e.target.value; rendre(); });
+document.getElementById('chip-nolieu').addEventListener('click', () => { filtres.sansLieu = !filtres.sansLieu; rendre(); });
+document.getElementById('chip-appris').addEventListener('click', () => { filtres.voirAppris = !filtres.voirAppris; rendre(); });
+
+// Délégation : le tableau est reconstruit à chaque rendu, on n'attache rien dessus.
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-tier],[data-cat],[data-appris],[data-undo]');
+  if (!t) return;
+  if (t.dataset.tier !== undefined) { filtres.tier = filtres.tier === t.dataset.tier ? '' : t.dataset.tier; rendre(); }
+  else if (t.dataset.cat !== undefined) { filtres.cat = t.dataset.cat; rendre(); }
+  else if (t.dataset.appris) marquerAppris(t.dataset.appris);
+  else if (t.dataset.undo) annulerAppris(t.dataset.undo);
+});
+// La saisie du lieu est enregistrée à la volée, sans bouton : un carnet doit être
+// sans friction, sinon il ne se remplit jamais.
+document.addEventListener('input', e => {
+  if (e.target.matches && e.target.matches('.lieu-in')) setLieu(e.target.dataset.lieu, e.target.value);
+});
+document.querySelector('.filters .chip[data-f="tier"]').addEventListener('click', () => { filtres.tier = ''; rendre(); });
+
+// Export de test (banc d'essai headless). Sans effet sur le jeu de la page.
+window.__plans = {
+  analyser, get etat() { return etat; }, set etat(v) { etat = v; },
+  get filtres() { return filtres; }, importer, marquerAppris, annulerAppris, setLieu,
+  visibles, rendre, CLE,
+};
+
+charger();
+rendre();
+chargerIndex();
+})();
+</script>
+</body>
+</html>

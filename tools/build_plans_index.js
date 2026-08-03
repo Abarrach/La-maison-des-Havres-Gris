@@ -60,6 +60,14 @@ const SRC = path.join(RACINE, 'plan_sources.json');
 const srcMap = fs.existsSync(SRC) ? (JSON.parse(fs.readFileSync(SRC, 'utf8')).sources || {}) : {};
 function sourcesDe(id) { return srcMap[id + '_schematic'] || srcMap[id] || null; }
 
+// Lieux RÉELS (build_plan_locations_from_maps.js) : un coffre posé à la main dans un niveau,
+// qui tire dans un pool Unique. C'est l'information la plus forte des trois — elle nomme un
+// type de POI où aller, pas une catégorie de conteneur. Même double tentative de nom que
+// ci-dessus, pour la même raison de suffixe `_schematic`.
+const LIEUX_POSES = path.join(RACINE, 'plan_locations.json');
+const locMap = fs.existsSync(LIEUX_POSES) ? (JSON.parse(fs.readFileSync(LIEUX_POSES, 'utf8')).locations || {}) : {};
+function lieuxPosesDe(id) { return locMap[id + '_schematic'] || locMap[id] || null; }
+
 const plans = {};
 let nbDirect = 0, nbSchem = 0, nbCollision = 0;
 
@@ -93,12 +101,20 @@ for (const [cle, valeur] of Object.entries(entrees)) {
   if (lieux.length) plans[k].l = lieux;
   const s = sourcesDe(id);
   if (s && s.length) plans[k].s = s;
+  const g = lieuxPosesDe(id);
+  // On ne publie que les lieux effectivement nommés : un coffre dont le motif de niveau
+  // n'a pas été reconnu sortirait sous un libellé technique, ce qui n'aide pas le joueur.
+  if (g && g.length) {
+    const nommes = g.filter(x => x.lieu);
+    if (nommes.length) plans[k].g = nommes.map(x => ({ o: x.lieu, r: x.region, n: x.coffres }));
+  }
   if (direct) nbDirect++; else nbSchem++;
 }
 
 const avecLieu = Object.values(plans).filter(p => p.l).length;
 const avecSource = Object.values(plans).filter(p => p.s).length;
-const avecInfo = Object.values(plans).filter(p => p.l || p.s).length;
+const avecPose = Object.values(plans).filter(p => p.g).length;
+const avecInfo = Object.values(plans).filter(p => p.l || p.s || p.g).length;
 const out = {
   generated_at: new Date().toISOString(),
   source: 'ST_Localization_Items (datamine FModel) + stuff_loot.json',
@@ -109,6 +125,7 @@ const out = {
   count: Object.keys(plans).length,
   with_location: avecLieu,
   with_source: avecSource,
+  with_placed: avecPose,
   plans,
 };
 fs.writeFileSync(SORTIE, JSON.stringify(out));
@@ -119,5 +136,6 @@ console.log(`    · identifiant direct : ${nbDirect}  (lieu potentiellement rés
 console.log(`    · identifiant schéma : ${nbSchem}  (nom reconnu, pas de lieu rattachable)`);
 console.log(`  avec un lieu précis   : ${avecLieu}  (lieux nommés, avec probabilité)`);
 console.log(`  avec une source       : ${avecSource}  (grotte, épave, désert profond…)`);
+console.log(`  avec un LIEU POSÉ     : ${avecPose}  (coffre réel dans un niveau, pool Unique)`);
 console.log(`  avec au moins une info: ${avecInfo}`);
 if (nbCollision) console.log(`  libellés en double    : ${nbCollision} (arbitrage : on garde celui qui porte un lieu)`);

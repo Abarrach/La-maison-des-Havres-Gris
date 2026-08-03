@@ -87,6 +87,8 @@ tr:hover td { background:rgba(200,146,16,.04); }
 /* Source de drop (sans probabilité) : ton plus sobre que le lieu nommé, pour que la
    hiérarchie d'information se lise — un lieu chiffré vaut mieux qu'une simple zone. */
 .src { font-size:.71rem; color:#b89a5e; padding:.1rem .45rem 0; cursor:help; }
+/* Lieu posé dans le monde : l'information la plus actionnable, donc la plus lisible des trois. */
+.geo { font-size:.74rem; color:#e0b76a; font-weight:600; padding:.15rem .45rem 0; cursor:help; }
 .appris td { opacity:.5; }
 .appris .nom { text-decoration:line-through; }
 .note { font-size:.72rem; color:var(--faint); font-style:italic; margin-top:.5rem; }
@@ -190,10 +192,14 @@ function infoPlan(nom) { return index[norm(nom)] || null; }
 // Deux niveaux d'information dataminée, à ne pas confondre :
 //  · `l` = lieu NOMMÉ avec probabilité (donjon, station) — le jeu y liste ses objets
 //  · `s` = source (grotte, épave, Désert Profond…) — on sait où ça tombe, pas avec quelle chance
+//  · `g` = lieu POSÉ dans le monde (grotte, galerie minière…) — un coffre réel qui tire dans
+//          un pool Unique, remonté des niveaux des blocs de terrain. Le plus fort des trois :
+//          il dit où ALLER, pas dans quelle catégorie de conteneur chercher.
 function lieuConnu(nom) { const i = infoPlan(nom); return i && i.l && i.l.length ? i.l : null; }
 function sourcesConnues(nom) { const i = infoPlan(nom); return i && i.s && i.s.length ? i.s : null; }
+function lieuxPoses(nom) { const i = infoPlan(nom); return i && i.g && i.g.length ? i.g : null; }
 // « A-t-on une piste ? » = saisie manuelle OU information dataminée, quelle qu'elle soit.
-function aUnLieu(nom) { return !!(etat.lieux[nom] || lieuConnu(nom) || sourcesConnues(nom)); }
+function aUnLieu(nom) { return !!(etat.lieux[nom] || lieuConnu(nom) || sourcesConnues(nom) || lieuxPoses(nom)); }
 
 async function chargerIndex() {
   try {
@@ -391,9 +397,21 @@ function rendre() {
     } else {
       // Lieu dataminé affiché sous le champ : information dérivée, jamais écrite dans
       // les données de l'utilisateur — sa saisie reste la source de vérité.
-      const dm = lieuConnu(p.nom), src = sourcesConnues(p.nom);
+      const dm = lieuConnu(p.nom), src = sourcesConnues(p.nom), geo = lieuxPoses(p.nom);
       let bloc = '<input class="lieu-in" data-lieu="' + esc(p.nom) + '" value="' + esc(etat.lieux[p.nom] || '')
-        + '" placeholder="' + (dm || src ? 'ta note (facultatif)' : 'donjon, station, marchand…') + '">';
+        + '" placeholder="' + (dm || src || geo ? 'ta note (facultatif)' : 'donjon, station, marchand…') + '">';
+      if (geo) {
+        // Le plus fort des trois niveaux : un coffre POSÉ dans un niveau, tirant dans un pool
+        // Unique. On affiche le type de POI où aller, et la région entre parenthèses quand
+        // elle est unique — deux régions pour le même lieu voudrait dire « un peu partout ».
+        const lieux = [...new Set(geo.map(x => x.o))];
+        const regions = [...new Set(geo.map(x => x.r))];
+        bloc += '<div class="geo" title="' + esc(geo.map(x => x.o + ' — ' + x.r + ' (' + x.n + ' coffre' + (x.n > 1 ? 's' : '') + ')').join('\n')) + '">'
+              + '★ ' + lieux.slice(0, 3).map(esc).join(' · ')
+              + (lieux.length > 3 ? ' <span style="opacity:.6">+' + (lieux.length - 3) + '</span>' : '')
+              + (regions.length === 1 ? ' <span style="opacity:.55">(' + esc(regions[0]) + ')</span>' : '')
+              + '</div>';
+      }
       if (dm) {
         const princ = dm[0];
         const autres = dm.length > 1 ? ' <span style="opacity:.65">+' + (dm.length - 1) + ' autre' + (dm.length > 2 ? 's' : '') + '</span>' : '';

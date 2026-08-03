@@ -137,7 +137,14 @@ function objetsDe(nomTable, vus, viaUnique) {
  * libellé joueur. Tout motif non reconnu est renvoyé tel quel plutôt qu'approximé — un
  * lieu mal nommé enverrait le joueur au mauvais endroit, ce qui est pire que « inconnu ».
  */
+// L'ORDRE FAIT LA DÉCISION : premier motif qui accroche. Les noms propres et les cas
+// composés passent donc avant les termes génériques qu'ils contiennent — `Mirzabah` avant
+// `Landmark`, `Pyon_Village` avant `MiniCamp` (le niveau s'appelle `Pyon_Village_MiniCamp`),
+// `Ecolab` avant `Slaver` (`Ecolab_Br_Slaver_01` est un écolab tenu par des esclavagistes,
+// pas un camp).
 const LIEUX = [
+  [/Mirzabah/i,             'Mirzabah'],
+  [/Pyon_?Village/i,        'Village de pyons'],
   [/MiningGallery/i,        'Galerie minière'],
   [/DesertersOutpost/i,     'Avant-poste de déserteurs'],
   [/DesertersBase/i,        'Base de déserteurs'],
@@ -146,14 +153,23 @@ const LIEUX = [
   [/ScavengerBase|Scavenger/i, 'Camp de charognards'],
   [/HarkBase|Harkonnen/i,   'Base Harkonnen'],
   [/DeathPit/i,             'Fosse de la mort'],
-  [/MiniCamp/i,             'Mini-camp'],
   [/Ecolab|EcoLab/i,        'Laboratoire écologique'],
+  [/Slavers?(Gold)?(Base|Camp|Outpost)?/i, "Camp d'esclavagistes"],
+  [/Fremen_?Sietch|Sietch/i, 'Sietch fremen'],
+  [/MiniCamp/i,             'Mini-camp'],
   [/ShipWreck|Wreck/i,      'Épave'],
   [/Cave/i,                 'Grotte'],
-  [/TraversalChallenge|VerticalChallenge/i, 'Défi de traversée'],
+  [/TraversalChallenge|VerticalChallenge|Level_?Navigation/i, 'Défi de traversée'],
   [/HighGroundReward/i,     'Point haut'],
+  [/NPCBase/i,              'Base de PNJ'],
+  [/Ultra_?Rare_?Container_?DeepDesert/i, 'Conteneur ultra-rare (Désert profond)'],
+  [/Landmark/i,             'Site remarquable'],
   [/Contract/i,             'Contrat'],
   [/Testing|AiTesting/i,    'Zone de test (contenu non joué)'],
+  // `TO_00`/`TO_02`/`SB_TO` : 164 emplacements dont la nature n'a PAS pu être établie.
+  // Le niveau ne contient qu'un coffre et des décalcomanies, aucune collection ne lui donne
+  // d'alias lisible. Volontairement laissé sans nom : un libellé inventé enverrait le joueur
+  // au mauvais endroit, ce qui est pire que « pas d'information ».
 ];
 function lieuLisible(nomNiveau) {
   for (const [re, libelle] of LIEUX) if (re.test(nomNiveau)) return libelle;

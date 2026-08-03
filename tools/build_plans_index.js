@@ -77,7 +77,41 @@ function tablesDeChaines() {
   });
 }
 
-const tables = tablesDeChaines();
+/**
+ * La VRAIE source des noms traduits : `CDT_BaseItems`.
+ *
+ * Un StringTable ne stocke que les chaînes SOURCE, en anglais — le réexporter avec FModel
+ * réglé en français ne change donc rien, et c'est ce qui a fait croire à un export raté.
+ * Les traductions vivent dans les `.locres`, que FModel applique aux propriétés `FText`
+ * des DATATABLES. `CDT_BaseItems` en est une, et chacune de ses lignes porte les trois
+ * informations d'un coup :
+ *     Key             ITEMS/SCHEMATIC_SCHEMATIC_UNIQUEPINCUSHIONFEET_NAME
+ *     SourceString    Aren's Boots
+ *     LocalizedString Bottes d'Aren
+ * La clé a exactement le format déjà analysé plus bas : rien de neuf à décoder, et les deux
+ * langues arrivent ensemble sans avoir à jongler avec le réglage de FModel.
+ */
+// Renvoie DEUX pseudo-tables, une par langue : la clé doit rester intacte, c'est elle qui
+// porte l'identifiant décodé plus bas.
+function tablesDepuisBaseItems() {
+  const p = path.join(path.dirname(LOC), '../Systems/Items/CDT_BaseItems.json');
+  if (!fs.existsSync(p)) return [];
+  const j = JSON.parse(fs.readFileSync(p, 'utf8'));
+  const rows = ((Array.isArray(j) ? j[0] : j) || {}).Rows || {};
+  const source = {}, traduit = {};
+  for (const ligne of Object.values(rows)) {
+    const n = ((ligne || {}).StaticData || {}).Name;
+    if (!n || !n.Key) continue;
+    if (n.SourceString) source[n.Key] = n.SourceString;
+    if (n.LocalizedString && n.LocalizedString !== n.SourceString) traduit[n.Key] = n.LocalizedString;
+  }
+  return [
+    { fichier: 'CDT_BaseItems (source)',  entrees: source },
+    { fichier: 'CDT_BaseItems (traduit)', entrees: traduit },
+  ];
+}
+
+const tables = tablesDeChaines().concat(tablesDepuisBaseItems());
 const loot = fs.existsSync(LOOT) ? (JSON.parse(fs.readFileSync(LOOT, 'utf8')).loot || {}) : {};
 
 // Sources de drop (build_plan_sources_from_datamine.js) : « où ça peut tomber », sans

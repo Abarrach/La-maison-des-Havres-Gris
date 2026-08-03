@@ -49,8 +49,35 @@ function norm(s) {
     .trim();
 }
 
-const st = (() => { const j = JSON.parse(fs.readFileSync(LOC, 'utf8')); return (Array.isArray(j) ? j[0] : j).StringTable; })();
-const entrees = st.KeysToEntries || {};
+/**
+ * L'index est MULTILINGUE, pas « dans une langue ».
+ *
+ * L'addon en jeu suit la langue du client : il a d'abord exporté des noms anglais, puis
+ * son auteur l'a traduit et il exporte des noms français — d'un coup, plus aucun plan
+ * n'était reconnu. Indexer les deux (et n'importe quelle autre langue ajoutée plus tard)
+ * coûte quelques dizaines de Ko et rend la page insensible à ce genre de bascule.
+ *
+ * En pratique : FModel réécrit toujours `ST_Localization_Items.json` au même endroit selon
+ * sa langue courante. On garde donc les exports précédents à côté, sous
+ * `ST_Localization_Items.<langue>.json`, et on les charge tous.
+ */
+function tablesDeChaines() {
+  const dossier = path.dirname(LOC);
+  const base = path.basename(LOC, '.json');
+  const fichiers = [LOC];
+  try {
+    for (const f of fs.readdirSync(dossier)) {
+      if (f !== path.basename(LOC) && f.startsWith(base + '.') && f.endsWith('.json'))
+        fichiers.push(path.join(dossier, f));
+    }
+  } catch (e) { /* dossier illisible : on se contente du fichier principal */ }
+  return fichiers.map(f => {
+    const j = JSON.parse(fs.readFileSync(f, 'utf8'));
+    return { fichier: path.basename(f), entrees: ((Array.isArray(j) ? j[0] : j).StringTable || {}).KeysToEntries || {} };
+  });
+}
+
+const tables = tablesDeChaines();
 const loot = fs.existsSync(LOOT) ? (JSON.parse(fs.readFileSync(LOOT, 'utf8')).loot || {}) : {};
 
 // Sources de drop (build_plan_sources_from_datamine.js) : « où ça peut tomber », sans
@@ -70,7 +97,9 @@ function lieuxPosesDe(id) { return locMap[id + '_schematic'] || locMap[id] || nu
 
 const plans = {};
 let nbDirect = 0, nbSchem = 0, nbCollision = 0;
+const parTable = {};
 
+for (const { fichier, entrees } of tables) {
 for (const [cle, valeur] of Object.entries(entrees)) {
   const nom = String(valeur || '').trim();
   if (!nom) continue;
@@ -88,8 +117,10 @@ for (const [cle, valeur] of Object.entries(entrees)) {
   if (!k) continue;
   // Un même libellé peut exister sous deux clés : on privilégie celle dont l'identifiant
   // est directement rattachable à un lieu, sinon on garde la première rencontrée.
+  // Cas courant depuis le multilingue : un nom identique en anglais et en français
+  // (« Scorchbolt ») ; l'entrée existante décrit déjà le bon plan, rien à faire.
   if (plans[k]) {
-    nbCollision++;
+    if (plans[k].id !== id) nbCollision++;
     const dejaAvecLieu = !!(loot[plans[k].id] || []).length;
     if (dejaAvecLieu || !direct) continue;
   }
@@ -109,12 +140,44 @@ for (const [cle, valeur] of Object.entries(entrees)) {
     if (nommes.length) plans[k].g = nommes.map(x => ({ o: x.lieu, r: x.region, n: x.coffres }));
   }
   if (direct) nbDirect++; else nbSchem++;
+  parTable[fichier] = (parTable[fichier] || 0) + 1;
+}
 }
 
-const avecLieu = Object.values(plans).filter(p => p.l).length;
-const avecSource = Object.values(plans).filter(p => p.s).length;
-const avecPose = Object.values(plans).filter(p => p.g).length;
-const avecInfo = Object.values(plans).filter(p => p.l || p.s || p.g).length;
+// ── Alias de secours depuis stuff_data.json ─────────────────────────────────────────
+// `stuff_data.json` est servi par gaming.tools en locale FR et indexé par identifiant :
+// il donne donc un nom français pour une partie des plans, sans rien réexporter. Couverture
+// partielle (il ne contient que les objets équipables, ~395 des 933 noms) — c'est un
+// complément, pas un remplacement de la table de chaînes en français.
+const STUFF = path.join(RACINE, 'stuff_data.json');
+let nbAlias = 0;
+if (fs.existsSync(STUFF)) {
+  const s = JSON.parse(fs.readFileSync(STUFF, 'utf8'));
+  if (String(s.locale || '').toLowerCase().startsWith('fr')) {
+    const nomParId = {};
+    for (const it of (s.items || [])) nomParId[String(it.id).toLowerCase()] = it.name;
+    // Instantané : on ajoute des clés pendant le parcours, itérer directement boucherait.
+    for (const p of Object.values(plans).slice()) {
+      const fr = nomParId[p.id];
+      if (!fr) continue;
+      const k = norm(fr);
+      if (!k || plans[k]) continue;
+      plans[k] = { ...p, n: fr };
+      nbAlias++;
+    }
+  }
+}
+
+// Les compteurs portent sur des PLANS DISTINCTS, pas sur des libellés : depuis que l'index
+// est multilingue, un même plan y figure sous plusieurs noms et compter les entrées
+// donnerait une couverture gonflée qui ne veut rien dire.
+const parPlanUnique = {};
+for (const p of Object.values(plans)) parPlanUnique[p.id] = p;
+const uniques = Object.values(parPlanUnique);
+const avecLieu = uniques.filter(p => p.l).length;
+const avecSource = uniques.filter(p => p.s).length;
+const avecPose = uniques.filter(p => p.g).length;
+const avecInfo = uniques.filter(p => p.l || p.s || p.g).length;
 const out = {
   generated_at: new Date().toISOString(),
   source: 'ST_Localization_Items (datamine FModel) + stuff_loot.json',
@@ -131,7 +194,9 @@ const out = {
 fs.writeFileSync(SORTIE, JSON.stringify(out));
 
 console.log(`plans_index.json écrit — ${Math.round(fs.statSync(SORTIE).size / 1024)} Ko`);
-console.log(`  noms indexés          : ${out.count}`);
+console.log(`  libellés indexés      : ${out.count}   (pour ${uniques.length} plans distincts)`);
+if (nbAlias) console.log(`    · alias FR (stuff_data)            ${nbAlias}`);
+Object.entries(parTable).forEach(([f, n]) => console.log(`    · ${f.padEnd(34)} ${n}`));
 console.log(`    · identifiant direct : ${nbDirect}  (lieu potentiellement résoluble)`);
 console.log(`    · identifiant schéma : ${nbSchem}  (nom reconnu, pas de lieu rattachable)`);
 console.log(`  avec un lieu précis   : ${avecLieu}  (lieux nommés, avec probabilité)`);

@@ -221,17 +221,37 @@ function sauver() { try { localStorage.setItem(CLE, JSON.stringify(etat)); } cat
 // Format observé : « <Tier> Products », un compteur, puis pour chaque plan son
 // nom, une ligne vide, sa catégorie, et parfois des lignes de grade G0..G5.
 // Les sets sont annotés « armor - 5 items ».
+//
+// L'addon suit la LANGUE DU CLIENT. Son auteur l'ayant traduit, l'en-tête est devenu
+// « Produits en cuivre » : plus aucun tier n'était reconnu, et comme un plan sans tier est
+// écarté à la fin, la page annonçait « aucun plan reconnu » — y compris pour les noms
+// qu'elle savait pourtant identifier. On reconnaît donc l'en-tête dans les deux langues.
+// Les catégories (armor/weapons/utility/vehicles) restent en anglais dans l'export.
+// Duraluminium AVANT aluminium : le premier CONTIENT le second, l'ordre décide.
+const ENTETES_TIER = [
+  [/duralumin/i,          'Duraluminum'],
+  [/plastanium/i,         'Plastanium'],
+  [/aluminium|aluminum/i, 'Aluminum'],
+  [/cuivre|copper/i,      'Copper'],
+  [/\bfer\b|iron/i,       'Iron'],
+  [/acier|steel/i,        'Steel'],
+];
+function tierDeLEntete(l) {
+  // Exiger la forme d'un en-tête, et pas seulement le mot : sans ça, un plan dont le nom
+  // contient « acier » ou « fer » serait pris pour un changement de section.
+  if (!/products\s*$/i.test(l) && !/^produits\b/i.test(l)) return null;
+  for (const [re, t] of ENTETES_TIER) if (re.test(l)) return t;
+  return null;
+}
+
 function analyser(txt) {
   const out = [];
   let tier = null;
   for (const brut of String(txt).replace(/ /g, ' ').split(/\r?\n/)) {
     const l = brut.trim();
     if (!l) continue;
-    const mt = l.match(/^(\w+)\s+Products$/i);
-    if (mt && TIERS.some(t => t.toLowerCase() === mt[1].toLowerCase())) {
-      tier = TIERS.find(t => t.toLowerCase() === mt[1].toLowerCase());
-      continue;
-    }
+    const t = tierDeLEntete(l);
+    if (t) { tier = t; continue; }
     if (/^\d+$/.test(l)) continue;            // compteur du tier
     if (/^G\d+$/i.test(l)) continue;          // grades G0..G5
     const cat = CATS.find(c => l === c || l.toLowerCase().startsWith(c + ' -'));

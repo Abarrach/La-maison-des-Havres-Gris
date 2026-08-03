@@ -214,7 +214,10 @@ for (const p of fichiersJson(DIR_MAPS)) {
       (parPlan[cle] = parPlan[cle] || []).push({
         lieu: lieuLisible(nomNiveau),
         region,
-        bloc: bloc.split('/').pop(),
+        // Chemin COMPLET du bloc (`Région/CB/Nom`), pas seulement son nom : c'est la clé de
+        // fusion des passes successives, et la reconstruire à partir de `region` + nom
+        // supposerait que le segment du milieu vaut toujours `CB`.
+        bloc,
         niveau: nomNiveau,
         table,
         pos,
@@ -223,14 +226,41 @@ for (const p of fichiersJson(DIR_MAPS)) {
   }
 }
 
-// Dédoublonnage : un même plan sort souvent du même type de lieu à plusieurs endroits.
-// On garde une entrée par (lieu, région, bloc) et on compte les coffres.
+// ── Fusion avec l'existant ──────────────────────────────────────────────────────────
+/**
+ * L'export complet de `Maps/Biomes` pèse ~3 Go : on le fait région par région, et on veut
+ * pouvoir EFFACER une région une fois traitée pour libérer la place. Sans fusion, la passe
+ * suivante repartirait de zéro et perdrait tout le travail précédent.
+ *
+ * On fusionne par BLOC, pas par plan : les blocs balayés cette fois écrasent leurs propres
+ * entrées (une réexportation après un patch doit corriger, pas empiler), tout le reste est
+ * conservé tel quel. Un bloc qui disparaît du jeu reste donc dans le fichier jusqu'à ce
+ * qu'on reparte d'un fichier vide — c'est le bon compromis : mieux vaut une entrée périmée
+ * qu'un lieu perdu, et le README dit comment tout régénérer.
+ */
+let nbConserves = 0;
+if (fs.existsSync(SORTIE)) {
+  const ancien = lireJson(SORTIE);
+  const anciennes = (ancien && ancien.locations) || {};
+  for (const [cle, liste] of Object.entries(anciennes)) {
+    const garde = liste.filter(e => !blocsVus.has(e.bloc));
+    if (!garde.length) continue;
+    nbConserves += garde.length;
+    parPlan[cle] = (parPlan[cle] || []).concat(garde);
+  }
+}
+
+// Dédoublonnage, APRÈS la fusion : un même plan sort souvent du même type de lieu à
+// plusieurs endroits du bloc, et une entrée reprise d'une passe précédente peut décrire le
+// même emplacement qu'une entrée fraîche. La clé ignore volontairement le CHEMIN du bloc
+// pour ne garder que son nom : sans ça, un changement de format de chemin entre deux passes
+// ferait apparaître le même lieu en double (ça s'est produit).
 for (const [cle, liste] of Object.entries(parPlan)) {
   const parCle = {};
   for (const e of liste) {
-    const k = [e.lieu, e.region, e.bloc].join('|');
+    const k = [e.lieu, e.region, String(e.bloc).split('/').pop()].join('|');
     if (!parCle[k]) parCle[k] = { ...e, coffres: 0 };
-    parCle[k].coffres++;
+    parCle[k].coffres += e.coffres || 1;
   }
   parPlan[cle] = Object.values(parCle).sort((a, b) => b.coffres - a.coffres);
 }
@@ -251,6 +281,7 @@ console.log(`plan_locations.json écrit — ${Math.round(fs.statSync(SORTIE).siz
 console.log(`  blocs balayés         : ${blocsVus.size}`);
 console.log(`  niveaux avec coffres  : ${nbNiveaux}`);
 console.log(`  coffres posés         : ${nbSpawners}  (dont ${nbSpawnersAvecTable} avec une table)`);
+if (nbConserves) console.log(`  repris des passes précédentes : ${nbConserves} entrées (blocs non rebalayés)`);
 console.log(`  PLANS LOCALISÉS       : ${out.count}   (${nbCommuns} liens vers le pool commun écartés)`);
 if (tablesManquantes.size) {
   console.log(`  tables non exportées  : ${tablesManquantes.size}`);

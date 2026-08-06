@@ -45,7 +45,7 @@ $commands = [[
                 ['name' => 'Labos-Donjons',              'value' => 'labo'],
                 ['name' => 'Farm divers',                'value' => 'farm'],
                 ['name' => 'Landsraad',                  'value' => 'landsraad'],
-                ['name' => 'Entraînement PvP',           'value' => 'pvp_train'],
+                ['name' => 'Entraînement PvP air/sol',   'value' => 'pvp_train'],
                 ['name' => 'Chasse PvP Deep Desert',     'value' => 'pvp_hunt'],
                 ['name' => 'Construction Base Guilde DD','value' => 'base_dd'],
                 ['name' => 'Activité Guilde Divers',     'value' => 'guilde'],

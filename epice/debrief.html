@@ -1739,7 +1739,7 @@ function mkDefenseSquad() {
     est:{nom:'',faucon:false,passager:'',cac:false}, ouest:{nom:'',faucon:false,passager:'',cac:false},
     // Pilotes d'assaut de défense du transporteur — bloc dynamique 0..N, dans la même escouade
     // que les 4 cardinaux (même chef : le CDR). Distribué uniquement côté admin, jamais choisi
-    // librement sur Discord (cf POSTES_SELECTABLE dans discord_sortie.php).
+    // librement sur Discord (cf POSTES_EPICE_SELECTABLE dans discord_sortie.php).
     assauts: [],
   };
 }
@@ -2099,7 +2099,7 @@ function renderAssignBuilder() {
       </div>`;
     });
     // Sous-liste Assauts (dans la même escouade, sous le CDR — placement dynamique 0..N).
-    // Rôle réservé admin, jamais présenté sur Discord (cf POSTES_SELECTABLE).
+    // Rôle réservé admin, jamais présenté sur Discord (cf POSTES_EPICE_SELECTABLE).
     const assauts = squad.assauts || [];
     h += `<div class="assign-sub-head">🛡️ Ornis Assaut Défense Transporteur</div>
       <div class="assign-sub-hint">Pilotes attribués par le CDR pour verrouiller l'espace autour du transporteur en vol. Rôle admin, non ouvert à l'inscription libre.</div>`;
@@ -2137,7 +2137,7 @@ function renderAssignBuilder() {
   h += `</div>`;
 
   // Repérage — scouts (bloc séparé, plus loin que la patrouille). Rôle proposé à
-  // l'inscription Discord (cf POSTES_SELECTABLE) et distribuable ici par l'organisateur.
+  // l'inscription Discord (cf POSTES_EPICE_SELECTABLE) et distribuable ici par l'organisateur.
   const scouts = (c.recon && c.recon.scouts) || [];
   h += `<div class="assign-group">
     <div class="assign-group-head"><span class="assign-group-title">👁️ Repérage — Scouts</span></div>

@@ -41,17 +41,22 @@ register_shutdown_function(function () {
 });
 
 // ---- Postes proposés à l'inscription ------------------------
-//  id technique (stocké) => libellé affiché. Mappés sur la structure
-//  d'assignation de l'outil Activité Guilde (recolte / defense / distance).
+//  Un jeu de postes PAR FAMILLE d'activité (cf. SORTIE_TYPES['postes']) :
+//  les postes d'une récolte d'épice n'ont rien à voir avec ceux d'un
+//  entraînement PvP. Les ids sont préfixés par famille pour rester distincts
+//  entre jeux (un même id ne doit jamais désigner deux rôles différents,
+//  sinon les inscriptions historiques changeraient de sens).
+//
+//  ÉPICE — mappé sur la structure d'assignation de l'outil Activité Guilde
+//  (recolte / defense / distance).
 //  'defenseur_cac' : rôle retiré (plus rentable de mettre un CAC dans le
 //  transporteur) — gardé ici pour continuer à afficher/grouper correctement
 //  les inscriptions déjà enregistrées, mais retiré du menu d'inscription
-//  (cf POSTES_SELECTABLE, seul utilisé pour construire le select Discord).
+//  (cf POSTES_EPICE_SELECTABLE, seul utilisé pour construire le select Discord).
 //  'orni_assaut' : Orni d'assaut de défense du transporteur — jamais
-//  proposé sur Discord (distribué uniquement côté admin, cf POSTES_SELECTABLE).
-//  Présent dans POSTES pour afficher les inscrits déjà placés dans ce rôle
-//  côté site.
-const POSTES = [
+//  proposé sur Discord (distribué uniquement côté admin). Présent dans la
+//  liste complète pour afficher les inscrits déjà placés dans ce rôle côté site.
+const POSTES_EPICE = [
     'moissonneur'  => 'Moissonneur',
     'transporteur' => 'Transporteur',
     'defenseur_cac'=> 'Défenseur CaC',
@@ -61,6 +66,31 @@ const POSTES = [
     'pilote_orni_cac' => 'Pilote Ornithoptère + CaC',
     'present'      => 'Présent (poste à définir)',
 ];
+// Sélectionnables côté Discord (menu d'inscription). L'Orni Assaut est
+// volontairement absent : c'est un rôle de confiance distribué à la main par
+// l'organisateur dans le builder admin, jamais choisi librement à l'inscription.
+const POSTES_EPICE_SELECTABLE = [
+    'moissonneur'  => 'Moissonneur',
+    'transporteur' => 'Transporteur',
+    'orni_scout'   => 'Orni Scout (repérage)',
+    'pilote_orni'  => 'Pilote Ornithoptère',
+    'pilote_orni_cac' => 'Pilote Ornithoptère + CaC',
+    'present'      => 'Présent (poste à définir)',
+];
+
+//  PVP — entraînement air/sol : rôles de combat, tous librement choisis
+//  (aucun rôle de confiance ici, contrairement à l'épice) → la liste complète
+//  sert aussi de liste sélectionnable.
+const POSTES_PVP = [
+    'pvp_tank_cac'      => 'Tank CaC',
+    'pvp_dps_moyenne'   => 'DPS moyenne portée',
+    'pvp_polyvalent'    => 'Polyvalent CaC/DPS',
+    'pvp_support_dist'  => 'Support DISTANCE',
+    'pvp_orni_assaut'   => 'Orni Assaut',
+    'pvp_orni_scout'    => 'Orni Éclaireur',
+    'present'           => 'Présent (poste à définir)',
+];
+
 const POSTE_ICON = [
     'moissonneur'  => '⛏️',
     'transporteur' => '🚚',
@@ -70,29 +100,35 @@ const POSTE_ICON = [
     'pilote_orni'  => '🦅',
     'pilote_orni_cac' => '⚔️',
     'present'      => '✅',
+    'pvp_tank_cac'     => '🛡️',
+    'pvp_dps_moyenne'  => '⚔️',
+    'pvp_polyvalent'   => '🛠️',
+    'pvp_support_dist' => '🪄',
+    'pvp_orni_assaut'  => '🦅',
+    'pvp_orni_scout'   => '👁️',
 ];
-// Sélectionnables côté Discord (menu d'inscription). L'Orni Assaut est
-// volontairement absent : c'est un rôle de confiance distribué à la main par
-// l'organisateur dans le builder admin, jamais choisi librement à l'inscription.
-const POSTES_SELECTABLE = [
-    'moissonneur'  => 'Moissonneur',
-    'transporteur' => 'Transporteur',
-    'orni_scout'   => 'Orni Scout (repérage)',
-    'pilote_orni'  => 'Pilote Ornithoptère',
-    'pilote_orni_cac' => 'Pilote Ornithoptère + CaC',
-    'present'      => 'Présent (poste à définir)',
-];
+
+// Jeu de postes d'un type de sortie (liste complète = affichage de l'encart,
+// liste sélectionnable = options du menu d'inscription Discord).
+function postes_all($stype): array {
+    return (sortie_type($stype)['postes'] === 'pvp') ? POSTES_PVP : POSTES_EPICE;
+}
+function postes_selectable($stype): array {
+    return (sortie_type($stype)['postes'] === 'pvp') ? POSTES_PVP : POSTES_EPICE_SELECTABLE;
+}
 
 // ---- Types de sortie ----------------------------------------
 //  'site'   => true  : intégré à l'Activité Guilde (soirée active, assignation, historique).
 //            => false : vit uniquement côté Discord (jauge d'intérêt), stockage séparé.
-//  'postes' => true  : inscription par poste (menu déroulant). false : RSVP Présent/Peut-être/Absent.
+//  'postes' => 'epice'/'pvp' : inscription par poste (menu déroulant), avec le
+//            jeu de postes de cette famille (cf. postes_all / postes_selectable).
+//            => false : RSVP Présent/Peut-être/Absent.
 const SORTIE_TYPES = [
-    'epice'     => ['label' => 'Épice',           'icon' => '🏜️', 'site' => true,  'postes' => true],
+    'epice'     => ['label' => 'Épice',           'icon' => '🏜️', 'site' => true,  'postes' => 'epice'],
     'labo'      => ['label' => 'Labos-Donjons',   'icon' => '🧪', 'site' => false, 'postes' => false],
     'farm'      => ['label' => 'Farm divers',     'icon' => '🔁', 'site' => false, 'postes' => false],
     'landsraad' => ['label' => 'Landsraad',       'icon' => '🏛️', 'site' => false, 'postes' => false],
-    'pvp_train' => ['label' => 'Entraînement PvP','icon' => '⚔️', 'site' => false, 'postes' => false],
+    'pvp_train' => ['label' => 'Entraînement PvP air/sol','icon' => '⚔️', 'site' => false, 'postes' => 'pvp'],
     'pvp_hunt'  => ['label' => 'Chasse PvP',      'icon' => '🎯', 'site' => false, 'postes' => false],
     'base_dd'   => ['label' => 'Construction Base Guilde DD', 'icon' => '🏗️', 'site' => false, 'postes' => false],
     'guilde'    => ['label' => 'Activité Guilde',  'icon' => '🛡️', 'site' => false, 'postes' => false],
@@ -388,10 +424,14 @@ function upsert_signup(&$s, $user, $poste, $statut) {
     $s['signups'][] = ['id'=>$user['id'],'name'=>$user['name'],'poste'=>$poste,'statut'=>$statut,'ts'=>time()];
 }
 
-// Inscription à un poste (select épice). Statut « présent » + poste choisi.
+// Inscription à un poste (select des types à postes). Statut « présent » + poste choisi.
+// Le poste est validé contre le jeu de postes DU TYPE de la sortie (épice ≠ PvP) :
+// on relit donc la sortie avant de muter, pour connaître son type.
 function handle_signup($body, $sortieId) {
-    $poste = $body['data']['values'][0] ?? '';
-    if (!array_key_exists($poste, POSTES)) respond_message("Poste inconnu.", true);
+    $poste  = $body['data']['values'][0] ?? '';
+    $sortie = find_sortie($sortieId);
+    if (!$sortie) respond_message("Cette sortie n'existe plus.", true);
+    if (!array_key_exists($poste, postes_all($sortie['type'] ?? 'epice'))) respond_message("Poste inconnu.", true);
     $user = interaction_user($body);
     $updated = mutate_sortie($sortieId, function (&$s) use ($user, $poste) {
         upsert_signup($s, $user, $poste, 'present');
@@ -725,16 +765,26 @@ function build_sortie_message($sortie) {
     foreach ($signups as $su) { if ($st($su) === 'present') $nb++; }
     $desc .= "👥 **{$nb}** inscrit" . ($nb > 1 ? 's' : '');
 
-    $t         = sortie_type($sortie['type'] ?? 'epice');
-    $usePostes = $t['postes'];
+    $stype     = $sortie['type'] ?? 'epice';
+    $t         = sortie_type($stype);
+    $usePostes = (bool)$t['postes'];
 
     $fields = [];
     if ($usePostes) {
-        // ÉPICE : un champ par poste (présents regroupés)
-        foreach (POSTES as $pid => $plabel) {
+        // TYPES À POSTES (épice, entraînement PvP) : un champ par poste (présents regroupés)
+        $selectable = postes_selectable($stype);
+        $allPostes  = postes_all($stype);
+        // Poste vide (RSVP « Présent » d'avant le passage de ce type à l'inscription
+        // par poste) ou inconnu du jeu courant : regroupé sous « Présent (poste à
+        // définir) » plutôt que de disparaître de l'encart.
+        $bucket = function ($su) use ($allPostes) {
+            $p = $su['poste'] ?? '';
+            return array_key_exists($p, $allPostes) ? $p : 'present';
+        };
+        foreach ($allPostes as $pid => $plabel) {
             $names = [];
             foreach ($signups as $su) {
-                if ($st($su) !== 'present' || ($su['poste'] ?? '') !== $pid) continue;
+                if ($st($su) !== 'present' || $bucket($su) !== $pid) continue;
                 // 🎖️ : a candidaté comme Chef de section (drapeau optionnel, cf handle_toggle_chef).
                 $names[] = $su['name'] . (!empty($su['chef_section']) ? ' 🎖️' : '');
             }
@@ -742,7 +792,7 @@ function build_sortie_message($sortie) {
             // aucun sens puisque plus personne ne peut le choisir → colonne masquée.
             // Une inscription historique existante (ancienne sortie, avant retrait)
             // reste affichée normalement (cf. commentaire sur POSTES plus haut).
-            if (!$names && !array_key_exists($pid, POSTES_SELECTABLE)) continue;
+            if (!$names && !array_key_exists($pid, $selectable)) continue;
             $icon = POSTE_ICON[$pid] ?? '•';
             $fields[] = [
                 'name'   => "{$icon} {$plabel} (" . count($names) . ")",
@@ -789,15 +839,14 @@ function build_sortie_message($sortie) {
 
     // Bannière par type (config 'banners'[type]) avec repli sur 'banner_url'.
     global $CFG;
-    $stype  = $sortie['type'] ?? 'epice';
     $banner = $CFG['banners'][$stype] ?? ($CFG['banner_url'] ?? '');
     if (!empty($banner)) $embed['image'] = ['url' => $banner];
 
     $sid = $sortie['id'];
     if ($usePostes) {
-        // ÉPICE : menu déroulant de postes + boutons peut-être / absent / désinscription.
+        // TYPES À POSTES : menu déroulant de postes + boutons peut-être / absent / désinscription.
         $options = [];
-        foreach (POSTES_SELECTABLE as $pid => $plabel) {
+        foreach (postes_selectable($stype) as $pid => $plabel) {
             $options[] = ['label' => $plabel, 'value' => $pid, 'emoji' => ['name' => POSTE_ICON[$pid] ?? '✅']];
         }
         $components = [

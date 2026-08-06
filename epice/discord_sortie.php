@@ -88,7 +88,9 @@ const POSTES_PVP = [
     'pvp_support_dist'  => 'Support DISTANCE',
     'pvp_orni_assaut'   => 'Orni Assaut',
     'pvp_orni_scout'    => 'Orni Éclaireur',
-    'present'           => 'Présent (poste à définir)',
+    // « Présent » tout court, contrairement à l'épice : ici les rôles sont annoncés
+    // optionnels, donc venir sans rôle n'est pas un poste restant à attribuer.
+    'present'           => 'Présent',
 ];
 
 const POSTE_ICON = [

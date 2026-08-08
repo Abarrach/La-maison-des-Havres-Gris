@@ -47,6 +47,6 @@ return [
         'pvp_hunt'  => '',
         'base_dd'   => '',
         'guilde'    => '',
-        'course_dd' => '',
+        'course_dd' => '', // ex : 'https://havresgris.ddns.net/epice/img/sortiecoursedd.jpg'
     ],
 ];

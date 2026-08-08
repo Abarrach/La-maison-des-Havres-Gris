@@ -38,11 +38,8 @@ $commands = [[
         'options'     => [[
             'type'        => 3, // STRING
             'name'        => 'type',
-            'description' => 'Type de sortie (facultatif — sans lui, un sélecteur en tuiles s\'affiche)',
-            // FACULTATIF depuis le sélecteur graphique : sans argument, le bot répond
-            // par une grille d'images. Le garder disponible préserve la voie rapide
-            // pour qui connaît déjà la commande.
-            'required'    => false,
+            'description' => 'Type de sortie',
+            'required'    => true,
             'choices'     => [
                 ['name' => 'Épice (liée au site)',       'value' => 'epice'],
                 ['name' => 'Labos-Donjons',              'value' => 'labo'],

@@ -136,19 +136,6 @@ const SORTIE_TYPES = [
     'guilde'    => ['label' => 'Activité Guilde',  'icon' => '🛡️', 'site' => false, 'postes' => false],
     'course_dd' => ['label' => 'Course à mort Deep Desert', 'icon' => '🏁', 'site' => false, 'postes' => false],
 ];
-
-// ---- Tuiles du sélecteur graphique --------------------------
-//  Une image carrée par type, affichée en grille (Media Gallery) quand la
-//  commande est lancée SANS argument. Le nom de l'activité est incrusté dans
-//  l'image : un élément de galerie n'a pas de libellé visible, seulement un
-//  texte alternatif invisible, d'où ce choix au moment de la fabrication.
-//  URL ABSOLUE obligatoire — Discord va chercher l'image depuis ses serveurs.
-function tuile_url($stype) {
-    global $CFG;
-    $base = rtrim(trim((string)($CFG['site_url'] ?? '')), '/');
-    if ($base === '') $base = 'https://havresgris.ddns.net';
-    return $base . '/epice/img/activites/' . $stype . '.webp';
-}
 function sortie_type($stype): array { return SORTIE_TYPES[$stype] ?? SORTIE_TYPES['epice']; }
 
 // ============================================================
@@ -214,15 +201,11 @@ if ($type === 2) {
     $name = $body['data']['name'] ?? '';
     $sub  = $body['data']['options'][0]['name'] ?? '';
     if ($name === 'sortie' && $sub === 'creer') {
-        // Type choisi dans le menu natif de la commande (option « type »), désormais
-        // FACULTATIF : sans lui on affiche le sélecteur en tuiles. Garder l'option
-        // permet à qui connaît la commande d'aller droit au formulaire, sans clic
-        // supplémentaire — les tuiles servent à découvrir, pas à ralentir.
-        $stype = '';
+        // Type choisi dans le menu natif de la commande (option « type »).
+        $stype = 'epice';
         foreach ($body['data']['options'][0]['options'] ?? [] as $o) {
-            if (($o['name'] ?? '') === 'type') $stype = (string)($o['value'] ?? '');
+            if (($o['name'] ?? '') === 'type') $stype = $o['value'] ?? 'epice';
         }
-        if ($stype === '')                        respond_tuiles();
         if (!array_key_exists($stype, SORTIE_TYPES)) $stype = 'epice';
         respond_modal($stype);
     }
@@ -248,14 +231,6 @@ if ($type === 5) {
 if ($type === 3) {
     $cid = $body['data']['custom_id'] ?? '';
     if (strpos($cid, 'signup:') === 0)   { handle_signup($body, substr($cid, 7)); }
-    // Tuile choisie dans le sélecteur graphique → on enchaîne sur le formulaire.
-    // Réponse type 9 (modal) directement sur un clic de bouton : autorisé, et c'est
-    // ce qui évite un aller-retour visible pour l'utilisateur.
-    if (strpos($cid, 'pick:') === 0) {
-        $stype = substr($cid, 5);
-        if (!array_key_exists($stype, SORTIE_TYPES)) respond_message("Type d'activité inconnu.", true);
-        respond_modal($stype);
-    }
     if (strpos($cid, 'present:') === 0)  { handle_status($body, substr($cid, 8), 'present'); }
     if (strpos($cid, 'maybe:') === 0)    { handle_status($body, substr($cid, 6), 'maybe'); }
     if (strpos($cid, 'absent:') === 0)   { handle_status($body, substr($cid, 7), 'absent'); }
@@ -299,67 +274,6 @@ function sortie_modal($customId, $title, $vals = []) {
             $field('desc',   'Description / consignes', 2, false, 'Objectif, packtage requis…', 600),
         ],
     ]];
-}
-
-/**
- * Sélecteur graphique : grille d'images + un bouton par activité (réponse type 4,
- * ÉPHÉMÈRE — seul l'auteur de la commande le voit, il n'encombre pas le salon).
- *
- * Utilise les COMPOSANTS V2 de Discord (drapeau 1<<15 = 32768). Trois contraintes
- * imposées par ce format, toutes structurantes :
- *   · un message en composants V2 ne peut plus porter ni `content` ni `embeds` —
- *     absolument tout passe par `components` ;
- *   · une Media Gallery accepte au plus 10 images, et elles ne sont PAS cliquables
- *     (aucune action ne peut y être attachée) → d'où les boutons en dessous ;
- *   · 40 composants par message, imbriqués compris. Ici : 1 galerie + 2 rangées +
- *     N boutons + 1 texte, soit 13 pour 9 activités. La galerie est donc la vraie
- *     limite, pas le budget de composants.
- *
- * L'ordre des boutons suit celui des images : c'est la seule chose qui relie une
- * tuile à son action, puisqu'un élément de galerie n'a pas de libellé visible.
- */
-function respond_tuiles() {
-    $types = array_keys(SORTIE_TYPES);
-    // Garde-fou : la galerie refuse au-delà de 10 images. Plutôt que de laisser
-    // Discord rejeter tout le message, on tronque et on continue de fonctionner.
-    $types = array_slice($types, 0, 10);
-
-    $images = [];
-    foreach ($types as $t) {
-        $images[] = [
-            'media'       => ['url' => tuile_url($t)],
-            // Texte alternatif : invisible à l'écran, mais c'est la seule
-            // description que liront les lecteurs d'écran.
-            'description' => SORTIE_TYPES[$t]['label'],
-        ];
-    }
-
-    $rangees = [];
-    foreach (array_chunk($types, 5) as $lot) {   // 5 boutons par rangée, limite Discord
-        $boutons = [];
-        foreach ($lot as $t) {
-            $boutons[] = [
-                'type' => 2, 'style' => 2,
-                'label' => SORTIE_TYPES[$t]['label'],
-                'emoji' => ['name' => SORTIE_TYPES[$t]['icon']],
-                'custom_id' => "pick:{$t}",
-            ];
-        }
-        $rangees[] = ['type' => 1, 'components' => $boutons];
-    }
-
-    echo json_encode([
-        'type' => 4,
-        'data' => [
-            'flags' => 64 | 32768,   // 64 = éphémère, 32768 = composants V2
-            'components' => array_merge(
-                [['type' => 12, 'items' => $images]],
-                [['type' => 10, 'content' => "**Quelle activité veux-tu créer ?**\nLe formulaire s'ouvre juste après."]],
-                $rangees
-            ),
-        ],
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
 }
 
 // Ouvre le formulaire de CRÉATION (réponse type 9 = MODAL). $stype = type de sortie.

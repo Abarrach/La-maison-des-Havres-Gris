@@ -116,7 +116,6 @@ function detect_route(array $body): ?string {
         $sortiePrefixes = [
             'signup:', 'present:', 'maybe:', 'absent:', 'unsignup:',
             'chef:', 'edit:', 'delok:', 'del:',
-            'pick:',   // tuile du sélecteur graphique de type d'activité
             'sortie_edit_modal:', 'sortie_create_modal',
         ];
         foreach ($sortiePrefixes as $p) {

@@ -63,11 +63,16 @@ $url = $guild !== ''
 echo ($guild !== '' ? "Cible : serveur {$guild} (instantané)\n" : "Cible : GLOBALE (~1h de propagation)\n");
 echo "URL   : {$url}\n\n";
 
-// PUT = remplace l'ensemble des commandes (idempotent)
+// POST, surtout PAS PUT. `PUT /commands` REMPLACE l'ensemble des commandes de
+// l'application : ce script ne déclarant que `/sortie`, chaque exécution effaçait
+// silencieusement `/commande` (enregistrée par `discord_register_commande.php`,
+// qui prend déjà cette précaution). C'est arrivé — la commande a disparu du serveur
+// après une simple mise à jour du libellé d'un type de sortie.
+// POST crée OU met à jour UNIQUEMENT la commande nommée, sans toucher aux autres.
 $ch = curl_init($url);
 curl_setopt_array($ch, [
-    CURLOPT_CUSTOMREQUEST  => 'PUT',
-    CURLOPT_POSTFIELDS     => json_encode($commands, JSON_UNESCAPED_UNICODE),
+    CURLOPT_POST           => true,
+    CURLOPT_POSTFIELDS     => json_encode($commands[0], JSON_UNESCAPED_UNICODE),
     CURLOPT_HTTPHEADER     => [
         'Authorization: Bot ' . $CFG['bot_token'],
         'Content-Type: application/json',

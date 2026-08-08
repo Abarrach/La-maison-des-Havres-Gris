@@ -38,8 +38,11 @@ $commands = [[
         'options'     => [[
             'type'        => 3, // STRING
             'name'        => 'type',
-            'description' => 'Type de sortie',
-            'required'    => true,
+            'description' => 'Type de sortie (facultatif — sans lui, un sélecteur en tuiles s\'affiche)',
+            // FACULTATIF depuis le sélecteur graphique : sans argument, le bot répond
+            // par une grille d'images. Le garder disponible préserve la voie rapide
+            // pour qui connaît déjà la commande.
+            'required'    => false,
             'choices'     => [
                 ['name' => 'Épice (liée au site)',       'value' => 'epice'],
                 ['name' => 'Labos-Donjons',              'value' => 'labo'],
@@ -49,6 +52,7 @@ $commands = [[
                 ['name' => 'Chasse PvP Deep Desert',     'value' => 'pvp_hunt'],
                 ['name' => 'Construction Base Guilde DD','value' => 'base_dd'],
                 ['name' => 'Activité Guilde Divers',     'value' => 'guilde'],
+                ['name' => 'Course à mort Deep Desert',  'value' => 'course_dd'],
             ],
         ]],
     ]],

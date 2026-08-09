@@ -11,6 +11,13 @@ dune_counts.csv.bak_*
 # État local Claude Code (worktrees, settings personnels)
 .claude/
 
+# Réglages d'accès aux pages — écrits par les ADMINS depuis Mon Compte, donc
+# DONNÉE VIVANTE et non du code. Il était suivi : un déploiement complet aurait
+# remis toutes les pages à leur état par défaut, en écrasant silencieusement les
+# choix de visibilité. Gabarit : settings.example.json ; save.php le recrée vide
+# s'il manque, donc rien à copier sur un serveur neuf.
+settings.json
+
 # Secret webhook Discord (NE JAMAIS COMMITER)
 discord_webhook.txt
 

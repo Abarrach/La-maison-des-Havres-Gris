@@ -1,0 +1,15 @@
+{
+  "_lisez_moi": "GABARIT. Le vrai fichier s'appelle settings.json, il est gitignoré, et il est écrit par les ADMINS depuis Mon Compte — ne jamais l'écraser au déploiement, ce sont des réglages vivants. save.php le recrée vide s'il manque, donc un serveur neuf démarre sans rien copier.",
+  "_pages": "Visibilité de chaque page du portail. Clé = 'key' de l'entrée correspondante dans pages.js (ne JAMAIS renommer une clé déjà en prod, l'état enregistré serait perdu). Valeurs : 'open' visible de tous, 'hidden' masquée aux joueurs, 'wip' en travaux. Une page absente de cette liste garde le comportement par défaut de pages.js.",
+  "_pages_access": "Accès NOMINATIF par page, en complément de la visibilité : liste de pseudos autorisés en plus des admins. Liste vide = personne en plus.",
+
+  "pages": {
+    "analytics": "open",
+    "migration": "hidden",
+    "optimiseur": "open",
+    "missions": "hidden"
+  },
+  "pages_access": {
+    "optimiseur": []
+  }
+}

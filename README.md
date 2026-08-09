@@ -678,6 +678,20 @@ chmod 664 *.json last_wipe.txt
 chmod 775 avatars/ uploads/
 ```
 
+### Vérifier que la production correspond au dépôt
+
+Le déploiement est **manuel** (WinSCP, pas de git sur le serveur) : la prod dérive donc silencieusement, dans les deux sens. Audit complet fait le **2026-08-09** — prod et `main` alignés à cette date, à l'exception des fichiers listés ci-dessous comme normalement divergents.
+
+Méthode : récupérer une copie du site (`J:/Download/Serveur/Save/dune-map`) et comparer les fichiers suivis par empreinte, **en normalisant les fins de ligne**. Sans cette normalisation, une vingtaine de fichiers ressortent « modifiés » pour rien — le dépôt est en CRLF côté poste Windows, la prod en LF — et le vrai signal se perd dans le bruit.
+
+Trois classes de dérive à chercher, la deuxième étant la plus dangereuse :
+
+1. **Le dépôt est en avance** → fonctionnalité codée jamais déployée. Le déploiement manuel ne supprime jamais non plus les fichiers retirés du dépôt : penser à les effacer explicitement côté serveur.
+2. **Des fichiers n'existent QU'EN PROD** → un redéploiement complet les efface. Déjà arrivé deux fois : les 5 vignettes `jeux/img/thumb_*.jpg` du Hub Jeux et la bannière `epice/img/sortiecoursedd.jpg`, déposées à la main sur le serveur et absentes du dépôt. **Après tout ajout d'image directement sur le serveur, la rapatrier dans le dépôt.**
+3. **Des orphelins traînent en prod** → pages retirées du dépôt mais toujours servies. Le risque n'est pas l'encombrement : `demandes-craft.html` restait *fonctionnelle* et postait encore sur `save.php`, donc une demande créée par cette porte n'aurait jamais rejoint le flux Discord de `skills.html`. Nettoyés le 2026-08-09 (`demandes-craft.html`, `debrief-serveur.html` — version autonome d'avant l'intégration des Retours de soirée, jamais dans le dépôt — et le doublon `api-gemini.php` de la racine, cassé et sans appelant).
+
+Divergences **normales**, à ne pas corriger : `settings.json` (donnée vivante, gitignorée), les `*config.php` (secrets), `deep_desert.jpg` (recomposée chaque semaine par `dd_map_update.php`), `last_wipe.txt`, `epice/data/`, `jeux/data/`, `uploads/`, `avatars/`, `models/`.
+
 > [!IMPORTANT]
 > Le fichier `bases.json` doit être déployé manuellement depuis la copie locale après chaque migration de données. PHP doit pouvoir écrire dessus — si une erreur `write_error` apparaît, vérifier les permissions : `chmod 664 bases.json`.
 
@@ -685,7 +699,7 @@ chmod 775 avatars/ uploads/
 > Le dossier `avatars/` doit exister et être accessible en écriture par PHP (`chmod 775`, propriétaire `www-data`) pour permettre l'upload d'avatars personnalisés.
 
 > [!IMPORTANT]
-> `settings.json` doit être en `664` pour que PHP puisse y écrire (toggle accès analytiques). Si l'erreur `write_error` apparaît lors du basculement du toggle, corriger avec `chmod 664 settings.json`.
+> `settings.json` est **gitignoré** (gabarit `settings.example.json`) — ne jamais l'envoyer au déploiement, il porte les réglages de visibilité et d'accès faits par les admins. Il doit être en `664` pour que PHP puisse y écrire ; `save.php` le recrée vide s'il manque. Si l'erreur `write_error` apparaît lors du basculement du toggle, corriger avec `chmod 664 settings.json`.
 
 > [!IMPORTANT]
 > `dune_counts.csv` et `dune_counts_archive.csv` sont dans `/srv/dune-map/` (propriétaire `dune`, groupe `www-data`, droits `664`). Le logger et l'archiver tournent sous l'utilisateur `dune` ; nginx/php-fpm sous `www-data` peut lire les fichiers. Crons à configurer dans `crontab -e` (utilisateur `dune`) :

@@ -18,6 +18,16 @@ discord_webhook.txt
 dunelogger/awoo_api_key.txt
 dunelogger/data/
 
+# Filet GÉNÉRIQUE sur les secrets, quel que soit l'emplacement.
+# Les règles ci-dessus ne protègent qu'un chemin précis : le même fichier déposé
+# ailleurs (copie de travail, worktree, sauvegarde) passerait à travers. Vérifié
+# au moment de l'ajout : aucun fichier suivi ne correspond à ces motifs.
+*api_key*
+*_token.txt
+*.key
+*.secret
+credentials.json
+
 # Secret OAuth2 "Login Discord" — client_secret + bot_token (NE JAMAIS COMMITER ; voir discord_oauth_config.example.php)
 discord_oauth_config.php
 

@@ -88,7 +88,9 @@ const POSTES_PVP = [
     'pvp_support_dist'  => 'Support DISTANCE',
     'pvp_orni_assaut'   => 'Orni Assaut',
     'pvp_orni_scout'    => 'Orni Éclaireur',
-    'present'           => 'Présent (poste à définir)',
+    // « Présent » tout court, contrairement à l'épice : ici les rôles sont annoncés
+    // optionnels, donc venir sans rôle n'est pas un poste restant à attribuer.
+    'present'           => 'Présent',
 ];
 
 const POSTE_ICON = [
@@ -132,6 +134,7 @@ const SORTIE_TYPES = [
     'pvp_hunt'  => ['label' => 'Chasse PvP',      'icon' => '🎯', 'site' => false, 'postes' => false],
     'base_dd'   => ['label' => 'Construction Base Guilde DD', 'icon' => '🏗️', 'site' => false, 'postes' => false],
     'guilde'    => ['label' => 'Activité Guilde',  'icon' => '🛡️', 'site' => false, 'postes' => false],
+    'course_dd' => ['label' => 'Course à mort Deep Desert', 'icon' => '🏁', 'site' => false, 'postes' => false],
 ];
 function sortie_type($stype): array { return SORTIE_TYPES[$stype] ?? SORTIE_TYPES['epice']; }
 

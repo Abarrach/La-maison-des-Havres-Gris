@@ -36,7 +36,7 @@ return [
     // ⚠ URL ABSOLUE obligatoire (Discord récupère l'image depuis ses serveurs ; pas de chemin relatif possible).
     'banner_url' => '', // ex : 'https://havresgris.ddns.net/epice/img/sortie.jpg'
 
-    // Bannière par TYPE de sortie (prioritaire sur banner_url). Clés : epice / labo / farm / landsraad / pvp_train / pvp_hunt / base_dd / guilde.
+    // Bannière par TYPE de sortie (prioritaire sur banner_url). Clés : epice / labo / farm / landsraad / pvp_train / pvp_hunt / base_dd / guilde / course_dd.
     // Dépose tes images sur le serveur (ex: epice/img/) et mets leurs URL HTTPS absolues.
     'banners' => [
         'epice'     => '', // ex : 'https://havresgris.ddns.net/epice/img/epice.jpg'
@@ -47,5 +47,6 @@ return [
         'pvp_hunt'  => '',
         'base_dd'   => '',
         'guilde'    => '',
+        'course_dd' => '', // ex : 'https://havresgris.ddns.net/epice/img/sortiecoursedd.jpg'
     ],
 ];

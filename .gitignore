@@ -2,6 +2,10 @@
 users_SECURE_9x.json
 requetes.json
 bases.json
+
+# Registre des plans de la guilde — données de membres, partagées volontairement
+# (plans_api.php). Donnée vivante : ne jamais l'écraser au déploiement.
+plans_guilde.json
 migration_data.json
 dune_counts.csv
 dune_counts_archive.csv

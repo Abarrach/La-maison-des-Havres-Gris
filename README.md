@@ -492,6 +492,19 @@ Créer une sortie épice **directement depuis Discord** et gérer les inscriptio
 
 ---
 
+### Registre des plans de la guilde (`plans_api.php`) — 🚧 lot 1 fait
+
+Répond à deux questions qu'aucun outil ne tranche : **qui peut me crafter tel plan**, et **que manque-t-il à la guilde entière**. Conçu **Discord-first** : le site sert à la saisie (rare, 30 s), Discord à la consultation (fréquente) — c'est là que vit la guilde.
+
+- **Ce qu'on stocke** : la liste des plans **manquants** de chaque membre, telle que l'addon la produit ; le possédé se déduit (`plans_uniques.json` moins les manquants). Stocker les manquants évite une conversion à l'écriture et colle à ce que le joueur colle réellement.
+- **`plans_uniques.json`** (`tools/build_plans_uniques.js`) est l'**univers** des plans uniques apprenables — 350 reconnus sur 366. Sans lui, « possédé » serait indéterminable : l'absence d'un plan d'une liste voudrait dire soit « il l'a », soit « ce plan n'existe pas ». Il règle aussi le cas d'un plan que *tous* possèdent, absent de toutes les listes de manquants et donc invisible sans univers. Les 16 non reconnus sont les 5 sets d'armure (pas des objets individuels) et des variantes de nommage — limite connue et documentée.
+- **Partage volontaire.** Un membre qui n'a jamais cliqué « Partager » n'existe pas dans le fichier ; « Me retirer » **supprime réellement** son entrée. Le registre *sert* la personne listée — on la sollicite pour ce qu'elle sait faire — ce qui le distingue du suivi d'activité resté admin-only. Conséquences assumées : **ni classement** (ça transformerait un service en compétition), **ni annonce automatique** quand quelqu'un apprend un plan (bruit + surveillance déguisée).
+- ⚠ **Dédoublonnage obligatoire côté page** avant l'envoi : l'index est multilingue, le libellé français et l'anglais du même plan retombent sur le même identifiant. Sans ça on envoie plus d'entrées qu'il n'existe de plans et le décompte des possédés passe en négatif (constaté au test).
+- **Fraîcheur affichée, jamais masquée** : la date de dernier partage accompagne chaque nom. Mieux vaut un « probablement à jour » assumé qu'une fausse certitude qui envoie demander un craft à quelqu'un qui ne peut plus le faire.
+- `plans_guilde.json` est **gitignoré** (donnée vivante, à ne jamais écraser au déploiement), en `664`.
+
+**Reste à faire** : lot 2, la commande Discord `/plan qui-a` avec autocomplétion (interaction type 4, 25 suggestions max) et `/plan manque` ; lot 3, les vues site (registre complet + angles morts).
+
 ### Plans uniques manquants (`plans.html`) — ⏸️ EN PAUSE, NON DÉPLOYÉE
 
 Carnet personnel des plans uniques restant à apprendre. **Page volontairement non documentée côté site** : absente de `menu.html` et de `pages.js`, accessible par URL seulement. **En pause depuis 2026-08-09 : elle reste en l'état, complète et fonctionnelle, mais n'est pas déployée.**

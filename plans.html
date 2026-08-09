@@ -125,6 +125,11 @@ tr:hover td { background:rgba(200,146,16,.04); }
       <input type="file" id="file-in" accept=".json" hidden>
       <span style="flex:1"></span>
       <button class="btn danger" id="btn-reset">Tout effacer</button>
+      <span id="partage-zone" style="margin-left:auto; display:flex; align-items:center; gap:.5rem;">
+        <span id="partage-etat" style="font-size:.76rem; color:var(--muted);"></span>
+        <button class="btn ghost" id="btn-partager">Partager avec la guilde</button>
+        <button class="btn ghost" id="btn-retirer" style="display:none;" title="Supprime tes plans du registre de la guilde. Ton carnet local n'est pas touché.">Me retirer</button>
+      </span>
     </div>
     <p class="note" id="maj"></p>
   </div>
@@ -481,6 +486,70 @@ function restaurer(fichier) {
 }
 
 // ── Branchements ─────────────────────────────────────────────────────────
+// ── Partage avec la guilde ───────────────────────────────────────────────
+// Le carnet reste personnel et local ; ce bouton, et lui seul, envoie quelque
+// chose au serveur. Ce qu'on envoie, ce sont les IDENTIFIANTS des plans manquants
+// — jamais les notes de lieu saisies par l'utilisateur, qui ne regardent que lui.
+async function majEtatPartage() {
+  const zone = document.getElementById('partage-etat');
+  const bouton = document.getElementById('btn-partager');
+  try {
+    const r = await fetch('plans_api.php?action=me', { cache: 'no-store' });
+    const j = await r.json();
+    if (!j.ok) { zone.textContent = ''; return; }
+    if (j.partage) {
+      const jours = Math.floor((Date.now() - new Date(j.maj)) / 86400000);
+      zone.textContent = `partagé ${jours <= 0 ? "aujourd'hui" : 'il y a ' + jours + ' j'}`
+        + ` · ${j.nb_membres} membre${j.nb_membres > 1 ? 's' : ''} dans le registre`;
+      bouton.textContent = 'Mettre à jour le partage';
+      document.getElementById('btn-retirer').style.display = '';
+    } else {
+      zone.textContent = j.nb_membres ? `${j.nb_membres} membre${j.nb_membres > 1 ? 's' : ''} partagent` : '';
+      bouton.textContent = 'Partager avec la guilde';
+      document.getElementById('btn-retirer').style.display = 'none';
+    }
+  } catch (e) { zone.textContent = ''; }   // hors ligne ou non connecté : le carnet marche quand même
+}
+
+async function partager() {
+  if (!etat.plans.length) { flash('Colle d\'abord ta liste, il n\'y a rien à partager.', true); return; }
+  // On ne transmet que les plans RECONNUS : un nom non résolu n'a pas d'identifiant,
+  // et l'envoyer ferait croire au serveur que le plan n'existe pas dans l'univers.
+  // Dédoublonnage indispensable : l'index est multilingue, deux libellés (le
+  // français et l'anglais du même plan) retombent sur le même identifiant. Sans ça
+  // on envoie plus d'entrées qu'il n'existe de plans, et le décompte des possédés
+  // part en négatif.
+  const vus = new Set();
+  for (const p of etat.plans) { const i = infoPlan(p.nom); if (i) vus.add(i.id); }
+  const ids = [...vus];
+  const perdus = etat.plans.filter(p => !infoPlan(p.nom)).length;
+  try {
+    const r = await fetch('plans_api.php?action=partager', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ manque: ids }),
+    });
+    const j = await r.json();
+    if (!j.ok) { flash(j.error || 'Partage impossible.', true); return; }
+    flash(`Partagé : ${j.nb_possede} plans possédés sur ${j.nb_possede + j.nb_manque}.`
+      + (perdus ? ` (${perdus} nom${perdus > 1 ? 's' : ''} non reconnu${perdus > 1 ? 's' : ''}, ignoré${perdus > 1 ? 's' : ''})` : ''));
+    majEtatPartage();
+  } catch (e) { flash('Serveur injoignable.', true); }
+}
+
+async function retirerPartage() {
+  if (!confirm('Retirer tes plans du registre de la guilde ? Tes données seront supprimées du serveur — ton carnet local reste intact.')) return;
+  try {
+    const j = await (await fetch('plans_api.php?action=retirer', { method: 'POST' })).json();
+    if (!j.ok) { flash(j.error || 'Retrait impossible.', true); return; }
+    flash('Tu es retiré du registre.');
+    majEtatPartage();
+  } catch (e) { flash('Serveur injoignable.', true); }
+}
+
+document.getElementById('btn-partager').addEventListener('click', partager);
+document.getElementById('btn-retirer').addEventListener('click', retirerPartage);
+majEtatPartage();
+
 document.getElementById('btn-import').addEventListener('click', importer);
 document.getElementById('btn-export').addEventListener('click', exporter);
 document.getElementById('btn-import-file').addEventListener('click', () => document.getElementById('file-in').click());

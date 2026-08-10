@@ -492,7 +492,11 @@ Créer une sortie épice **directement depuis Discord** et gérer les inscriptio
 
 ---
 
-### Registre des plans de la guilde (`plans_api.php`) — 🚧 lot 1 fait
+### Registre des plans de la guilde (`plans_api.php`) — ✅ EN LIGNE SUR `/v2`, PAS EN PROD
+
+> **État au 2026-08-10** — lots 1 et 2 livrés, déployés sur `/v2` et **testés fonctionnels** (page de partage + commande Discord `/plan` sur le serveur de test, via l'app « DuneMap Dev »). **Rien n'est en production.**
+>
+> **Pour reprendre** : lot 3 (vues site), les augmentations, et la mise en production. Détail en fin de section.
 
 Répond à deux questions qu'aucun outil ne tranche : **qui peut me crafter tel plan**, et **que manque-t-il à la guilde entière**. Conçu **Discord-first** : le site sert à la saisie (rare, 30 s), Discord à la consultation (fréquente) — c'est là que vit la guilde.
 
@@ -503,7 +507,7 @@ Répond à deux questions qu'aucun outil ne tranche : **qui peut me crafter tel 
 - **Fraîcheur affichée, jamais masquée** : la date de dernier partage accompagne chaque nom. Mieux vaut un « probablement à jour » assumé qu'une fausse certitude qui envoie demander un craft à quelqu'un qui ne peut plus le faire.
 - `plans_guilde.json` est **gitignoré** (donnée vivante, à ne jamais écraser au déploiement), en `664`.
 
-#### Commande Discord `/plan` (`discord_plan.php`) — lot 2 fait
+#### Commande Discord `/plan` (`discord_plan.php`) — lot 2
 
 C'est **ici** qu'atterrit la valeur : le site sert à la saisie, Discord à la consultation.
 
@@ -514,7 +518,22 @@ C'est **ici** qu'atterrit la valeur : le site sert à la saisie, Discord à la c
 - ⚠ **Les noms doivent être en FRANÇAIS** dans `plans_uniques.json`, sinon l'autocomplétion est inutilisable (on tape « casque », l'index contient « Wayfinder Helm »). `build_plans_uniques.js` va donc chercher `StaticData.Name.LocalizedString` dans `CDT_BaseItems` — même piège que celui documenté plus haut : un StringTable ne donne que l'anglais.
 - **Enregistrement : `discord_register_plan.php`, en POST** (jamais PUT, cf. l'incident `/commande`). Le dispatcher racine route `plan`, et son `detect_route` gère désormais **le type 4 comme le type 2** — sans ça l'autocomplétion ne serait jamais routée.
 
-**Reste à faire** : lot 3, les vues site (registre complet + angles morts sur écran large). Et les **augmentations** : l'analyseur les traite déjà sans modification, mais leurs noms ne résolvent pas — `plans_index.json` ne couvre que les schématiques, il faudra un index tiré de `stuff_augments.json` (104 augmentations).
+#### Où reprendre
+
+**1. Lot 3 — les vues site.** Le registre complet et surtout les **angles morts** sur écran large : ce que personne ne possède (cibles de farm), ce qu'une seule personne détient (fragilité), croisés avec les lieux de drop dataminés. `plans_api.php` expose déjà l'action `angles_morts`, il n'y a que l'affichage à écrire.
+
+**2. Les augmentations.** L'analyseur les traite **déjà sans modification** (même grammaire, seuls les types changent : `melee`, `ranged`, `generic`). Ce qui manque, c'est un index de noms : `plans_index.json` ne couvre que les schématiques. Il faudra le tirer de `stuff_augments.json` (104 augmentations, 359 niveaux de qualité).
+
+**3. La mise en production.** Fichiers à déployer à la racine :
+```
+plans.html  plans_api.php  plans_companion.js  plans_uniques.json  plans_index.json
+discord_plan.php  discord_register_plan.php  discord_interactions.php
+```
+Puis ouvrir `discord_register_plan.php` dans le navigateur (en POST, il n'efface pas `/sortie` ni `/commande`), et vérifier que `plans_guilde.json` est inscriptible par `www-data`. Ne **jamais** téléverser `plans_guilde.json` lui-même : c'est PHP qui le crée.
+
+**4. Le point non technique, et le plus décisif.** `plans.html` reste **non documentée** — absente de `menu.html` et de `pages.js`, accessible par URL seulement. Tant qu'elle le reste, seul son auteur alimentera le registre et `/plan qui-a` ne renverra qu'un seul pseudo. Pour que l'outil serve, il faudra soit l'exposer dans le menu, soit diffuser le lien dans le salon Discord.
+
+**Limite connue** : sur les 366 plans uniques, 359 sont indexés. Des 7 restants, 5 sont les **sets d'armure** (Bene Gesserit, Mentat, Planétologue, Maître d'armes, Soldat), qui ne sont pas des objets craftables individuels — c'est normal. Il ne subsiste qu'un vrai trou, « Pseudo Pulse-Sword ». Les trous d'index ne se voient **qu'à l'usage** : c'est une recherche « Laser » restée sans réponse qui a révélé le troisième motif de clé manquant.
 
 ### Plans uniques manquants (`plans.html`) — ⏸️ EN PAUSE, NON DÉPLOYÉE
 

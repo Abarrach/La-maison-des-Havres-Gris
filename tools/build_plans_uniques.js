@@ -58,6 +58,31 @@ function tierDeLEntete(l) {
 const CATS = ['armor', 'weapons', 'utility', 'vehicles'];
 
 const index = JSON.parse(fs.readFileSync(INDEX, 'utf8')).plans || {};
+
+/**
+ * Noms FRANÇAIS par identifiant, depuis `CDT_BaseItems` (DataTable, donc traduite
+ * par FModel — cf. le piège documenté au README : un StringTable ne donne que
+ * l'anglais). Indispensable ici : la guilde tape en français et le collage de
+ * gaming.tools est en français ; afficher « Wayfinder Helm » rendrait
+ * l'autocomplétion Discord inutilisable.
+ */
+function nomsFrancais() {
+  const p = 'J:/Download/Fmodel/Output/Exports/DuneSandbox/Content/Dune/Systems/Items/CDT_BaseItems.json';
+  if (!fs.existsSync(p)) return {};
+  const j = JSON.parse(fs.readFileSync(p, 'utf8'));
+  const rows = ((Array.isArray(j) ? j[0] : j) || {}).Rows || {};
+  const out = {};
+  for (const ligne of Object.values(rows)) {
+    const n = ((ligne || {}).StaticData || {}).Name;
+    if (!n || !n.Key || !n.LocalizedString) continue;
+    let m = n.Key.match(/^ITEMS\/SCHEMATIC_SCHEMATIC_(.+)_NAME$/);
+    if (m) { out['schematic_' + m[1].toLowerCase()] = n.LocalizedString; continue; }
+    m = n.Key.match(/^ITEMS\/SCHEMATIC_(.+)_SCHEMATIC_NAME$/);
+    if (m) out[m[1].toLowerCase()] = n.LocalizedString;
+  }
+  return out;
+}
+const FR = nomsFrancais();
 const lignes = fs.readFileSync(SRC, 'utf8').replace(/\u00a0/g, ' ').split(/\r?\n/);
 
 const plans = {};
@@ -76,7 +101,9 @@ for (const brut of lignes) {
   const info = index[norm(l)];
   if (!info) { nonReconnus.push(l); dernier = null; continue; }
   // Un même identifiant peut revenir sous deux libellés (FR/EN) : on garde une entrée.
-  plans[info.id] = plans[info.id] || { n: info.n, tier, cat: null };
+  // Nom français si on l'a, sinon le libellé reconnu (anglais) : mieux vaut un nom
+  // anglais qu'un identifiant technique dans l'autocomplétion Discord.
+  plans[info.id] = plans[info.id] || { n: FR[info.id] || info.n, tier, cat: null };
   dernier = info.id;
 }
 

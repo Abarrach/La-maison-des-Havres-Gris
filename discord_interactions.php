@@ -103,10 +103,14 @@ if ($type === 1) {
 function detect_route(array $body): ?string {
     $type = $body['type'] ?? 0;
 
-    if ($type === 2) {
+    // Type 4 = AUTOCOMPLÉTION (Discord interroge l'app pendant que l'utilisateur tape).
+    // Il porte le même `data.name` qu'une slash command, donc même routage — mais il
+    // attend une réponse d'un type différent (8), gérée par le handler.
+    if ($type === 2 || $type === 4) {
         $name = $body['data']['name'] ?? '';
         if ($name === 'sortie')   return 'sortie';
         if ($name === 'commande') return 'commande';
+        if ($name === 'plan')     return 'plan';
         return null;
     }
 
@@ -146,6 +150,11 @@ if ($route === 'sortie') {
 
 if ($route === 'commande') {
     require __DIR__ . '/discord_commande.php';
+    exit;
+}
+
+if ($route === 'plan') {
+    require __DIR__ . '/discord_plan.php';
     exit;
 }
 

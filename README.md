@@ -503,7 +503,18 @@ Répond à deux questions qu'aucun outil ne tranche : **qui peut me crafter tel 
 - **Fraîcheur affichée, jamais masquée** : la date de dernier partage accompagne chaque nom. Mieux vaut un « probablement à jour » assumé qu'une fausse certitude qui envoie demander un craft à quelqu'un qui ne peut plus le faire.
 - `plans_guilde.json` est **gitignoré** (donnée vivante, à ne jamais écraser au déploiement), en `664`.
 
-**Reste à faire** : lot 2, la commande Discord `/plan qui-a` avec autocomplétion (interaction type 4, 25 suggestions max) et `/plan manque` ; lot 3, les vues site (registre complet + angles morts).
+#### Commande Discord `/plan` (`discord_plan.php`) — lot 2 fait
+
+C'est **ici** qu'atterrit la valeur : le site sert à la saisie, Discord à la consultation.
+
+- **`/plan qui-a <nom>`** — qui peut crafter, **à quel rang**, avec **combien de charges**. `nom` est en **autocomplétion** (interaction **type 4**, réponse **type 8**, **25 choix maximum**, `autocomplete` **incompatible avec `choices`**) : impossible de lister 350 plans en choix figés. Sans saisie, on propose d'abord ce que la guilde possède — plus utile qu'un ordre alphabétique, et ça montre que le registre est vivant. Les plans déjà détenus portent un ✅ dans la liste.
+- **`/plan manque`** — angles morts : ce que **personne** n'a (cibles de farm), ce qu'**une seule** personne détient (fragilité). Champs tronqués proprement à ~900 caractères, la limite d'un champ d'encart étant 1024.
+- **Réponse publique, pas éphémère** : une réponse éphémère fait reposer la même question la semaine suivante ; une réponse visible devient de la connaissance partagée.
+- **Information partielle affichée comme telle** — un membre venu de l'ancien export apparaît « possédé (rang et charges inconnus) », jamais avec un zéro trompeur.
+- ⚠ **Les noms doivent être en FRANÇAIS** dans `plans_uniques.json`, sinon l'autocomplétion est inutilisable (on tape « casque », l'index contient « Wayfinder Helm »). `build_plans_uniques.js` va donc chercher `StaticData.Name.LocalizedString` dans `CDT_BaseItems` — même piège que celui documenté plus haut : un StringTable ne donne que l'anglais.
+- **Enregistrement : `discord_register_plan.php`, en POST** (jamais PUT, cf. l'incident `/commande`). Le dispatcher racine route `plan`, et son `detect_route` gère désormais **le type 4 comme le type 2** — sans ça l'autocomplétion ne serait jamais routée.
+
+**Reste à faire** : lot 3, les vues site (registre complet + angles morts sur écran large). Et les **augmentations** : l'analyseur les traite déjà sans modification, mais leurs noms ne résolvent pas — `plans_index.json` ne couvre que les schématiques, il faudra un index tiré de `stuff_augments.json` (104 augmentations).
 
 ### Plans uniques manquants (`plans.html`) — ⏸️ EN PAUSE, NON DÉPLOYÉE
 

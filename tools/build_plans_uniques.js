@@ -75,9 +75,14 @@ function nomsFrancais() {
   for (const ligne of Object.values(rows)) {
     const n = ((ligne || {}).StaticData || {}).Name;
     if (!n || !n.Key || !n.LocalizedString) continue;
+    // Mêmes trois motifs que `build_plans_index.js`, dans le même ordre : le 3ᵉ est
+    // plus permissif et avalerait les clés du 2ᵉ s'il passait avant. C'est lui qui
+    // porte « Laser K-28 du marché noir » (ITEMS/SCHEMATIC_UNIQUE_LASGUN_2_NAME).
     let m = n.Key.match(/^ITEMS\/SCHEMATIC_SCHEMATIC_(.+)_NAME$/);
     if (m) { out['schematic_' + m[1].toLowerCase()] = n.LocalizedString; continue; }
     m = n.Key.match(/^ITEMS\/SCHEMATIC_(.+)_SCHEMATIC_NAME$/);
+    if (m) { out[m[1].toLowerCase()] = n.LocalizedString; continue; }
+    m = n.Key.match(/^ITEMS\/SCHEMATIC_(.+)_NAME$/);
     if (m) out[m[1].toLowerCase()] = n.LocalizedString;
   }
   return out;

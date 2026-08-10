@@ -138,14 +138,27 @@ for (const [cle, valeur] of Object.entries(entrees)) {
   const nom = String(valeur || '').trim();
   if (!nom) continue;
 
+  // TROIS motifs de clés, à essayer dans cet ordre — le 3ᵉ est plus permissif et
+  // avalerait les clés du 2ᵉ (`X_SCHEMATIC` au lieu de `X`) s'il passait avant.
   let id = null, direct = false;
   let m = cle.match(/^ITEMS\/SCHEMATIC_SCHEMATIC_(.+)_NAME$/);
   if (m) { id = 'schematic_' + m[1].toLowerCase(); }
   else {
     m = cle.match(/^ITEMS\/SCHEMATIC_(.+)_SCHEMATIC_NAME$/);
     if (m) { id = m[1].toLowerCase(); direct = true; }
+    else {
+      // 3ᵉ motif, longtemps ignoré : c'est lui qui porte « Black Market K-28 Lasgun »
+      // (`ITEMS/SCHEMATIC_UNIQUE_LASGUN_2_NAME`) et l'essentiel des noms qui
+      // ressortaient « non reconnus ». Un membre a cherché « Laser » sur Discord et
+      // n'a rien obtenu : c'est ce trou-là.
+      m = cle.match(/^ITEMS\/SCHEMATIC_(.+)_NAME$/);
+      if (m) { id = m[1].toLowerCase(); direct = true; }
+    }
   }
   if (!id) continue;
+  // Espaces réservés du jeu, jamais affichés au joueur : les indexer polluerait
+  // l'autocomplétion avec des « PH_Stillsuit Unique ThermalSuit 06 Boots NAME ».
+  if (/^(PH_|XX)/i.test(nom) || /DELETEME/i.test(nom)) continue;
 
   const k = norm(nom);
   if (!k) continue;

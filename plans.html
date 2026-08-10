@@ -100,6 +100,7 @@ tr:hover td { background:rgba(200,146,16,.04); }
 </head>
 <body>
 <script src="auth-guard.js"></script>
+<script src="plans_companion.js"></script>
 
 <nav class="nav">
   <a href="menu.html">← Portail</a>
@@ -180,7 +181,10 @@ const CATS_FR = { armor:'Armure', weapons:'Arme', utility:'Utilitaire', vehicles
 
 // État persistant. `lieux` et `appris` survivent à tous les recollages : ce sont
 // les seules données que l'utilisateur produit lui-même, on ne les perd jamais.
-let etat = { plans: [], lieux: {}, appris: [], maj: null };
+// `possedes` : ce que le joueur POSSÈDE, avec charges et rangs — seule source utile
+// au registre de guilde. `plans` reste la liste des manquants, qui est ce que la
+// page affiche. `source` retient d'où vient le dernier import (companion|addon).
+let etat = { plans: [], lieux: {}, appris: [], maj: null, possedes: {}, source: null };
 let filtres = { tier: '', cat: '', q: '', sansLieu: false, voirAppris: false };
 
 // Index dataminé (nom anglais normalisé → { n, id, l:[{o,c,t}] }). Chargé au démarrage ;
@@ -205,6 +209,18 @@ function sourcesConnues(nom) { const i = infoPlan(nom); return i && i.s && i.s.l
 function lieuxPoses(nom) { const i = infoPlan(nom); return i && i.g && i.g.length ? i.g : null; }
 // « A-t-on une piste ? » = saisie manuelle OU information dataminée, quelle qu'elle soit.
 function aUnLieu(nom) { return !!(etat.lieux[nom] || lieuConnu(nom) || sourcesConnues(nom) || lieuxPoses(nom)); }
+
+// Univers des plans uniques (350 connus). Sert au repli quand l'import vient de
+// l'ancien export de l'addon : sans lui, « possédé » ne se déduit pas d'une liste
+// de manquants. Absent = le repli est simplement désactivé, la page marche quand même.
+let UNIVERS = {};
+async function chargerUnivers() {
+  try {
+    const j = await (await fetch('plans_uniques.json', { cache: 'no-cache' })).json();
+    if (j && j.plans) UNIVERS = j.plans;
+  } catch (e) { /* sans univers, seul le format gaming.tools permet de partager */ }
+}
+chargerUnivers();
 
 async function chargerIndex() {
   try {
@@ -275,13 +291,67 @@ function flash(msg, warn) {
 }
 
 // ── Import ───────────────────────────────────────────────────────────────
+// Tiers de gaming.tools : T1..T6 → mêmes clés que le reste de la page.
+const TIER_PAR_NUM = ['', 'Copper', 'Iron', 'Steel', 'Aluminum', 'Duraluminum', 'Plastanium'];
+
+/**
+ * Analyse un collage de la page UNIQUES de gaming.tools (Ctrl+A sur la page entière).
+ * Renvoie null si le collage n'est pas de ce format, pour laisser la main à l'ancien
+ * analyseur : les deux sources coexistent, on ne casse pas l'import historique.
+ *
+ * Ce format apporte ce que l'export de l'addon ne donnait pas — les CHARGES et le
+ * RANG. Un plan « possédé » sans son rang ni ses charges ne dit pas si la personne
+ * peut réellement crafter, ni combien de fois.
+ */
+function analyserCompanion(txt) {
+  if (typeof parseCompanion !== 'function') return null;
+  const r = parseCompanion(txt);
+  if (!r.objets.length) return null;
+
+  const manquants = [], possedes = {}, inconnus = [];
+  for (const o of r.objets) {
+    if (o.set) continue;                       // ensemble d'armure : pas un objet craftable
+    const info = infoPlan(o.nom);
+    if (!info) { inconnus.push(o.nom); continue; }
+
+    const rangsAppris = o.rangs.filter(g => g.charges !== null);
+    const appris = o.rangs.length ? rangsAppris.length > 0 : o.charges !== null;
+    if (appris) {
+      const e = {};
+      if (!o.rangs.length) e.c = o.charges;
+      else { e.r = {}; rangsAppris.forEach(g => { e.r[g.rang] = g.charges; }); }
+      possedes[info.id] = e;
+    } else {
+      manquants.push({ nom: o.nom, tier: TIER_PAR_NUM[o.tier] || null, cat: o.cat || null, detail: '' });
+    }
+  }
+  return { manquants, possedes, inconnus, annonce: r.annonce, nbObjets: r.objets.length };
+}
+
 function importer() {
   const txt = document.getElementById('paste').value;
   if (!txt.trim()) { flash('Colle d\'abord la liste de l\'addon.', true); return; }
-  const nouveaux = analyser(txt);
-  if (!nouveaux.length) {
-    flash('Aucun plan reconnu — le format ne ressemble pas à l\'export attendu. ' +
-          'Il doit commencer par une ligne du type « Copper Products ».', true);
+
+  // Détection automatique : le collage gaming.tools se reconnaît à ses lignes de type
+  // (« T4 - weapons »), absentes de l'export de l'addon. Le joueur n'a rien à choisir.
+  const comp = analyserCompanion(txt);
+  const nouveaux = comp ? comp.manquants : analyser(txt);
+  if (comp) {
+    etat.possedes = comp.possedes;
+    etat.source = 'companion';
+    // Somme de contrôle imprimée par gaming.tools lui-même : on la confronte à notre
+    // lecture plutôt que de supposer qu'on a tout lu.
+    const a = comp.annonce;
+    if (a && a.total && comp.nbObjets !== a.total) {
+      flash(`Attention : ${comp.nbObjets} objets lus alors que la page en annonce ${a.total}. `
+          + `Le collage est peut-être incomplet — refais un Ctrl+A sur la page entière.`, true);
+    }
+  } else {
+    etat.source = 'addon';
+  }
+  if (!nouveaux.length && !(comp && Object.keys(comp.possedes).length)) {
+    flash('Aucun plan reconnu — colle soit l\'onglet UNIQUES de gaming.tools (Ctrl+A sur la page), '
+        + 'soit l\'export de l\'addon (il commence par « Copper Products »).', true);
     return;
   }
 
@@ -519,18 +589,33 @@ async function partager() {
   // français et l'anglais du même plan) retombent sur le même identifiant. Sans ça
   // on envoie plus d'entrées qu'il n'existe de plans, et le décompte des possédés
   // part en négatif.
-  const vus = new Set();
-  for (const p of etat.plans) { const i = infoPlan(p.nom); if (i) vus.add(i.id); }
-  const ids = [...vus];
-  const perdus = etat.plans.filter(p => !infoPlan(p.nom)).length;
+  // Ce qu'on transmet, ce sont les plans POSSÉDÉS avec leurs charges et leurs rangs :
+  // seule forme qui permette de répondre « qui peut me crafter ça, à quel rang, et
+  // combien de fois ». Un simple booléen enverrait tout le monde vers la même personne.
+  let possedes = etat.possedes || {};
+  let perdus = 0;
+  if (etat.source !== 'companion') {
+    // Repli sur l'ancien export de l'addon, qui ne liste que les manquants : le
+    // possédé se déduit par absence, sans charges ni rang. Moins riche, mais un
+    // membre resté sur l'ancienne source continue d'alimenter le registre.
+    const manque = new Set();
+    for (const p of etat.plans) { const i = infoPlan(p.nom); if (i) manque.add(i.id); else perdus++; }
+    possedes = {};
+    for (const id of Object.keys(UNIVERS)) if (!manque.has(id)) possedes[id] = {};
+  }
   try {
     const r = await fetch('plans_api.php?action=partager', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ manque: ids }),
+      body: JSON.stringify({ possedes, source: etat.source || 'addon' }),
     });
     const j = await r.json();
     if (!j.ok) { flash(j.error || 'Partage impossible.', true); return; }
-    flash(`Partagé : ${j.nb_possede} plans possédés sur ${j.nb_possede + j.nb_manque}.`
+    // On distingue « possédé » de « craftable maintenant » : un plan appris mais à
+    // zéro charge est connu sans être disponible, et c'est exactement ce que la
+    // guilde a besoin de savoir avant de solliciter quelqu'un.
+    const dispo = j.nb_craftable !== undefined && j.nb_craftable !== j.nb_possede
+      ? `, dont ${j.nb_craftable} craftables tout de suite` : '';
+    flash(`Partagé : ${j.nb_possede} plans possédés sur ${j.nb_univers}${dispo}.`
       + (perdus ? ` (${perdus} nom${perdus > 1 ? 's' : ''} non reconnu${perdus > 1 ? 's' : ''}, ignoré${perdus > 1 ? 's' : ''})` : ''));
     majEtatPartage();
   } catch (e) { flash('Serveur injoignable.', true); }

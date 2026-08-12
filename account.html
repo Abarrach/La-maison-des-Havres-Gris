@@ -815,10 +815,27 @@ function renderOrderPanel(which) {
 
 // ====== MES SORTIES (activité guilde, personnel) ======
 let activityData = null;
+// Libellés des types d'activité, miroir de SORTIE_TYPES dans epice/discord_sortie.php.
+// Une clé absente retombe sur l'identifiant brut (ex. « speed_farm ») : pas de casse,
+// mais un affichage moche — à compléter en même temps que le bot.
 const ACT_TYPE_LABEL_PLAYER = {
-  epice: "Épice", labo: "Labos-Donjons", farm: "Farm divers", landsraad: "Landsraad",
-  pvp_train: "Entraînement PvP air/sol", pvp_hunt: "Chasse PvP", base_dd: "Construction Base DD", guilde: "Activité Guilde",
-  course_dd: "Course à mort Deep Desert"
+  // Ludique
+  course_dd: "Course à mort Deep Desert", death_run: "Death Run", need_speed: "Need for Speed",
+  derby: "Destruction Derby", long_jump: "Long Jump",
+  drop_cont: "Drop the Conteneur", drop_trans: "Drop the Transporteur", grimpe: "Défi de grimpe",
+  hide_seek: "Hide and Seek", chat_arme: "Chat-Pistolet / Chat-GRDA", chasse_homme: "Chasse à l'homme",
+  quizz: "Quizz", geoguessr: "GeoGuessr", labyrinthe: "Escape the Labyrinth",
+  tresors: "Chasse aux trésors", havrien: "Énigme du Havrien",
+  speed_farm: "Hippo-Gloutons", speed_build: "Base Builders", speed_donj: "Donjon Crushers",
+  // PvP
+  pvp_train: "Entraînement PvP air/sol", pvp_hunt: "Chasse PvP", embuscade: "Embuscade",
+  // Farm
+  epice: "Épice", labo: "Labos-Donjons", labo_decouv: "Donjons découverte",
+  farm: "Farm divers", farm_hagga: "Farm Hagga", farm_scorie: "Farm scories",
+  collection: "Attrapez-les tous",
+  // Guilde
+  base_dd: "Construction Base DD", atelier_build: "Atelier construction",
+  landsraad: "Landsraad", hauts_faits: "Soirée Hauts Faits", guilde: "Activité Guilde"
 };
 
 async function loadMyActivity() {
@@ -936,11 +953,9 @@ async function loadActivityReport() {
   }
 }
 
-const ACT_TYPE_LABEL = {
-  epice: "Épice", labo: "Labos-Donjons", farm: "Farm divers", landsraad: "Landsraad",
-  pvp_train: "Entraînement PvP air/sol", pvp_hunt: "Chasse PvP", base_dd: "Construction Base DD", guilde: "Activité Guilde",
-  course_dd: "Course à mort Deep Desert"
-};
+// Même table que côté joueur : la dupliquer, c'était garantir qu'une des deux
+// finisse périmée (c'était déjà le cas avant l'ajout des activités).
+const ACT_TYPE_LABEL = ACT_TYPE_LABEL_PLAYER;
 
 function actActivityLine(a, colorClass) {
   return `<div class="act-detail-item ${colorClass}">${esc(a.titre)} — ${esc(a.date)} <span style="color:#5a4a2a;">(${esc(ACT_TYPE_LABEL[a.type] || a.type)})</span></div>`;

@@ -26,33 +26,39 @@ if (empty($CFG['bot_token']) || strpos($CFG['bot_token'], 'COLLE_TON') !== false
 }
 if (!function_exists('curl_init')) { echo "extension cURL absente\n"; exit; }
 
-// Définition de la commande : /sortie creer
+// Définition de la commande : /sortie creer + /sortie panneau
+//
+//  `creer` n'a AUCUNE option : `/sortie creer` + Entrée ouvre directement le
+//  sélecteur (catégories → activités → formulaire).
+//
+//  Historique, pour ne pas refaire le trajet à l'envers :
+//   1. `choices` statiques — plafonnent à 25 entrées ET n'offrent aucun filtrage ;
+//      le catalogue d'activités devenait illisible bien avant ce plafond.
+//   2. option `type` en AUTOCOMPLÉTION — filtrage à la frappe, catalogue illimité,
+//      mais Discord NE RELANCE PAS l'autocomplétion après un clic sur une suggestion
+//      (vérifié en test) : choisir une catégorie remplissait le champ sans rien
+//      dérouler, et il fallait une seconde Entrée. Un menu qui ne mène nulle part.
+//   3. plus d'option du tout — un seul chemin, aucun cul-de-sac. Le sélecteur en
+//      Components V2 fait tout le travail, et il n'a lui aucune limite de 25.
+//
+//  ⚠ Retirer une option EST un changement de définition de commande : re-lancer
+//  ce script est obligatoire, sinon les clients continuent d'afficher le champ.
 $commands = [[
     'name'        => 'sortie',
     'description' => 'Gérer les sorties de la guilde',
     'type'        => 1,
-    'options'     => [[
-        'type'        => 1, // SUB_COMMAND
-        'name'        => 'creer',
-        'description' => 'Créer une nouvelle sortie (formulaire)',
-        'options'     => [[
-            'type'        => 3, // STRING
-            'name'        => 'type',
-            'description' => 'Type de sortie',
-            'required'    => true,
-            'choices'     => [
-                ['name' => 'Épice (liée au site)',       'value' => 'epice'],
-                ['name' => 'Labos-Donjons',              'value' => 'labo'],
-                ['name' => 'Farm divers',                'value' => 'farm'],
-                ['name' => 'Landsraad',                  'value' => 'landsraad'],
-                ['name' => 'Entraînement PvP air/sol',   'value' => 'pvp_train'],
-                ['name' => 'Chasse PvP Deep Desert',     'value' => 'pvp_hunt'],
-                ['name' => 'Construction Base Guilde DD','value' => 'base_dd'],
-                ['name' => 'Activité Guilde Divers',     'value' => 'guilde'],
-                ['name' => 'Course à mort Deep Desert',  'value' => 'course_dd'],
-            ],
-        ]],
-    ]],
+    'options'     => [
+        [
+            'type'        => 1, // SUB_COMMAND
+            'name'        => 'creer',
+            'description' => 'Créer une nouvelle sortie (formulaire)',
+        ],
+        [
+            'type'        => 1, // SUB_COMMAND
+            'name'        => 'panneau',
+            'description' => 'Poster le panneau de création à épingler (staff)',
+        ],
+    ],
 ]];
 
 $appId = $CFG['app_id'];
@@ -90,7 +96,8 @@ if ($resp === false) { echo "Échec cURL : {$err}\n"; exit; }
 echo "HTTP {$code}\n\n";
 if ($code >= 200 && $code < 300) {
     echo "✔ Commande /sortie enregistrée.\n";
-    echo "Dans Discord, tape /sortie creer pour ouvrir le formulaire.\n";
+    echo "  /sortie creer     → sélecteur : catégorie, puis activité, puis formulaire\n";
+    echo "  /sortie panneau   → panneau public à épingler dans le canal (staff)\n";
 } else {
     echo "✘ Échec :\n" . $resp . "\n";
     echo "\n(401 = bot_token invalide ; 403 = bot pas invité sur le serveur ; 404 = app_id/guild_id erroné)\n";

@@ -36,7 +36,10 @@ return [
     // ⚠ URL ABSOLUE obligatoire (Discord récupère l'image depuis ses serveurs ; pas de chemin relatif possible).
     'banner_url' => '', // ex : 'https://havresgris.ddns.net/epice/img/sortie.jpg'
 
-    // Bannière par TYPE de sortie (prioritaire sur banner_url). Clés : epice / labo / farm / landsraad / pvp_train / pvp_hunt / base_dd / guilde / course_dd.
+    // Bannière par TYPE de sortie (prioritaire sur banner_url).
+    // Les clés sont les identifiants de SORTIE_TYPES dans discord_sortie.php (34 activités
+    // depuis le classement à trois niveaux) — inutile de toutes les lister : un type absent
+    // de ce tableau retombe simplement sur banner_url. Ci-dessous, les historiques.
     // Dépose tes images sur le serveur (ex: epice/img/) et mets leurs URL HTTPS absolues.
     'banners' => [
         'epice'     => '', // ex : 'https://havresgris.ddns.net/epice/img/epice.jpg'

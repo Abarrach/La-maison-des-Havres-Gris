@@ -119,24 +119,224 @@ function postes_selectable($stype): array {
     return (sortie_type($stype)['postes'] === 'pvp') ? POSTES_PVP : POSTES_EPICE_SELECTABLE;
 }
 
-// ---- Types de sortie ----------------------------------------
+// ---- Familles d'activité (niveau 1) --------------------------
+//  Regroupement d'AFFICHAGE uniquement : aucune incidence sur le stockage, les
+//  inscriptions ou le site. L'ordre de déclaration est l'ordre des boutons.
+//  ⚠ 5 boutons par ligne, 5 lignes par message : au-delà de 5 familles,
+//  build_cat_picker() ouvre une seconde ligne.
+const SORTIE_CATEGORIES = [
+    'ludique' => ['label' => 'Ludique', 'icon' => '🎲', 'desc' => 'Courses, défis, énigmes, concours'],
+    'pvp'     => ['label' => 'PvP',     'icon' => '⚔️', 'desc' => 'Entraînements, chasses, embuscades'],
+    'farm'    => ['label' => 'Farm',    'icon' => '🔁', 'desc' => 'Épice, donjons, ressources, collection'],
+    'guilde'  => ['label' => 'Guilde',  'icon' => '🏛️', 'desc' => 'Construction, Landsraad, progression'],
+    // Le fourre-tout est une famille de PLEIN DROIT, et non une sous-catégorie enfouie :
+    // c'est l'échappatoire quand rien ne colle, elle doit se voir dès le premier écran.
+    'autre'   => ['label' => 'Autre',   'icon' => '🛡️', 'desc' => 'Ce qui n\'entre dans aucune autre famille'],
+];
+
+// ---- Sous-catégories (niveau 2) ------------------------------
+//  'cat' rattache la sous-catégorie à sa famille. Même remarque sur les boutons :
+//  5 par ligne — aucune famille n'en compte plus de 5 aujourd'hui.
+//  L'ancienne famille « Divers » est devenue « Guilde » : elle décrit ce qu'elle
+//  contient au lieu de nommer le reste.
+const SORTIE_SOUS_CATEGORIES = [
+    // Ludique
+    'l_course'   => ['cat' => 'ludique', 'label' => 'Courses & pilotage',    'icon' => '🏁', 'desc' => 'Vitesse, véhicules, destruction'],
+    'l_adresse'  => ['cat' => 'ludique', 'label' => 'Adresse & précision',   'icon' => '🎯', 'desc' => 'Viser, larguer, grimper'],
+    'l_cache'    => ['cat' => 'ludique', 'label' => 'Cache-cache',           'icon' => '🕵️', 'desc' => 'Se planquer, traquer, survivre'],
+    'l_enigme'   => ['cat' => 'ludique', 'label' => 'Énigmes & culture',     'icon' => '🧠', 'desc' => 'Réfléchir, chercher, deviner'],
+    'l_concours' => ['cat' => 'ludique', 'label' => 'Concours chronométrés', 'icon' => '⏱️', 'desc' => 'Le plus rapide gagne'],
+    // PvP
+    'p_train'    => ['cat' => 'pvp',    'label' => 'Entraînement',        'icon' => '🥋', 'desc' => 'S\'exercer entre nous'],
+    'p_chasse'   => ['cat' => 'pvp',    'label' => 'Chasse & embuscade',  'icon' => '🎯', 'desc' => 'Traquer, piéger, piller'],
+    // Farm
+    'f_epice'    => ['cat' => 'farm',   'label' => 'Épice',            'icon' => '🏜️', 'desc' => 'La récolte, et rien d\'autre'],
+    'f_donjon'   => ['cat' => 'farm',   'label' => 'Donjons & labos',  'icon' => '🧪', 'desc' => 'Explorer, apprendre'],
+    'f_ressource'=> ['cat' => 'farm',   'label' => 'Ressources',       'icon' => '⛏️', 'desc' => 'Matériaux, scories, épaves'],
+    'f_collection'=>['cat' => 'farm',   'label' => 'Collection',       'icon' => '💎', 'desc' => 'Objets rares et routes de farm'],
+    // Guilde
+    'g_build'    => ['cat' => 'guilde', 'label' => 'Construction',  'icon' => '🏗️', 'desc' => 'Chantiers et savoir-faire'],
+    'g_landsraad'=> ['cat' => 'guilde', 'label' => 'Landsraad',     'icon' => '🏛️', 'desc' => 'Objectifs de la semaine'],
+    'g_progress' => ['cat' => 'guilde', 'label' => 'Progression',   'icon' => '⭐', 'desc' => 'Avancer ensemble'],
+    // Autre
+    'a_autre'    => ['cat' => 'autre',  'label' => 'Autre',         'icon' => '🛡️', 'desc' => 'Le fourre-tout assumé'],
+];
+
+// ---- Activités (niveau 3) ------------------------------------
 //  'site'   => true  : intégré à l'Activité Guilde (soirée active, assignation, historique).
 //            => false : vit uniquement côté Discord (jauge d'intérêt), stockage séparé.
 //  'postes' => 'epice'/'pvp' : inscription par poste (menu déroulant), avec le
 //            jeu de postes de cette famille (cf. postes_all / postes_selectable).
 //            => false : RSVP Présent/Peut-être/Absent.
+//  'sub'    => clé de SORTIE_SOUS_CATEGORIES. La famille s'en déduit (sortie_cat).
+//  'desc'   => sous-titre affiché sous le libellé (100 caractères max).
+//
+//  ⚠ La clé (ex: 'epice') est STOCKÉE dans chaque sortie et relue par le site
+//  (account.html) : ne JAMAIS la renommer, seulement ajouter. Les 9 premières
+//  existaient avant le classement à trois niveaux et gardent leur identifiant.
 const SORTIE_TYPES = [
-    'epice'     => ['label' => 'Épice',           'icon' => '🏜️', 'site' => true,  'postes' => 'epice'],
-    'labo'      => ['label' => 'Labos-Donjons',   'icon' => '🧪', 'site' => false, 'postes' => false],
-    'farm'      => ['label' => 'Farm divers',     'icon' => '🔁', 'site' => false, 'postes' => false],
-    'landsraad' => ['label' => 'Landsraad',       'icon' => '🏛️', 'site' => false, 'postes' => false],
-    'pvp_train' => ['label' => 'Entraînement PvP air/sol','icon' => '⚔️', 'site' => false, 'postes' => 'pvp'],
-    'pvp_hunt'  => ['label' => 'Chasse PvP',      'icon' => '🎯', 'site' => false, 'postes' => false],
-    'base_dd'   => ['label' => 'Construction Base Guilde DD', 'icon' => '🏗️', 'site' => false, 'postes' => false],
-    'guilde'    => ['label' => 'Activité Guilde',  'icon' => '🛡️', 'site' => false, 'postes' => false],
-    'course_dd' => ['label' => 'Course à mort Deep Desert', 'icon' => '🏁', 'site' => false, 'postes' => false],
+
+    // --- Ludique › Courses & pilotage
+    'course_dd'  => ['label' => 'Course à mort Deep Desert', 'icon' => '🏁', 'site' => false, 'postes' => false,
+                     'sub' => 'l_course', 'desc' => 'Le plus loin gagne, et tout le monde meurt'],
+    'death_run'  => ['label' => 'Death Run', 'icon' => '💀', 'site' => false, 'postes' => false,
+                     'sub' => 'l_course', 'desc' => 'Véhicules armés, roquettes, soutien aérien'],
+    'need_speed' => ['label' => 'Need for Speed', 'icon' => '🏎️', 'site' => false, 'postes' => false,
+                     'sub' => 'l_course', 'desc' => 'Circuits et portes de passage, tout véhicule'],
+    'derby'      => ['label' => 'Destruction Derby', 'icon' => '💥', 'site' => false, 'postes' => false,
+                     'sub' => 'l_course', 'desc' => 'Buggys à roquettes sur îlot PvP, il n\'en restera qu\'un'],
+    'long_jump'  => ['label' => 'Long Jump', 'icon' => '🛫', 'site' => false, 'postes' => false,
+                     'sub' => 'l_course', 'desc' => 'Un tremplin, un véhicule, la distance'],
+
+    // --- Ludique › Adresse & précision
+    'drop_cont'  => ['label' => 'Drop the Conteneur', 'icon' => '📦', 'site' => false, 'postes' => false,
+                     'sub' => 'l_adresse', 'desc' => 'Largage sur cible, entre pétanque et curling aérien'],
+    'drop_trans' => ['label' => 'Drop the Transporteur', 'icon' => '🦅', 'site' => false, 'postes' => false,
+                     'sub' => 'l_adresse', 'desc' => 'Faire tomber les conteneurs d\'une structure'],
+    'grimpe'     => ['label' => 'Défi de grimpe', 'icon' => '🧗', 'site' => false, 'postes' => false,
+                     'sub' => 'l_adresse', 'desc' => 'En distille, sans ceinture ni grappin'],
+
+    // --- Ludique › Cache-cache
+    'hide_seek'  => ['label' => 'Hide and Seek', 'icon' => '🙈', 'site' => false, 'postes' => false,
+                     'sub' => 'l_cache', 'desc' => 'Dans Hagga, avec exclusion possible de certains lieux'],
+    'chat_arme'  => ['label' => 'Chat-Pistolet / Chat-GRDA', 'icon' => '🐈', 'site' => false, 'postes' => false,
+                     'sub' => 'l_cache', 'desc' => 'Épave du DD rang A, un chat armé, des souris à poil'],
+    'chasse_homme'=>['label' => 'Chasse à l\'homme', 'icon' => '🩸', 'site' => false, 'postes' => false,
+                     'sub' => 'l_cache', 'desc' => 'Mini-scénario RP, traque dans le Deep Desert'],
+
+    // --- Ludique › Énigmes & culture
+    'quizz'      => ['label' => 'Quizz', 'icon' => '❓', 'site' => false, 'postes' => false,
+                     'sub' => 'l_enigme', 'desc' => 'Dune Awakening, univers de Dune, ou tout autre univers'],
+    'geoguessr'  => ['label' => 'GeoGuessr', 'icon' => '🗺️', 'site' => false, 'postes' => false,
+                     'sub' => 'l_enigme', 'desc' => 'Retrouver la localisation d\'une capture d\'écran'],
+    'labyrinthe' => ['label' => 'Escape the Labyrinth', 'icon' => '🌀', 'site' => false, 'postes' => false,
+                     'sub' => 'l_enigme', 'desc' => 'Labyrinthe construit. Variante Escape Room avec énigmes'],
+    'tresors'    => ['label' => 'Chasse aux trésors', 'icon' => '🧭', 'site' => false, 'postes' => false,
+                     'sub' => 'l_enigme', 'desc' => 'Dans Hagga'],
+    'havrien'    => ['label' => 'Énigme du Havrien', 'icon' => '🎁', 'site' => false, 'postes' => false,
+                     'sub' => 'l_enigme', 'desc' => 'Retrouver un membre caché et le lot qu\'il porte'],
+
+    // --- Ludique › Concours chronométrés
+    'speed_farm' => ['label' => 'Hippo-Gloutons', 'icon' => '🦛', 'site' => false, 'postes' => false,
+                     'sub' => 'l_concours', 'desc' => 'Speed farm, groupes équilibrés au niveau de Récolteur'],
+    'speed_build'=> ['label' => 'Base Builders', 'icon' => '🧱', 'site' => false, 'postes' => false,
+                     'sub' => 'l_concours', 'desc' => 'Speed build sur thème imposé, en temps limité'],
+    'speed_donj' => ['label' => 'Donjon Crushers', 'icon' => '⚡', 'site' => false, 'postes' => false,
+                     'sub' => 'l_concours', 'desc' => 'Speed farm des donjons de la map monde'],
+
+    // --- PvP › Entraînement
+    'pvp_train'  => ['label' => 'Entraînement PvP air/sol', 'icon' => '⚔️', 'site' => false, 'postes' => 'pvp',
+                     'sub' => 'p_train', 'desc' => 'Inscription par rôle de combat'],
+
+    // --- PvP › Chasse & embuscade
+    'pvp_hunt'   => ['label' => 'Chasse PvP', 'icon' => '🎯', 'site' => false, 'postes' => false,
+                     'sub' => 'p_chasse', 'desc' => 'Traque et pillage dans le Deep Desert'],
+    'embuscade'  => ['label' => 'Embuscade', 'icon' => '🪤', 'site' => false, 'postes' => false,
+                     'sub' => 'p_chasse', 'desc' => 'Vieux transporteur ou moisso laissés en appât'],
+
+    // --- Farm › Épice
+    'epice'      => ['label' => 'Épice', 'icon' => '🏜️', 'site' => true, 'postes' => 'epice',
+                     'sub' => 'f_epice', 'desc' => 'Récolte — liée au site (assignation, débrief)'],
+
+    // --- Farm › Donjons & labos
+    'labo'       => ['label' => 'Labos-Donjons', 'icon' => '🧪', 'site' => false, 'postes' => false,
+                     'sub' => 'f_donjon', 'desc' => 'Exploration de labos et de donjons'],
+    'labo_decouv'=> ['label' => 'Donjons découverte', 'icon' => '🔰', 'site' => false, 'postes' => false,
+                     'sub' => 'f_donjon', 'desc' => 'Pour les nouveaux, et les anciens qui ont loupé le coche'],
+
+    // --- Farm › Ressources
+    'farm'       => ['label' => 'Farm divers', 'icon' => '🔁', 'site' => false, 'postes' => false,
+                     'sub' => 'f_ressource', 'desc' => 'Matériaux, épaves, tout le reste'],
+    'farm_hagga' => ['label' => 'Farm Hagga', 'icon' => '🏘️', 'site' => false, 'postes' => false,
+                     'sub' => 'f_ressource', 'desc' => 'Sentinelleville, Mysa Tarril, O\'odham'],
+    'farm_scorie'=> ['label' => 'Farm scories', 'icon' => '🪨', 'site' => false, 'postes' => false,
+                     'sub' => 'f_ressource', 'desc' => 'Sorties dédiées'],
+
+    // --- Farm › Collection
+    'collection' => ['label' => 'Attrapez-les tous', 'icon' => '💜', 'site' => false, 'postes' => false,
+                     'sub' => 'f_collection', 'desc' => 'Objets épiques violets, routes T1 à T5'],
+
+    // --- Guilde › Construction
+    'base_dd'    => ['label' => 'Construction Base Guilde DD', 'icon' => '🏗️', 'site' => false, 'postes' => false,
+                     'sub' => 'g_build', 'desc' => 'Chantier collectif de la base de guilde'],
+    'atelier_build'=>['label' => 'Atelier construction', 'icon' => '📐', 'site' => false, 'postes' => false,
+                     'sub' => 'g_build', 'desc' => 'Par où commencer, les sets, les règles, avec de la pratique'],
+
+    // --- Guilde › Landsraad
+    'landsraad'  => ['label' => 'Landsraad', 'icon' => '🏛️', 'site' => false, 'postes' => false,
+                     'sub' => 'g_landsraad', 'desc' => 'Objectifs et force de vote de la semaine'],
+
+    // --- Guilde › Progression
+    'hauts_faits'=> ['label' => 'Soirée Hauts Faits', 'icon' => '⭐', 'site' => false, 'postes' => false,
+                     'sub' => 'g_progress', 'desc' => 'Les compléter en groupe'],
+
+    // --- Autre
+    'guilde'     => ['label' => 'Activité Guilde', 'icon' => '🛡️', 'site' => false, 'postes' => false,
+                     'sub' => 'a_autre', 'desc' => 'Tout ce qui n\'entre pas dans les autres cases'],
 ];
 function sortie_type($stype): array { return SORTIE_TYPES[$stype] ?? SORTIE_TYPES['epice']; }
+
+// ---- Constantes du FORMULAIRE -------------------------------
+//  ⚠ Déclarées ICI, et pas à côté de sortie_modal() qui les consomme, parce que
+//  PHP ne hisse QUE les fonctions : un `const` de premier niveau s'exécute quand
+//  le flux l'atteint. Placées après le bloc de routage (qui se termine par exit),
+//  elles n'existaient jamais au moment de construire le formulaire — PHP 8 lève
+//  « Undefined constant », que le catch(Throwable) affiche en « Erreur interne ».
+//  C'est arrivé : le sélecteur fonctionnait, le bouton « Choisir » échouait.
+
+// Durées proposées. Les VALEURS gardent le format historique ('2', '1h30') :
+// duree_to_hours() du script de purge et fmt_duree() les lisent déjà toutes.
+// ⚠ Un radio group accepte 2 à 10 options — on en a 6.
+const DUREE_OPTIONS = [
+    '1'    => '1 h',
+    '1h30' => '1 h 30',
+    '2'    => '2 h',
+    '2h30' => '2 h 30',
+    '3'    => '3 h',
+    '4'    => 'Soirée entière (4 h)',
+];
+
+// Activité dont la bannière sert d'illustration par défaut aux autres.
+// « Activité Guilde » (id historique 'guilde') est le fourre-tout du catalogue :
+// son image convient à n'importe quelle sortie, ce qui en fait le meilleur repli.
+const BANNIERE_DEFAUT_TYPE = 'guilde';
+
+// Repli de DERNIER recours, connu du code et non de la config : sans lui, « la
+// bannière d'Activité Guilde » n'existait que si on l'avait déclarée dans `banners`,
+// et une config vierge ne donnait aucune image. Chemin relatif au site, résolu avec
+// `site_url` (comme dune_site_base_url() dans discord_helper.php, non inclus ici).
+const BANNIERE_DEFAUT_FICHIER = '/epice/img/sortieactdivers.jpg';
+
+const JOURS_FR = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
+const MOIS_FR  = ['', 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet',
+                  'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+
+// Sous-catégorie d'une activité, puis famille déduite de la sous-catégorie.
+// Repli sur la première déclarée si la clé est absente ou inconnue : une activité
+// mal rangée reste atteignable dans le sélecteur au lieu d'en disparaître.
+//
+// ⚠ array_key_exists et non isset() : PHP refuse isset() sur le résultat d'une
+// expression, et une constante tableau en est une (« Cannot use isset() on the
+// result of an expression ») — erreur FATALE, pas un avertissement.
+// ⚠ array_keys()[0] plutôt que array_key_first() : cette dernière demande PHP 7.3
+// et la version du serveur n'est pas vérifiable d'ici.
+function sortie_sub($stype): string {
+    $s = SORTIE_TYPES[$stype]['sub'] ?? '';
+    return array_key_exists($s, SORTIE_SOUS_CATEGORIES) ? $s : array_keys(SORTIE_SOUS_CATEGORIES)[0];
+}
+function sortie_cat($stype): string {
+    $c = SORTIE_SOUS_CATEGORIES[sortie_sub($stype)]['cat'] ?? '';
+    return array_key_exists($c, SORTIE_CATEGORIES) ? $c : array_keys(SORTIE_CATEGORIES)[0];
+}
+// ---- Compat texte -------------------------------------------
+// Ce serveur n'a PAS mbstring (piège connu, cf. discord_plan.php et epice/data-api.php).
+//
+// Coupe à $n CARACTÈRES sans mbstring : substr() couperait au milieu d'un caractère
+// accentué ou d'un emoji et produirait du JSON invalide, que Discord rejette en bloc.
+function sn_cut($s, $n) {
+    $s = (string)$s;
+    return preg_match('/^.{0,' . (int)$n . '}/us', $s, $m) ? $m[0] : $s;
+}
 
 // ============================================================
 //  1) VÉRIFICATION DE LA SIGNATURE
@@ -201,13 +401,20 @@ if ($type === 2) {
     $name = $body['data']['name'] ?? '';
     $sub  = $body['data']['options'][0]['name'] ?? '';
     if ($name === 'sortie' && $sub === 'creer') {
-        // Type choisi dans le menu natif de la commande (option « type »).
-        $stype = 'epice';
+        // La commande n'a plus d'option : le sélecteur fait tout le travail.
+        // On lit quand même un éventuel « type » par TOLÉRANCE — une mise à jour de
+        // définition de commande met du temps à se propager, un client peut donc
+        // encore envoyer l'ancienne option pendant la transition. Valeur connue →
+        // formulaire direct ; tout le reste (vide, catégorie, texte libre) → sélecteur.
+        $stype = '';
         foreach ($body['data']['options'][0]['options'] ?? [] as $o) {
-            if (($o['name'] ?? '') === 'type') $stype = $o['value'] ?? 'epice';
+            if (($o['name'] ?? '') === 'type') $stype = trim((string)($o['value'] ?? ''));
         }
-        if (!array_key_exists($stype, SORTIE_TYPES)) $stype = 'epice';
-        respond_modal($stype);
+        if (array_key_exists($stype, SORTIE_TYPES)) respond_modal($stype);
+        respond_type_picker();
+    }
+    if ($name === 'sortie' && $sub === 'panneau') {
+        handle_panneau($body);
     }
     respond_message("Commande inconnue.", true);
 }
@@ -230,6 +437,15 @@ if ($type === 5) {
 // -- COMPOSANT (select d'inscription / boutons présent / peut-être / absent / désinscription) -
 if ($type === 3) {
     $cid = $body['data']['custom_id'] ?? '';
+    // Sélecteur de création : famille → sous-catégorie → activité → formulaire.
+    // ⚠ 'newbackcat:' AVANT 'newback' : le second est un préfixe du premier, et
+    // l'ordre inverse enverrait tous les retours d'écran 3 vers l'écran 1.
+    if (strpos($cid, 'newcat:') === 0)     { handle_new_cat($body, substr($cid, 7)); }
+    if (strpos($cid, 'newsub:') === 0)     { handle_new_sub(substr($cid, 7)); }
+    if (strpos($cid, 'newpick:') === 0)    { handle_new_pick(substr($cid, 8)); }
+    if (strpos($cid, 'newtype') === 0)     { handle_new_type($body); }
+    if (strpos($cid, 'newbackcat:') === 0) { handle_new_back_cat(substr($cid, 11)); }
+    if (strpos($cid, 'newback') === 0)     { handle_new_back(); }
     if (strpos($cid, 'signup:') === 0)   { handle_signup($body, substr($cid, 7)); }
     if (strpos($cid, 'present:') === 0)  { handle_status($body, substr($cid, 8), 'present'); }
     if (strpos($cid, 'maybe:') === 0)    { handle_status($body, substr($cid, 6), 'maybe'); }
@@ -254,24 +470,151 @@ http_response_code(400); echo 'type non géré'; exit;
 //  HANDLERS
 // ============================================================
 
+// ---- Formulaire : listes proposées ---------------------------
+//  Le jour, l'heure et la durée sont CHOISIS, plus saisis. Motif : le champ libre
+//  « 25-06-2026 21:00 » laissait passer une date sans heure, et une sortie sans
+//  heure exploitable n'est JAMAIS purgée par discord_sortie_cleanup.php (elle est
+//  ignorée pour toujours). Une liste supprime la classe d'erreur entière.
+//
+//  ⚠ Le formulaire n'a plus de champ ZONE : un modal accepte 5 composants de
+//  premier niveau MAXIMUM, et jour + heure séparés en consomment un de plus que
+//  l'ancien champ combiné. La zone reste dans les données (les sorties existantes
+//  la portent, le site l'affiche) — voir la garde dans handle_edit_save.
+
+// (Les constantes du formulaire — DUREE_OPTIONS, JOURS_FR, MOIS_FR — sont déclarées
+//  en HAUT du fichier, avec SORTIE_TYPES : voir l'avertissement qui les accompagne.)
+
+// « mar. 12 août ». On n'utilise NI strftime (supprimé en PHP 8.1) NI IntlDateFormatter
+// (extension intl non garantie sur ce serveur, comme mbstring).
+function date_fr_court(DateTime $d): string {
+    return JOURS_FR[(int)$d->format('w')] . ' ' . (int)$d->format('j') . ' ' . MOIS_FR[(int)$d->format('n')];
+}
+
+// Les 21 prochains jours (plafond Discord : 25 options par liste).
+// Fuseau Europe/Paris, le même que discord_sortie_cleanup.php : sinon « Aujourd'hui »
+// désigne le mauvais jour dès que le serveur tourne en UTC après minuit.
+function jour_options(string $courant = ''): array {
+    $tz  = new DateTimeZone('Europe/Paris');
+    $out = [];
+    for ($i = 0; $i < 21; $i++) {
+        $d   = new DateTime('now', $tz);
+        $d->modify("+{$i} day");
+        $lib = date_fr_court($d);
+        if ($i === 0)      $lib = "Aujourd'hui — " . $lib;
+        elseif ($i === 1)  $lib = "Demain — " . $lib;
+        $out[$d->format('Y-m-d')] = $lib;
+    }
+    // Une sortie en cours de modification peut porter une date hors fenêtre (passée,
+    // ou au-delà de 3 semaines). Sans cet ajout en tête, la liste ne contiendrait pas
+    // sa valeur actuelle et la simple ouverture du formulaire la déplacerait.
+    if ($courant !== '' && !isset($out[$courant])) {
+        $out = [$courant => fmt_date_fr($courant) . ' (date actuelle)'] + $out;
+    }
+    return $out;
+}
+
+// Heures proposées : les 24 heures pleines, de 00:00 à 23:00.
+//
+// ⚠ Pas de demi-heures : une journée entière par pas de 30 min ferait 48 entrées, or
+// une liste Discord en accepte 25 au MAXIMUM. Couvrir la journée complète et garder
+// les :30 est donc impossible dans un seul menu — c'est la journée complète qui a été
+// choisie. Une sortie à 21:30 n'est plus saisissable à la création.
+// Une heure héritée hors liste (ancienne sortie à 21:30) est ajoutée en tête, sinon
+// la simple ouverture du formulaire de modification la déplacerait.
+function heure_options(string $courante = ''): array {
+    $out = [];
+    for ($h = 0; $h < 24; $h++) { $k = sprintf('%02d:00', $h); $out[$k] = $k; }
+    if ($courante !== '' && !isset($out[$courante])) {
+        $out = [$courante => $courante . ' (heure actuelle)'] + $out;   // 25 au total, la limite
+    }
+    return $out;
+}
+
+// Heure de début → « HH:MM » normalisé, ou '' si illisible.
+// Toujours utile bien que l'heure vienne d'une liste : elle normalise la valeur reçue
+// et couvre la voie de repli (ancien champ libre « quand » d'un formulaire ouvert avant
+// déploiement), ainsi qu'une valeur héritée réinjectée en tête de liste.
+// Accepte : 21:00 · 21h30 · 21h · 21 · 2130 · 7:05 · 7h5
+function parse_heure($s): string {
+    $s = trim((string)$s);
+    if ($s === '') return '';
+    // Forme collée à 4 chiffres traitée à part : « 2130 » serait sinon coupé en 21 + 30
+    // par hasard, et « 0730 » en 07 + 30 — corrects tous les deux, mais « 730 » donnerait
+    // 73 h. Autant être explicite.
+    if (preg_match('/^(\d{2})(\d{2})$/', $s, $m)) { $h = (int)$m[1]; $min = (int)$m[2]; }
+    elseif (preg_match('/^(\d{1,2})\s*[:hH.]?\s*(\d{1,2})?$/', $s, $m)) {
+        $h   = (int)$m[1];
+        $min = (isset($m[2]) && $m[2] !== '') ? (int)$m[2] : 0;
+    } else return '';
+    if ($h > 23 || $min > 59) return '';
+    return sprintf('%02d:%02d', $h, $min);
+}
+
 // Construit un MODAL de sortie (création OU modification) pré-rempli avec $vals.
+//
+// Chaque champ est enveloppé dans un LABEL (type 18) : il porte le libellé ET un
+// sous-titre explicatif, sans consommer de composant supplémentaire. C'est aussi
+// la structure que Discord recommande désormais pour les champs texte.
 function sortie_modal($customId, $title, $vals = []) {
-    $field = function ($id, $label, $style, $required, $ph = '', $max = 0) use ($vals) {
-        $c = ['type' => 4, 'custom_id' => $id, 'label' => $label, 'style' => $style, 'required' => $required];
-        if (isset($vals[$id]) && $vals[$id] !== '') $c['value'] = (string)$vals[$id];
-        if ($ph  !== '') $c['placeholder'] = $ph;
-        if ($max  >  0)  $c['max_length']  = $max;
-        return ['type' => 1, 'components' => [$c]];
+    $val = function ($id) use ($vals) { return trim((string)($vals[$id] ?? '')); };
+
+    $enveloppe = function (array $composant, $label, $desc) {
+        $l = ['type' => 18, 'label' => sn_cut($label, 45), 'component' => $composant];
+        if ($desc !== '') $l['description'] = sn_cut($desc, 100);
+        return $l;
     };
+
+    $texte = function ($id, $label, $desc, $style, $required, $ph = '', $max = 0) use ($val, $enveloppe) {
+        // Pas de 'label' sur le champ lui-même : c'est le LABEL parent qui le porte.
+        $c = ['type' => 4, 'custom_id' => $id, 'style' => $style, 'required' => $required];
+        if ($val($id) !== '') $c['value'] = $val($id);
+        if ($ph !== '')       $c['placeholder'] = $ph;
+        if ($max > 0)         $c['max_length']  = $max;
+        return $enveloppe($c, $label, $desc);
+    };
+
+    $options = function (array $liste, $courant) {
+        $opts = [];
+        foreach ($liste as $value => $libelle) {
+            $o = ['label' => sn_cut($libelle, 100), 'value' => sn_cut((string)$value, 100)];
+            if ((string)$value === (string)$courant) $o['default'] = true;   // pré-sélection
+            $opts[] = $o;
+        }
+        return $opts;
+    };
+
     return ['type' => 9, 'data' => [
         'custom_id'  => $customId,
         'title'      => $title,
         'components' => [
-            $field('titre',  'Titre de la sortie',      1, true,  'Run épice Sud — gros déstockage', 100),
-            $field('quand',  'Date & heure',            1, true,  '25-06-2026 21:00', 40),
-            $field('zone',   'Zone',                    1, false, 'Deep Desert — secteur F4', 100),
-            $field('duree',  'Durée (en heures)',       1, false, 'ex : 2  (ou 1h30)', 10),
-            $field('desc',   'Description / consignes', 2, false, 'Objectif, packtage requis…', 600),
+
+            $texte('titre', 'Titre de la sortie', 'Ce que verront les inscrits dans le canal',
+                   1, true, 'Run épice Sud — gros déstockage', 100),
+
+            $enveloppe(
+                ['type' => 3, 'custom_id' => 'jour', 'required' => true,
+                 'options' => $options(jour_options($val('jour')), $val('jour'))],
+                'Jour', ''
+            ),
+
+            $enveloppe(
+                ['type' => 3, 'custom_id' => 'heure', 'required' => true,
+                 'options' => $options(heure_options($val('heure')), $val('heure'))],
+                'Heure de début', 'Les 24 heures de la journée'
+            ),
+
+            $enveloppe(
+                // Radio group (type 21) : toutes les durées visibles d'un coup, un seul clic.
+                // Non obligatoire — une durée absente vaut 4 h pour la purge, et une sortie
+                // héritée dont la durée ne correspond à aucune option ne doit pas bloquer
+                // l'enregistrement d'une modification.
+                ['type' => 21, 'custom_id' => 'duree', 'required' => false,
+                 'options' => $options(DUREE_OPTIONS, $val('duree'))],
+                'Durée prévue', 'Activité automatiquement supprimée 4 h après la fin'
+            ),
+
+            $texte('desc', 'Consignes', 'Packtage, point de rendez-vous, objectif',
+                   2, false, 'Objectif, packtage requis…', 600),
         ],
     ]];
 }
@@ -279,7 +622,282 @@ function sortie_modal($customId, $title, $vals = []) {
 // Ouvre le formulaire de CRÉATION (réponse type 9 = MODAL). $stype = type de sortie.
 function respond_modal($stype = 'epice') {
     $t = sortie_type($stype);
-    echo json_encode(sortie_modal('sortie_create_modal:' . $stype, 'Nouvelle sortie ' . $t['label']));
+    // Titre de modal : 45 caractères MAX côté Discord, au-delà le modal est rejeté
+    // en bloc (et Discord n'affiche qu'une erreur générique). Les libellés de type
+    // s'allongeant au fil des activités, on coupe systématiquement.
+    echo json_encode(sortie_modal('sortie_create_modal:' . $stype, sn_cut('Nouvelle sortie ' . $t['label'], 45)));
+    exit;
+}
+
+
+// ============================================================
+//  SÉLECTEUR DE CRÉATION PAR CATÉGORIES
+//
+//  Pourquoi un sélecteur AVANT le formulaire : un modal accepte 5 composants
+//  de premier niveau MAXIMUM, et les 5 sont déjà pris (titre / date / zone /
+//  durée / description). Le type ne peut donc pas être demandé dans le modal.
+//
+//  Rendu en Components V2 (flag 32768) : conteneur + texte markdown + séparateur.
+//  ⚠ Avec ce flag, `content` et `embeds` sont IGNORÉS par Discord sur le même
+//  message — absolument tout doit passer par `components`.
+//
+//  Parcours : bouton catégorie → menu déroulant des types → modal (type 9).
+//  Une interaction de composant a le droit de répondre par un modal ; une
+//  soumission de modal, non (cf. le commentaire dans handle_create).
+// ============================================================
+
+// Écran 1 — les catégories. $origin : 'e' = éphémère (on éditera en place),
+// 'p' = panneau public permanent (on ne doit PAS l'éditer, cf. handle_new_cat).
+function build_cat_picker(string $origin): array {
+    $btns = [];
+    foreach (SORTIE_CATEGORIES as $cid => $c) {
+        // On coupe le libellé AVANT d'ajouter le décompte : tronquer après amputerait
+        // le nombre, qui est justement l'information la plus courte et la plus utile.
+        $btns[] = ['type' => 2, 'style' => 2,
+                   'label' => sn_cut($c['label'], 70) . ' (' . nb_activites_cat($cid) . ')',
+                   'emoji' => ['name' => $c['icon']], 'custom_id' => "newcat:{$cid}:{$origin}"];
+    }
+    $rows = bouton_lignes($btns);
+
+    $texte = ($origin === 'p')
+        ? "## 🏜️ Créer une activité\nUne sortie à proposer ? Choisis une famille, le reste se fait en deux clics."
+        : "## 🏜️ Créer une activité\nChoisis une famille d'activités.";
+
+    return ['components' => [[
+        'type'       => 17,                                          // CONTAINER
+        'components' => array_merge(
+            [['type' => 10, 'content' => $texte], ['type' => 14]],   // TEXT_DISPLAY + SEPARATOR
+            $rows
+        ),
+    ]]];
+}
+
+// Range des boutons par lignes de 5 (plafond Discord), 4 lignes au maximum
+// pour garder de la marge sous la limite de 5 lignes par message.
+function bouton_lignes(array $boutons): array {
+    $rows = [];
+    $paquet = [];
+    foreach ($boutons as $b) {
+        $paquet[] = $b;
+        if (count($paquet) === 5) { $rows[] = ['type' => 1, 'components' => $paquet]; $paquet = []; }
+    }
+    if ($paquet) $rows[] = ['type' => 1, 'components' => $paquet];
+    return array_slice($rows, 0, 4);
+}
+
+// L'écran 2 a-t-il un intérêt pour cette famille ? Avec une seule sous-catégorie il
+// n'offrirait qu'un bouton — un clic pour rien. On le saute alors, dans les deux sens
+// de la navigation. C'est le cas de la famille « Autre », volontairement minimale.
+function ecran_2_utile(string $cat): bool {
+    return count(subs_of_cat($cat)) > 1;
+}
+
+// Décompte des activités, affiché entre parenthèses sur les boutons de navigation :
+// on sait avant de cliquer si une piste est fournie ou quasi vide.
+function nb_activites_sub(string $sub): int {
+    $n = 0;
+    foreach (SORTIE_TYPES as $id => $t) { if (sortie_sub($id) === $sub) $n++; }
+    return $n;
+}
+function nb_activites_cat(string $cat): int {
+    $n = 0;
+    foreach (SORTIE_TYPES as $id => $t) { if (sortie_cat($id) === $cat) $n++; }
+    return $n;
+}
+
+// Sous-catégories d'une famille, dans l'ordre de déclaration.
+function subs_of_cat(string $cat): array {
+    $out = [];
+    foreach (SORTIE_SOUS_CATEGORIES as $sid => $s) {
+        if (($s['cat'] ?? '') === $cat) $out[$sid] = $s;
+    }
+    return $out;
+}
+
+// Écran 2 — les sous-catégories d'une famille, en boutons.
+//  Boutons et non sections : cet écran est de la NAVIGATION, comme l'écran 1 dont
+//  il reprend la forme. L'écran 3, lui, est la feuille de l'arbre et détaille.
+function build_sub_picker(string $cat): array {
+    $c = SORTIE_CATEGORIES[$cat];
+    $boutons = [];
+    foreach (subs_of_cat($cat) as $sid => $s) {
+        $boutons[] = ['type' => 2, 'style' => 2,
+                      'label' => sn_cut($s['label'], 70) . ' (' . nb_activites_sub($sid) . ')',
+                      'emoji' => ['name' => $s['icon']], 'custom_id' => 'newsub:' . $sid];
+    }
+    $retour = ['type' => 1, 'components' => [
+        ['type' => 2, 'style' => 2, 'label' => 'Retour', 'emoji' => ['name' => '↩️'], 'custom_id' => 'newback'],
+    ]];
+
+    if (!$boutons) {
+        return ['components' => [['type' => 17, 'components' => [
+            ['type' => 10, 'content' => "### {$c['icon']} {$c['label']}\nAucune sous-catégorie dans cette famille."],
+            $retour,
+        ]]]];
+    }
+
+    return ['components' => [['type' => 17, 'components' => array_merge(
+        [['type' => 10, 'content' => "### {$c['icon']} {$c['label']}\n{$c['desc']}"], ['type' => 14]],
+        bouton_lignes($boutons),
+        [$retour]
+    )]]];
+}
+
+// Écran 3 — les activités d'une sous-catégorie.
+//
+//  Affichées À PLAT (une SECTION par activité : nom, sous-titre, bouton « Choisir »)
+//  plutôt qu'en menu déroulant. Motif : un menu déroulant demande un clic rien que
+//  pour découvrir ce qu'il contient — or c'est précisément la lisibilité qu'on
+//  cherchait en créant les catégories.
+//
+//  Repli en menu déroulant au-delà de 8 activités : au-delà, l'écran devient un mur
+//  de texte et on approche du plafond de 40 composants par message (chaque section
+//  en coûte 3). Le menu, lui, plafonne à 25 options. Aucune sous-catégorie n'atteint
+//  ce seuil aujourd'hui — la plus fournie en compte 5.
+function build_activity_picker(string $sub): array {
+    $s   = SORTIE_SOUS_CATEGORIES[$sub];
+    $cat = $s['cat'] ?? '';
+    // Retour vers l'écran 2 de SA famille, et non vers l'écran 1 : remonter d'un cran
+    // à la fois est le seul comportement qui ne surprenne pas.
+    // Exception : une famille à sous-catégorie unique n'a pas d'écran 2 (cf. écran_2_utile),
+    // le retour doit donc sauter directement à l'écran 1 — sinon il afficherait un écran
+    // d'un seul bouton, et un second clic serait nécessaire pour revenir vraiment.
+    $cible = ecran_2_utile($cat) ? ('newbackcat:' . $cat) : 'newback';
+    $retour = ['type' => 1, 'components' => [
+        ['type' => 2, 'style' => 2, 'label' => 'Retour', 'emoji' => ['name' => '↩️'], 'custom_id' => $cible],
+    ]];
+    $tete = ['type' => 10, 'content' => "### {$s['icon']} {$s['label']}\n{$s['desc']}"];
+
+    $ids = [];
+    foreach (SORTIE_TYPES as $id => $t) { if (sortie_sub($id) === $sub) $ids[] = $id; }
+
+    if (!$ids) {
+        return ['components' => [['type' => 17, 'components' => [
+            ['type' => 10, 'content' => "### {$s['icon']} {$s['label']}\nAucune activité rangée ici."],
+            $retour,
+        ]]]];
+    }
+
+    if (count($ids) <= 8) {
+        $blocs = [];
+        foreach ($ids as $id) {
+            $t = SORTIE_TYPES[$id];
+            $ligne = $t['icon'] . ' **' . $t['label'] . '**';
+            if (trim((string)($t['desc'] ?? '')) !== '') $ligne .= "\n" . $t['desc'];
+            $blocs[] = [
+                'type'       => 9,                                              // SECTION
+                'components' => [['type' => 10, 'content' => sn_cut($ligne, 400)]],
+                'accessory'  => ['type' => 2, 'style' => 2, 'label' => 'Choisir', 'custom_id' => 'newpick:' . $id],
+            ];
+        }
+        return ['components' => [['type' => 17, 'components' => array_merge(
+            [$tete, ['type' => 14]], $blocs, [$retour]
+        )]]];
+    }
+
+    $opts = [];
+    foreach ($ids as $id) {
+        $t = SORTIE_TYPES[$id];
+        $o = ['label' => sn_cut($t['label'], 100), 'value' => $id, 'emoji' => ['name' => $t['icon']]];
+        if (trim((string)($t['desc'] ?? '')) !== '') $o['description'] = sn_cut($t['desc'], 100);
+        $opts[] = $o;
+        // Au-delà de 25, Discord rejette le menu entier : mieux vaut une liste tronquée
+        // qu'un écran cassé. Si ça arrive, c'est le signal qu'il faut scinder la sous-catégorie.
+        if (count($opts) >= 25) break;
+    }
+    return ['components' => [['type' => 17, 'components' => [
+        $tete,
+        ['type' => 14],
+        ['type' => 1, 'components' => [[
+            'type' => 3, 'custom_id' => 'newtype', 'placeholder' => 'Activité…', 'options' => $opts,
+        ]]],
+        $retour,
+    ]]]];
+}
+
+// Réponse à `/sortie creer` : sélecteur éphémère.
+function respond_type_picker() {
+    $data = build_cat_picker('e');
+    $data['flags'] = 32768 | 64;    // Components V2 + éphémère
+    echo json_encode(['type' => 4, 'data' => $data], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// Clic sur une famille (écran 1 → écran 2). $args = "<cat>:<origine>".
+function handle_new_cat($body, $args) {
+    $parts  = explode(':', $args);
+    $cat    = $parts[0] ?? '';
+    $origin = $parts[1] ?? 'e';
+    if (!array_key_exists($cat, SORTIE_CATEGORIES)) respond_message("Famille inconnue.", true);
+
+    // Famille à sous-catégorie unique : on saute l'écran 2 et on affiche ses activités.
+    // Le test porte sur « exactement 1 » et non sur ecran_2_utile() : une famille VIDE
+    // (0 sous-catégorie) doit aller vers build_sub_picker, qui sait afficher le message
+    // d'absence — array_keys([])[0] lèverait une erreur.
+    $subs = subs_of_cat($cat);
+    $data = (count($subs) === 1) ? build_activity_picker(array_keys($subs)[0]) : build_sub_picker($cat);
+    if ($origin === 'p') {
+        // Depuis le PANNEAU public : répondre en type 7 modifierait le message commun
+        // pour tout le serveur. On ouvre donc un éphémère personnel (type 4).
+        $data['flags'] = 32768 | 64;
+        echo json_encode(['type' => 4, 'data' => $data], JSON_UNESCAPED_UNICODE);
+    } else {
+        // Depuis un éphémère : on remplace l'écran précédent en place, pas d'empilement.
+        // Pas de flag 64 ici — l'état éphémère est hérité et ne peut pas être changé.
+        $data['flags'] = 32768;
+        echo json_encode(['type' => 7, 'data' => $data], JSON_UNESCAPED_UNICODE);
+    }
+    exit;
+}
+
+// Clic sur une sous-catégorie (écran 2 → écran 3). Toujours dans un éphémère ici :
+// l'écran 2 n'existe jamais en public, seul l'écran 1 est épinglable.
+function handle_new_sub($sub) {
+    if (!array_key_exists($sub, SORTIE_SOUS_CATEGORIES)) respond_message("Sous-catégorie inconnue.", true);
+    $data = build_activity_picker($sub);
+    $data['flags'] = 32768;
+    echo json_encode(['type' => 7, 'data' => $data], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// Bouton « Retour » de l'écran 3 → écran 2 de la famille d'où l'on vient.
+function handle_new_back_cat($cat) {
+    if (!array_key_exists($cat, SORTIE_CATEGORIES)) respond_message("Famille inconnue.", true);
+    $data = build_sub_picker($cat);
+    $data['flags'] = 32768;
+    echo json_encode(['type' => 7, 'data' => $data], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// Bouton « Choisir » d'une activité (affichage à plat) → ouverture du formulaire.
+function handle_new_pick(string $stype) {
+    if (!array_key_exists($stype, SORTIE_TYPES)) respond_message("Type d'activité inconnu.", true);
+    respond_modal($stype);
+}
+
+// Choix du type dans le menu déroulant (repli au-delà de 8 activités) → formulaire.
+function handle_new_type($body) {
+    $stype = (string)($body['data']['values'][0] ?? '');
+    if (!array_key_exists($stype, SORTIE_TYPES)) respond_message("Type d'activité inconnu.", true);
+    respond_modal($stype);
+}
+
+// Bouton « Retour » → on revient aux catégories (on est toujours dans un éphémère ici).
+function handle_new_back() {
+    $data = build_cat_picker('e');
+    $data['flags'] = 32768;
+    echo json_encode(['type' => 7, 'data' => $data], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// `/sortie panneau` — poste le sélecteur en message PUBLIC permanent, à épingler
+// dans le canal des sorties : plus besoin de taper la commande pour créer.
+// Réservé au staff, puisque ça laisse un message durable dans le canal.
+function handle_panneau($body) {
+    if (!member_is_staff($body)) respond_message("✋ Réservé aux modérateurs et aux admins.", true);
+    $data = build_cat_picker('p');
+    $data['flags'] = 32768;    // Components V2, message public
+    echo json_encode(['type' => 4, 'data' => $data], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
@@ -294,6 +912,15 @@ function fmt_date_fr($isoDate) {
 function fmt_when($sortie) {
     $heure = $sortie['heure'] ?? '';
     return trim(fmt_date_fr($sortie['date'] ?? '') . ' ' . $heure);
+}
+
+// Jour + heure soumis → [Y-m-d, H:i]. Les deux viennent de listes, il n'y a donc
+// plus rien à interpréter. Repli sur l'ancien champ libre « quand » (et son analyse
+// tolérante) pour un modal ouvert avant le déploiement du nouveau formulaire.
+function modal_when(array $v): array {
+    $date  = trim((string)($v['jour'] ?? ''));
+    if ($date === '' && isset($v['quand'])) return parse_when($v['quand']);
+    return [$date, parse_heure($v['heure'] ?? '')];
 }
 
 // Formate la durée pour l'affichage : "2" → "2h" ; "1h30"/"2h" → tels quels ; vide → "".
@@ -311,9 +938,11 @@ function handle_create($body, $stype = 'epice') {
     $titre = trim($v['titre'] ?? '');
     if ($titre === '') respond_message("Le titre est obligatoire.", true);
 
-    [$date, $heure] = parse_when($v['quand'] ?? '');
-    // L'heure (pas seulement la date) est obligatoire : sans elle, la purge auto
-    // (discord_sortie_cleanup.php) ne peut jamais calculer de fin et ignore la sortie pour toujours.
+    [$date, $heure] = modal_when($v);
+    // Filet devenu théorique depuis que le jour et l'heure sont des listes obligatoires,
+    // mais conservé : il couvre le modal ouvert AVANT le déploiement et soumis après.
+    // Sans heure exploitable, la purge auto (discord_sortie_cleanup.php) ne peut jamais
+    // calculer de fin et ignore la sortie pour toujours.
     // Discord INTERDIT de répondre à un MODAL_SUBMIT par un nouveau modal (rejeté silencieusement,
     // Discord affiche alors son propre bandeau générique) : on répond par un message avec
     // récapitulatif, pour permettre un copier-coller rapide dans un nouveau /sortie creer.
@@ -354,21 +983,111 @@ function handle_create($body, $stype = 'epice') {
         if (!write_dstore($ds)) respond_message("Fichier de sorties occupé (accès concurrent). Réessaie dans quelques secondes.", true);
     }
 
-    echo json_encode(['type' => 4, 'data' => build_sortie_message($sortie)]);
+    global $CFG;
+    // Le formulaire a-t-il été ouvert depuis le SÉLECTEUR (un composant) ? Dans ce cas
+    // l'interaction porte le message éphémère qui l'a déclenché, et on peut le remplacer
+    // par un accusé de réception — sinon l'écran de choix d'activité reste affiché
+    // derrière la sortie fraîchement créée, ce qui donne l'impression que rien n'a été
+    // validé. L'encart public est alors posté par le bot via l'API REST.
+    // Repli sur l'ancien comportement (réponse type 4) si le formulaire vient d'une
+    // slash command, ou si le bot_token manque : mieux vaut un éphémère résiduel qu'une
+    // sortie enregistrée dont l'encart n'est jamais posté.
+    $chan     = $body['channel_id'] ?? ($body['channel']['id'] ?? '');
+    $depuisUI = isset($body['message']) && $chan !== '' && !empty($CFG['bot_token']);
 
-    // On répond à Discord tout de suite (rafraîchit sous la limite de 3 s), puis on va
-    // rechercher l'id du message qu'il vient de créer — Discord ne le renvoie PAS dans la
-    // réponse d'interaction elle-même (type 4), il faut le redemander via l'API webhook.
-    // Sans ce message_id, discord_sortie_cleanup.php (purge auto 4 h après la fin) ne sait
-    // jamais QUOI supprimer et ignore silencieusement la sortie pour toujours.
+    if (!$depuisUI) {
+        echo json_encode(['type' => 4, 'data' => build_sortie_message($sortie)]);
+        // On répond à Discord tout de suite (rafraîchit sous la limite de 3 s), puis on va
+        // rechercher l'id du message qu'il vient de créer — Discord ne le renvoie PAS dans la
+        // réponse d'interaction elle-même (type 4), il faut le redemander via l'API webhook.
+        // Sans ce message_id, discord_sortie_cleanup.php (purge auto 4 h après la fin) ne sait
+        // jamais QUOI supprimer et ignore silencieusement la sortie pour toujours.
+        if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
+        $mid = fetch_original_message_id($body);
+        if ($mid !== '') {
+            mutate_sortie($sortie['id'], function (&$s) use ($mid) { $s['discord']['message_id'] = $mid; });
+        } else {
+            dlog('handle_create: message_id introuvable pour sortie ' . $sortie['id'] . ' — purge auto impossible pour ce post');
+        }
+        exit;
+    }
+
+    // Type 7 = on ÉDITE l'éphémère du sélecteur. Le flag Components V2 doit être répété :
+    // le message a été créé avec, et `content` y resterait ignoré.
+    $t = sortie_type($stype);
+    echo json_encode(['type' => 7, 'data' => [
+        'flags'      => 32768,
+        'components' => [['type' => 17, 'components' => [
+            ['type' => 10, 'content' => "### ✅ Activité créée\n{$t['icon']} **" . $titre . "**\nL'encart est posté dans le canal, les inscriptions sont ouvertes."],
+        ]]],
+    ]], JSON_UNESCAPED_UNICODE);
+
+    // Puis le bot poste lui-même l'encart. Avantage secondaire : l'API REST renvoie
+    // directement l'id du message, là où une réponse d'interaction obligeait à le
+    // redemander ensuite (cf. fetch_original_message_id).
     if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
-    $mid = fetch_original_message_id($body);
+    $mid = discord_post_message_api($chan, build_sortie_message($sortie));
     if ($mid !== '') {
         mutate_sortie($sortie['id'], function (&$s) use ($mid) { $s['discord']['message_id'] = $mid; });
+        // Encart posté : l'accusé de réception n'a plus de raison d'être, on efface
+        // l'éphémère pour ne rien laisser traîner dans le fil.
+        // ⚠ L'ORDRE compte : on répond d'abord par un type 7 (l'accusé), puis on supprime.
+        // Si la suppression échoue, l'utilisateur voit « ✅ Activité créée » — un état
+        // correct. Un type 6 (accusé muet) suivi d'un échec de suppression laisserait
+        // à l'écran l'ancien sélecteur d'activité, comme si rien ne s'était passé.
+        delete_interaction_original($body);
     } else {
-        dlog('handle_create: message_id introuvable pour sortie ' . $sortie['id'] . ' — purge auto impossible pour ce post');
+        dlog('handle_create: encart non posté pour sortie ' . $sortie['id'] . ' (canal ' . $chan . ') — la sortie existe côté données mais pas dans le canal');
     }
     exit;
+}
+
+// Supprime la réponse d'interaction en cours (ici : l'éphémère du sélecteur, édité
+// juste avant en type 7). Authentifié par le TOKEN D'INTERACTION, pas par le bot token
+// — un message éphémère n'est pas supprimable via l'API de canal.
+function delete_interaction_original($body): bool {
+    global $CFG;
+    $token = $body['token'] ?? '';
+    if ($token === '' || empty($CFG['app_id']) || !function_exists('curl_init')) return false;
+    $ch = curl_init("https://discord.com/api/v10/webhooks/{$CFG['app_id']}/{$token}/messages/@original");
+    curl_setopt_array($ch, [
+        CURLOPT_CUSTOMREQUEST  => 'DELETE',
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CONNECTTIMEOUT => 2,
+        CURLOPT_TIMEOUT        => 4,
+    ]);
+    $resp = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    if ($code < 200 || $code >= 300) {
+        dlog("delete_interaction_original échec HTTP {$code} : " . substr((string)$resp, 0, 200));
+        return false;
+    }
+    return true;
+}
+
+// Poste un message dans un canal via l'API bot. Retourne l'id du message créé, ou ''.
+function discord_post_message_api($channelId, array $data): string {
+    global $CFG;
+    if (!$channelId || empty($CFG['bot_token']) || !function_exists('curl_init')) return '';
+    $ch = curl_init("https://discord.com/api/v10/channels/{$channelId}/messages");
+    curl_setopt_array($ch, [
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => json_encode($data, JSON_UNESCAPED_UNICODE),
+        CURLOPT_HTTPHEADER     => ['Authorization: Bot ' . $CFG['bot_token'], 'Content-Type: application/json'],
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CONNECTTIMEOUT => 3,
+        CURLOPT_TIMEOUT        => 8,
+    ]);
+    $resp = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    if ($resp === false || $code < 200 || $code >= 300) {
+        dlog("discord_post_message_api échec canal={$channelId} HTTP {$code} : " . substr((string)$resp, 0, 300));
+        return '';
+    }
+    $j = json_decode($resp, true);
+    return (string)($j['id'] ?? '');
 }
 
 // Récupère l'id du message que Discord vient de créer à partir d'une réponse d'interaction
@@ -531,8 +1250,8 @@ function handle_edit_open($body, $sid) {
     if (!can_manage($body, $sortie))   respond_message("✋ Réservé à l'organisateur, aux modérateurs et aux admins.", true);
     $vals = [
         'titre'  => $sortie['titre'] ?? '',
-        'quand'  => fmt_when($sortie),
-        'zone'   => $sortie['zone'] ?? '',
+        'jour'   => $sortie['date'] ?? '',
+        'heure'  => $sortie['heure'] ?? '',
         'duree'  => $sortie['duree'] ?? '',
         'desc'   => $sortie['description'] ?? '',
     ];
@@ -555,16 +1274,22 @@ function handle_edit_save($body, $sid) {
     $v = modal_values($body);
     $titre = trim($v['titre'] ?? '');
     if ($titre === '') respond_message("Le titre est obligatoire.", true);
-    [$date, $heure] = parse_when($v['quand'] ?? '');
+    [$date, $heure] = modal_when($v);
     if ($heure === '') respond_missing_heure($v);
 
     $updated = mutate_sortie($sid, function (&$s) use ($titre, $date, $heure, $v) {
         $s['titre']       = $titre;
         $s['date']        = $date;
         $s['heure']       = $heure;
-        $s['zone']        = trim($v['zone'] ?? '');
-        $s['duree']       = trim($v['duree'] ?? '');
         $s['description'] = trim($v['desc'] ?? '');
+        // ⚠ Écriture CONDITIONNELLE, contrairement aux champs ci-dessus. La ZONE ne
+        // figure plus au formulaire : une affectation inconditionnelle effacerait la
+        // zone de toutes les sorties existantes à la première modification.
+        // Même raisonnement pour la DURÉE : une valeur héritée hors options
+        // (ex. « 5h ») ne coche aucun radio et revient vide — ce n'est pas un
+        // effacement demandé, seulement une absence de réponse.
+        if (isset($v['zone']))                        $s['zone']  = trim($v['zone']);
+        if (isset($v['duree']) && $v['duree'] !== '') $s['duree'] = trim($v['duree']);
     });
     if (!$updated) respond_message("Cette activité n'existe plus.", true);
 
@@ -573,7 +1298,7 @@ function handle_edit_save($body, $sid) {
     if (($d['soiree_active']['id'] ?? null) === $sid) {
         $d['soiree_active']['titre'] = $titre;
         $d['soiree_active']['date']  = $date;
-        $d['soiree_active']['zone']  = trim($v['zone'] ?? '');
+        if (isset($v['zone'])) $d['soiree_active']['zone'] = trim($v['zone']);  // cf. garde ci-dessus
         write_data($d);
     }
 
@@ -832,18 +1557,47 @@ function build_sortie_message($sortie) {
     ];
 
     $embed = [
+        // Le NOM DE L'ACTIVITÉ en tête d'encart. Il ne vivait que dans le pied de page,
+        // en petit et noyé entre l'organisateur et l'appel à s'inscrire : on lisait le
+        // titre libre de la sortie (« test ») sans savoir de quelle activité il s'agissait.
+        // L'author line est le seul emplacement au-dessus du titre.
+        'author'      => ['name' => sn_cut($t['icon'] . ' ' . $t['label'], 256)],
         'title'       => $t['icon'] . ' ' . ($sortie['titre'] ?? 'Sortie'),
         'description' => $desc,
         'color'       => hexdec('D4A23B'), // doré Dune
         'fields'      => $fields,
-        'footer'      => ['text' => $t['label'] . ' · organisé par ' . ($sortie['createur'] ?? '?') . ' · inscris-toi ci-dessous'
+        // Le libellé du type n'y est plus répété — il est désormais en tête.
+        'footer'      => ['text' => 'organisé par ' . ($sortie['createur'] ?? '?') . ' · inscris-toi ci-dessous'
             . ($usePostes ? ' · 🎖️ = candidat Chef de section' : '')],
     ];
 
-    // Bannière par type (config 'banners'[type]) avec repli sur 'banner_url'.
+    // Bannière, dans l'ordre : celle du type → celle d'« Activité Guilde » (le
+    // fourre-tout, choisi comme illustration générique) → 'banner_url' → le fichier
+    // par défaut connu du code. Une activité a donc TOUJOURS une illustration, même
+    // avec une config vierge — la seule façon de n'en avoir aucune est que le fichier
+    // par défaut soit absent du serveur.
+    //
+    // ⚠ On teste la valeur VIDE, pas seulement la clé absente. Avec `??`, une entrée
+    // présente mais vide (`'epice' => ''`, ce que produit le gabarit de config) bloquait
+    // le repli : ces types n'affichaient aucune bannière alors qu'un défaut était
+    // configuré, tandis que les types sans entrée du tout l'obtenaient. Vide = « pas
+    // renseigné », donc traité comme absent.
     global $CFG;
-    $banner = $CFG['banners'][$stype] ?? ($CFG['banner_url'] ?? '');
-    if (!empty($banner)) $embed['image'] = ['url' => $banner];
+    $banner = '';
+    foreach ([$stype, BANNIERE_DEFAUT_TYPE] as $cle) {
+        $banner = trim((string)($CFG['banners'][$cle] ?? ''));
+        if ($banner !== '') break;
+    }
+    if ($banner === '') $banner = trim((string)($CFG['banner_url'] ?? ''));
+    if ($banner === '') {
+        // `site_url` distingue prod (racine) et test (/v2) ; vide = prod, ce qui rend
+        // l'image visible depuis /v2 aussi. Renseigner site_url sur '.../v2' fait
+        // chercher le fichier dans /v2/epice/img/ — il doit alors y être déposé.
+        $base = trim((string)($CFG['site_url'] ?? ''));
+        if ($base === '') $base = 'https://havresgris.ddns.net';
+        $banner = rtrim($base, '/') . BANNIERE_DEFAUT_FICHIER;
+    }
+    if ($banner !== '') $embed['image'] = ['url' => $banner];
 
     $sid = $sortie['id'];
     if ($usePostes) {
@@ -905,15 +1659,14 @@ function respond_message($text, $ephemeral = false) {
 function respond_missing_heure($v) {
     $val = fn($k) => trim((string)($v[$k] ?? '')) !== '' ? trim((string)$v[$k]) : '—';
     $data = ['flags' => 64, 'embeds' => [[
-        'title'       => '⚠ Heure de début manquante',
-        'description' => "Le champ **Date & heure** doit contenir une heure, pas seulement une date.\nFormat attendu : `25-06-2026 21:00`\n\nRelance `/sortie creer` — voici ce que tu avais saisi, pour copier-coller :",
+        'title'       => '⚠ Heure de début illisible',
+        'description' => "Le champ **Heure de début** n'a pas pu être interprété.\nFormats acceptés : `21:00` · `21h30` · `07:05` · `2130`\n\nRelance `/sortie creer` — voici ce que tu avais saisi, pour copier-coller :",
         'color'       => hexdec('E74C3C'),
         'fields'      => [
             ['name' => 'Titre',       'value' => $val('titre'), 'inline' => true],
-            ['name' => 'Date tapée',  'value' => $val('quand'), 'inline' => true],
-            ['name' => 'Zone',        'value' => $val('zone'),  'inline' => true],
-            ['name' => 'Durée',       'value' => $val('duree'), 'inline' => true],
-            ['name' => 'Description', 'value' => $val('desc'),  'inline' => false],
+            ['name' => 'Jour',        'value' => $val('jour'),  'inline' => true],
+            ['name' => 'Heure tapée', 'value' => $val('heure'), 'inline' => true],
+            ['name' => 'Consignes',   'value' => $val('desc'),  'inline' => false],
         ],
     ]]];
     echo json_encode(['type' => 4, 'data' => $data]);
@@ -927,13 +1680,30 @@ function respond_update($text) {
 }
 
 // Extrait les champs d'un modal soumis en tableau id => valeur.
+//
+// ⚠ Deux structures cohabitent, d'où le parcours récursif :
+//   - LABEL (type 18)      → le champ réel est dans `component`, AU SINGULIER ;
+//   - ACTION_ROW (type 1)  → ancienne structure, dans `components`. Toujours
+//     nécessaire : un modal ouvert avant le déploiement et soumis après arrive
+//     encore sous cette forme.
+// Et deux façons de porter la valeur : une liste ou un radio renvoient `values`
+// (TABLEAU), un champ texte renvoie `value`. Lire seulement `value` renverrait
+// des jour/heure/durée vides, donc une sortie créée sans date.
 function modal_values($body) {
-    $out = [];
-    foreach ($body['data']['components'] ?? [] as $row) {
-        foreach ($row['components'] ?? [] as $c) {
-            if (isset($c['custom_id'])) $out[$c['custom_id']] = $c['value'] ?? '';
+    $out  = [];
+    $walk = function ($c) use (&$out, &$walk) {
+        if (!is_array($c)) return;
+        if (isset($c['component'])) { $walk($c['component']); return; }
+        if (isset($c['components']) && is_array($c['components'])) {
+            foreach ($c['components'] as $x) $walk($x);
+            return;
         }
-    }
+        $id = (string)($c['custom_id'] ?? '');
+        if ($id === '') return;
+        if (isset($c['values']))     $out[$id] = (string)($c['values'][0] ?? '');
+        elseif (isset($c['value']))  $out[$id] = (string)$c['value'];
+    };
+    foreach ($body['data']['components'] ?? [] as $c) $walk($c);
     return $out;
 }
 

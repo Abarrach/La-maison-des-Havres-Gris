@@ -121,6 +121,11 @@ function detect_route(array $body): ?string {
             'signup:', 'present:', 'maybe:', 'absent:', 'unsignup:',
             'chef:', 'edit:', 'delok:', 'del:',
             'sortie_edit_modal:', 'sortie_create_modal',
+            // Sélecteur de création par catégories (boutons + menu déroulant).
+            // ⚠ Le panneau `/sortie panneau` est un message PERMANENT : ces préfixes
+            // doivent rester routés indéfiniment, sinon les boutons déjà épinglés
+            // cessent de répondre du jour où on les retirerait d'ici.
+            'newcat:', 'newsub:', 'newpick:', 'newtype', 'newback',
         ];
         foreach ($sortiePrefixes as $p) {
             if (strpos($cid, $p) === 0) return 'sortie';

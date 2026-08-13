@@ -478,9 +478,9 @@ Outil de **préparation, débrief et analyse** des sorties de récolte d'épice 
 
 #### Bot Sorties Discord (`epice/discord_sortie.php`)
 
-> **État au 2026-08-12** — le **catalogue à trois niveaux** (34 activités) et le **formulaire refondu** sont **testés fonctionnels sur `/v2`** via l'app « DuneMap Dev », **pas encore en production**.
+> **État au 2026-08-13 — ✅ EN PRODUCTION.** Le **catalogue à trois niveaux** (34 activités) et le **formulaire refondu** ont été testés sur `/v2` via l'app « DuneMap Dev », puis déployés à la racine.
 >
-> **Déploiement prod** : téléverser `epice/discord_sortie.php`, `discord_interactions.php`, `account.html`, `epice/discord_register.php` — les deux premiers **ensemble** (le dispatcher route les préfixes `newsub:`/`newpick:` que le handler produit) — puis ouvrir `https://.../epice/discord_register.php` **dans cet ordre** : l'inverse afficherait `/sortie panneau` aux joueurs pendant que l'ancien code répond « Commande inconnue ». Ne **jamais** téléverser `epice/discord_sortie_config.php` (gitignoré, `bot_token` de prod).
+> **Procédure de déploiement** (pour les prochaines évolutions) : téléverser `epice/discord_sortie.php`, `discord_interactions.php`, `account.html`, `epice/discord_register.php` — les deux premiers **ensemble** (le dispatcher route les préfixes `newsub:`/`newpick:` que le handler produit) — puis ouvrir `https://.../epice/discord_register.php` **dans cet ordre** : l'inverse afficherait `/sortie panneau` aux joueurs pendant que l'ancien code répond « Commande inconnue ». Ne **jamais** téléverser `epice/discord_sortie_config.php` (gitignoré, `bot_token` de prod).
 >
 > **Deux préalables nouveaux** : `epice/data/` doit être inscriptible par `www-data` (sinon aucun log, le bot devient muet en cas d'erreur), et le bot doit avoir **« Envoyer des messages »** dans le canal des sorties — il poste désormais l'encart lui-même au lieu de répondre à l'interaction.
 >

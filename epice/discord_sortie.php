@@ -246,7 +246,7 @@ const SORTIE_TYPES = [
 
     // --- Farm › Ressources
     'farm'       => ['label' => 'Farm divers', 'icon' => '🔁', 'site' => false, 'postes' => false,
-                     'sub' => 'f_ressource', 'desc' => 'Matériaux, épaves, tout le reste'],
+                     'sub' => 'f_ressource', 'desc' => 'Matériaux, composants, plans violets'],
     'farm_hagga' => ['label' => 'Farm Hagga', 'icon' => '🏘️', 'site' => false, 'postes' => false,
                      'sub' => 'f_ressource', 'desc' => 'Sentinelleville, Mysa Tarril, O\'odham'],
     'farm_scorie'=> ['label' => 'Farm scories', 'icon' => '🪨', 'site' => false, 'postes' => false,

@@ -5237,16 +5237,16 @@ function renderClaimViz() {
 
       if (isMain) {
         cell.textContent = '⚑';
-        cell.title = 'Bloc principal (fixe)';
+        cell.dataset.tip = 'Bloc principal (fixe)';
       } else if (isBlock) {
         cell.textContent = '×';
-        cell.title = `Bloc (${gx},${gy}) — cliquer pour retirer`;
+        cell.dataset.tip = `Bloc (${gx},${gy}) — cliquer pour retirer`;
         cell.style.cursor = 'pointer';
         const _gx = gx, _gy = gy;
         cell.addEventListener('click', () => removeClaimBlock(_gx, _gy));
       } else if (isAvail) {
         cell.textContent = '+';
-        cell.title = 'Cliquer pour ajouter ce bloc';
+        cell.dataset.tip = 'Cliquer pour ajouter ce bloc';
         cell.style.cursor = 'pointer';
         const _gx = gx, _gy = gy;
         cell.addEventListener('click', () => addClaimBlock(_gx, _gy));
@@ -5270,7 +5270,7 @@ function updateFloorTabs() {
     if (z === 0) {
       const sep = document.createElement('div');
       sep.className = 'bp-floor-ground-sep';
-      sep.title = 'Niveau du sol';
+      sep.dataset.tip = 'Niveau du sol';
       scroll.appendChild(sep);
     }
     const name = z < 0 ? 'S' + Math.abs(z) : z === 0 ? 'RDC' : 'N' + z;

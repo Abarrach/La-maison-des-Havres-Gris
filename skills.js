@@ -303,7 +303,7 @@ function injectToolbar() {
 
     const btnF = document.createElement("button");
     btnF.id = "btn-landsraad-filter"; btnF.className = "switch-btn";
-    btnF.innerHTML = "🏛 Vue Landsraad"; btnF.title = "Filtrer sur les talents Landsraad";
+    btnF.innerHTML = "🏛 Vue Landsraad"; btnF.dataset.tip = "Filtrer sur les talents Landsraad";
     btnF.onclick = toggleLandsraadFilter;
     t.appendChild(btnF); t.appendChild(makeSep());
 
@@ -315,7 +315,7 @@ function injectToolbar() {
     PRESETS.forEach(p => {
         const b = document.createElement("button");
         b.className = "switch-btn preset-btn";
-        b.innerHTML = `${p.icon} ${p.label}`; b.title = p.desc;
+        b.innerHTML = `${p.icon} ${p.label}`; b.dataset.tip = p.desc;
         b.onclick = () => loadPreset(p);
         t.appendChild(b);
     });
@@ -323,7 +323,7 @@ function injectToolbar() {
     t.appendChild(makeSep());
     const btnS = document.createElement("button");
     btnS.id = "btn-share"; btnS.className = "switch-btn";
-    btnS.innerHTML = "🔗 Copier le lien"; btnS.title = "Partager ce build via URL";
+    btnS.innerHTML = "🔗 Copier le lien"; btnS.dataset.tip = "Partager ce build via URL";
     btnS.onclick = copyShareLink;
     t.appendChild(btnS);
 

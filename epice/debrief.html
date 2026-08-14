@@ -501,6 +501,7 @@
 </head>
 <body>
 <script src="../auth-guard.js"></script>
+<script src="../dune-tip.js" defer></script>
 <script src="../page-guard.js" data-page="debrief" data-root="../"></script>
 
 <nav class="nav">
@@ -687,27 +688,27 @@
          API obsolète mais toujours supportée par tous les navigateurs cibles, largement suffisante
          pour du gras / titre / liste dans un contenteditable de fortune. -->
     <div id="sop-format-bar" class="sop-format-bar" role="toolbar" aria-label="Mise en forme">
-      <button type="button" onmousedown="event.preventDefault()" onclick="sopFmt('bold')" title="Gras (Ctrl+B)"><strong>G</strong></button>
-      <button type="button" onmousedown="event.preventDefault()" onclick="sopFmt('italic')" title="Italique (Ctrl+I)"><em>I</em></button>
+      <button type="button" onmousedown="event.preventDefault()" onclick="sopFmt('bold')" data-tip="Gras (Ctrl+B)"><strong>G</strong></button>
+      <button type="button" onmousedown="event.preventDefault()" onclick="sopFmt('italic')" data-tip="Italique (Ctrl+I)"><em>I</em></button>
       <div class="sop-fmt-sep"></div>
-      <button type="button" onmousedown="event.preventDefault()" onclick="sopFmtBlock('h2')" title="Titre de section">Titre</button>
-      <button type="button" onmousedown="event.preventDefault()" onclick="sopFmtBlock('h3')" title="Sous-titre">Sous-titre</button>
-      <button type="button" onmousedown="event.preventDefault()" onclick="sopFmtBlock('p')" title="Paragraphe normal">¶ Texte</button>
+      <button type="button" onmousedown="event.preventDefault()" onclick="sopFmtBlock('h2')" data-tip="Titre de section">Titre</button>
+      <button type="button" onmousedown="event.preventDefault()" onclick="sopFmtBlock('h3')" data-tip="Sous-titre">Sous-titre</button>
+      <button type="button" onmousedown="event.preventDefault()" onclick="sopFmtBlock('p')" data-tip="Paragraphe normal">¶ Texte</button>
       <div class="sop-fmt-sep"></div>
-      <button type="button" onmousedown="event.preventDefault()" onclick="sopFmt('insertUnorderedList')" title="Liste à puces">• Liste</button>
+      <button type="button" onmousedown="event.preventDefault()" onclick="sopFmt('insertUnorderedList')" data-tip="Liste à puces">• Liste</button>
       <div class="sop-fmt-sep"></div>
       <!-- Couleurs de mise en évidence : palette du thème Dune (accent doré, rouge d'alerte,
            vert « protecteurs du convoi », beige texte). execCommand('foreColor') pose un
            <font color> sur la sélection — supporté partout. « Défaut » = removeFormat pour
            enlever tout style de couleur/gras. -->
-      <button type="button" onmousedown="event.preventDefault()" onclick="sopColor('#C89210')" title="Doré (accent)" style="color:#C89210;font-weight:700">A</button>
-      <button type="button" onmousedown="event.preventDefault()" onclick="sopColor('#E8DEC8')" title="Blanc / texte" style="color:#E8DEC8;font-weight:700">A</button>
-      <button type="button" onmousedown="event.preventDefault()" onclick="sopColor('#B85428')" title="Rouge / alerte" style="color:#B85428;font-weight:700">A</button>
-      <button type="button" onmousedown="event.preventDefault()" onclick="sopColor('#4A9A5A')" title="Vert / protecteurs" style="color:#4A9A5A;font-weight:700">A</button>
-      <button type="button" onmousedown="event.preventDefault()" onclick="sopColor('#E0A828')" title="Jaune vif" style="color:#E0A828;font-weight:700">A</button>
-      <button type="button" onmousedown="event.preventDefault()" onclick="sopColor('#7A5A0A')" title="Marron doré (bordures)" style="color:#7A5A0A;font-weight:700">A</button>
+      <button type="button" onmousedown="event.preventDefault()" onclick="sopColor('#C89210')" data-tip="Doré (accent)" style="color:#C89210;font-weight:700">A</button>
+      <button type="button" onmousedown="event.preventDefault()" onclick="sopColor('#E8DEC8')" data-tip="Blanc / texte" style="color:#E8DEC8;font-weight:700">A</button>
+      <button type="button" onmousedown="event.preventDefault()" onclick="sopColor('#B85428')" data-tip="Rouge / alerte" style="color:#B85428;font-weight:700">A</button>
+      <button type="button" onmousedown="event.preventDefault()" onclick="sopColor('#4A9A5A')" data-tip="Vert / protecteurs" style="color:#4A9A5A;font-weight:700">A</button>
+      <button type="button" onmousedown="event.preventDefault()" onclick="sopColor('#E0A828')" data-tip="Jaune vif" style="color:#E0A828;font-weight:700">A</button>
+      <button type="button" onmousedown="event.preventDefault()" onclick="sopColor('#7A5A0A')" data-tip="Marron doré (bordures)" style="color:#7A5A0A;font-weight:700">A</button>
       <div class="sop-fmt-sep"></div>
-      <button type="button" onmousedown="event.preventDefault()" onclick="sopFmt('removeFormat')" title="Nettoyer le formatage (couleur, gras, italique)">✕ Format</button>
+      <button type="button" onmousedown="event.preventDefault()" onclick="sopFmt('removeFormat')" data-tip="Nettoyer le formatage (couleur, gras, italique)">✕ Format</button>
       <span class="sop-fmt-hint">Sélectionne d'abord le texte, puis clique.</span>
     </div>
 
@@ -2093,8 +2094,8 @@ function renderAssignBuilder() {
       h += `<div class="assign-def">
         <span class="assign-slot-label">${lbl}</span>
         <input class="pil-nom roster-input" value="${escAttr(dd.nom)}" oninput="currentCompo.defense[${si}].${k}.nom=this.value">
-        <button class="btn-cac ${dd.cac ? 'on' : ''}" onclick="toggleDefCac(${si},'${k}')" title="Pilote Ornithoptère + CaC (comme en patrouille)">⚔ CaC</button>
-        ${FAUCON_MODE_ENABLED ? `<button class="btn-faucon ${dd.faucon ? 'on' : ''}" onclick="toggleDefFaucon(${si},'${k}')" title="Désigner conducteur Faucon">✈ Faucon</button>
+        <button class="btn-cac ${dd.cac ? 'on' : ''}" onclick="toggleDefCac(${si},'${k}')" data-tip="Pilote Ornithoptère + CaC (comme en patrouille)">⚔ CaC</button>
+        ${FAUCON_MODE_ENABLED ? `<button class="btn-faucon ${dd.faucon ? 'on' : ''}" onclick="toggleDefFaucon(${si},'${k}')" data-tip="Désigner conducteur Faucon">✈ Faucon</button>
         ${dd.faucon ? `<input class="pil-pass roster-input" placeholder="Passager (sur l'aile, non groupé)" value="${escAttr(dd.passager)}" oninput="currentCompo.defense[${si}].${k}.passager=this.value">` : ''}` : ''}
       </div>`;
     });
@@ -2107,7 +2108,7 @@ function renderAssignBuilder() {
       h += `<div class="assign-def">
         <span class="assign-slot-label">Assaut ${ai+1}</span>
         <input class="pil-nom roster-input" value="${escAttr(p.nom)}" oninput="currentCompo.defense[${si}].assauts[${ai}].nom=this.value">
-        <button class="btn-mini btn-mini-del" onclick="removeAssaut(${si},${ai})" title="Retirer ce pilote d'assaut">✕</button>
+        <button class="btn-mini btn-mini-del" onclick="removeAssaut(${si},${ai})" data-tip="Retirer ce pilote d'assaut">✕</button>
         <span></span>
       </div>`;
     });
@@ -2116,7 +2117,7 @@ function renderAssignBuilder() {
   });
   if (c.defense.length < 2) {
     const unlocked = c.recolte.length >= 2;
-    h += `<button class="btn-mini btn-mini-add" ${unlocked ? `onclick="addDefenseSquad()"` : 'disabled'} title="${unlocked ? 'Ajoute une 2e escouade de 4 défenseurs' : 'Nécessite 2 groupes Récolte (Transporteur + Moissonneur) présents'}" style="margin-bottom:.85rem">+ Ajouter une escouade Défense Rapprochée</button>`;
+    h += `<button class="btn-mini btn-mini-add" ${unlocked ? `onclick="addDefenseSquad()"` : 'disabled'} data-tip="${unlocked ? 'Ajoute une 2e escouade de 4 défenseurs' : 'Nécessite 2 groupes Récolte (Transporteur + Moissonneur) présents'}" style="margin-bottom:.85rem">+ Ajouter une escouade Défense Rapprochée</button>`;
   }
 
   // Groupe à distance (1–4 pilotes ; toggle Faucon par pilote → champ passager, si FAUCON_MODE_ENABLED ;
@@ -2127,8 +2128,8 @@ function renderAssignBuilder() {
   c.distance.pilotes.forEach((p, i) => {
     h += `<div class="assign-pilote">
       <input class="pil-nom roster-input" placeholder="Pilote ${i+1}" value="${escAttr(p.nom)}" oninput="currentCompo.distance.pilotes[${i}].nom=this.value">
-      <button class="btn-cac ${p.cac ? 'on' : ''}" onclick="togglePiloteCac(${i})" title="Pilote Ornithoptère + CaC">⚔ CaC</button>
-      ${FAUCON_MODE_ENABLED ? `<button class="btn-faucon ${p.faucon ? 'on' : ''}" onclick="toggleFaucon(${i})" title="Désigner conducteur Faucon">✈ Faucon</button>` : ''}
+      <button class="btn-cac ${p.cac ? 'on' : ''}" onclick="togglePiloteCac(${i})" data-tip="Pilote Ornithoptère + CaC">⚔ CaC</button>
+      ${FAUCON_MODE_ENABLED ? `<button class="btn-faucon ${p.faucon ? 'on' : ''}" onclick="toggleFaucon(${i})" data-tip="Désigner conducteur Faucon">✈ Faucon</button>` : ''}
       ${c.distance.pilotes.length > 1 ? `<button class="btn-mini btn-mini-del" onclick="removePilote(${i})">✕</button>` : '<span></span>'}
       ${FAUCON_MODE_ENABLED && p.faucon ? `<input class="pil-pass roster-input" placeholder="Passager (sur l'aile, non groupé)" value="${escAttr(p.passager)}" oninput="currentCompo.distance.pilotes[${i}].passager=this.value">` : ''}
     </div>`;
@@ -2618,7 +2619,7 @@ async function loadHistory() {
             <span class="histo-badge histo-badge-nb">${s.nb} retour${s.nb>1?'s':''}</span>
             ${s.a_compo?'<span class="histo-badge histo-badge-nb">compo ✓</span>':''}
             ${s.a_analyse?'<span class="histo-badge histo-badge-note">analyse ✓</span>':''}
-            ${(meInfo.role==='admin' || (s.createur && meInfo.user && String(s.createur).toLowerCase()===String(meInfo.user).toLowerCase())) ? `${s.statut!=='ouverte' ? `<button class="btn-mini btn-mini-reopen" onclick="event.stopPropagation();reopenSortie('${s.id}')" title="Rouvrir cette sortie (la rend active)">↻ Rouvrir</button>` : ''}<button class="btn-mini btn-mini-del" onclick="event.stopPropagation();deleteSortie('${s.id}')" title="Supprimer cette sortie">✕</button>` : ''}
+            ${(meInfo.role==='admin' || (s.createur && meInfo.user && String(s.createur).toLowerCase()===String(meInfo.user).toLowerCase())) ? `${s.statut!=='ouverte' ? `<button class="btn-mini btn-mini-reopen" onclick="event.stopPropagation();reopenSortie('${s.id}')" data-tip="Rouvrir cette sortie (la rend active)">↻ Rouvrir</button>` : ''}<button class="btn-mini btn-mini-del" onclick="event.stopPropagation();deleteSortie('${s.id}')" data-tip="Supprimer cette sortie">✕</button>` : ''}
           </div>
         </div>
       </div>`).join('');

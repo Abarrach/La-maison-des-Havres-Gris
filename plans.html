@@ -100,6 +100,7 @@ tr:hover td { background:rgba(200,146,16,.04); }
 </head>
 <body>
 <script src="auth-guard.js"></script>
+<script src="dune-tip.js" defer></script>
 <script src="plans_companion.js"></script>
 
 <nav class="nav">
@@ -129,7 +130,7 @@ tr:hover td { background:rgba(200,146,16,.04); }
       <span id="partage-zone" style="margin-left:auto; display:flex; align-items:center; gap:.5rem;">
         <span id="partage-etat" style="font-size:.76rem; color:var(--muted);"></span>
         <button class="btn ghost" id="btn-partager">Partager avec la guilde</button>
-        <button class="btn ghost" id="btn-retirer" style="display:none;" title="Supprime tes plans du registre de la guilde. Ton carnet local n'est pas touché.">Me retirer</button>
+        <button class="btn ghost" id="btn-retirer" style="display:none;" data-tip="Supprime tes plans du registre de la guilde. Ton carnet local n'est pas touché.">Me retirer</button>
       </span>
     </div>
     <p class="note" id="maj"></p>
@@ -501,7 +502,7 @@ function rendre() {
         // elle est unique — deux régions pour le même lieu voudrait dire « un peu partout ».
         const lieux = [...new Set(geo.map(x => x.o))];
         const regions = [...new Set(geo.map(x => x.r))];
-        bloc += '<div class="geo" title="' + esc(geo.map(x => x.o + ' — ' + x.r + ' (' + x.n + ' coffre' + (x.n > 1 ? 's' : '') + ')').join('\n')) + '">'
+        bloc += '<div class="geo" data-tip="' + esc(geo.map(x => x.o + ' — ' + x.r + ' (' + x.n + ' coffre' + (x.n > 1 ? 's' : '') + ')').join('\n')) + '">'
               + '★ ' + lieux.slice(0, 3).map(esc).join(' · ')
               + (lieux.length > 3 ? ' <span style="opacity:.6">+' + (lieux.length - 3) + '</span>' : '')
               + (regions.length === 1 ? ' <span style="opacity:.55">(' + esc(regions[0]) + ')</span>' : '')
@@ -510,14 +511,14 @@ function rendre() {
       if (dm) {
         const princ = dm[0];
         const autres = dm.length > 1 ? ' <span style="opacity:.65">+' + (dm.length - 1) + ' autre' + (dm.length > 2 ? 's' : '') + '</span>' : '';
-        bloc += '<div class="dm" title="' + esc(dm.map(x => x.o + ' — ' + x.c + ' %').join('\n')) + '">'
+        bloc += '<div class="dm" data-tip="' + esc(dm.map(x => x.o + ' — ' + x.c + ' %').join('\n')) + '">'
               + '◆ ' + esc(princ.o) + ' <b>' + princ.c + ' %</b>' + autres + '</div>';
       }
       if (src) {
         // Sans probabilité, volontairement : pour ces conteneurs elle dépend du pool éligible
         // au moment du tirage, l'afficher serait un faux chiffre.
         const vus = src.slice(0, 3), reste = src.length - vus.length;
-        bloc += '<div class="src" title="' + esc(src.join('\n')) + '">▸ '
+        bloc += '<div class="src" data-tip="' + esc(src.join('\n')) + '">▸ '
               + vus.map(esc).join(' · ')
               + (reste > 0 ? ' <span style="opacity:.6">+' + reste + '</span>' : '') + '</div>';
       }

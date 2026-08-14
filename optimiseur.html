@@ -257,6 +257,7 @@ input[type=number]{-moz-appearance:textfield;}
 </head>
 <body>
 <script src="auth-guard.js"></script>
+<script src="dune-tip.js" defer></script>
 <script src="page-guard.js" data-page="optimiseur"></script>
 
 <header>
@@ -272,7 +273,7 @@ input[type=number]{-moz-appearance:textfield;}
 
 <div class="wrap">
   <div class="toolbar">
-    <div class="seg mode-seg" title="Simple = l'essentiel (équiper, DPS, armure, PV). Expert = tous les réglages fins et détails de calcul.">
+    <div class="seg mode-seg" data-tip="Simple = l'essentiel (équiper, DPS, armure, PV). Expert = tous les réglages fins et détails de calcul.">
       <button class="seg-b" id="seg-mode-simple" onclick="setUiMode('simple')">Mode Simple</button>
       <button class="seg-b" id="seg-mode-expert" onclick="setUiMode('expert')">Mode Expert</button>
     </div>
@@ -314,11 +315,11 @@ input[type=number]{-moz-appearance:textfield;}
               <span class="opt-lab">Mode</span>
               <div class="seg"><button class="seg-b" id="seg-pve" onclick="setOpt('pvp',false)">PvE</button><button class="seg-b" id="seg-pvp" onclick="setOpt('pvp',true)">PvP ×0,4</button></div>
               <label class="opt-chk"><input type="checkbox" id="opt-head" onchange="setOpt('head',this.checked)"> Tirs à la tête</label>
-              <span class="opt-mult" id="opt-mult-wrap">×<input type="number" id="opt-headmult" value="1.5" min="1" step="0.1" title="Multiplicateur DE BASE de l'arme (pas dataminé par gaming.tools — 1,5 par défaut, valeur communautaire la plus répandue, à ajuster selon l'arme équipée) — le bonus « Dégâts critiques » d'un augment équipé sur l'arme s'ajoute automatiquement, ne le compte pas ici" onchange="setOpt('headMult',parseFloat(this.value)||1)"><span id="opt-headmult-note" class="opt-headmult-note"></span></span>
+              <span class="opt-mult" id="opt-mult-wrap">×<input type="number" id="opt-headmult" value="1.5" min="1" step="0.1" data-tip="Multiplicateur DE BASE de l'arme (pas dataminé par gaming.tools — 1,5 par défaut, valeur communautaire la plus répandue, à ajuster selon l'arme équipée) — le bonus « Dégâts critiques » d'un augment équipé sur l'arme s'ajoute automatiquement, ne le compte pas ici" onchange="setOpt('headMult',parseFloat(this.value)||1)"><span id="opt-headmult-note" class="opt-headmult-note"></span></span>
             </div>
             <div class="opt-group expert-only">
               <span class="opt-lab">Perso</span>
-              <span class="opt-mult" title="PV de base avant vitalité — valeur communautaire, pas dataminée">PV base <input type="number" id="opt-basehp" min="1" value="150" onchange="setOpt('baseHp',parseInt(this.value,10)||150)"></span>
+              <span class="opt-mult" data-tip="PV de base avant vitalité — valeur communautaire, pas dataminée">PV base <input type="number" id="opt-basehp" min="1" value="150" onchange="setOpt('baseHp',parseInt(this.value,10)||150)"></span>
             </div>
             <div class="opt-group expert-only">
               <span class="opt-lab">Cible</span>
@@ -351,11 +352,11 @@ input[type=number]{-moz-appearance:textfield;}
       <div class="panel-title"><svg class="ic" viewBox="0 0 24 24"><path d="M12 2l2.4 7.4H22l-6 4.6 2.3 7.4-6.3-4.6L5.7 21.4 8 14 2 9.4h7.6z"/></svg>Capacités &amp; Techniques</div>
       <div class="skills-wrap">
         <div>
-          <div class="sk-col-title">Capacités <span class="sk-count" id="cnt-ability"></span> <button class="add" id="add-ability" onclick="openSkillPicker('Ability')" title="Ajouter">+</button></div>
+          <div class="sk-col-title">Capacités <span class="sk-count" id="cnt-ability"></span> <button class="add" id="add-ability" onclick="openSkillPicker('Ability')" data-tip="Ajouter">+</button></div>
           <div id="sk-abilities"></div>
         </div>
         <div>
-          <div class="sk-col-title">Techniques <span class="sk-count" id="cnt-technique"></span> &amp; attributs <button class="add" onclick="openSkillPicker('Technique')" title="Ajouter">+</button></div>
+          <div class="sk-col-title">Techniques <span class="sk-count" id="cnt-technique"></span> &amp; attributs <button class="add" onclick="openSkillPicker('Technique')" data-tip="Ajouter">+</button></div>
           <div id="sk-techniques"></div>
         </div>
       </div>
@@ -597,7 +598,7 @@ function renderSlots(){
       let gsel='';
       if(it.group==='garment' && maxGrade(it)>0){
         let o='';for(let g=0;g<=maxGrade(it);g++)o+=`<option value="${g}"${g===grade?' selected':''}>${g===0?'Base':'G'+g}</option>`;
-        gsel=`<select class="grade-sel slot-grade" title="Qualité" onclick="event.stopPropagation()" onchange="setGrade('${sl.key}',parseInt(this.value,10))">${o}</select>`;
+        gsel=`<select class="grade-sel slot-grade" data-tip="Qualité" onclick="event.stopPropagation()" onchange="setGrade('${sl.key}',parseInt(this.value,10))">${o}</select>`;
       }
       // Repère qualité : cet objet est-il le meilleur de SA CATÉGORIE pour ce slot ? (potentiel max)
       let badge=''; const m2=metricAtMax(sl.key,it);
@@ -605,8 +606,8 @@ function renderSlots(){
         const cls=compClass(sl.key,it); let best=0;
         for(const c of DB){if(c.group!==it.group||!sl.accept(c)||compClass(sl.key,c)!==cls||!isViableCandidate(c))continue;const cm=metricAtMax(sl.key,c);if(cm&&cm.val>best)best=cm.val;}
         if(best>0){const clab=classLabel(cls);
-          if(m2.val>=best*0.999)badge=`<span class="slot-badge opt" title="Meilleur de sa catégorie (${esc(clab)}) pour cet emplacement, à potentiel max">★</span>`;
-          else{const d=Math.round(best-m2.val);badge=`<span class="slot-badge up" title="Un meilleur existe dans sa catégorie (${esc(clab)}) : +${d.toLocaleString('fr-FR')} ${m2.unit} au potentiel max">▲&nbsp;+${d.toLocaleString('fr-FR')}</span>`;}
+          if(m2.val>=best*0.999)badge=`<span class="slot-badge opt" data-tip="Meilleur de sa catégorie (${esc(clab)}) pour cet emplacement, à potentiel max">★</span>`;
+          else{const d=Math.round(best-m2.val);badge=`<span class="slot-badge up" data-tip="Un meilleur existe dans sa catégorie (${esc(clab)}) : +${d.toLocaleString('fr-FR')} ${m2.unit} au potentiel max">▲&nbsp;+${d.toLocaleString('fr-FR')}</span>`;}
         }
       }
       html+=`<div class="slot filled" data-item="${esc(it.id)}" onclick="openPicker('${sl.key}')">
@@ -614,7 +615,7 @@ function renderSlots(){
         <div class="slot-body"><div class="slot-name">${esc(it.name)}</div>
           <div class="slot-meta">${esc(sl.label)} · <span class="rar rar-${esc(it.rarity||'')}">${esc(it.rarity||'')}</span> ${it.tier?('· T'+it.tier):''}</div></div>
         ${gsel}${badge}<span class="slot-stat">${sv}</span>
-        <span class="slot-x" onclick="event.stopPropagation();unequip('${sl.key}')" title="Retirer">✕</span>
+        <span class="slot-x" onclick="event.stopPropagation();unequip('${sl.key}')" data-tip="Retirer">✕</span>
       </div>`;
       html+=renderItemAugments(sl.key,it);
     }else{
@@ -803,7 +804,7 @@ function augDetail(itemSlotKey,idx,it){
       ? `<span class="aug-roll-wrap"><input type="range" class="aug-roll" min="0" max="100" value="${pct}" oninput="augRollLive(this,'${itemSlotKey}',${idx},${ei})" onchange="setAugRoll('${itemSlotKey}',${idx},${ei},this.value/100)"><input type="number" class="aug-pct" min="0" max="100" value="${pct}" onclick="event.stopPropagation();this.select()" onchange="let v=Math.max(0,Math.min(100,+this.value));this.value=v;this.previousElementSibling.value=v;setAugRoll('${itemSlotKey}',${idx},${ei},v/100)"><span class="aug-pct-lbl">%</span></span>`
       : `<span class="aug-fixed">fixe</span>`;
     const mm= ev.rolled ? `<span class="aug-mm">${augValFmt(eff,{val:ev.mn})} … ${augValFmt(eff,{val:ev.mx})}</span>` : '<span class="aug-mm"></span>';
-    rows+=`<div class="aug-eff"><span class="aug-el" title="${esc(effStats(eff).map(augStatLabel).join(', '))}">${esc(effLabel(eff))}</span>${ctrl}<span class="aug-ev ${neg?'neg':'pos'}">${augValFmt(eff,ev)}</span>${mm}</div>`;
+    rows+=`<div class="aug-eff"><span class="aug-el" data-tip="${esc(effStats(eff).map(augStatLabel).join(', '))}">${esc(effLabel(eff))}</span>${ctrl}<span class="aug-ev ${neg?'neg':'pos'}">${augValFmt(eff,ev)}</span>${mm}</div>`;
   });
   const onWeapon=a.applies.some(t=>t.indexOf('Holster')>=0);
   const where=onWeapon?'s\'applique à cette arme (replié dans le DPS)':'s\'applique à cette pièce (mitigations additionnées au total)';
@@ -830,7 +831,7 @@ function renderItemAugments(itemSlotKey,it){
       rows+=`<div class="aug-mini" data-item="${esc(augIt.id)}">
         <img class="aug-mini-ic" src="${esc(iconUrl(augIt.icon))}" alt="" onerror="this.style.visibility='hidden'">
         <div class="aug-mini-body"><div class="aug-mini-name">${esc(augIt.name)}</div>${body}</div>
-        <span class="slot-x" onclick="removeAug('${itemSlotKey}',${idx})" title="Retirer">✕</span>
+        <span class="slot-x" onclick="removeAug('${itemSlotKey}',${idx})" data-tip="Retirer">✕</span>
       </div>`;
     }else{
       rows+=`<div class="aug-mini empty" onclick="openAugPicker('${itemSlotKey}',${idx})">+ Ajouter un augment</div>`;
@@ -838,8 +839,8 @@ function renderItemAugments(itemSlotKey,it){
   }
   return `<div class="aug-slots-box"><div class="aug-slots-head"><span>Augments (${filled}/${cap})</span>
       <span class="aug-cap-ctrl">
-        <button onclick="event.stopPropagation();setAugCapacity('${itemSlotKey}',-1)" title="Réduire (spécialisation Artisanat, réglage manuel)">−</button>
-        <button onclick="event.stopPropagation();setAugCapacity('${itemSlotKey}',1)" title="Augmenter (spécialisation Artisanat, réglage manuel)">+</button>
+        <button onclick="event.stopPropagation();setAugCapacity('${itemSlotKey}',-1)" data-tip="Réduire (spécialisation Artisanat, réglage manuel)">−</button>
+        <button onclick="event.stopPropagation();setAugCapacity('${itemSlotKey}',1)" data-tip="Augmenter (spécialisation Artisanat, réglage manuel)">+</button>
       </span></div>${rows}</div>`;
 }
 
@@ -1070,7 +1071,7 @@ function weaponBlock(slotKey,label,it){
   const cells=(it.stats||[]).map(s=>`<div class="statcell"><div class="l">${esc(statLabel(s))}</div><div class="n">${fmt(wStat(it,grade,s.k),s.f)}</div></div>`).join('');
   let gradeSel='';
   if(mg>0){let o='';for(let g=0;g<=mg;g++)o+=`<option value="${g}"${g===grade?' selected':''}>${g===0?'Base':'Grade '+g}</option>`;
-    gradeSel=` <select class="grade-sel" title="Qualité de l'arme" onclick="event.stopPropagation()" onchange="setGrade('${slotKey}',parseInt(this.value,10))">${o}</select>`;}
+    gradeSel=` <select class="grade-sel" data-tip="Qualité de l'arme" onclick="event.stopPropagation()" onchange="setGrade('${slotKey}',parseInt(this.value,10))">${o}</select>`;}
   const critNote=(v&&v.head!=null&&v.critAug>0)?` <small style="color:var(--violet)">dont augment +${Math.round(v.critAug*100)}%</small>`:'';
   const headStr=(v&&v.head!=null)?` · <span class="wpn-head-dps">tête ${v.head.toLocaleString('fr-FR')}${critNote}</span>`:'';
   const augStr=(v&&v.augM>1)?` <small style="color:var(--violet)">aug +${Math.round((v.augM-1)*100)}%</small>`:'';
@@ -1373,7 +1374,7 @@ function renderSkills(){
         <div class="cb"><div class="cn">${esc(sk.name)}</div><div class="cm">${esc(sk.tree||'')} · ${sk.type==='Ability'?'Capacité':sk.type}</div></div>
         ${sk.maxLevel>1?`<div class="lvl"><button onclick="skillLvl('${esc(sk.id)}',-1)">−</button><span>Niv ${sel.lvl}/${sk.maxLevel}</span><button onclick="skillLvl('${esc(sk.id)}',1)">+</button></div>`:''}
         ${bon?`<span class="cbon">${pct(bon)}</span>`:''}
-        <span class="cx" onclick="removeSkill('${esc(sk.id)}')" title="Retirer">✕</span>
+        <span class="cx" onclick="removeSkill('${esc(sk.id)}')" data-tip="Retirer">✕</span>
       </div>`;
     }).join('');
   };
@@ -1422,7 +1423,7 @@ async function showRecipe(id){
     return;
   }
   const ings=d.recipes[0].ingredients.map(ing=>`
-    <div class="ing" title="${esc(ing.name)} ×${ing.qty}">${ing.icon?`<img src="${esc(iconUrl(ing.icon))}" alt="" onerror="this.style.display='none'">`:''}
+    <div class="ing" data-tip="${esc(ing.name)} ×${ing.qty}">${ing.icon?`<img src="${esc(iconUrl(ing.icon))}" alt="" onerror="this.style.display='none'">`:''}
       <span class="nm">${esc(ing.name)}</span><span class="qt">×${ing.qty}</span></div>`).join('');
   box.innerHTML=`<div class="recipe-head"><strong>${esc(d.name||'')}</strong>
       <span style="color:var(--or-sombre);font-size:.85em">${d.tier?('T'+d.tier):''} ${d.rarity?('· '+d.rarity):''}</span></div>
@@ -1450,7 +1451,7 @@ async function showBuildCost(){
     }
   }
   const names=Object.keys(totals).sort((a,b)=>totals[b].qty-totals[a].qty);
-  const rows=names.map(n=>`<div class="ing" title="${esc(n)} ×${totals[n].qty}">${totals[n].icon?`<img src="${esc(iconUrl(totals[n].icon))}" alt="" onerror="this.style.display='none'">`:''}
+  const rows=names.map(n=>`<div class="ing" data-tip="${esc(n)} ×${totals[n].qty}">${totals[n].icon?`<img src="${esc(iconUrl(totals[n].icon))}" alt="" onerror="this.style.display='none'">`:''}
     <span class="nm">${esc(n)}</span><span class="qt">×${totals[n].qty}</span></div>`).join('');
   const nCraftable=equipped.length-noRecipe.length;
   const noteMissing=noRecipe.length?`<div class="muted-note">Sans recette de craft connue (loot/vendeur) : ${noRecipe.map(esc).join(', ')}.</div>`:'';

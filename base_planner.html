@@ -131,28 +131,8 @@
       background: rgba(205, 164, 52, 0.22);
       color: #f3c44f;
     }
-    /* Tooltip instantané (sans délai navigateur) */
-    [data-tooltip] { position: relative; }
-    [data-tooltip]::after {
-      content: attr(data-tooltip);
-      position: absolute;
-      bottom: calc(100% + 5px);
-      left: 50%;
-      transform: translateX(-50%);
-      background: #14100a;
-      color: #d3b46f;
-      font-size: 9px;
-      font-family: 'Segoe UI', sans-serif;
-      padding: 3px 7px;
-      border-radius: 3px;
-      border: 1px solid #3d2b16;
-      white-space: nowrap;
-      pointer-events: none;
-      z-index: 500;
-      opacity: 0;
-      transition: opacity 0s; /* instantané */
-    }
-    [data-tooltip]:hover::after { opacity: 1; }
+    /* (Une 2e infobulle CSS locale, sur `data-tooltip`, vivait ici — plus aucun
+       élément ne la portait, et l'infobulle commune du site la remplace.) */
 
     /* Grille de swap (panneau droit — type porte/fenêtre + skins) */
     .bp-swap-grid {
@@ -410,20 +390,10 @@
     }
     .bp-tool-btn:hover { border-color: #cda434; color: #f3c44f; background: rgba(50, 30, 10, 0.9); }
     .bp-tool-btn.active { background: rgba(80, 50, 10, 0.9); border-color: #cda434; color: #f3c44f; }
-    .bp-tool-btn[title]:hover::after {
-      content: attr(title);
-      position: absolute;
-      top: 38px;
-      background: #14100a;
-      color: #d3b46f;
-      font-size: 10px;
-      padding: 3px 7px;
-      border-radius: 3px;
-      border: 1px solid #3d2b16;
-      white-space: nowrap;
-      pointer-events: none;
-      z-index: 200;
-    }
+    /* L'infobulle des boutons d'outils était une règle CSS locale bâtie sur
+       `content: attr(title)`. Elle est remplacée par l'infobulle commune du site
+       (`dune-tip.js`, attribut `data-tip`), qui gère en plus le retour à la ligne
+       et le débordement hors écran — l'ancienne était en `nowrap`. */
 
     .bp-tool-sep {
       width: 1px;
@@ -1308,6 +1278,7 @@
 </head>
 <body class="fade-in">
 <script src="auth-guard.js"></script>
+<script src="dune-tip.js" defer></script>
 <script src="page-guard.js" data-page="base_planner"></script>
 
 <header style="position:relative; flex-shrink:0;">
@@ -1444,7 +1415,7 @@
     <div class="bp-toolbar">
       <!-- Nouveau plan -->
       <span class="bp-tool-label">Plan</span>
-      <button class="bp-tool-btn" id="tool-new-plan" title="Nouveau plan (efface le plan courant)">
+      <button class="bp-tool-btn" id="tool-new-plan" data-tip="Nouveau plan (efface le plan courant)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16h-3v3h-2v-3H8v-2h3v-3h2v3h3v2zm-3-7V3.5L18.5 9H13z"/></svg>
       </button>
 
@@ -1452,10 +1423,10 @@
 
       <!-- Mode sélection / déplacement -->
       <span class="bp-tool-label">Mode</span>
-      <button class="bp-tool-btn active" id="tool-select" title="Sélectionner (S)">
+      <button class="bp-tool-btn active" id="tool-select" data-tip="Sélectionner (S)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4 0l16 12-7 2-4 8z"/></svg>
       </button>
-      <button class="bp-tool-btn" id="tool-pan" title="Déplacer la vue (V)">
+      <button class="bp-tool-btn" id="tool-pan" data-tip="Déplacer la vue (V)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M10 9h4V6h3l-5-5-5 5h3v3zm-1 1H6V7l-5 5 5 5v-3h3v-4zm14 2l-5-5v3h-3v4h3v3l5-5zm-9 3h-4v3H7l5 5 5-5h-3v-3z"/></svg>
       </button>
 
@@ -1463,10 +1434,10 @@
 
       <!-- Undo / Redo -->
       <span class="bp-tool-label">Hist.</span>
-      <button class="bp-tool-btn" id="tool-undo" title="Annuler (Ctrl+Z)">
+      <button class="bp-tool-btn" id="tool-undo" data-tip="Annuler (Ctrl+Z)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8z"/></svg>
       </button>
-      <button class="bp-tool-btn" id="tool-redo" title="Rétablir (Ctrl+Y)">
+      <button class="bp-tool-btn" id="tool-redo" data-tip="Rétablir (Ctrl+Y)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.4 10.6C16.55 8.99 14.15 8 11.5 8c-4.65 0-8.58 3.03-9.96 7.22L3.9 16c1.05-3.19 4.05-5.5 7.6-5.5 1.95 0 3.73.72 5.12 1.88L13 16h9V7l-3.6 3.6z"/></svg>
       </button>
 
@@ -1474,28 +1445,28 @@
 
       <!-- Zoom -->
       <span class="bp-tool-label">Zoom</span>
-      <button class="bp-tool-btn" id="tool-zoom-in" title="Zoom + (Molette ↑)">+</button>
-      <button class="bp-tool-btn" id="tool-zoom-out" title="Zoom - (Molette ↓)">−</button>
-      <button class="bp-tool-btn" id="tool-zoom-reset" title="Recentrer (R)" style="font-size:10px; width:36px;">100%</button>
+      <button class="bp-tool-btn" id="tool-zoom-in" data-tip="Zoom + (Molette ↑)">+</button>
+      <button class="bp-tool-btn" id="tool-zoom-out" data-tip="Zoom - (Molette ↓)">−</button>
+      <button class="bp-tool-btn" id="tool-zoom-reset" data-tip="Recentrer (R)" style="font-size:10px; width:36px;">100%</button>
 
       <div class="bp-tool-sep"></div>
 
       <!-- Vue 3D / Plan -->
       <span class="bp-tool-label">Vue</span>
-      <button class="bp-tool-btn active" id="tool-view-ortho" title="Vue plan (top-down ortho)">
+      <button class="bp-tool-btn active" id="tool-view-ortho" data-tip="Vue plan (top-down ortho)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3v18h18V3H3zm16 16H5V5h14v14z"/></svg>
       </button>
-      <button class="bp-tool-btn" id="tool-view-3d" title="Vue 3D (perspective)">
+      <button class="bp-tool-btn" id="tool-view-3d" data-tip="Vue 3D (perspective)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M21 16.5c0 .38-.21.71-.53.88l-7.9 4.44c-.16.12-.36.18-.57.18s-.41-.06-.57-.18l-7.9-4.44A.991.991 0 0 1 3 16.5v-9c0-.38.21-.71.53-.88l7.9-4.44c.16-.12.36-.18.57-.18s.41.06.57.18l7.9 4.44c.32.17.53.5.53.88v9zM12 4.15L6.04 7.5 12 10.85 17.96 7.5 12 4.15z"/></svg>
       </button>
 
       <div class="bp-tool-sep"></div>
 
       <!-- Grille -->
-      <button class="bp-tool-btn active" id="tool-grid" title="Afficher/masquer la grille (G)">
+      <button class="bp-tool-btn active" id="tool-grid" data-tip="Afficher/masquer la grille (G)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3v18h18V3H3zm8 16H5v-6h6v6zm0-8H5V5h6v6zm8 8h-6v-6h6v6zm0-8h-6V5h6v6z"/></svg>
       </button>
-      <button class="bp-tool-btn" id="tool-snap" title="Magnétisme (X)">
+      <button class="bp-tool-btn" id="tool-snap" data-tip="Magnétisme (X)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 13h12v-2H6v2zm3 4h6v-2H9v2zM3 9v2h18V9H3z"/></svg>
       </button>
 
@@ -1503,22 +1474,22 @@
 
       <!-- Vue solide -->
       <span class="bp-tool-label">Vue</span>
-      <button class="bp-tool-btn" id="tool-solid" title="Vue solide — masquer le verre (T)">
+      <button class="bp-tool-btn" id="tool-solid" data-tip="Vue solide — masquer le verre (T)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/><path d="M12 6c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z"/></svg>
       </button>
       <!-- Mode stabilité (bouclier) — vert/jaune/rouge selon distance aux ancres -->
-      <button class="bp-tool-btn" id="tool-stability" title="Vue stabilité — vert/jaune/rouge selon distance aux ancres">
+      <button class="bp-tool-btn" id="tool-stability" data-tip="Vue stabilité — vert/jaune/rouge selon distance aux ancres">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
       </button>
       <!-- Synthèse : quantités par catégorie/type + coût matériaux + bilan énergie/eau -->
-      <button class="bp-tool-btn" id="tool-summary" title="Synthèse du plan — composants, matériaux, énergie">
+      <button class="bp-tool-btn" id="tool-summary" data-tip="Synthèse du plan — composants, matériaux, énergie">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 4h18v2H3V4zm0 5h12v2H3V9zm0 5h18v2H3v-2zm0 5h12v2H3v-2zM17 9l4 2-4 2V9z"/></svg>
       </button>
 
       <div class="bp-tool-sep"></div>
 
       <!-- Aide : légende des touches + tutoriel -->
-      <button class="bp-tool-btn" id="tool-help" title="Aide — raccourcis &amp; tutoriel" style="font-weight:bold;">?</button>
+      <button class="bp-tool-btn" id="tool-help" data-tip="Aide — raccourcis &amp; tutoriel" style="font-weight:bold;">?</button>
     </div>
     <!-- /bp-toolbar -->
 
@@ -1541,7 +1512,7 @@
       <aside class="bp-summary" id="bp-summary" hidden>
         <div class="bp-summary-header">
           <span>Synthèse du plan</span>
-          <button class="bp-summary-close" id="bp-summary-close" title="Fermer">×</button>
+          <button class="bp-summary-close" id="bp-summary-close" data-tip="Fermer">×</button>
         </div>
         <div class="bp-summary-body" id="bp-summary-body"></div>
       </aside>
@@ -1595,11 +1566,11 @@
       <!-- Pieux verticaux (0–5 pips) -->
       <div class="bp-vert-ext-bar" id="bp-vert-ext-bar">
         <label>Pieux verticaux</label>
-        <div class="bp-vert-pip" id="vp0" title="Pieu 1"></div>
-        <div class="bp-vert-pip" id="vp1" title="Pieu 2"></div>
-        <div class="bp-vert-pip" id="vp2" title="Pieu 3"></div>
-        <div class="bp-vert-pip" id="vp3" title="Pieu 4"></div>
-        <div class="bp-vert-pip" id="vp4" title="Pieu 5"></div>
+        <div class="bp-vert-pip" id="vp0" data-tip="Pieu 1"></div>
+        <div class="bp-vert-pip" id="vp1" data-tip="Pieu 2"></div>
+        <div class="bp-vert-pip" id="vp2" data-tip="Pieu 3"></div>
+        <div class="bp-vert-pip" id="vp3" data-tip="Pieu 4"></div>
+        <div class="bp-vert-pip" id="vp4" data-tip="Pieu 5"></div>
       </div>
     </div>
 
@@ -1634,14 +1605,14 @@
 
       <div class="bp-rotation-row">
         <label>Rotation</label>
-        <button class="bp-rot-btn" id="bp-rot-ccw" title="−90°">↺</button>
+        <button class="bp-rot-btn" id="bp-rot-ccw" data-tip="−90°">↺</button>
         <span class="bp-rot-value" id="bp-sel-rotation">0°</span>
-        <button class="bp-rot-btn" id="bp-rot-cw" title="+90°">↻</button>
+        <button class="bp-rot-btn" id="bp-rot-cw" data-tip="+90°">↻</button>
       </div>
 
       <div class="bp-rotation-row">
         <label>Position</label>
-        <button class="bp-half-btn" id="bp-sel-half" title="Décaler de ½ étage vers le haut (Shift pendant la pose) — pour planchers au-dessus de demi-escaliers/rampes/murs">½ étage ↑</button>
+        <button class="bp-half-btn" id="bp-sel-half" data-tip="Décaler de ½ étage vers le haut (Shift pendant la pose) — pour planchers au-dessus de demi-escaliers/rampes/murs">½ étage ↑</button>
       </div>
 
       <!-- Swap de type (portes / fenêtres) — injecté par JS -->
@@ -1678,8 +1649,8 @@
 
   <!-- Ajouter / Supprimer étage -->
   <div class="bp-floor-sep"></div>
-  <button class="bp-floor-action" id="bp-floor-add" title="Ajouter un niveau au-dessus">+</button>
-  <button class="bp-floor-action" id="bp-floor-del" title="Supprimer le niveau actif" style="font-size:14px;">−</button>
+  <button class="bp-floor-action" id="bp-floor-add" data-tip="Ajouter un niveau au-dessus">+</button>
+  <button class="bp-floor-action" id="bp-floor-del" data-tip="Supprimer le niveau actif" style="font-size:14px;">−</button>
 
   <!-- Actions plan -->
   <div class="bp-footer-sep"></div>
@@ -1730,14 +1701,14 @@
           <div class="bp-plan-row-name">Ma base à Tharwa</div>
           <div class="bp-plan-row-meta">Advanced 10×10 — 3 étages — 42 pièces — modifié il y a 2h</div>
         </div>
-        <button class="bp-plan-row-del" title="Supprimer">✕</button>
+        <button class="bp-plan-row-del" data-tip="Supprimer">✕</button>
       </div>
       <div class="bp-plan-row">
         <div class="bp-plan-row-info">
           <div class="bp-plan-row-name">Base secondaire Rajifiri</div>
           <div class="bp-plan-row-meta">Basic 6×6 — 1 étage — 12 pièces — modifié hier</div>
         </div>
-        <button class="bp-plan-row-del" title="Supprimer">✕</button>
+        <button class="bp-plan-row-del" data-tip="Supprimer">✕</button>
       </div>
       <div style="text-align:center; padding:20px; color:#2a1d0e; font-size:11px; font-style:italic;" id="plans-empty" style="display:none;">
         Aucun plan sauvegardé

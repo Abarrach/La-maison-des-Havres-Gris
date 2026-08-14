@@ -218,6 +218,7 @@
 </head>
 <body>
 <script src="auth-guard.js"></script>
+<script src="dune-tip.js" defer></script>
 
 <header>
   <div class="title">Maison des Havres Gris</div>
@@ -284,13 +285,13 @@ function esc(s) {
         // Admin : tout reste cliquable, mais masquée/en travaux sont signalées visuellement.
         if (isAdmin) {
             if (status === 'wip') {
-                return `<a href="${esc(p.href)}" class="card" data-page="${esc(p.key)}" title="En travaux (visible par toi seul·e)">
+                return `<a href="${esc(p.href)}" class="card" data-page="${esc(p.key)}" data-tip="En travaux (visible par toi seul·e)">
                     <div class="wip-ribbon">En travaux</div>
                     ${wipImg(p)}${overlay(p)}
                 </a>`;
             }
             if (status === 'hidden') {
-                return `<a href="${esc(p.href)}" class="card card-admin-hidden" data-page="${esc(p.key)}" title="Masquée pour les joueurs (visible par toi seul·e)">
+                return `<a href="${esc(p.href)}" class="card card-admin-hidden" data-page="${esc(p.key)}" data-tip="Masquée pour les joueurs (visible par toi seul·e)">
                     <div class="hidden-ribbon">Masquée</div>
                     <img src="${esc(p.img)}" onerror="this.src='intro.jpg'" alt="${esc(p.title)}" class="card-image">
                     <div class="hidden-eye">${EYE_OFF}</div>
@@ -303,7 +304,7 @@ function esc(s) {
         // Joueur
         if (status === 'hidden') return '';
         if (status === 'wip') {
-            return `<div class="card card-wip" data-page="${esc(p.key)}" title="En travaux">
+            return `<div class="card card-wip" data-page="${esc(p.key)}" data-tip="En travaux">
                 <div class="wip-ribbon">En travaux</div>
                 ${wipImg(p)}${overlay(p)}
             </div>`;

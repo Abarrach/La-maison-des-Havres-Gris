@@ -1131,10 +1131,19 @@ function usrRow(u, parti) {
               : isGuildChief ? ' <span class="usr-chief">(chef de guilde)</span>' : '';
   const couleur = parti ? '#9a8b73' : (isAdmin ? '#f3c44f' : '#f5deb3');
   const safe = u.user.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+
+  // Chez un ancien joueur, « Promouvoir » n'a pas de sens — il n'a plus accès au
+  // site. « Rétrograder » reste offert s'il est encore admin : c'est justement
+  // le geste utile quand un admin quitte la guilde. La suppression reste dans
+  // les deux cas.
+  const boutonRole = (!parti || isAdmin)
+    ? `<button class="usr-btn${isAdmin ? ' usr-btn-demote' : ' usr-btn-promote'}" onclick="toggleUserRole('${safe}','${u.role}')">${isAdmin ? 'Rétrograder' : 'Promouvoir'}</button>`
+    : '';
+
   return `<div class="usr-row">
     <span class="usr-name" style="color:${couleur}">${u.user}${badge}${parti ? usrLeftSince(u) : ""}</span>
     <div class="usr-actions">
-      ${isProtected ? '' : `<button class="usr-btn${isAdmin ? ' usr-btn-demote' : ' usr-btn-promote'}" onclick="toggleUserRole('${safe}','${u.role}')">${isAdmin ? 'Rétrograder' : 'Promouvoir'}</button>
+      ${isProtected ? '' : `${boutonRole}
       <button class="usr-btn usr-btn-del" onclick="deleteUserAccount('${safe}')" data-tip="Supprimer">🗑</button>`}
     </div>
   </div>`;

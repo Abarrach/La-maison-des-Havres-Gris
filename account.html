@@ -304,6 +304,25 @@
       border: 1px solid #7a2f2f; border-radius: 10px; padding: 1px 8px;
     }
 
+    /* Section repliée « Anciens joueurs » (comptes sortis du Discord) */
+    .usr-gone { margin-top: 12px; border-top: 1px solid #3d2b16; }
+    .usr-gone > summary {
+      display: flex; align-items: center; gap: 9px;
+      padding: 11px 0 9px; cursor: pointer; list-style: none;
+      color: #8a8a8a; font-size: 0.78em; text-transform: uppercase; letter-spacing: 1.5px;
+      transition: color 0.2s;
+    }
+    .usr-gone > summary::-webkit-details-marker { display: none; }
+    .usr-gone > summary::before { content: "▸"; color: #cda434; font-size: 1.1em; line-height: 1; }
+    .usr-gone[open] > summary::before { content: "▾"; }
+    .usr-gone > summary:hover { color: #cda434; }
+    .usr-gone-count {
+      color: #ff8888; font-size: 0.95em; font-weight: bold; letter-spacing: 0;
+      border: 1px solid #7a2f2f; border-radius: 10px; padding: 0 8px;
+      background: rgba(122, 47, 47, 0.22);
+    }
+    .usr-gone-list { border-top: 1px solid #1e1208; }
+
     /* === ACTIVITÉ DES MEMBRES (admin) === */
     .act-row { padding: 5px 0; border-bottom: 1px solid #1e1208; }
     .act-row:last-child { border-bottom: none; }
@@ -1069,28 +1088,71 @@ function toggleIdleMembers(label) {
 // (évite tout risque de faute de frappe/renommage qui casserait la protection).
 const GUILD_CHIEF_DISCORD_ID = "332476079875031051"; // Lorhelyne
 
+// Le repli des « anciens joueurs » survit aux re-rendus (promotion, suppression…),
+// sinon la section se refermerait sous les doigts après chaque action.
+let USR_GONE_OPEN = false;
+
+// Un compte protégé (responsable du site, chef de guilde) n'est JAMAIS relégué
+// dans les anciens joueurs, même si la vérification Discord le dit absent —
+// même principe que la purge des bases, qui ne les touche pas non plus.
+function usrIsProtected(u) {
+  return u.user.toLowerCase() === "abarrach"
+      || String(u.discord_id || "") === GUILD_CHIEF_DISCORD_ID;
+}
+function usrHasLeft(u) {
+  return !!(DISCORD_MEMBERSHIP && u.discord_id
+            && DISCORD_MEMBERSHIP[u.discord_id] === false
+            && !usrIsProtected(u));
+}
+
+// `parti` = rendu dans la section repliée : pas de pastille « Hors Discord »
+// (l'intitulé de la section le dit déjà) et nom atténué.
+function usrRow(u, parti) {
+  const isAdmin      = u.role === "admin";
+  const isSiteOwner  = u.user.toLowerCase() === "abarrach";
+  const isGuildChief = String(u.discord_id || "") === GUILD_CHIEF_DISCORD_ID;
+  const isProtected  = isSiteOwner || isGuildChief;
+  const badge = isSiteOwner ? ' <span class="usr-chief">(responsable du site)</span>'
+              : isGuildChief ? ' <span class="usr-chief">(chef de guilde)</span>' : '';
+  const couleur = parti ? '#9a8b73' : (isAdmin ? '#f3c44f' : '#f5deb3');
+  const safe = u.user.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+  return `<div class="usr-row">
+    <span class="usr-name" style="color:${couleur}">${u.user}${badge}</span>
+    <div class="usr-actions">
+      ${isProtected ? '' : `<button class="usr-btn${isAdmin ? ' usr-btn-demote' : ' usr-btn-promote'}" onclick="toggleUserRole('${safe}','${u.role}')">${isAdmin ? 'Rétrograder' : 'Promouvoir'}</button>
+      <button class="usr-btn usr-btn-del" onclick="deleteUserAccount('${safe}')" data-tip="Supprimer">🗑</button>`}
+    </div>
+  </div>`;
+}
+
 function renderUsersAdmin() {
   const list = document.getElementById("users-admin-list");
   if (!ALL_USERS_FULL.length) { list.innerHTML = '<div class="order-empty">Aucun utilisateur.</div>'; return; }
 
-  list.innerHTML = ALL_USERS_FULL.map(u => {
-    const isAdmin = u.role === "admin";
-    const isSiteOwner  = u.user.toLowerCase() === "abarrach";
-    const isGuildChief = String(u.discord_id || "") === GUILD_CHIEF_DISCORD_ID;
-    const isProtected  = isSiteOwner || isGuildChief;
-    const badge = isSiteOwner ? ' <span class="usr-chief">(responsable du site)</span>'
-                : isGuildChief ? ' <span class="usr-chief">(chef de guilde)</span>' : '';
-    const leftGuild = DISCORD_MEMBERSHIP && u.discord_id && DISCORD_MEMBERSHIP[u.discord_id] === false;
-    const leftBadge = leftGuild ? ' <span class="usr-left-guild" data-tip="Absent de la guilde Discord lors de la dernière vérification">⚠ Hors Discord</span>' : '';
-    const safe = u.user.replace(/'/g, "\\'").replace(/"/g, "&quot;");
-    return `<div class="usr-row">
-      <span class="usr-name" style="color:${isAdmin ? '#f3c44f' : '#f5deb3'}">${u.user}${badge}${leftBadge}</span>
-      <div class="usr-actions">
-        ${isProtected ? '' : `<button class="usr-btn${isAdmin ? ' usr-btn-demote' : ' usr-btn-promote'}" onclick="toggleUserRole('${safe}','${u.role}')">${isAdmin ? 'Rétrograder' : 'Promouvoir'}</button>
-        <button class="usr-btn usr-btn-del" onclick="deleteUserAccount('${safe}')" data-tip="Supprimer">🗑</button>`}
-      </div>
-    </div>`;
-  }).join("");
+  const actifs = ALL_USERS_FULL.filter(u => !usrHasLeft(u));
+  const partis = ALL_USERS_FULL.filter(usrHasLeft);
+
+  let html = actifs.map(u => usrRow(u, false)).join("");
+
+  // Section repliée en bas — n'apparaît qu'après une vérification Discord
+  // ayant trouvé des absents (DISCORD_MEMBERSHIP est vide tant qu'on n'a pas
+  // cliqué sur « Vérifier Discord »).
+  if (partis.length) {
+    html += `<details class="usr-gone"${USR_GONE_OPEN ? " open" : ""}>
+      <summary data-tip="Comptes absents de la guilde Discord lors de la dernière vérification. Leurs bases sont retirées de la carte par la purge.">
+        Anciens joueurs <span class="usr-gone-count">${partis.length}</span>
+      </summary>
+      <div class="usr-gone-list">${partis.map(u => usrRow(u, true)).join("")}</div>
+    </details>`;
+  }
+
+  list.innerHTML = html;
+
+  // Écouteur réel plutôt qu'un `ontoggle` en ligne : un gestionnaire inline
+  // s'exécute dans la portée globale et n'atteint pas de façon fiable une
+  // variable `let` de ce script — le repli ne se mémorisait pas.
+  const det = list.querySelector(".usr-gone");
+  if (det) det.addEventListener("toggle", () => { USR_GONE_OPEN = det.open; });
 }
 
 async function toggleUserRole(target, role) {

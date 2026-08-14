@@ -85,6 +85,69 @@ function dco_write_users(array $users): bool {
     return $res !== false;
 }
 
+// ---------- Étiquette « parti de la guilde » ----------
+
+/**
+ * Mémorise DANS le fichier utilisateurs qu'un compte n'est plus (ou est de
+ * nouveau) membre du Discord — champ `left_guild_at` (date ISO du premier
+ * constat, absent tant que le compte est membre).
+ *
+ * Pourquoi le persister : sans ça, l'interface d'administration ne sait qui est
+ * parti qu'APRÈS un clic sur « Vérifier Discord ». À l'ouverture de la page, les
+ * partis étaient mélangés aux joueurs actifs. L'étiquette permet de les
+ * regrouper dès le premier affichage.
+ *
+ * Le retour d'un joueur avec LE MÊME compte Discord efface l'étiquette tout
+ * seul (connexion réussie, revérification de session, ou balayage quotidien) —
+ * il n'y a rien à fusionner, `dco_resolve_account()` le retrouve par son id.
+ *
+ * @return bool true si le fichier a été modifié
+ */
+function dco_mark_left(string $discordId, bool $left): bool {
+    if ($discordId === '') return false;
+    $users   = dco_read_users();
+    $changed = false;
+    foreach ($users as &$u) {
+        if ((string)($u['discord_id'] ?? '') !== $discordId) continue;
+        $has = trim((string)($u['left_guild_at'] ?? '')) !== '';
+        if ($left && !$has) {
+            $u['left_guild_at'] = date('c');            // premier constat : on horodate
+            $changed = true;
+        } elseif (!$left && $has) {
+            unset($u['left_guild_at']);                 // de retour
+            $changed = true;
+        }
+        break;
+    }
+    unset($u);
+    return $changed ? dco_write_users($users) : false;
+}
+
+/**
+ * Applique en une passe le résultat d'une vérification groupée
+ * (`dco_guild_members_check`). Les ids ABSENTS du tableau sont des vérifications
+ * qui ont échoué : on n'y touche pas — « inconnu » n'est pas « parti ».
+ *
+ * @return array{marques:int, effaces:int}
+ */
+function dco_sync_left_flags(array $membership): array {
+    $users = dco_read_users();
+    $marques = 0; $effaces = 0; $changed = false;
+    foreach ($users as &$u) {
+        $id = trim((string)($u['discord_id'] ?? ''));
+        if ($id === '' || !array_key_exists($id, $membership)) continue;
+        $has = trim((string)($u['left_guild_at'] ?? '')) !== '';
+        if ($membership[$id] === false && !$has) {
+            $u['left_guild_at'] = date('c'); $marques++; $changed = true;
+        } elseif ($membership[$id] === true && $has) {
+            unset($u['left_guild_at']); $effaces++; $changed = true;
+        }
+    }
+    unset($u);
+    if ($changed) dco_write_users($users);
+    return ['marques' => $marques, 'effaces' => $effaces];
+}
+
 // ---------- Appels HTTP Discord (cURL) ----------
 
 /** GET authentifié. $auth = "Bot xxx" ou "Bearer xxx". Renvoie ['code'=>int,'json'=>array|null]. */
@@ -375,6 +438,9 @@ function dco_apply_session(string $pseudo, string $role, string $discordId): voi
     $_SESSION['role']            = $role;
     $_SESSION['discord_id']      = $discordId;
     $_SESSION['discord_checked'] = time();
+    // On n'arrive ici qu'après vérification de l'appartenance à la guilde :
+    // si le compte était étiqueté « parti », c'est qu'il est revenu.
+    dco_mark_left($discordId, false);
 }
 
 function dco_clear_session(): void {

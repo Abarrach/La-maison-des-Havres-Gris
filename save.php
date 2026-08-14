@@ -206,7 +206,12 @@ switch ($action) {
             if ($id !== '') $ids[] = $id;
         }
         $membership = dco_guild_members_check($cfg, $ids);
-        echo json_encode(['ok' => true, 'membership' => $membership]);
+        // On mémorise le résultat sur les comptes (`left_guild_at`) : sans ça,
+        // le classement « anciens joueurs » de la liste ne tiendrait que le
+        // temps de la page. Les ids non vérifiés (erreur transitoire) sont
+        // absents de $membership et donc laissés tels quels.
+        $tags = dco_sync_left_flags($membership);
+        echo json_encode(['ok' => true, 'membership' => $membership, 'tags' => $tags]);
         exit;
 
     // Purge des bases des joueurs qui ont quitté le Discord.

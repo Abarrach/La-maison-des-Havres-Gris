@@ -1099,10 +1099,25 @@ function usrIsProtected(u) {
   return u.user.toLowerCase() === "abarrach"
       || String(u.discord_id || "") === GUILD_CHIEF_DISCORD_ID;
 }
+// Une vérification fraîche (bouton « Vérifier Discord ») fait autorité ; sinon
+// on s'appuie sur l'étiquette `left_guild_at` mémorisée sur le compte, ce qui
+// permet de classer les anciens joueurs DÈS L'OUVERTURE de la page. L'étiquette
+// est posée/effacée côté serveur : connexion, revérification de session et
+// balayage quotidien (discord_purge.php).
 function usrHasLeft(u) {
-  return !!(DISCORD_MEMBERSHIP && u.discord_id
-            && DISCORD_MEMBERSHIP[u.discord_id] === false
-            && !usrIsProtected(u));
+  if (usrIsProtected(u)) return false;
+  if (DISCORD_MEMBERSHIP && u.discord_id && (u.discord_id in DISCORD_MEMBERSHIP)) {
+    return DISCORD_MEMBERSHIP[u.discord_id] === false;
+  }
+  return !!u.left_guild_at;
+}
+
+// « depuis le 12/08 » — repère utile quand on hésite à supprimer un compte.
+function usrLeftSince(u) {
+  if (!u.left_guild_at) return "";
+  const d = new Date(u.left_guild_at);
+  if (isNaN(d)) return "";
+  return ` <span class="usr-chief">parti depuis le ${d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" })}</span>`;
 }
 
 // `parti` = rendu dans la section repliée : pas de pastille « Hors Discord »
@@ -1117,7 +1132,7 @@ function usrRow(u, parti) {
   const couleur = parti ? '#9a8b73' : (isAdmin ? '#f3c44f' : '#f5deb3');
   const safe = u.user.replace(/'/g, "\\'").replace(/"/g, "&quot;");
   return `<div class="usr-row">
-    <span class="usr-name" style="color:${couleur}">${u.user}${badge}</span>
+    <span class="usr-name" style="color:${couleur}">${u.user}${badge}${parti ? usrLeftSince(u) : ""}</span>
     <div class="usr-actions">
       ${isProtected ? '' : `<button class="usr-btn${isAdmin ? ' usr-btn-demote' : ' usr-btn-promote'}" onclick="toggleUserRole('${safe}','${u.role}')">${isAdmin ? 'Rétrograder' : 'Promouvoir'}</button>
       <button class="usr-btn usr-btn-del" onclick="deleteUserAccount('${safe}')" data-tip="Supprimer">🗑</button>`}

@@ -55,13 +55,18 @@ if ($due) {
 
     if (!dco_member_allowed($cfg, $member, $user)) {
         // A quitté la guilde OU perdu le rôle d'accès → éjection immédiate,
-        // même si une session était encore ouverte.
+        // même si une session était encore ouverte. On étiquette le compte pour
+        // que l'administration le classe dans les anciens joueurs sans attendre
+        // une vérification manuelle.
+        dco_mark_left($discordId, true);
         dco_clear_session();
         echo json_encode(['ok' => false, 'reason' => $member['in_guild'] ? 'no_access_role' : 'left_guild']);
         exit;
     }
 
-    // Toujours membre : on rafraîchit le rôle et l'horodatage.
+    // Toujours membre : on rafraîchit le rôle et l'horodatage (et on efface
+    // l'étiquette « parti » s'il en portait une — cas d'un retour).
+    dco_mark_left($discordId, false);
     $role = dco_compute_role($cfg, $user, $member['roles']);
     $_SESSION['role']            = $role;
     $_SESSION['discord_checked'] = time();

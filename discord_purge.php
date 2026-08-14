@@ -169,6 +169,7 @@ function dp_scan(): array {
         'orphelines' => $orphelines,
         'total_bases' => count($bases),
         'a_supprimer' => $aSupprimer,
+        'membership' => $membership,   // pour l'étiquetage par dp_apply()
     ];
 }
 
@@ -180,6 +181,18 @@ function dp_scan(): array {
  */
 function dp_apply(array $scan): array {
     if (empty($scan['ok'])) return ['ok' => false, 'error' => $scan['error'] ?? 'scan_failed', 'supprimees' => 0, 'joueurs' => []];
+
+    // Étiquetage AVANT tout : c'est ce qui permet à l'administration de classer
+    // les anciens joueurs dès l'ouverture de la page, sans vérification manuelle.
+    // Se fait même quand il n'y a aucune base à retirer — c'est aussi ce qui
+    // EFFACE l'étiquette des joueurs revenus dans la guilde.
+    if (!empty($scan['membership'])) {
+        $tags = dco_sync_left_flags($scan['membership']);
+        if ($tags['marques'] || $tags['effaces']) {
+            dp_log("Étiquettes : {$tags['marques']} compte(s) marqué(s) parti(s), {$tags['effaces']} de retour.");
+        }
+    }
+
     if (empty($scan['partis'])) return ['ok' => true, 'supprimees' => 0, 'joueurs' => []];
 
     $cibles = [];

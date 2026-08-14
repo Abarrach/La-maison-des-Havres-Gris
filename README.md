@@ -52,16 +52,46 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 - Un joueur peut avoir une base dans chaque instance (max 2)
 
 #### Désert Profond — Carte dynamique, champs d'épice et POI
-- **`dd_seed.php`** détecte le **seed actif réel** de la semaine en lisant la page `dune.gaming.tools/deep-desert` (lien préchargé `seed=N` / `deepdesert_1_NN.d.json`). ⚠ Les numéros de seed de l'API gaming.tools ne sont PAS des compteurs hebdomadaires séquentiels (seeds vides intercalés), donc aucune formule de date ne peut les retrouver : seule la page source fait foi. Cache 30 min. Helper partagé par le proxy et le composeur de carte.
-- **`dd_map_update.php`** recompose `deep_desert.jpg` chaque semaine en assemblant les 64 tuiles (8×8) du tileset `deepdesert_1_NN` (NN = seed actif via `dd_seed.php`)
-- **`dd_proxy.php`** interroge, sur le **même seed actif**, deux sources gaming.tools côté serveur (cache 4h, invalidé au changement de seed) :
-  - API acteurs (`seed=N`) → zones PVP/PVE, champs d'épice (L/M/S), filons titane/stravidium **regroupés en champs** (clustering serveur, badge = nb de nœuds)
-  - données carte (`deepdesert_1_NN.d.json`, format « flatted » décodé en PHP) → **grottes, labos (stations de test), épaves**
-  - ⚠ Correctif : avant, le proxy interrogeait `seed=0` (une vieille semaine figée) → l'épice avait toujours 1-3 semaines de retard
-- Côté client, **barre de filtres à icônes** (façon method.gg) : chaque couche se masque/affiche, état mémorisé (localStorage). Visibles par défaut : grands champs d'épice + gros champs titane/stravidium
+- **Seed hebdomadaire = formule de date, pas de scraping.** Le tileset tourne sur **12 variantes** (`deepdesert_1_00` … `_11`, vérifié : `_12` n'existe pas) ; le seed actif = `compteur_hebdo % 12`, avec pour référence le compteur **16 = semaine du 9 juin 2026** (reset **mardi 05h Paris**). La même formule est écrite côté client (`currentActorSeed()` dans `script.js`) et côté serveur (`dd_week_count()` dans `dd_map_update.php`) → image et marqueurs ne divergent jamais.
+  - ⚠ **Cloudflare bloque le serveur** (403 « Just a moment ») sur la page et l'API gaming.tools : impossible de scraper le seed côté PHP. Les **tuiles .webp passent**, d'où la recomposition d'image qui fonctionne. `dd_seed.php` et `dd_proxy.php` sont conservés comme **replis inertes** (bloqués en pratique) — ne pas s'y fier.
+  - Le **navigateur** (IP résidentielle) passe Cloudflare : c'est lui qui récupère les données de la carte, en direct, avec CORS `*`.
+- **`dd_map_update.php`** recompose `deep_desert.jpg` chaque semaine en assemblant les 64 tuiles (8×8) du tileset `deepdesert_1_NN`. Cron : `30 5 * * 2`.
+- Côté client (`script.js`), deux sources gaming.tools :
+  - API acteurs (`actors?world=deepdesert_1&seed=N`) → zones PVP/PVE, champs d'épice (L/M/S), filons titane/stravidium **regroupés en champs** (clustering `ddClusterPts`, badge = nb de nœuds)
+  - données carte (`deepdesert_1_NN.d.json`, format « flatted » décodé par `ddFlatResolve`) → **grottes, labos (stations de test), épaves**
+- **Barre de filtres à icônes** (façon method.gg) : chaque couche se masque/affiche, état mémorisé (localStorage `ddFiltersV3` + `ddStarredOnlyV3`)
+- **Vue par défaut à l'ouverture = « le meilleur »** : grands champs d'épice, titane, stravidium, labos et grottes affichés, **★ ACTIF d'origine**. La carte s'ouvre donc sur les sites à schéma unique / loot ultra-rare et sur les plus grosses concentrations de filons.
+  - ⚠ Conséquence assumée : avec ★ actif, seuls les champs de **70 nœuds et plus** sont visibles — souvent **un seul par carte**, alors qu'une quinzaine sont exploitables. La légende affiche donc « ★ actif — décocher pour voir tous les champs de filons » tant que le filtre est en place.
+  - Les clés localStorage sont **versionnées** (`…V3`) : en changer le numéro remet tous les joueurs aux nouveaux défauts, y compris ceux qui ont déjà ouvert la carte. Sans ça, un réglage mémorisé l'emporterait indéfiniment sur les défauts.
+- **Seuils des champs de filons** : une concentration s'affiche à partir de **20 nœuds**, et le bouton **★** relève le seuil à **70 nœuds** (« que les gros »). L'ancien seuil unique de 70 ne laissait souvent qu'**un seul** marqueur sur toute la carte (ex. seed 01 : 1 champ ≥ 70, mais 15 titane et 10 stravidium ≥ 20)
+- **Icônes de filons graduées** : la taille et l'opacité du marqueur suivent le nombre de nœuds (55 % de la taille et 60 % d'opacité au seuil bas → pleine taille et pleine opacité au seuil ★), et les gros champs passent au-dessus des petits. Avec une quinzaine de champs affichés, les grosses concentrations restent repérables d'un coup d'œil — même principe que les POI ordinaires estompés
+- **Schémas uniques nommés** : les coffres du `.d.json` listent leur butin notable (`notableLoot`) avec l'objet enseigné et sa chance de tirage. L'infobulle d'une grotte / d'un labo / d'une épave affiche donc **la liste des schémas uniques qui peuvent y tomber, en français** — les noms FR viennent de `plans_uniques.json` (registre dataminé du site), rebranchés sur l'id de l'objet **ou** du schéma (les deux conventions coexistent) → **135/140 uniques nommés en FR**, les 5 restants gardant leur nom anglais plutôt qu'une traduction inventée
+- ⚠ **Le contenu des tables de butin ne change PAS d'une semaine à l'autre** (vérifié sur les seeds 01, 02 et 05 : les mêmes 140 schémas uniques, 140 en commun). Ce qui tourne, c'est le **placement** des coffres — quelle grotte hérite de quelle table. Impossible donc de restreindre l'affichage aux « uniques de la semaine » : ils sont tous disponibles chaque semaine
+- La table d'un coffre compte de **7 à 50 entrées** selon son type : `Unique_T5_*` = peu d'entrées à forte probabilité (**un vrai spot**), `UltraRare_Cave_Main` = jusqu'à 50 entrées à 13 % et moins (**une loterie**). L'infobulle détaille donc les **8 plus probables** puis résume (« + 31 autres, 8 % ou moins »), ce qui rend la différence lisible d'un coup d'œil
+- Le bouton **★** cumule les deux effets : POI à schéma unique / loot ultra-rare **et** champs de filons les plus gros
+- Les infobulles au survol utilisent le composant commun **`dune-tip.js`** (voir la section dédiée)
 - Les marqueurs sont projetés via `gameToLeaflet()` (coordonnées monde gaming.tools → pixels Leaflet), validé contre le `gridCell` officiel de gaming.tools
 - Chaque tooltip indique la **cellule de la grille** (ex. F5) et le nom du POI le cas échéant
 - La carte est versionnée côté client (`?v=<seed>`) pour invalider le cache navigateur à chaque rotation de tileset
+
+#### Ménage automatique — bases des joueurs partis du Discord
+- **`discord_purge.php`** retire de la carte les bases des comptes qui ne sont **plus membres du Discord** de la guilde. Un partant ne revient jamais sur le site, donc la revérification de session (`session_check.php`) ne se déclenche jamais pour lui : sans ce script, sa base restait jusqu'à un ménage manuel.
+- Usage : `php discord_purge.php` (**simulation**, n'écrit rien) puis `php discord_purge.php --apply`. Cron conseillé : `0 6 * * *`.
+- Bouton **« 🧹 Purger les bases des partis »** dans *Mon Compte > Gestion des utilisateurs* : affiche d'abord qui est concerné, applique après confirmation (même code que le cron).
+- **Boîte de dialogue maison** (`duneDialog()` dans `account.html`, au style du site) à la place des `alert()`/`confirm()` natifs : titre, liste des joueurs concernés avec leur nombre de bases, bouton d'action explicite (« Retirer 3 bases »), fermeture par Échap ou clic sur le fond. Utilisée par la purge et par la suppression d'un utilisateur.
+- Garde-fous : seuls les comptes **liés à Discord** sont vérifiables (un compte mot de passe n'est jamais touché) ; une erreur transitoire Discord (429/5xx/réseau) est traitée comme « inconnu », **jamais** comme « parti » ; responsable du site et cheffe de guilde intouchables ; les bases retirées sont **archivées** dans `discord_purge_removed.json` et chaque passage journalisé dans `discord_purge.log` ; les bases **orphelines** (pseudo sans compte, souvent des POI posés par un admin) sont seulement signalées.
+- Le **compte n'est pas supprimé** (il porte l'historique sorties / registre des plans) — seule la base disparaît de la carte.
+
+### Infobulles au survol (`dune-tip.js`)
+Composant commun à **tout le site** : l'attribut `title` natif du navigateur est hors thème et met 1 à 2 s à apparaître.
+
+- **Usage** : `<script src="dune-tip.js" defer></script>` (depuis un sous-dossier : `../dune-tip.js`), puis `data-tip="…"` au lieu de `title="…"`
+- **Instantané** (transition 0,08 s), palette du site, positionné au-dessus de l'élément — **en dessous** s'il n'y a pas la place — et **ramené dans l'écran** s'il déborde sur les bords
+- **Délégation d'événements sur le document** → couvre aussi les éléments créés en JS (barre de filtres de la carte, boutons sietch, lignes de tableaux rendues dynamiquement)
+- **Multi-lignes conservées** (`white-space: pre-line`) : plusieurs pages listent des sources ou des lieux de drop séparés par des `\n`
+- **Accessibilité** : `title` servait aussi de nom accessible aux boutons à icône. `data-tip` est donc recopié dans `aria-label` **si** l'élément n'a ni texte visible ni libellé propre (balisage statique au chargement, éléments dynamiques au premier survol)
+- **Déployé sur** : `map.html`, `base_planner.html`, `optimiseur.html`, `plans.html`, `account.html`, `menu.html`, `skills.html`, `epice/debrief.html` (+ `script.js`, `base_planner.js`, `skills.js`). **84 infobulles converties, plus aucun `title` natif** sur ces pages
+- Deux infobulles CSS locales du planner ont été retirées à cette occasion : celle des boutons d'outils (`content: attr(title)`, en `nowrap` donc débordante) et une règle `[data-tooltip]` **déjà morte** (plus aucun élément ne la portait)
 
 ### Simulateur de Talents
 - Arbre de compétences interactif avec allocation de points

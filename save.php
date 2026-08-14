@@ -209,6 +209,27 @@ switch ($action) {
         echo json_encode(['ok' => true, 'membership' => $membership]);
         exit;
 
+    // Purge des bases des joueurs qui ont quitté le Discord.
+    // Sans 'apply' → simple état des lieux (rien n'est modifié), pour pouvoir
+    // afficher QUI sera concerné avant de confirmer. Logique et garde-fous dans
+    // discord_purge.php (même code que le cron quotidien).
+    case 'purgeLeftMembersBases':
+        requireAdmin();
+        require_once __DIR__ . '/discord_purge.php';
+
+        $scan = dp_scan();
+        if (empty($scan['ok'])) jerr($scan['error'] ?? 'scan_failed', 500);
+
+        if (empty($data['apply'])) {
+            echo json_encode(['ok' => true, 'applied' => false, 'scan' => $scan], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+
+        $res = dp_apply($scan);
+        if (empty($res['ok'])) jerr($res['error'] ?? 'purge_failed', 500);
+        echo json_encode(['ok' => true, 'applied' => true, 'scan' => $scan, 'result' => $res], JSON_UNESCAPED_UNICODE);
+        exit;
+
     // ==========================================
     // CASES POUR LES REQUÊTES DE CRAFT (VEC IMAGE)
     // ==========================================

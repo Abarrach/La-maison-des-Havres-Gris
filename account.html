@@ -88,6 +88,60 @@
     .msg-err { color: #e57373; font-size: 0.85em; margin-top: 10px; display: none; }
 
     /* ============================
+       BOÎTE DE DIALOGUE (remplace alert/confirm natifs)
+       Même langage visuel que la modale avatar.
+    ============================= */
+    #dune-dialog {
+      display: none; position: fixed; inset: 0; z-index: 900;
+      background: rgba(0,0,0,0.8); align-items: center; justify-content: center;
+      padding: 20px; box-sizing: border-box;
+    }
+    #dune-dialog.open { display: flex; }
+    .dlg-box {
+      background: #1a0f05; border: 1px solid #cda434; border-radius: 8px;
+      width: 100%; max-width: 520px; max-height: 85vh;
+      display: flex; flex-direction: column; overflow: hidden;
+      box-shadow: 0 0 40px rgba(205,164,52,0.2);
+      animation: dlgIn 0.18s ease;
+    }
+    @keyframes dlgIn { from { opacity: 0; transform: translateY(-12px); } to { opacity: 1; transform: none; } }
+    .dlg-header {
+      padding: 16px 20px; border-bottom: 1px solid #3d2b16; flex-shrink: 0;
+    }
+    .dlg-header h3 {
+      color: #cda434; margin: 0; font-size: 1em;
+      text-transform: uppercase; letter-spacing: 2px;
+    }
+    .dlg-body { padding: 18px 20px; overflow-y: auto; color: #ccc; font-size: 0.9em; line-height: 1.6; }
+    .dlg-body strong { color: #e6cf8a; }
+    .dlg-note { color: #8a8a8a; font-size: 0.85em; margin-top: 14px; }
+    .dlg-list { margin: 14px 0 0; padding: 0; list-style: none; }
+    .dlg-list li {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 7px 12px; margin-bottom: 5px;
+      background: rgba(205,164,52,0.06); border-left: 2px solid #cda434; border-radius: 3px;
+      color: #e0e0e0;
+    }
+    .dlg-count { color: #cda434; font-size: 0.85em; white-space: nowrap; }
+    .dlg-footer {
+      display: flex; gap: 10px; justify-content: flex-end;
+      padding: 14px 20px; border-top: 1px solid #3d2b16; flex-shrink: 0;
+    }
+    .dlg-btn {
+      padding: 9px 18px; border-radius: 4px; cursor: pointer;
+      font-size: 0.85em; text-transform: uppercase; letter-spacing: 1px;
+      border: 1px solid #3d2b16; background: none; color: #aaa; transition: all 0.2s;
+    }
+    .dlg-btn:hover { color: #fff; border-color: #666; }
+    .dlg-btn.primary {
+      background: linear-gradient(180deg, #cda434 0%, #8a6e23 100%);
+      border-color: #cda434; color: #1a0f05; font-weight: bold;
+    }
+    .dlg-btn.primary:hover { background: #eac154; color: #1a0f05; }
+    .dlg-btn.danger { border-color: #7a2b2b; color: #e08a8a; }
+    .dlg-btn.danger:hover { background: #7a2b2b; color: #fff; }
+
+    /* ============================
        MODAL AVATAR PICKER
     ============================= */
     #avatar-modal {
@@ -333,6 +387,7 @@
 </head>
 <body>
 <script src="auth-guard.js"></script>
+<script src="dune-tip.js" defer></script>
 
 <header>
   <div class="header-title">Mon Compte</div>
@@ -345,7 +400,7 @@
 
   <!-- Avatar hero -->
   <div class="avatar-hero">
-    <div class="avatar-big-wrap" onclick="openAvatarModal()" title="Changer d'avatar">
+    <div class="avatar-big-wrap" onclick="openAvatarModal()" data-tip="Changer d'avatar">
       <div class="avatar-big" id="avatar-big">?</div>
       <div class="avatar-edit-hint">
         <svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
@@ -448,7 +503,10 @@
   <div class="section" id="users-admin-section" style="display:none;">
     <div class="section-title" style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
       <span>Gestion des utilisateurs</span>
-      <button class="usr-check-btn" id="discord-check-btn" onclick="checkDiscordMembership()">🔄 Vérifier Discord</button>
+      <span style="display:flex; gap:8px; flex-wrap:wrap;">
+        <button class="usr-check-btn" id="discord-check-btn" onclick="checkDiscordMembership()">🔄 Vérifier Discord</button>
+        <button class="usr-check-btn" id="purge-bases-btn" onclick="purgeLeftMembersBases()">🧹 Purger les bases des partis</button>
+      </span>
     </div>
     <p class="pg-intro">
       Promouvoir un joueur en <strong style="color:#cda434;">admin</strong> reste effectif même sans le
@@ -483,6 +541,15 @@
     <div id="activity-admin-list"><div class="order-empty">Chargement…</div></div>
   </div>
 
+</div>
+
+<!-- ====== BOÎTE DE DIALOGUE (duneDialog) ====== -->
+<div id="dune-dialog">
+  <div class="dlg-box">
+    <div class="dlg-header"><h3 id="dlg-title">Titre</h3></div>
+    <div class="dlg-body" id="dlg-body"></div>
+    <div class="dlg-footer" id="dlg-footer"></div>
+  </div>
 </div>
 
 <!-- ====== MODAL AVATAR PICKER ====== -->
@@ -1014,13 +1081,13 @@ function renderUsersAdmin() {
     const badge = isSiteOwner ? ' <span class="usr-chief">(responsable du site)</span>'
                 : isGuildChief ? ' <span class="usr-chief">(chef de guilde)</span>' : '';
     const leftGuild = DISCORD_MEMBERSHIP && u.discord_id && DISCORD_MEMBERSHIP[u.discord_id] === false;
-    const leftBadge = leftGuild ? ' <span class="usr-left-guild" title="Absent de la guilde Discord lors de la dernière vérification">⚠ Hors Discord</span>' : '';
+    const leftBadge = leftGuild ? ' <span class="usr-left-guild" data-tip="Absent de la guilde Discord lors de la dernière vérification">⚠ Hors Discord</span>' : '';
     const safe = u.user.replace(/'/g, "\\'").replace(/"/g, "&quot;");
     return `<div class="usr-row">
       <span class="usr-name" style="color:${isAdmin ? '#f3c44f' : '#f5deb3'}">${u.user}${badge}${leftBadge}</span>
       <div class="usr-actions">
         ${isProtected ? '' : `<button class="usr-btn${isAdmin ? ' usr-btn-demote' : ' usr-btn-promote'}" onclick="toggleUserRole('${safe}','${u.role}')">${isAdmin ? 'Rétrograder' : 'Promouvoir'}</button>
-        <button class="usr-btn usr-btn-del" onclick="deleteUserAccount('${safe}')" title="Supprimer">🗑</button>`}
+        <button class="usr-btn usr-btn-del" onclick="deleteUserAccount('${safe}')" data-tip="Supprimer">🗑</button>`}
       </div>
     </div>`;
   }).join("");
@@ -1037,13 +1104,21 @@ async function toggleUserRole(target, role) {
 }
 
 async function deleteUserAccount(target) {
-  if (!confirm("Supprimer l'utilisateur " + target + " ? Ses bases seront aussi supprimées.")) return;
+  const ok = await duneDialog({
+    title: "Supprimer un utilisateur",
+    danger: true,
+    confirm: "Supprimer",
+    html: `<p>Supprimer définitivement le compte <strong>${dlgEsc(target)}</strong> ?</p>
+           <p class="dlg-note">Ses bases seront retirées de la carte en même temps.
+           Contrairement à la purge des partis, cette suppression n'est pas archivée.</p>`,
+  });
+  if (!ok) return;
   try {
     const res = await fetch("save.php", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ action: "deleteUser", target }) });
     const j = await res.json();
     if (!j.ok) throw new Error(j.error || "Erreur serveur");
     await loadAdminSections();
-  } catch(e) { alert("Échec : " + e.message); }
+  } catch(e) { await duneDialog({ title: "Échec", html: `<p>${dlgEsc(e.message)}</p>` }); }
 }
 
 // Vérification manuelle de l'appartenance Discord (bouton "Vérifier Discord").
@@ -1070,6 +1145,133 @@ async function checkDiscordMembership() {
   } finally {
     btn.disabled = false;
     btn.textContent = "🔄 Vérifier Discord";
+  }
+}
+
+// Boîte de dialogue maison, au style du site (les alert/confirm natifs juraient
+// avec le reste de la page). Renvoie une promesse : true = confirmé.
+//   duneDialog({ title, html })                        → simple information (OK)
+//   duneDialog({ title, html, confirm: "Supprimer" })  → confirmation (Annuler + action)
+// `html` est injecté tel quel : n'y passer que du contenu construit ici, en
+// échappant les valeurs venues du serveur (cf. dlgEsc).
+function dlgEsc(s) {
+  return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+}
+
+function duneDialog({ title, html, confirm = null, danger = false }) {
+  return new Promise(resolve => {
+    const overlay = document.getElementById("dune-dialog");
+    document.getElementById("dlg-title").textContent = title;
+    document.getElementById("dlg-body").innerHTML = html;
+    const footer = document.getElementById("dlg-footer");
+    footer.innerHTML = "";
+
+    const close = (val) => {
+      overlay.classList.remove("open");
+      document.removeEventListener("keydown", onKey);
+      overlay.onclick = null;
+      resolve(val);
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") close(false);
+      if (e.key === "Enter" && !confirm) close(true);
+    };
+
+    if (confirm) {
+      const cancel = document.createElement("button");
+      cancel.className = "dlg-btn";
+      cancel.textContent = "Annuler";
+      cancel.onclick = () => close(false);
+      footer.appendChild(cancel);
+    }
+    const ok = document.createElement("button");
+    ok.className = "dlg-btn " + (danger ? "danger" : "primary");
+    ok.textContent = confirm || "OK";
+    ok.onclick = () => close(true);
+    footer.appendChild(ok);
+
+    // Clic sur le fond = annuler (mais pas un clic dans la boîte)
+    overlay.onclick = (e) => { if (e.target === overlay) close(false); };
+    document.addEventListener("keydown", onKey);
+    overlay.classList.add("open");
+    ok.focus();
+  });
+}
+
+// Purge des bases des joueurs partis du Discord. Deux temps : on demande d'abord
+// l'état des lieux au serveur (rien n'est modifié), on montre QUI est concerné,
+// puis on applique seulement après confirmation. Le même code tourne en cron
+// quotidien côté serveur (discord_purge.php --apply).
+async function purgeLeftMembersBases() {
+  const btn = document.getElementById("purge-bases-btn");
+  const status = document.getElementById("discord-check-status");
+  btn.disabled = true;
+  btn.textContent = "⏳ Analyse…";
+  status.textContent = "Vérification de l'appartenance Discord de chaque compte…";
+  try {
+    const res = await fetch("save.php", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ action: "purgeLeftMembersBases" }) });
+    const j = await res.json();
+    if (!j.ok) throw new Error(j.error || "Erreur serveur");
+
+    const scan = j.scan || {};
+    const partis = (scan.partis || []).filter(p => p.bases > 0);
+    const inconnus = scan.inconnus || [];
+    const orphelines = scan.orphelines || [];
+
+    let info = `${(scan.partis || []).length} compte(s) hors du Discord, ${scan.a_supprimer || 0} base(s) concernée(s).`;
+    if (inconnus.length) info += ` ${inconnus.length} compte(s) non vérifiable(s) cette fois (ignorés).`;
+    if (orphelines.length) info += ` ${orphelines.length} base(s) orpheline(s) signalée(s) (non supprimées).`;
+    status.textContent = info;
+
+    if (!partis.length) {
+      const total = (scan.partis || []).length;
+      await duneDialog({
+        title: "Purge des bases",
+        html: `<p><strong>Rien à retirer.</strong></p>
+               <p>${total ? `${total} compte(s) ne sont plus sur le Discord, mais aucun n'a de base sur la carte.`
+                          : "Tous les comptes liés à Discord sont encore membres de la guilde."}</p>`
+             + (orphelines.length ? `<p class="dlg-note">${orphelines.length} base(s) orpheline(s) (pseudo sans compte) sont ignorées : ce sont le plus souvent des points d'intérêt posés en admin.</p>` : ""),
+      });
+      return;
+    }
+
+    const liste = partis.map(p =>
+      `<li><span>${dlgEsc(p.user)}</span><span class="dlg-count">${p.bases} base${p.bases > 1 ? "s" : ""}</span></li>`
+    ).join("");
+    const nbBases = partis.reduce((n, p) => n + p.bases, 0);
+
+    const okPurge = await duneDialog({
+      title: "Purge des bases",
+      danger: true,
+      confirm: `Retirer ${nbBases} base${nbBases > 1 ? "s" : ""}`,
+      html: `<p>Ces joueurs ne sont <strong>plus sur le Discord</strong> de la guilde. Leur base sera retirée de la carte :</p>
+             <ul class="dlg-list">${liste}</ul>
+             <p class="dlg-note">Les bases retirées sont archivées côté serveur (restauration possible).
+             Les comptes, eux, ne sont pas supprimés : ils portent l'historique des sorties et le registre des plans.
+             ${inconnus.length ? `<br>${inconnus.length} compte(s) n'ont pas pu être vérifiés cette fois : ils sont ignorés, jamais purgés par défaut.` : ""}</p>`,
+    });
+
+    if (!okPurge) { status.textContent = info + " — purge annulée."; return; }
+
+    btn.textContent = "⏳ Purge…";
+    const res2 = await fetch("save.php", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ action: "purgeLeftMembersBases", apply: true }) });
+    const j2 = await res2.json();
+    if (!j2.ok) throw new Error(j2.error || "Erreur serveur");
+    const r = j2.result || {};
+    status.textContent = `${r.supprimees || 0} base(s) retirée(s) pour ${(r.joueurs || []).length} joueur(s) parti(s).`;
+    await duneDialog({
+      title: "Purge terminée",
+      html: `<p><strong>${r.supprimees || 0} base(s) retirée(s)</strong> de la carte, pour ${(r.joueurs || []).length} joueur(s) parti(s).</p>`
+           + ((r.joueurs || []).length ? `<ul class="dlg-list">${r.joueurs.map(u => `<li><span>${dlgEsc(u)}</span></li>`).join("")}</ul>` : "")
+           + `<p class="dlg-note">Rechargez la carte pour voir le résultat.</p>`,
+    });
+  } catch(e) {
+    status.textContent = "Échec de la purge : " + e.message;
+    await duneDialog({ title: "Purge impossible", html: `<p>${dlgEsc(e.message)}</p>`
+      + `<p class="dlg-note">Rien n'a été supprimé.</p>` });
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "🧹 Purger les bases des partis";
   }
 }
 

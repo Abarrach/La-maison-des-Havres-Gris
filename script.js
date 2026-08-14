@@ -146,6 +146,37 @@ function processActors(seed, actors) {
   };
 }
 
+// ── Noms FR des schémas uniques ──────────────────────────────────────────────
+// Les coffres du .d.json listent désormais leur butin notable (`notableLoot`)
+// avec le NOM et l'ID de l'objet enseigné — on peut donc dire quel schéma unique
+// tombe dans quelle grotte. gaming.tools ne publie que l'anglais : on rebranche
+// le nom FRANÇAIS via `plans_uniques.json` (registre dataminé du site).
+// Best-effort : fichier absent → on garde le nom anglais, jamais de traduction
+// inventée.
+let _ddPlanNames = null;
+async function ddPlanNames() {
+  if (_ddPlanNames) return _ddPlanNames;
+  _ddPlanNames = {};
+  try {
+    const r = await fetch('plans_uniques.json');
+    if (r.ok) {
+      const j = await r.json();
+      if (j && j.plans) _ddPlanNames = j.plans;
+    }
+  } catch { /* pas de registre local : on restera en anglais */ }
+  return _ddPlanNames;
+}
+
+// L'id du SCHÉMA et celui de l'OBJET enseigné divergent souvent
+// (ex. « lightornithopterchoamboostheatefficient2_schematic » enseigne
+// « ornithopterlightboost_unique_lessheat_5 »). On essaie les deux, dans les
+// deux conventions de suffixe → 135/140 uniques nommés en FR (seed 01).
+function ddPlanFr(names, itemId, schemId) {
+  const cands = [itemId, schemId, (schemId || '').replace(/_schematic$/, ''), 'schematic_' + (itemId || '')];
+  for (const c of cands) if (c && names[c] && names[c].n) return names[c].n;
+  return null;
+}
+
 // POI (grottes/labos/épaves) depuis le .d.json gaming.tools — best-effort
 let _ddPoiCache = {};
 async function fetchDDPois(nn) {
@@ -158,6 +189,7 @@ async function fetchDDPois(nn) {
     if (!Array.isArray(flat) || !flat[0]) return null;
     const root = ddFlatResolve(flat, 0, []);
     const locs = root.locations || [];
+    const planNames = await ddPlanNames();
     const RANK = { Basic: 1, Rare: 2, UltraRare: 3 };
     const out = { cave: [], ecolab: [], shipwreck: [] };
     const sites = {};  // clé « nom|cellule » → site
@@ -177,8 +209,8 @@ async function fetchDDPois(nn) {
       if (!s) {
         s = sites[key] = {
           iconId: l.iconId, x: loc.x, y: loc.y,
-          cell: ddCell(loc.x, loc.y), name: l.name || '',
-          notable: false, tier: 0, unique: false, rarity: 0, _loot: {},
+          cell: ddCell(loc.x, loc.y), name: (l.name || '').trim(),
+          notable: false, tier: 0, unique: false, rarity: 0, _loot: {}, _uniq: {},
         };
       }
       if (l.hasNotableLoot) s.notable = true;
@@ -192,6 +224,21 @@ async function fetchDDPois(nn) {
       const m = lt.match(/(UltraRare|Rare|Basic)_(Cave|Ecolab|Shipwreck)/);
       const tier = m ? RANK[m[1]] : 0;
       const lbl = isUnique ? 'Schéma unique' : (tier === 3 ? 'Coffre ultra-rare' : null);
+
+      // Schémas uniques réellement listés dans le coffre (nom + chance de tirage)
+      const uniques = [];
+      for (const nl of (l.notableLoot || [])) {
+        const e = nl.entity || {};
+        if (!e.isSchematic || e.rarity !== 'Unique') continue;
+        const t = (e.teachesItems && e.teachesItems[0]) || {};
+        const id = t.id || e.id || '';
+        uniques.push({
+          id,
+          nom: ddPlanFr(planNames, id, e.id) || t.name || e.name || id,
+          p: nl.probability || 0,
+        });
+      }
+
       for (const p of (l.parentMarkers || [])) {
         if (!p || !p.name) continue;
         const s = sites[keyOf(p.name, p.gridCell)];
@@ -199,14 +246,23 @@ async function fetchDDPois(nn) {
         if (tier > s.tier) s.tier = tier;
         if (isUnique) s.unique = true;
         if (lbl) s._loot[lbl] = true;
+        // Un même coffre est listé une fois par marqueur parent : on dédoublonne
+        // par id d'objet et on garde la meilleure chance vue.
+        for (const u of uniques) {
+          const prev = s._uniq[u.id];
+          if (!prev || u.p > prev.p) s._uniq[u.id] = u;
+        }
       }
     }
 
-    // rarity ≥ 3 = ★ pépite (coffre Unique OU palier UltraRare)
+    // rarity ≥ 3 = ★ pépite (schéma unique listé, coffre Unique OU palier UltraRare)
     for (const s of Object.values(sites)) {
+      s.uniques = Object.values(s._uniq).sort((a, b) => b.p - a.p);
+      if (s.uniques.length) s.unique = true;
       s.rarity = (s.unique || s.tier >= 3) ? 3 : s.tier;
       s.loot = Object.keys(s._loot);
       delete s._loot;
+      delete s._uniq;
       out[s.iconId].push(s);
     }
     _ddPoiCache[nn] = out;
@@ -526,38 +582,77 @@ function updateSietchUI(mapId) {
 const CDN_ICONS = 'https://cdn-hosted.gaming.tools/dune/images/map-icons';
 
 // Couches affichables sur la Deep Desert. `on` = visible par défaut à l'ouverture.
-// `cluster` = filons regroupés en concentrations ; `threshold` = ne garder que les
-// concentrations de plus de N nœuds. `rare` = grottes/labos/épaves dont les
+// `cluster` = filons regroupés en concentrations ; `threshold` = nombre minimum de
+// nœuds pour afficher une concentration, `thresholdStar` = le seuil appliqué quand
+// le filtre global ★ est actif. `rare` = grottes/labos/épaves dont les
 // rares/ultra-rares sont mis en avant (anneau coloré + ★).
+//
+// Seuils filons : ★ actif = seulement les très gros champs (≥ 70 nœuds — souvent
+// un seul par carte, ex. 103 nœuds au seed 01) ; ★ inactif = tous les champs
+// exploitables (≥ 20 nœuds, soit ~15 titane / ~10 stravidium). L'ancien seuil
+// unique à 70 ne laissait qu'UN marqueur affiché en permanence.
+const DD_CLUSTER_MIN      = 20;
+const DD_CLUSTER_MIN_STAR = 70;
+
+// Nombre de schémas uniques détaillés dans une infobulle (le reste est résumé).
+const DD_UNIQUES_MAX = 8;
+
 const DD_LAYERS = [
   { id: 'spice_large',  label: "Grand champ d'épice",   icon: 'spicefieldlarge',  size: 64, on: true  },
   { id: 'spice_medium', label: "Champ d'épice moyen",   icon: 'spicefieldmedium', size: 24, on: false },
-  { id: 'titanium',     label: 'Titane (grosse concentration > 70)',     icon: 'titaniumore',   size: 54, on: true, cluster: true, threshold: 70 },
-  { id: 'stravidium',   label: 'Stravidium (grosse concentration > 70)', icon: 'stravidiumore', size: 54, on: true, cluster: true, threshold: 70 },
+  { id: 'titanium',     label: 'Titane (champ regroupé)',     icon: 'titaniumore',   size: 54, on: true, cluster: true, threshold: DD_CLUSTER_MIN, thresholdStar: DD_CLUSTER_MIN_STAR },
+  { id: 'stravidium',   label: 'Stravidium (champ regroupé)', icon: 'stravidiumore', size: 54, on: true, cluster: true, threshold: DD_CLUSTER_MIN, thresholdStar: DD_CLUSTER_MIN_STAR },
   { id: 'ecolab',       label: 'Labos (pépites surlignées)', icon: 'ecolab',     size: 52, on: true,  rare: true },
-  { id: 'cave',         label: 'Grottes (pépites surlignées)', icon: 'cave',   size: 52, on: false, rare: true },
+  { id: 'cave',         label: 'Grottes (pépites surlignées)', icon: 'cave',   size: 52, on: true,  rare: true },
   { id: 'shipwreck',    label: 'Épaves (pépites surlignées)',  icon: 'shipwreck', size: 54, on: false, rare: true },
 ];
+
+// Clés d'état versionnées : en changer le numéro REMET TOUT LE MONDE aux
+// nouveaux défauts, y compris les joueurs ayant déjà ouvert la carte (leur
+// réglage mémorisé serait sinon conservé indéfiniment). V3 = vue par défaut
+// « le meilleur » : épice large + titane + stravidium + labos + grottes, ★ ACTIF.
+const DD_FILTER_KEY = 'ddFiltersV3';
+const DD_STAR_KEY   = 'ddStarredOnlyV3';
 
 let ddLayerGroups  = {};   // id → L.layerGroup
 let ddLayerVisible = null;  // id → bool (persisté)
 let _ddLastData    = null;  // dernières données rendues (pour re-render filtre global)
-let ddStarredOnly  = (() => { try { return localStorage.getItem('ddStarredOnly') === '1'; } catch { return false; } })();
+
+// ★ actif par défaut (choix produit) : la carte s'ouvre sur les meilleurs sites
+// et les plus grosses concentrations. ⚠ Conséquence assumée : seuls les champs
+// de filons de 70 nœuds et plus sont visibles à l'ouverture (souvent un seul par
+// carte) — les ~15 autres champs exploitables n'apparaissent qu'en décochant ★,
+// d'où le rappel « ★ actif » dans la légende.
+let ddStarredOnly = (() => {
+  try { const v = localStorage.getItem(DD_STAR_KEY); return v === null ? true : v === '1'; }
+  catch { return true; }
+})();
 
 function loadDDFilterState() {
   if (ddLayerVisible) return ddLayerVisible;
   ddLayerVisible = {};
   let saved = {};
-  // Clé versionnée (V2) : ignore l'ancien état sauvegardé pour appliquer les
-  // nouveaux défauts (épice large + titane + stravidium + labos).
-  try { saved = JSON.parse(localStorage.getItem('ddFiltersV2') || '{}'); } catch {}
+  try { saved = JSON.parse(localStorage.getItem(DD_FILTER_KEY) || '{}'); } catch {}
   for (const L0 of DD_LAYERS) {
     ddLayerVisible[L0.id] = (L0.id in saved) ? !!saved[L0.id] : L0.on;
   }
   return ddLayerVisible;
 }
 function saveDDFilterState() {
-  try { localStorage.setItem('ddFiltersV2', JSON.stringify(ddLayerVisible)); } catch {}
+  try { localStorage.setItem(DD_FILTER_KEY, JSON.stringify(ddLayerVisible)); } catch {}
+}
+
+// Graduation d'un champ de filons : plus la concentration est grosse, plus
+// l'icône est grande et opaque. Même principe que les POI ordinaires estompés —
+// avec le seuil descendu à 20 nœuds, la carte porte une quinzaine de champs et
+// les gros doivent rester repérables d'un coup d'œil.
+// Échelle : au seuil bas → 55 % de la taille et bien estompé ; au seuil ★ (et
+// au-delà) → pleine taille et pleine opacité.
+function ddClusterScale(layer, count) {
+  const lo = layer.threshold     || 1;
+  const hi = layer.thresholdStar || (lo * 3);
+  const t  = Math.max(0, Math.min(1, (count - lo) / Math.max(1, hi - lo)));
+  return { size: Math.round(layer.size * (0.55 + 0.45 * t)), opacity: 0.6 + 0.4 * t };
 }
 
 // Icône d'un marqueur : pastille de comptage (concentration de filons),
@@ -568,6 +663,7 @@ function ddMakeIcon(layer, item) {
   const count  = item.count  || 1;
   const rarity = item.rarity || 0;
   if (layer.cluster && count > 1) {
+    s = ddClusterScale(layer, count).size;
     return L.divIcon({
       className: 'dd-cluster-icon',
       html: `<img src="${url}" width="${s}" height="${s}"><span class="dd-cluster-badge">${count}</span>`,
@@ -588,6 +684,12 @@ function ddMakeIcon(layer, item) {
   // (hasNotableLoot) garde la pleine taille → effet « gros icône » de gaming.tools.
   if (layer.rare && !item.notable) s = Math.round(s * 0.6);
   return L.icon({ iconUrl: url, iconSize: [s, s], iconAnchor: [s / 2, s / 2], popupAnchor: [0, -s / 2] });
+}
+
+// Les noms de POI/schémas viennent d'une source externe → échappement avant
+// injection dans l'infobulle HTML.
+function ddEsc(s) {
+  return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
 
 // Rendu zones PVP/PVE + toutes les couches de marqueurs à partir des données proxy
@@ -627,8 +729,9 @@ function renderDDData(data) {
     if (ddLayerGroups[L0.id]) { map.removeLayer(ddLayerGroups[L0.id]); }
     const grp  = L.layerGroup();
     let list   = layers[L0.id] || [];
-    // Filons : ne garder que les grosses concentrations (> threshold nœuds)
-    if (L0.threshold) list = list.filter(it => (it.count || 1) > L0.threshold);
+    // Filons : seuil de regroupement, relevé quand ★ est actif (« que les gros »)
+    const minNodes = (ddStarredOnly && L0.thresholdStar) ? L0.thresholdStar : L0.threshold;
+    if (minNodes) list = list.filter(it => (it.count || 1) >= minNodes);
     // Filtre global « pépites uniquement » : sur les POI, ne garder que les ★
     if (ddStarredOnly && L0.rare) list = list.filter(it => (it.rarity || 0) >= 3);
     counts[L0.id] = list.length;
@@ -637,16 +740,40 @@ function renderDDData(data) {
       const cell  = it.cell || 'ABCDEFGHI'[Math.min(8, Math.floor(pos.lat / (DD_IMG_H / 9)))] + Math.min(9, Math.floor(pos.lng / (DD_IMG_W / 9)) + 1);
       const cnt   = it.count || 1;
       const rar   = it.rarity || 0;
-      // estompé uniquement si POI ordinaire (ni pépite ★ ni notable « gros »)
-      const faded = L0.rare && rar < 3 && !it.notable;
+      // Opacité : POI ordinaire estompé (ni pépite ★ ni notable « gros »),
+      // et champs de filons gradués selon la taille de la concentration.
+      const faded   = L0.rare && rar < 3 && !it.notable;
+      const opacity = L0.cluster ? ddClusterScale(L0, cnt).opacity : (faded ? 0.78 : 1);
       let label   = L0.label;
       if (L0.cluster && cnt > 1) label += ` — ${cnt} nœuds`;
       if (rar >= 3) label += ' — ★ ' + ((it.loot && it.loot.length) ? it.loot.join(' + ') : 'loot rare');
       else if (it.notable) label += ' — site notable';
       if (it.name) label += ` — ${it.name}`;
       label += ` — cellule ${cell}`;
-      L.marker(pos, { icon: ddMakeIcon(L0, it), opacity: faded ? 0.78 : 1, zIndexOffset: rar >= 3 ? 20 : (it.notable ? 15 : (L0.cluster ? 5 : 10)) })
-        .bindTooltip(label, { sticky: true, className: 'dd-zone-tooltip' })
+
+      // Liste des schémas uniques du site (nom + chance de tirage du coffre).
+      // La table d'un coffre compte de 7 à 50 entrées : tout afficher rend
+      // l'infobulle illisible, on garde donc les plus probables et on annonce
+      // le reste. ⚠ Le contenu des tables ne change PAS d'une semaine à l'autre
+      // (vérifié sur les seeds 01/02/05 : mêmes 140 uniques) — c'est le
+      // PLACEMENT des coffres qui tourne. Un site à peu d'entrées et forte
+      // probabilité vaut donc bien mieux qu'un site à 50 entrées.
+      let tip = ddEsc(label);
+      if (it.uniques && it.uniques.length) {
+        const pct  = v => (v >= 0.01 ? Math.round(v * 100) + ' %' : '< 1 %');
+        const top  = it.uniques.slice(0, DD_UNIQUES_MAX);   // déjà triés par probabilité
+        const rest = it.uniques.length - top.length;
+        tip += `<div class="dd-tip-uniques"><b>Schémas uniques (${it.uniques.length})</b>`
+             + top.map(u => `<div>• ${ddEsc(u.nom)}${u.p ? ` <span class="dd-tip-pct">${pct(u.p)}</span>` : ''}</div>`).join('')
+             + (rest ? `<div class="dd-tip-more">+ ${rest} autre${rest > 1 ? 's' : ''}, ${pct(top[top.length - 1].p)} ou moins</div>` : '')
+             + '</div>';
+      }
+
+      // Les gros champs passent au-dessus des petits (sinon un 103 nœuds peut se
+      // retrouver caché derrière un 21 nœuds voisin).
+      const zPlan = L0.cluster ? Math.min(19, Math.round(cnt / 6)) : (rar >= 3 ? 20 : (it.notable ? 15 : 10));
+      L.marker(pos, { icon: ddMakeIcon(L0, it), opacity, zIndexOffset: zPlan })
+        .bindTooltip(tip, { sticky: true, className: 'dd-zone-tooltip' })
         .addTo(grp);
     }
     ddLayerGroups[L0.id] = grp;
@@ -664,6 +791,18 @@ function renderDDData(data) {
 // Re-rendu des couches POI sans refetch (bascule du filtre global)
 function ddRerender() {
   if (_ddLastData) renderDDData(_ddLastData);
+  ddUpdateStatus();
+}
+
+// Ligne d'état de la légende. Le rappel « ★ actif » est important : avec le
+// filtre en place à l'ouverture, un joueur ne voit qu'un champ de filons sur
+// une quinzaine, sans forcément comprendre pourquoi.
+let _ddStatusBase = '';
+function ddUpdateStatus() {
+  const el = document.getElementById('dd-overlay-status');
+  if (!el || !_ddStatusBase) return;
+  el.textContent = _ddStatusBase
+    + (ddStarredOnly ? ' · ★ actif — décocher pour voir tous les champs de filons' : '');
 }
 
 // Barre de filtres à icônes (boutons ronds cliquables, façon method.gg)
@@ -676,7 +815,12 @@ function buildDDFilterBar(counts) {
     const n   = counts ? (counts[L0.id] || 0) : 0;
     const btn = document.createElement('button');
     btn.className = 'dd-filter-btn' + (visible[L0.id] ? ' active' : '');
-    btn.title = `${L0.label}${n ? ' (' + n + ')' : ''}`;
+    // Pour les filons, le seuil courant dépend du filtre ★ → on l'affiche.
+    // `data-tip` = infobulle maison (cf. map.html), pas le `title` natif.
+    const minNodes = (ddStarredOnly && L0.thresholdStar) ? L0.thresholdStar : L0.threshold;
+    const libelle  = `${L0.label}${minNodes ? ` — ${minNodes} nœuds et plus` : ''}${n ? ' (' + n + ')' : ''}`;
+    btn.dataset.tip = libelle;
+    btn.setAttribute('aria-label', libelle);
     btn.innerHTML = `<img src="${CDN_ICONS}/${L0.icon}.webp" alt="">`;
     btn.addEventListener('click', () => {
       visible[L0.id] = !visible[L0.id];
@@ -689,14 +833,17 @@ function buildDDFilterBar(counts) {
   }
 
   // Bouton global « pépites uniquement » (★) : ne laisse que les sites à loot
-  // ultra-rare/unique, toutes catégories de POI confondues.
+  // ultra-rare/unique, et relève le seuil des champs de filons aux plus gros.
   const starBtn = document.createElement('button');
   starBtn.className = 'dd-filter-btn dd-filter-star' + (ddStarredOnly ? ' active' : '');
-  starBtn.title = 'Pépites uniquement (sites à loot ultra-rare / schéma unique)';
+  starBtn.dataset.tip = `Le meilleur uniquement — sites à schéma unique / loot ultra-rare, `
+                      + `et champs de filons de ${DD_CLUSTER_MIN_STAR} nœuds et plus `
+                      + `(sinon ${DD_CLUSTER_MIN} et plus)`;
+  starBtn.setAttribute('aria-label', starBtn.dataset.tip);
   starBtn.innerHTML = '<span style="font-size:22px;line-height:1;color:#f3c44f">★</span>';
   starBtn.addEventListener('click', () => {
     ddStarredOnly = !ddStarredOnly;
-    try { localStorage.setItem('ddStarredOnly', ddStarredOnly ? '1' : '0'); } catch {}
+    try { localStorage.setItem(DD_STAR_KEY, ddStarredOnly ? '1' : '0'); } catch {}
     starBtn.classList.toggle('active', ddStarredOnly);
     ddRerender();
   });
@@ -740,8 +887,9 @@ async function loadDDOverlay() {
   if (statusEl) {
     const src      = fromProxy ? '📦 proxy' : '🌐 direct';
     const nbSpice  = (counts && counts.spice_large) || 0;
-    statusEl.textContent = `✅ Seed #${data.seed} — ${zoneCount} zones · ${nbSpice} grands champs (${src})`;
+    _ddStatusBase  = `✅ Seed #${data.seed} — ${zoneCount} zones · ${nbSpice} grands champs (${src})`;
     statusEl.style.color = '';
+    ddUpdateStatus();
   }
 }
 
@@ -781,7 +929,7 @@ function renderSietchQuickBtns(sietchsWithBases, countsBySietch = {}) {
     background:rgba(0,0,0,0.45);border-radius:9px;
     font-size:10px;font-weight:700;margin-left:4px;
     color:inherit;line-height:1;">${total}</span>`;
-  allBtn.title = 'Afficher tous les sietchs';
+  allBtn.dataset.tip = 'Afficher tous les sietchs';
   allBtn.onclick = () => {
     currentSietch = null;
     const sel = document.getElementById('sietch-select');
@@ -801,7 +949,7 @@ function renderSietchQuickBtns(sietchsWithBases, countsBySietch = {}) {
       background:rgba(0,0,0,0.45);border-radius:9px;
       font-size:10px;font-weight:700;margin-left:4px;
       color:inherit;line-height:1;">${count}</span>`;
-    btn.title = sietch;
+    btn.dataset.tip = sietch;
     btn.onclick = () => {
       currentSietch = (currentSietch === sietch) ? null : sietch;
       const sel = document.getElementById('sietch-select');

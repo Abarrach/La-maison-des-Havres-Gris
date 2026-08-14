@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="script.js" defer></script>
+  <script src="dune-tip.js" defer></script>
   
   <style>
     /* === HEADER FIXE (mobile : la carte Leaflet ne doit pas faire disparaître le header) === */
@@ -175,6 +176,19 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.6);
     }
     .dd-zone-tooltip::before { display: none; }
+
+    /* Liste des schémas uniques d'un site (grotte / labo / épave) */
+    .dd-tip-uniques {
+      margin-top: 5px;
+      padding-top: 5px;
+      border-top: 1px solid #5c4025;
+      font-weight: normal;
+      max-width: 280px;
+      white-space: normal;
+    }
+    .dd-tip-uniques b { color: #f3c44f; display: block; margin-bottom: 2px; }
+    .dd-tip-pct { color: #a67c33; }
+    .dd-tip-more { color: #8a7550; font-style: italic; margin-top: 3px; }
 
     /* === LÉGENDE DD PVP/PVE === */
     #dd-legend {
@@ -364,13 +378,13 @@
     <div id="player-list"></div>
   </div>
 
-  <button id="toggle-players" class="toggle-players" title="Afficher les joueurs">
+  <button id="toggle-players" class="toggle-players" data-tip="Afficher les joueurs" aria-label="Afficher les joueurs">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#2d1804" width="30px" height="30px">
       <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zM8 11c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5C15 14.17 10.33 13 8 13zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
     </svg>
   </button>
 
-  <button id="admin-toggle" class="admin-toggle-btn" title="Outils Admin">⚙️</button>
+  <button id="admin-toggle" class="admin-toggle-btn" data-tip="Outils Admin" aria-label="Outils Admin">⚙️</button>
 
   <div id="custom-modal-overlay">
     <div class="modal-box">
@@ -384,6 +398,7 @@
         </div>
     </div>
   </div>
+
 
 </body>
 </html>

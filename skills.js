@@ -534,8 +534,8 @@ function renderImgPreviews() {
     if(!zone) return;
     zone.innerHTML=pendingImages.map((img,i)=>`
         <div class="img-thumb-wrap">
-            <img src="${img.base64}" class="img-thumb" onclick="openImageModal(this.src)" title="${img.name}">
-            <button class="img-thumb-remove" onclick="removeImage(${i})" title="Retirer">×</button>
+            <img src="${img.base64}" class="img-thumb" onclick="openImageModal(this.src)" data-tip="${img.name}">
+            <button class="img-thumb-remove" onclick="removeImage(${i})" data-tip="Retirer">×</button>
         </div>`).join('');
 }
 
@@ -676,7 +676,7 @@ function createReqCard(req) {
 
     // Normalisation images : ancien format image (string) ou nouveau images (array)
     const imgs=Array.isArray(req.images)&&req.images.length ? req.images : (req.image?[req.image]:[]);
-    const imgsHtml=imgs.length ? `<div class="req-images-row">${imgs.map(s=>`<img src="${s}" class="req-image" onclick="openImageModal(this.src)" title="Agrandir">`).join('')}</div>` : '';
+    const imgsHtml=imgs.length ? `<div class="req-images-row">${imgs.map(s=>`<img src="${s}" class="req-image" onclick="openImageModal(this.src)" data-tip="Agrandir">`).join('')}</div>` : '';
 
     let info=`<div class="req-info">
         <span>👤 <span class="req-player">${req.player}</span></span>
@@ -687,14 +687,14 @@ function createReqCard(req) {
     </div>`;
 
     let actions=`<div class="req-actions">`;
-    if(req.player===currentUserReq&&req.status!=='done') actions+=`<button class="btn-action" style="background:#a83b3b;color:#fff;padding:6px 10px;" onclick="deleteRequest('${req.id}')" title="Supprimer">🗑️</button>`;
+    if(req.player===currentUserReq&&req.status!=='done') actions+=`<button class="btn-action" style="background:#a83b3b;color:#fff;padding:6px 10px;" onclick="deleteRequest('${req.id}')" data-tip="Supprimer">🗑️</button>`;
     // Bouton "Ajouter captures" : uniquement pour le demandeur, sur ses demandes actives, si <4 images.
     // Utile principalement pour compléter une demande créée depuis Discord (/commande creer, pas d'upload possible dans le modal).
     if(req.player===currentUserReq&&req.status!=='done'&&imgs.length<4){
-        actions+=`<button class="btn-action" style="background:#3b6fa8;color:#fff;padding:6px 10px;" onclick="addRequestImages('${req.id}')" title="Ajouter des captures">📸 +${4-imgs.length}</button>`;
+        actions+=`<button class="btn-action" style="background:#3b6fa8;color:#fff;padding:6px 10px;" onclick="addRequestImages('${req.id}')" data-tip="Ajouter des captures">📸 +${4-imgs.length}</button>`;
     }
     const hasBase=allMapBases.some(b=>b.user===req.player);
-    actions+=hasBase?`<a href="map.html?focus=${encodeURIComponent(req.player)}" class="btn-action btn-map">🗺️ Voir Base</a>`:`<span class="btn-action" style="background:#333;color:#777;border:1px solid #444;cursor:help;" title="Pas de base renseignée">🚫 Pas de base</span>`;
+    actions+=hasBase?`<a href="map.html?focus=${encodeURIComponent(req.player)}" class="btn-action btn-map">🗺️ Voir Base</a>`:`<span class="btn-action" style="background:#333;color:#777;border:1px solid #444;cursor:help;" data-tip="Pas de base renseignée">🚫 Pas de base</span>`;
     if(req.status!=='done'){
         if(req.status==='pending') actions+=`<button class="btn-action btn-take" onclick="updateReqStatus('${req.id}','progress')">Prendre en charge</button>`;
         else if(req.status==='progress'&&req.crafterAssigned===currentUserReq) actions+=`<button class="btn-action btn-done" onclick="updateReqStatus('${req.id}','done')">Marquer Terminé</button>`;

@@ -362,7 +362,7 @@ function renderSideLists() {
         offeringHelp.forEach(res => {
             const sietchBadge = res.sietch ? `<span class="sietch-badge">${res.sietch.replace('Sietch ', '')}</span>` : '';
             html += `
-                <div class="help-item" onclick="focusOnMarker(${res.lat}, ${res.lng})" title="Voir sa base sur la carte">
+                <div class="help-item" onclick="focusOnMarker(${res.lat}, ${res.lng})" data-tip="Voir sa base sur la carte">
                     <strong style="color:#41d37a; font-size:14px;">${res.pseudo}</strong>${sietchBadge}<br>
                     <span style="font-size:11px; color:#aaa;">🤝 Propose son aide</span>
                 </div>

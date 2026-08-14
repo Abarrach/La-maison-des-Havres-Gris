@@ -5947,7 +5947,7 @@ function bpRenderPlansList(plans) {
       '  <div class="bp-plan-row-name">' + (p.name || '(sans nom)') + '</div>' +
       '  <div class="bp-plan-row-meta">' + meta + '</div>' +
       '</div>' +
-      '<button class="bp-plan-row-del" title="Supprimer">✕</button>';
+      '<button class="bp-plan-row-del" data-tip="Supprimer">✕</button>';
     row.querySelector('.bp-plan-row-info').addEventListener('click', () => bpLoadPlanById(p.id));
     row.querySelector('.bp-plan-row-del').addEventListener('click', (e) => {
       e.stopPropagation();

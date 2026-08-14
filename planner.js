@@ -270,7 +270,7 @@ function updateUI() {
                     ${tooltipHtml}
                 </div>
             </div>
-            <button class="btn-delete" onclick="removePlayer(${index})" title="Supprimer ce joueur">✖</button>
+            <button class="btn-delete" onclick="removePlayer(${index})" data-tip="Supprimer ce joueur">✖</button>
             `;
         list.appendChild(li);
     });

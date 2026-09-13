@@ -263,7 +263,8 @@ Le **cache navigateur des modules ES** masque les déploiements → versioning `
 
 **Finitions (2026-06, lots `lot1`→`lot20`) :**
 - **Stabilité (socket)** : `computeStabilitySocket` — connectivité par **coïncidence de sockets monde**
-  (mêmes règles que le snap, `costMatch`/`typeMatch` exportés), **budget 10 pas** propagé en BFS depuis
+  (mêmes règles que le snap, `costMatch`/`typeMatch` exportés), **budget 9 pas** (corrigé au lot 38 —
+  on comptait 10 en additionnant l'ancre) propagé en BFS depuis
   les ancres (fondations + **piliers/colonnes au sol**). Coût : horizontal 1, vertical via mur 1, via
   pilier/fondation 0. Rejet des jonctions **coin↔coin** (sinon raccourci diagonal sol↔sol). Bouton
   bouclier : vert/orange/rouge + pose bloquée si hors budget.
@@ -304,7 +305,76 @@ Le **cache navigateur des modules ES** masque les déploiements → versioning `
 - **Meshes machines/véhicules câblés dans le build** (`MV_MESH`) → plus perdus à chaque régénération de `planner_pieces.json`.
 - **Rambardes inclinées** s'accrochent au flanc des escaliers/rampes ; le **mur arrondi** n'« aspire » plus le sol arrondi.
 - **Anti-cache** : versioning `?v=lotX` sur le `<script>` + les `import` + le `fetch` de `planner_pieces.json`
-  (bumper à chaque modif, actuellement `lot33buildplane`).
+  (bumper à chaque modif, actuellement `lot39move`).
+
+**Lot 39 — déplacer une pièce posée :**
+Il n'existait aucun moyen de bouger une pièce déjà posée — il fallait la supprimer et la reposer,
+en reperdant rotation, variante et demi-étage. `moveSelected(dx, dy, dz)` déplace la **sélection
+entière** d'une cellule (512 cm) dans le plan ou d'un niveau en hauteur.
+- **Toujours des pas entiers de la grille.** Un décalage libre mettrait les pièces entre deux cases
+  et casserait l'accroche par sockets.
+- **Repère ÉCRAN, pas repère monde** (`nudgeDirFromKey`) : « flèche du haut » éloigne la pièce de
+  l'observateur quel que soit l'angle de vue, sinon les flèches deviennent illisibles dès qu'on a
+  tourné autour du fief. En vue de dessus l'axe de visée ne projette rien au sol : on bascule alors
+  sur le vecteur `up` de la caméra, qui EST le haut de l'écran. Vérifié aux 4 azimuts.
+- **`socketPlaceableReason` prend un `ignoreIds`.** Sans lui, une machine se voit elle-même à sa
+  nouvelle position et TOUT déplacement est refusé (« Emplacement occupé » — mesuré). Le contrôle
+  n'a lieu que pour machines/véhicules : les structures se superposent déjà librement à la pose,
+  on ne durcit pas la règle au déplacement.
+- **On applique d'abord, on contrôle ensuite, on revient en arrière si refus** : `socketPlaceableReason`
+  raisonne sur l'état réel du plan, pas sur une position hypothétique.
+- Accès : flèches, `Page↑`/`Page↓`, le pavé directionnel du panneau, **ou le glisser-déposer** :
+  glisser une pièce **déjà sélectionnée**, ou `Alt`+glisser n'importe laquelle (celle-ci est alors
+  sélectionnée, pour qu'on voie ce qu'on bouge). `Échap` pendant le glissé annule et remet en place.
+  Une seule entrée d'historique par déplacement, sélection multiple comprise.
+- **Contrepartie assumée du glissé** : sur une pièce sélectionnée, le glissé ne fait plus tourner la
+  caméra. Partout ailleurs — vide, pièce non sélectionnée — l'orbite est intacte. `Alt`+glisser
+  existe justement pour qui orbite en glissant sur sa base.
+- Pendant le glissé le curseur est projeté sur le **plan de l'étage**, pas sur la géométrie sous la
+  souris : la pièce suit le curseur, donc se viser elle-même rendrait le déplacement récursif et
+  sautillant. On raisonne en **écart de cellules depuis le point de départ**, jamais en position
+  absolue — la pièce garde sa place relative sous le curseur même si on l'a saisie par le bord.
+- Validé : 4 flèches (aller-retour exact), sélection de 3 pièces, Ctrl+Z/Ctrl+Y, changement d'étage
+  avec rattachement correct, refus « emplacement occupé » et « pas de sol sous la pièce » avec
+  rollback, les 6 boutons, et les 4 azimuts caméra. Au glissé : pièce non sélectionnée sans `Alt`
+  qui ne bouge pas, glissé de +2 cases, `Alt`+glissé, sélection de 3 pièces d'un bloc, Ctrl+Z/Y,
+  `Échap` qui annule en cours de geste, refus avec rollback complet, orbite restaurée après coup.
+- **Piège du banc d'essai** (à resservir) : dans le panneau d'aperçu la page 3D n'est pas peinte,
+  donc la boucle `requestAnimationFrame` ne tourne jamais et **les matrices monde ne sont pas mises
+  à jour** → tous les raycasts ratent, y compris la sélection au clic. Remèdes : stuber
+  `canvas.getBoundingClientRect()` (le rect vaut 0×0) et appeler `scene.updateMatrixWorld(true)`
+  avant chaque mesure. Et se fier au **raycast** pour situer une pièce à l'écran, pas à une
+  projection maison — les deux divergeaient d'une cellule.
+
+**Lot 38 — ergonomie de pose (comparaison avec `tinkertownhq.com/dune-base-builder`) :**
+- **Budget de stabilité corrigé : 9 pas, pas 10.** L'ancienne valeur additionnait les 9 pièces portées
+  *et* la pièce de soubassement qui les ancre — or celle-ci est l'ancre, pas un pas. Valeur confirmée
+  par le planner concurrent, qui refuse la pose au-delà de 9 (`Too far from support`).
+- **Cycle d'accroche (`Tab`)** : `snapCandidates()` (moteur sockets) renvoie désormais **toutes** les
+  accroches valides sous le curseur, dédoublonnées par (position, rotation) et **regroupées par
+  emplacement** — `Tab` fait donc d'abord le tour des arêtes distinctes, les variantes de rotation
+  (mur retourné, porte qui s'ouvre de l'autre côté) venant après. `snapPiece()` en garde la première :
+  comportement par défaut inchangé. Le HUD affiche `accroche i/n (Tab)`. Le cycle se réinitialise dès
+  que le curseur bouge de plus de 28 px, et après chaque pose.
+- **Sélection rectangle (`Shift` + glisser)** : sélectionne tout ce qui est **visible** dans le rectangle
+  (les étages masqués ne sont jamais pris). L'orbite est coupée pendant le tracé — `onPointerMove`
+  d'OrbitControls sort tôt quand `enabled === false`, donc la caméra ne bouge pas ; `onPointerUp` n'a
+  pas ce garde et nettoie sa capture normalement. Filet de sécurité sur `blur` (bouton relâché hors
+  fenêtre). `Shift`+clic sans glissé reste « ajouter à la sélection ».
+- **Construction assistée** (groupe « Auto » de la barre d'outils) :
+  - **Cercle de fondations** — disque ou anneau, rayon 1→20 cases, aperçu filaire suivant le curseur,
+    pose au clic. Les cases hors fief ou déjà occupées sont ignorées.
+  - **Mur de périmètre** — ceinture l'étage courant. Repère les arêtes de bord (case portante dont le
+    voisin ne l'est pas) puis laisse le **moteur de sockets** calculer position et rotation depuis le
+    milieu de l'arête (aucune géométrie devinée) ; une accroche à plus de 40 cm de l'arête visée est rejetée.
+  - **Murs ±1 niveau** — déplace les murs/portes/fenêtres **sélectionnés**, sinon tous ceux de l'étage.
+  - Les trois passent par `bulkPlace()` : **une seule entrée d'historique par lot** (un Ctrl+Z défait
+    « le cercle », pas 81 fondations).
+  - Pièce utilisée : la pièce **active** si elle est du bon groupe, sinon celle de la **faction dominante
+    du plan** (comptage des pièces posées), sinon la première du catalogue.
+- **Photo de référence** : image projetée à plat au niveau de l'étage courant pour la décalquer
+  (opacité, largeur en cases, rotation, miroir, décalage ½ case, masquer/retirer). Volontairement
+  **non sauvegardée** avec le plan — une dataURL ferait grossir chaque enregistrement de plusieurs Mo.
 
 ---
 
@@ -622,6 +692,37 @@ Mini-jeux de guilde entre membres, avec records et classements. Tuile dédiée d
 - **5 mini-jeux en ligne** : Orni Flap, Sandstorm Memory, Spice Runner, Worm Rider, Muad'Dib Rescue. **La Marche du Désert existe dans le dépôt mais n'est PAS déployée** — cf. son statut plus bas.
 - **Scores** : sauvegarde automatique par joueur (`jeux/scores_api.php`), un score soumis alimente **deux classements en parallèle** : `jeux/data/scores.json` (**Hall of Fame**, all-time, jamais remis à zéro) et `jeux/data/scores_weekly.json` (**classement hebdomadaire**, semaine en cours). Anti-triche (hash + cooldown) tranché **une seule fois** sur le store all-time, pour ne pas pouvoir contourner le cooldown juste après un reset hebdo.
 - **Remise à zéro hebdomadaire** (2026-07-14) : `jeux/weekly_reset.php`, lancé par CRON **chaque mardi 05:00 UTC** (= 7h Paris été, 6h Paris hiver — le serveur tourne en UTC et on n'y touche pas, les resets carte/DD sont calés dessus ; le hub affiche « à l'aube » plutôt qu'une heure fixe pour ne pas se contredire avec la tempête in-game). Sous prétexte lore qu'**une tempête de Coriolis vient de balayer Arrakis**, calcule le champion de la semaine par jeu, poste l'annonce dans Discord (webhook `jeux/data/discord_webhook.txt`, même fichier que les records) avec **deux blocs séparés** (`fields` Discord) : « 🏆 Champions de la semaine » (frais, remis à zéro) et « 🏛️ Hall of Fame — le score à détrôner » (repère all-time, lecture seule de `scores.json`, jamais modifié par ce script — donne un objectif à viser plutôt qu'un classement froid). Archive l'état sortant dans `jeux/data/weekly_archive/<année>-W<semaine>.json` (jamais écrasé), puis vide `scores_weekly.json`. `--dry` pour tester sans rien écrire/poster. **Contrôle avant vol** (ajouté après la panne silencieuse du 21/07/2026) : refuse de poster l'annonce si le fichier n'est pas inscriptible, cf. droits ci-dessous.
+> [!WARNING]
+> **Un plafond `max_score` trop bas fait disparaître un record en silence** — constaté en vrai le
+> **2026-09-08** : un score de **142 640** sur *Worm Rider* n'est jamais apparu ni au classement ni
+> sur Discord, alors que des scores plus faibles du même joueur (6 510, 7 789) avaient bien été
+> annoncés. Cause : `max_score` valait **99 999**, et `submit` fait `exit` sur `invalid_score`
+> **avant** tout enregistrement et toute notification. Le jeu affichait pourtant « MEILLEUR SCORE
+> 142 640 » : ce chiffre vient du `localStorage`, écrit **avant** l'appel serveur et sans tenir
+> compte de sa réponse — l'affichage et le classement peuvent donc diverger sans que rien ne le dise.
+> Ces jeux sont **tous sans fin** : tout plafond finira par être dépassé un jour. Trois mesures :
+> 1. `worm_rider` passé à **300 000** (le score = distance × multiplicateur, et le multiplicateur
+>    monte de +5 % par épice **sans plafond** — à 40 épices on tourne à ~157 pts/s, soit ~142 000
+>    en un quart d'heure : l'ancien plafond était sous une partie humaine ordinaire pour un bon joueur).
+> 2. **Tout refus est désormais journalisé** dans `jeux/data/scores_rejected.log`
+>    (`log_rejected_score()`), avec le plafond en cause. Un record perdu laisse enfin une trace.
+> 3. `submit` renvoie `max` dans la réponse d'erreur, pour qu'un jour l'interface puisse dire au
+>    joueur pourquoi son score a sauté au lieu de le perdre sans un mot (côté client : toujours un
+>    simple `console.warn`, à reprendre).
+> ⚠ À noter : le secret anti-triche est **servi au client** (`action: 'token'`), donc le hash ne
+> protège de rien face à quelqu'un de déterminé — c'est le plafond qui fait le vrai garde-fou.
+> Le relever a un coût, ne pas le relever aussi ; l'arbitrage se documente ici.
+
+- **Ajout manuel d'un score** : `jeux/add_score_admin.php` (CLI uniquement, à lancer en tant que
+  `dune`). Réutilise les fonctions de `scores_api.php` — mêmes verrous, mêmes sauvegardes, mêmes
+  droits 664, mêmes annonces Discord —, alimente les **deux** classements, refuse un score au-dessus
+  du plafond (sinon on rouvre à la main le trou qu'on vient de boucher), et n'écrase jamais un
+  meilleur score existant. `--dry` simule, `--annonce` poste sur Discord.
+  ```
+  php add_score_admin.php worm_rider Neuroch 142640 --annonce
+  ```
+  Le nom du joueur est celui de `$_SESSION['user']` (compte du site), pas le pseudo Discord.
+
 - **Notif Discord « meneur de la semaine »** (2026-07-14) : en plus du message all-time existant (record battu → embed doré), un **second message distinct** (embed bleu Discord, `notify_discord_weekly_record` dans `scores_api.php`) se déclenche quand un score dépasse le **meneur hebdomadaire** en cours — sans ça, personne ne sait qu'un défi de la semaine est en jeu et personne ne le relève (principe d'interaction demandé). Ne se déclenche que si aucune notif podium (rank 1/2/3 all-time) ne part pour la même soumission (pas de double post).
 - **Hub** (`hub.html`) : panneau classement avec bascule **🗓️ Cette semaine** (défaut) / **🏆 Hall of Fame**, note explicative avec compte à rebours avant le prochain reset (calculé en UTC → juste toute l'année). Les badges « record » sur les cartes de jeux restent **toujours all-time** (valeur de prestige stable). Le mini-classement **dans chaque jeu** (`orni_flap.html` etc., panneau « 🗓️ Cette semaine ») est lui aussi passé en **hebdomadaire** (`scope=weekly`) — sinon un nouveau joueur ne s'y voit jamais, écrasé par les scores historiques.
 - **Refonte graphique 2026-07** (Codex) : 4 des 5 jeux (Orni Flap, Spice Runner, Worm Rider, Muad'Dib Rescue) ont un habillage sprite premium à la place du dessin procédural (`jeux/img/*.png`, ~900 Ko commités dans le repo). Toujours **fallback procédural intégré** si un sprite n'est pas chargé : le jeu reste jouable même avec une image manquante côté serveur. Sandstorm Memory a suivi fin juillet (voir ci-dessous) — les 5 jeux sont désormais illustrés.
@@ -792,6 +893,139 @@ chmod 664 *.json last_wipe.txt
 chmod 775 avatars/ uploads/
 ```
 
+### Œil du Mentat — l'archive se charge au démarrage (corrigé le 2026-09-05)
+
+`dune_analytics.html` ne chargeait `dune_counts_archive.csv` **que sur clic** d'un bouton de plage.
+Or la vue par défaut est « Max », activée sans passer par `applyZoom` : la page s'ouvrait donc sur la
+seule fenêtre chaude (30 j) avec un trou béant à la place des mois archivés — tout en affichant, elle,
+la panne reconstruite de `dune_counts_estimated.csv`, chargée d'emblée. On montrait une estimation et
+on cachait les vraies données. « Max » doit vouloir dire « tout », pas « tout ce qui est déjà en mémoire ».
+Le coût est devenu négligeable depuis que nginx gzippe les CSV (7,2 Mo → ~0,6 Mo sur le réseau).
+
+⚠ **Le tableau de bord s'affiche AVANT que l'archive soit là.** La fenêtre chaude (~80 Mo,
+1,7 M de lignes) est parsée en premier, puis l'archive arrive **~6 s plus tard** (mesuré sur les
+fichiers de prod). Pendant ces 6 s la page a l'air terminée, graphe compris, et on croit à un trou
+dans les données — c'est exactement le diagnostic erroné qu'on a failli poser. Un témoin
+`#archive-status` (« ⏳ chargement de l'historique archivé… ») est affiché à côté de la ligne
+PÉRIODE pendant l'attente. Ne pas le retirer sans avoir d'abord supprimé l'attente elle-même.
+Piste pour (d) : les deux fichiers ne peuvent pas être chargés en parallèle en l'état, parce que
+`processRawData` fait `rawData = []` en entrée et écraserait l'archive si elle arrivait la première.
+
+**Le vrai coupable du « trou » (trouvé le 2026-09-05, après deux fausses pistes).** `insertGapBreaks`
+insérait un point `null` — qui casse le tracé — dès que deux relevés étaient espacés de plus de
+**1,5 h fixe**. Ce seuil suppose la cadence horaire de la fenêtre chaude. Appliqué à l'archive, qui
+est à **UN point par jour**, il coupait la ligne entre *chaque* paire de points : la zone archivée
+n'affichait donc aucune courbe, seulement le remplissage sous des points isolés — la dentelure
+sombre qu'on prenait pour une absence de données. Le seuil est désormais **local** : chaque
+intervalle est comparé à la cadence médiane de son voisinage (fenêtre de ±12 intervalles,
+facteur 1,5, plancher 1,5 h). 24 h entre deux points journaliers = résolution normale ; 2 h entre
+deux relevés horaires = vraie panne. Résultat sur les données de prod : de 176 points dont 87
+fausses coupures, à 818 points et **2 coupures, toutes deux réelles** (la panne de 6 jours du
+25-30 juin, et l'unique heure manquée du 25/08 19:00).
+⚠ Toute modification de la cadence de collecte ou d'archivage doit repasser par cette fonction.
+
+Corollaire sur la **carte Tendance** : elle compare la fenêtre active à la période précédente de même
+durée. Sur « Max » cette période ne peut par construction pas exister, la carte affichait donc « — »
+en permanence. Repli ajouté : quand rien ne précède la fenêtre, on compare sa seconde moitié à la
+première. Le libellé distingue les deux cas (« 89j préc. » = vraie période précédente,
+« 62j préc. » = repli par moitiés).
+
+### Œil du Mentat — chargement par paliers (2026-09-05)
+
+La page ne télécharge plus les ~80 Mo de `dune_counts.csv` à l'ouverture. Trois paliers :
+
+| Palier | Fichier | Poids (gzippé) | Quand |
+|---|---|---|---|
+| Vue d'ensemble | `dune_counts_daily.csv` | ~1,1 Mo | au démarrage |
+| Pics exacts | `dune_counts_hourly_total.csv` | ~8 Ko | au démarrage |
+| Courbe d'un monde | `dune_counts_hourly_world.csv` | ~0,75 Mo | à la 1re sélection d'un monde |
+| Détail horaire par sietch | `dune_counts.csv` / `history/*.csv.gz` | 0,1 à 5,8 Mo | **au zoom seulement** |
+
+`dune_counts_daily.csv` (produit par `dunelogger/build_daily_summary.py`, cron `10 * * * *`) contient
+une ligne par (jour, serveur, sietch) sur TOUT l'historique, avec moy/min/max. Comme il est **par
+sietch**, toutes les vues de la page fonctionnent telles quelles, simplement en résolution
+journalière. Le détail horaire n'est chargé que lorsqu'on zoome sous 40 jours — bouton de plage ou
+zoom souris (`plotly_relayout`) — et seulement pour le ou les mois visés. Les `.csv.gz` sont
+décompressés côté navigateur par `DecompressionStream` : rien à changer côté nginx.
+
+⚠ **Pourquoi `dune_counts_hourly_total.csv` existe** : une moyenne de journée n'est PAS le pic de la
+journée. Sans lui, la carte « pic 3 derniers jours » affichait 1 053 au lieu de 2 263. Il donne la
+série exacte des totaux horaires (2 526 lignes, 67 Ko) et rend les cartes de pic **indépendantes de
+ce qui est chargé** — sinon un KPI changerait selon les zooms déjà faits, ce qui est inacceptable.
+Le pic *par monde*, lui, utilise la colonne `max` du résumé : sur une journée sans horaire chargé
+c'est la somme des max par sietch, donc une **borne supérieure** et non la valeur exacte.
+
+**La courbe mondiale ne vient PAS de `rawData`** : en vue « Galaxie entière » sans isolement, elle
+est tracée directement depuis `dune_counts_hourly_total.csv`. Deux raisons. D'abord la cohérence :
+avant, elle était dense là où on avait zoomé et lisse ailleurs — ce qui se lisait comme des données
+manquantes (« pas de données avant le 31 mai »), alors que c'était juste une résolution mixte.
+Ensuite la vitesse : on broyait des millions de lignes pour dessiner 2 500 points.
+
+**Même traitement pour un monde isolé.** Dès qu'on filtre sur un serveur, la courbe repassait par
+`rawData` et redevenait journalière partout sauf sur la fenêtre zoomée — l'utilisateur lit ça comme
+« ça ne se met pas à jour ». `dune_counts_hourly_world.csv` (177 549 lignes, 0,75 Mo gzippé) est
+chargé **paresseusement à la première sélection d'un monde** : la plupart des visites restent en vue
+globale et ne le paient jamais. Ensuite, changer de monde coûte ~160 ms. Repli sur `rawData`
+uniquement si un SIETCH est isolé, cas où la série par monde ne suffit plus.
+
+**L'horaire gardé en mémoire est borné** (`HOURLY_KEEP_DAYS = 7`, `rebuildRawData`). `rawData` est
+RECONSTRUIT à chaque zoom depuis `dailyBase` + l'horaire de la fenêtre regardée, jamais empilé.
+Sans ce garde-fou, chaque zoom ajoutait un mois d'horaire : mesuré **4,77 millions de lignes,
+1,7 Go de mémoire et 7 s par changement de filtre**.
+
+| Mesure (données de prod) | Avant | Après |
+|---|---|---|
+| Changement de filtre, vue globale | 7 044 ms | **475 ms** |
+| Changement de filtre, monde isolé | ~7 000 ms | **144 ms** |
+| Idem après un zoom | 7 044 ms | **960 ms** |
+| Mémoire JS | 1 705 Mo | **105 à 546 Mo** |
+| `rawData` | 4,77 M lignes | 224 k à 608 k |
+
+⚠ Ne jamais fusionner de l'horaire sans retirer le point journalier du même jour, sinon le point de
+12:00 s'ajoute aux 24 points de la journée. Vérifié : aucun jour à 25 points.
+⚠ `_allRunsCache` s'invalide sur la LONGUEUR de `rawData` : `rebuildRawData` doit le remettre à
+`null` explicitement, deux fenêtres différentes pouvant donner le même nombre de lignes.
+
+⚠ **`beginAtZero` est une clé Chart.js, IGNORÉE par Plotly** — elle traînait sur l'axe Y du
+comparateur et du graphe par serveur/sietch. Conséquence mesurée : l'axe descendait à −4,3 au lieu
+de partir de 0. Remplacée par `rangemode: 'tozero'` (2026-09-06). Ne pas réintroduire : le reste du
+fichier est en Plotly, aucune option Chart.js n'y a d'effet, et elles échouent SILENCIEUSEMENT.
+
+⚠ **L'axe Y ne suit PAS le curseur de plage — il faut le recalculer soi-même** (2026-09-06).
+Symptôme signalé : « quand je fais glisser le curseur, le graphique remonte au fur et à mesure
+pour finir tout en haut, avec de mauvais chiffres en ordonnée ». Ce n'était ni les données ni le
+rendu : Plotly garde sur Y la graduation calculée pour l'historique entier quand on resserre X.
+En zoomant sur les premières semaines d'un monde (population haute), la courbe se plaque donc en
+haut d'un axe dimensionné pour autre chose. `rescaleYToWindow(chartId)` recalcule les bornes sur
+la fenêtre visible. Trois pièges, tous mesurés :
+- `yaxis.autorange: true` **ne suffit pas** : Plotly autorange sur TOUS les points, sans tenir
+  compte de la plage X — l'axe ne bouge pas d'un pixel.
+- Un `Plotly.relayout` appelé **depuis** un gestionnaire `plotly_relayout` est **ignoré** (Plotly
+  est encore en train d'émettre). D'où le `setTimeout(0)`. Sans lui, ça marchait au glissement
+  souris mais pas sur les boutons de plage — même symptôme, à moitié corrigé.
+- Notre propre relayout réémet l'événement : il faut un **test d'égalité** sur la plage cible pour
+  couper la récursion. Un drapeau « occupé » ne convient pas, il avale aussi la 1re application.
+Le rattrapage en fin d'`applyGlobalFilters` est indispensable : le chargement horaire est
+asynchrone et redessine APRÈS le zoom, ce qui rebasculait l'axe en autorange (2 boutons ratés
+sur 8 sans lui). Validé : 10 clics de plage et 5 glissements réels, marge constante à 8 %.
+
+⚠ **Plotly fige la taille du graphe au moment du tracé** (2026-09-06). Retour suivant du même
+utilisateur : « l'échelle reste bonne mais il se rétrécit toujours en haut ». Mesuré en local :
+conteneur `chart-timeline` de **1 494 px de large, Plotly en croyait 250**, et dessinait un tracé
+de **64 px** tassé en haut à gauche ; le curseur de plage du comparateur faisait 180 px pour un
+graphe de 732. Cause : au moment du `newPlot`, le conteneur n'a pas encore sa largeur définitive
+(grille non résolue) — Plotly retombe sur une valeur par défaut et n'en bouge plus jamais.
+Correctifs cumulés, chacun couvrant un cas que les autres ne voient pas :
+- `responsive: true` sur les 5 `newPlot` → suit le redimensionnement de la FENÊTRE (vérifié :
+  528/528 et 1087/1087 après un vrai événement `resize`).
+- `resizeChartsIfStale()` appelé en fin d'`applyGlobalFilters` et après le tableau du
+  comparateur → couvre le cas où c'est la COLONNE qui change de largeur, sans `resize` de
+  fenêtre (vérifié : écart de −188 px ramené à 0 au rendu suivant).
+- `observeChartSize()` (ResizeObserver) en filet de sécurité. **Non vérifiable dans le banc
+  d'essai** : les callbacks de ResizeObserver ne sont pas livrés dans un onglet non peint.
+Contrôle final : 8 plages × 2 graphes + 4 glissements réels → écart de largeur 0 partout,
+`xLen`/`yLen` constants, marge 8 %.
+
 ### Vérifier que la production correspond au dépôt
 
 Le déploiement est **manuel** (WinSCP, pas de git sur le serveur) : la prod dérive donc silencieusement, dans les deux sens. Audit complet fait le **2026-08-09** — prod et `main` alignés à cette date, à l'exception des fichiers listés ci-dessous comme normalement divergents.
@@ -818,9 +1052,114 @@ Divergences **normales**, à ne pas corriger : `settings.json` (donnée vivante,
 > [!IMPORTANT]
 > `dune_counts.csv` et `dune_counts_archive.csv` sont dans `/srv/dune-map/` (propriétaire `dune`, groupe `www-data`, droits `664`). Le logger et l'archiver tournent sous l'utilisateur `dune` ; nginx/php-fpm sous `www-data` peut lire les fichiers. Crons à configurer dans `crontab -e` (utilisateur `dune`) :
 > ```
-> 0 * * * *  /home/dune/.venvs/dune_logger_env/bin/python /home/dune/dune_logger_all.py >> /home/dune/data/dune_logger_cron.log 2>&1
-> 0 3 * * 1  /home/dune/.venvs/dune_logger_env/bin/python /home/dune/dune_archiver.py >> /home/dune/data/archiver.log 2>&1
+> # Scraper joueurs (toutes les heures) — xvfb-run est INDISPENSABLE : Playwright a besoin d'un affichage
+> 0 * * * *   cd /home/dune && xvfb-run -a /home/dune/.venvs/dune_logger_env/bin/python dune_logger_all.py >> /home/dune/data/cron.log 2>&1
+> # Archivage hebdo (lundi 3h UTC)
+> 0 3 * * 1   cd /home/dune && /home/dune/.venvs/dune_logger_env/bin/python dune_archiver.py >> /home/dune/data/archiver.log 2>&1
+> # Résumé journalier + totaux horaires — à :10, pour laisser finir le scraper de :00
+> 10 * * * *  cd /home/dune && /home/dune/.venvs/dune_logger_env/bin/python build_daily_summary.py >> /home/dune/data/daily_summary.log 2>&1
 > ```
+> Relevé sur la prod le 2026-09-06 (`crontab -l`, utilisateur `dune`) — les deux premières lignes
+> étaient documentées ici sans `cd`, sans `xvfb-run` et avec le mauvais nom de journal.
+
+### `dunelogger/` — les scripts du pipeline
+
+Versionnés le **2026-09-13**. Jusque-là ils ne vivaient QUE sur le serveur et sur le PC : du code en
+production sans aucune sauvegarde. Le dossier ne contient **que les scripts** ; les données (CSV,
+archives, `data/`) et la clé API restent dehors (`dunelogger/.gitignore`).
+
+| Script | Rôle | Où il tourne |
+|---|---|---|
+| `dune_logger_all.py` | scrape l'API awoo.tools et alimente `dune_counts.csv` | serveur, cron `0 * * * *` |
+| `dune_archiver.py` | déplace les vieilles lignes vers `history/*.csv.gz` | serveur, cron `0 3 * * 1` |
+| `build_daily_summary.py` | produit les 3 fichiers agrégés lus par la page | serveur, cron `10 * * * *` |
+| `recover_history.py` | récupération **ponctuelle** du 2026-09-05, déjà passée | **PC uniquement, jamais le serveur** |
+
+⚠ `recover_history.py` ne doit pas être déployé : ses sources sont des chemins Windows locaux
+(`J:\Download\Serveur\...`, copies éparpillées de l'ancien `dune_counts.csv`), il écrit dans un
+dossier local à vérifier avant téléversement manuel, et le relancer réécrirait des mois d'archives.
+Il est ici pour la **trace** de la reconstitution, pas pour resservir tel quel — ses chemins
+codés en dur seraient à revoir.
+
+⚠ La clé awoo n'est jamais en dur : `dune_logger_all.py` la lit dans `awoo_api_key.txt`, à créer à
+la main à côté du script sur le serveur (gitignoré).
+
+⚠ Ce qui est commité est la copie **locale** des scripts. Pour `dune_archiver.py` et
+`build_daily_summary.py` elle correspond à ce qui a été téléversé ; pour `dune_logger_all.py`,
+antérieur, le vérifier avant de se fier au dépôt comme référence.
+
+Restent NON versionnés dans le même dossier, à trancher : `fix_frozen_data.py` (outil de secours
+réutilisable — détecte les captures gelées d'un scraper banni, **le plus utile des trois**),
+`dune_logger_multi.py` (ancien scraper Playwright de gaming.tools, remplacé par l'API awoo) et
+`analyze_dune.py` (petite analyse pandas ponctuelle).
+
+> [!IMPORTANT]
+> **Où vit la configuration nginx** (l'info manquait, elle a coûté un aller-retour) : la VM sert
+> quatre sites. Celui du portail public est **`/etc/nginx/sites-enabled/havresgris`**
+> (`server_name havresgris.ddns.net`, `root /srv/dune-map`, 443 + redirection 80, géré par Certbot).
+> `/etc/nginx/sites-enabled/dune-map` sert le MÊME dossier sur le port 4040 en accès local ;
+> `conf.d/resto.conf` et `sites-enabled/revise-api` sont d'autres projets, à ne pas toucher.
+> Pour retrouver tout ça sans deviner : `sudo nginx -T | grep -E "^# configuration file|server_name|root "`.
+> Rituel de modification : `sudo cp <fichier> /root/<fichier>.bak-<date>` → éditer →
+> **`sudo nginx -t`** (tant qu'il n'est pas `successful`, le site tourne encore sur l'ancienne conf) →
+> `sudo systemctl reload nginx` (pas `restart` : aucune coupure).
+
+> [!IMPORTANT]
+> **Compression des CSV — en place depuis le 2026-09-05.** `dune_counts.csv` (91,5 Mo) partait en clair
+> à chaque ouverture de l'Œil du Mentat. Bloc ajouté dans `sites-enabled/havresgris` (server 443),
+> entre `location ~* \.(js|css)$` et `location / ` :
+> ```nginx
+> location ~* \.csv$ {
+>     default_type text/csv;
+>     gzip on;
+>     gzip_types text/csv;
+>     gzip_comp_level 2;
+>     gzip_vary on;
+> }
+> ```
+> Mesuré : 91 520 261 → **7 953 610 octets** (11,5×). **`gzip_comp_level 2` et pas le défaut 6** : sur
+> ce CSV très répétitif le niveau 2 compresse *mieux* que le 6 (2,56 Mo contre 2,66 sur un échantillon
+> de 30 Mo) et 5× plus vite (0,04 s contre 0,20 s). Ne pas mettre `application/octet-stream` dans
+> `gzip_types` au niveau global : ça compresserait aussi les 357 Mo de `models/*.glb` à chaque requête.
+> Les `location ^~ /epice/data/ { deny all; }` restent prioritaires (préfixe `^~` > expression
+> régulière), donc aucun CSV de données n'est exposé. Vérification (vrai GET, pas un HEAD — sur un
+> HEAD nginx annonce la taille NON compressée et on croit à un échec) :
+> `curl.exe -s -o NUL -D - -H "Accept-Encoding: gzip" https://havresgris.ddns.net/dune_counts.csv`
+> ⚠ Ce n'est qu'un pansement réseau : le navigateur décompresse et parse toujours 2 millions de lignes.
+
+> [!IMPORTANT]
+> **`dune_archiver.py` ne détruit plus l'historique (réécrit le 2026-09-05).** L'ancienne version
+> réécrivait `dune_counts.csv` en ne gardant que 30 jours, **sans sauvegarde** : tout le détail
+> horaire par sietch antérieur disparaissait, il n'en restait qu'une moyenne journalière — trois mois
+> de mesures y sont passés avant qu'on s'en aperçoive. Désormais l'ancien est **déplacé** dans
+> `/srv/dune-map/history/dune_counts_AAAA-MM.csv.gz` (brut, horaire, par sietch, gzip ~11×,
+> ~28 Mo pour 4 mois) : l'agrégation journalière n'est plus qu'un **cache recalculable**.
+> `dune_counts_archive.csv` gagne deux colonnes **min/max** en 5e et 6e position (la 4e reste la
+> moyenne → lignes anciennes et lecteur de la page toujours valides) : sans le max, tout pic de plus
+> de 30 jours était mécaniquement sous-évalué dans la carte « pic 3 mois ».
+> Le seuil est **arrondi à minuit UTC** : seules des journées COMPLÈTES sont archivées. Sans cet
+> arrondi, le jour contenant le seuil partait à moitié (ex. 00:00-08:00) et son résumé était calculé
+> sur les seules heures creuses → moyenne artificiellement basse, que le garde-fou anti-doublon
+> empêchait ensuite de corriger. Le reliquat du jour attend simplement le passage suivant.
+> Garde-fous : fichier d'état `history/.archived_until.json` (une relance après incident ne
+> redéplace jamais les mêmes lignes — l'ancienne version faisait un `append` aveugle et dupliquait) ;
+> la copie froide est **relue pour vérification avant** que `dune_counts.csv` ne soit touché ;
+> réécriture **atomique** par `.tmp` + `os.replace`. Tester avec `--dry-run` (n'écrit rien).
+> ⚠ `history/` est sous la racine web : c'est voulu (la future page ira y chercher l'historique
+> à la demande), et ce sont des données de jeu publiques.
+
+> [!IMPORTANT]
+> **L'historique horaire détruit a été RÉCUPÉRÉ (2026-09-05).** Le détail que l'ancien archiveur
+> avait réduit en moyennes journalières survivait dans plusieurs copies faites à d'autres fins :
+> `Save/dune-map/` (audit prod du 09/08, couvre 04/07→09/08), `dunelogger/*.bak_20260705` (30/05→05/07)
+> et `Carte Dune OK/` (04/05→21/05). `dunelogger/recover_history.py` les recolle, dédoublonne, et
+> **écarte les captures GELÉES** (le scraper d'avant awoo rejouait la même page après un ban IP :
+> 22 relevés identiques les 20-21/05, 164 du 24/06 au 01/07 — les réinjecter serait pire que le trou).
+> Résultat : **1 799 relevés horaires** rendus, contre 88 points journaliers, soit 20× la résolution.
+> Restent en moyenne seule : 21-29/05 (aucune sauvegarde) et 25-30/06 (gel, déjà reconstruit dans
+> `dune_counts_estimated.csv`). Le résumé journalier est régénéré avec de vrais moy/min/max, en
+> **conservant tel quel** les jours non retrouvés. Fichiers prêts dans `J:/Download/Serveur/Save/recovered-history/`.
+> ⚠ Toute sauvegarde de `dune_counts.csv` est désormais précieuse : ne pas les supprimer.
 
 > [!IMPORTANT]
 > Outil **Retours de Soirée** (`epice/`) : copier `epice/config.example.php` → `epice/config.php` (clé Gemini, hors Git). `epice/data/` doit être inscriptible par PHP (`chmod 664 epice/data/*.json`, dossier `775`, propriétaire `dune:www-data`). Bloquer l'accès web direct au dossier de données dans la conf nginx :

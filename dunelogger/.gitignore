@@ -1,0 +1,10 @@
+# Données et secrets : jamais dans le dépôt.
+# Le dossier ne contient QUE les scripts ; tout le reste vit sur le serveur
+# (/home/dune) ou dans /srv/dune-map, et pèse des dizaines de Mo.
+awoo_api_key.txt
+*.csv
+*.csv.gz
+*.bak_*
+data/
+history/
+__pycache__/

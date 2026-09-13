@@ -325,6 +325,18 @@ const STEPS = [
       + 'À refaire seulement quand un patch ajoute des plans uniques.',
   },
   {
+    id: 'base_pieces_v3',
+    label: 'Catalogue du Constructeur de Base (670 pièces)',
+    external: true,          // le script vit HORS du dépôt : lancé par importPlanner()
+    optIn: 'planner_import',
+    outputs: ['base_pieces_v3.json'],
+    sources: ['Systems/Building/Data', 'Systems/Vehicles'],
+    paks: ['Systems.pak', 'Vehicles.pak'],
+    note: 'Script externe J:/Download/Fmodel/import_building_data.js. PIÈGE : il écrit toujours '
+      + 'vers un chemin ABSOLU codé en dur (racine du dépôt principal) — le résultat est recopié '
+      + 'ici après coup. Régénérer ce fichier entraîne planner_pieces en cascade.',
+  },
+  {
     id: 'planner_pieces',
     label: 'Catalogue unifié du planner (pièces + sockets + utilitaires)',
     script: 'tools/build_planner_pieces.js',
@@ -352,16 +364,6 @@ const STEPS = [
 // Elles existent, elles servent, mais aucun script ne sait les régénérer. Les lister à
 // chaque --check est le seul moyen de ne pas les oublier après un patch.
 const ANGLES_MORTS = [
-  {
-    id: 'base_pieces_v3',
-    fichiers: ['base_pieces_v3.json'],
-    label: 'Catalogue du Constructeur de Base (670 pièces)',
-    detail: 'Généré par un script EXTERNE au dépôt : <paks>/../.. → J:/Download/Fmodel/import_building_data.js\n'
-      + '    Sources : Systems/Building/Data/** et Systems/Vehicles/Blueprints/**.\n'
-      + '    PIÈGE : il écrit vers un chemin ABSOLU codé en dur (racine du dépôt principal),\n'
-      + '    jamais vers le worktree courant — --run-planner-import recopie le résultat ici.',
-    automatisable: '--run-planner-import',
-  },
   {
     id: 'sockets',
     fichiers: ['dune_pieces_sockets.json', 'dune_socket_profiles.json', 'dune_group_config.json'],
@@ -580,7 +582,7 @@ function afficherCheck(ctx, analyses) {
     if (det.length) P(`    ${det.join('  ·  ')}`);
     if (a.raison) P(`    → ${a.raison}`);
     if (a.garde) P(`    ⚠ ${a.garde}`);
-    if (opt) P(`    (hors passage par défaut : ajoute --with-${step.optIn === 'planner_import' ? 'run-planner-import' : step.optIn})`);
+    if (opt) P(`    (hors passage par défaut : ajoute ${step.optIn === 'planner_import' ? '--run-planner-import' : '--with-' + step.optIn})`);
     if (a.verdict === 'export') for (const s of a.aReexporter) P(`    ⬇ à ré-exporter : Content/Dune/${s.rel}`);
   }
 
@@ -718,10 +720,8 @@ let aLancer = analyses.filter(({ step, a }) => {
  * périme planner_pieces.json… Sans ça, un passage laisse des fichiers incohérents entre eux
  * jusqu'au passage SUIVANT, et le diff du patch se retrouve étalé sur deux exécutions.
  */
-const lancerImport = WITH.planner_import && (!ONLY || ONLY === 'base_pieces_v3');
 if (!ONLY) {
   const produits = new Set(aLancer.flatMap(x => x.step.outputs || []));
-  if (lancerImport) produits.add('base_pieces_v3.json');
   let ajout = true;
   while (ajout) {
     ajout = false;
@@ -739,11 +739,11 @@ if (!ONLY) {
   aLancer.sort((p, q) => STEPS.indexOf(p.step) - STEPS.indexOf(q.step));
 }
 
-if (ONLY && !aLancer.length && !lancerImport) {
-  const connue = STEPS.some(s => s.id === ONLY) || ONLY === 'base_pieces_v3';
+if (ONLY && !aLancer.length) {
+  const connue = STEPS.some(s => s.id === ONLY);
   console.error(connue
     ? `Étape « ${ONLY} » écartée (voir la raison ci-dessus). --force pour l'exécuter quand même.`
-    : `Étape inconnue : ${ONLY} (identifiants : ${STEPS.map(s => s.id).join(', ')}, base_pieces_v3)`);
+    : `Étape inconnue : ${ONLY} (identifiants : ${STEPS.map(s => s.id).join(', ')})`);
   process.exit(1);
 }
 
@@ -760,18 +760,17 @@ if (bloquees.length) {
   for (const { step, a } of bloquees) console.log(`    ${step.id} — ${a.raison}`);
   console.log('');
 }
-if (!aLancer.length && !lancerImport) {
+if (!aLancer.length) {
   console.log(periemees.length
     ? 'Rien à régénérer MAINTENANT : ce qui reste attend le ré-export FModel listé ci-dessus.'
     : 'Rien à régénérer : tout est à jour (--force pour tout relancer quand même).');
   process.exit(0);
 }
 
-console.log(`Pipeline : ${aLancer.map(x => x.step.id).join(' → ') || '(aucune étape locale)'}${lancerImport ? ' (+ base_pieces_v3 externe)' : ''}`);
+console.log(`Pipeline : ${aLancer.map(x => x.step.id).join(' → ')}`);
 
-const resultats = [];
-if (lancerImport) resultats.push(importPlanner(ctx));
-for (const { step } of aLancer) resultats.push(executer(step, ctx));
+// Une étape « externe » (script hors dépôt) a son propre lanceur.
+const resultats = aLancer.map(({ step }) => (step.external ? importPlanner(ctx) : executer(step, ctx)));
 
 // ── Compte rendu ────────────────────────────────────────────────────────────
 const rapport = [];
@@ -812,7 +811,7 @@ if (!DRY_RUN) {
       if (m) sources[rel] = new Date(m).toISOString();
     }
     const sorties = {};
-    for (const o of (step ? step.outputs : ['base_pieces_v3.json']) || []) {
+    for (const o of (step && step.outputs) || []) {
       const e = entrees(lireSortie(o));
       if (e) sorties[o] = { entrees: e.size };
     }

@@ -820,7 +820,7 @@ schtasks /create /tn "DuneMap - verif datamine" /sc weekly /d WED /st 10:00 /tr 
 ⚠ Le `/nopause` est obligatoire dans une tâche planifiée : sans lui, le script attend une touche
 que personne ne tapera. (Donner le chemin complet du `.cmd` dans `/tr`.)
 
-### Les 12 étapes couvertes
+### Les 13 étapes couvertes
 
 | id | Sortie | Source |
 |---|---|---|
@@ -834,6 +834,7 @@ que personne ne tapera. (Donner le chemin complet du `.cmd` dans `/tr`.)
 | `plan_locations` | `plan_locations.json` | `Maps/Biomes/**/CB/**` (acteurs `TemporaryLootSpawner`) |
 | `plans_index` | `plans_index.json` | `Localization/ST_Localization_Items` + `CDT_BaseItems` |
 | `plans_univers` | `plans_uniques.json` | export de l'addon en jeu (`.txt`, opt-in `--with-univers`) |
+| `base_pieces_v3` | `base_pieces_v3.json` | `Systems/Building/Data`, `Systems/Vehicles` — script **externe** (opt-in `--run-planner-import`) |
 | `planner_pieces` | `planner_pieces.json` | 100 % local (fusion v3 + sockets + utilitaires) |
 | `meshes` | `models/*.glb` | export FModel (opt-in `--with-meshes`, `models/` n'est pas versionné) |
 
@@ -862,10 +863,6 @@ données du site, et de la date de chaque étape. Sans lui, plus rien ne le dit.
 
 `--check` les rappelle à chaque passage — c'est le seul moyen de ne pas les oublier après un patch.
 
-- **`base_pieces_v3.json`** (670 pièces du Constructeur) : script **externe** au dépôt,
-  `J:\Download\Fmodel\import_building_data.js`, qui écrit toujours vers la racine du dépôt
-  **principal** (chemin absolu codé en dur). `--run-planner-import` le lance et recopie le
-  résultat dans le dépôt courant.
 - **`dune_pieces_sockets.json` / `dune_socket_profiles.json` / `dune_group_config.json`** :
   aucun script de régénération n'existe (reverse engineering manuel dune.layout.tools + FModel).
   Si un patch change la géométrie des pièces, ces fichiers ne bougeront pas. Dégradation propre :

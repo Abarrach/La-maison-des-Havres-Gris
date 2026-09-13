@@ -11,8 +11,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 // ?v= : cache-busting. Bump à chaque modif des modules pour forcer le rechargement
 // (sinon le navigateur sert l'ancienne version mise en cache).
-import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot37utils';
-import { createMeshFactory } from './planner_mesh.js?v=lot37utils';
+import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot39move';
+import { createMeshFactory } from './planner_mesh.js?v=lot39move';
 
 // ============================================================
 // MOTEUR — bascule ancien (géométrie+grille) / nouveau (sockets+meshes réels)
@@ -65,11 +65,12 @@ const PER_VERT_UP         = 6;   // niveaux supplémentaires en hauteur par pieu
 const PER_VERT_DOWN       = 4;   // niveaux supplémentaires en sous-sol par pieu vertical
 
 // Simulation de stabilité (session 7d) — dataminé + confirmé par la communauté DA :
-// chaque ancre (fondation/pilier au sol) distribue un budget de 10 pas (= 100 points,
-// 10 pts par pièce dans le jeu → 10 sols posables après une fondation, le 10e à 0).
+// chaque ancre (fondation/pilier au sol) distribue un budget de 9 pas. On comptait 10
+// auparavant : l'erreur venait d'avoir additionné les 9 pièces portées ET la pièce de
+// soubassement qui les ancre — cette dernière est l'ancre, pas un pas.
 // Chaque saut horizontal ou vertical via mur coûte 1 pas. Saut vertical via fondation
 // empilée ou pilier coûte 0 (transmission gratuite).
-const STABILITY_BUDGET    = 10;
+const STABILITY_BUDGET    = 9;
 const STABILITY_COLOR_OK      = 0x4caf76;  // vert — stable avec marge
 const STABILITY_COLOR_WARNING = 0xddaa33;  // jaune — limite (budget 0-1)
 const STABILITY_COLOR_ERROR   = 0xcc3333;  // rouge — instable ou non-atteint
@@ -168,6 +169,14 @@ const state = {
   solidView:      true,
   // Mode demi-étage : la pièce en cours de pose est décalée de +0.5 WALL_UNIT
   ghostHalf:      false,
+  // Cycle d'accroche (Tab) : index du candidat de snap retenu sous le curseur.
+  // Remis à 0 dès que le curseur se déplace notablement (voir SNAP_CYCLE_RESET_PX).
+  snapCycle:      0,
+  snapCycleCount: 1,            // nb de candidats sous le curseur (pour le HUD)
+  // Outil de construction assistée actif : null | 'circle'
+  buildTool:      null,
+  circleRadius:   3,            // rayon en cases
+  circleRing:     false,        // true = anneau (contour seul), false = disque plein
 };
 
 // ============================================================
@@ -222,6 +231,12 @@ function cacheDom() {
   dom.skinGrid     = document.getElementById('bp-skin-grid');
   dom.variantBar   = document.getElementById('bp-variant-bar');
   dom.selHalf      = document.getElementById('bp-sel-half');
+  dom.moveUp       = document.getElementById('bp-move-up');
+  dom.moveDown     = document.getElementById('bp-move-down');
+  dom.moveLeft     = document.getElementById('bp-move-left');
+  dom.moveRight    = document.getElementById('bp-move-right');
+  dom.moveLvlUp    = document.getElementById('bp-move-lvl-up');
+  dom.moveLvlDn    = document.getElementById('bp-move-lvl-dn');
   dom.hudHalf      = document.getElementById('bp-hud-half');
 }
 function setText(el, v) { if (el) el.textContent = v; }
@@ -333,7 +348,7 @@ const EXCLUDED_PIECE_IDS = new Set([
 ]);
 
 async function loadCatalog() {
-  const url = ENGINE === 'sockets' ? 'planner_pieces.json?v=lot37utils' : PIECES_JSON_URL;
+  const url = ENGINE === 'sockets' ? 'planner_pieces.json?v=lot39move' : PIECES_JSON_URL;
   const resp = await fetch(url);
   if (!resp.ok) throw new Error('pieces ' + resp.status);
   const piecesData = await resp.json();
@@ -3383,13 +3398,14 @@ function socketComputeSnap(pieceId, cur) {
     const r = socketEngine.snapPiece(cur, pieceId, placed, occ, { zHint, zTol: CM_PER_LEVEL / 2 });
     if (!r) { if (best) break; else continue; }   // plus rien au-dessus → stop (pile contiguë)
     const dOr = Math.hypot(cur.x - r.pos.x, cur.y - r.pos.y);
-    if (!best || dOr < best.dOr - 1) best = { r, dOr, floor: Math.round(r.pos.z / CM_PER_LEVEL) - 1 };
+    if (!best || dOr < best.dOr - 1) best = { r, dOr, floor: Math.round(r.pos.z / CM_PER_LEVEL) - 1, hintFloor: floor };
     // PRIORITÉ AU PLUS BAS : si l'accroche est bien sous le curseur, on s'arrête (pas d'empilement
     // intempestif). L'auto-empilement ne se déclenche que si l'étage courant n'a RIEN de proche
     // (case occupée → l'accroche libre la plus proche est une voisine lointaine → on monte).
     if (dOr <= NEAR) break;
   }
   if (!best) {
+    state.snapCycleCount = 1;
     // Pose LIBRE de secours (positionnement manuel + rotation R) pour les MURS/FENÊTRES
     // arrondis : leurs sockets BP_DuneCurvedWallSocket_C ne se mappent pas aux sols → sinon
     // imposables. (Les SOLS arrondis sont gérés plus haut par le plan de construction.)
@@ -3400,10 +3416,21 @@ function socketComputeSnap(pieceId, cur) {
     }
     return null;
   }
+  // ── CYCLE D'ACCROCHE (Tab) ──
+  // Plusieurs sockets peuvent coïncider sous le curseur (mur au ras de 2 sols, sol accroché
+  // à 2 fondations voisines…). Le moteur retient le meilleur score, qui n'est pas toujours
+  // celui que l'utilisateur vise. On récupère la liste complète à l'étage retenu et Tab
+  // fait défiler les alternatives — candidat 0 = comportement historique.
+  const cands = socketEngine.snapCandidates(cur, pieceId, placed, occ, {
+    zHint: (best.hintFloor + 1) * CM_PER_LEVEL, zTol: CM_PER_LEVEL / 2,
+  });
+  state.snapCycleCount = Math.max(1, cands.length);
+  const pick = cands.length ? cands[((state.snapCycle % cands.length) + cands.length) % cands.length] : best.r;
   return {
-    pos: best.r.pos,
-    rotation: norm360(best.r.rotation + (state.ghostRotation || 0)),
-    snapped: true, floor: best.floor,
+    pos: pick.pos,
+    rotation: norm360(pick.rotation + (state.ghostRotation || 0)),
+    snapped: true,
+    floor: cands.length ? Math.round(pick.pos.z / CM_PER_LEVEL) - 1 : best.floor,
   };
 }
 // Une pièce posée en `pos` (cm) serait-elle stable ? (mode sockets)
@@ -3474,7 +3501,12 @@ function socketSurfaceCells(z) {
   return set;
 }
 // Raison de refus d'un placeable (null = OK) : chevauchement / pas de sol porteur / traverse un mur.
-function socketPlaceableReason(pieceId, pos, zLevel, rotation) {
+/**
+ * @param ignoreIds  Set d'ids d'items à ne PAS considérer comme obstacles. Indispensable
+ *                   pour valider un DÉPLACEMENT : sans ça la pièce se voit elle-même à sa
+ *                   nouvelle position et le contrôle renvoie toujours « Emplacement occupé ».
+ */
+function socketPlaceableReason(pieceId, pos, zLevel, rotation, ignoreIds) {
   const piece = state.piecesById.get(pieceId);
   if (!piece || !(piece.is_machine || piece.is_vehicle)) return null;
   const cCells = socketFootprintCells(piece, { x: pos.x, y: pos.y, rotation });
@@ -3482,6 +3514,7 @@ function socketPlaceableReason(pieceId, pos, zLevel, rotation) {
 
   // 1. Chevauchement avec un autre placeable (même volume).
   for (const f of state.plan.floors) for (const it of f.items) {
+    if (ignoreIds && ignoreIds.has(it.id)) continue;
     const op = state.piecesById.get(it.piece_id);
     if (!op || !(op.is_machine || op.is_vehicle)) continue;
     const oz0 = it.z, oz1 = it.z + socketLevelSpanReal(op) - 1;
@@ -3502,6 +3535,7 @@ function socketPlaceableReason(pieceId, pos, zLevel, rotation) {
   const y0 = cy0 * CM_PER_CELL, y1 = (cy0 + dC) * CM_PER_CELL;
   const EPS = 20;
   for (const f of state.plan.floors) for (const it of f.items) {
+    if (ignoreIds && ignoreIds.has(it.id)) continue;
     const p = state.piecesById.get(it.piece_id);
     if (!p) continue;
     const cat = getEffectiveCategory(p);
@@ -3518,7 +3552,17 @@ function socketPlaceableBlocked(pieceId, pos, zLevel, rotation) {
 
 let lastSocketSnap = null;
 let lastSocketClientPos = { x: 0, y: 0 };   // mémorise le curseur pour refresh R-key
+// Cycle d'accroche : le choix fait au Tab ne vaut que tant qu'on vise le même endroit.
+// Au-delà de ce déplacement en pixels on repart du meilleur candidat (index 0), sinon
+// l'alternative choisie ici se retrouve appliquée à l'accroche d'à côté.
+const SNAP_CYCLE_RESET_PX = 28;
+let snapCycleAnchor = { x: 0, y: 0 };
+function resetSnapCycle() { state.snapCycle = 0; snapCycleAnchor = { ...lastSocketClientPos }; }
 function socketShowGhost(pieceId, clientX, clientY) {
+  if (Math.hypot(clientX - snapCycleAnchor.x, clientY - snapCycleAnchor.y) > SNAP_CYCLE_RESET_PX) {
+    state.snapCycle = 0;
+    snapCycleAnchor = { x: clientX, y: clientY };
+  }
   lastSocketClientPos = { x: clientX, y: clientY };
   const cur = socketCursorCm(clientX, clientY);
   if (!cur) return false;
@@ -3541,7 +3585,9 @@ function socketShowGhost(pieceId, clientX, clientY) {
   scene.add(ghostMesh);
   // Auto-empilement : HUD "↑ Nx" si la pose se fait au-dessus du tab courant (masqué sinon).
   showFloorResolveHud?.(lvl);
-  setText(dom.hudCoords, `x:${Math.round(snap.pos.x)} y:${Math.round(snap.pos.y)} z:${Math.round(snap.pos.z)} cm`);
+  const cyc = state.snapCycleCount > 1
+    ? ` · accroche ${(state.snapCycle % state.snapCycleCount) + 1}/${state.snapCycleCount} (Tab)` : '';
+  setText(dom.hudCoords, `x:${Math.round(snap.pos.x)} y:${Math.round(snap.pos.y)} z:${Math.round(snap.pos.z)} cm${cyc}`);
   return true;
 }
 function socketPlaceAt(pieceId, clientX, clientY) {
@@ -3588,6 +3634,7 @@ function socketPlaceAt(pieceId, clientX, clientY) {
   updateFloorBadges();
   updatePieceCount();
   recomputeStabilityIfActive();
+  resetSnapCycle();   // l'accroche choisie vient d'être consommée
   const saved = JSON.parse(JSON.stringify(item));
   pushHistory(
     () => _removeItemCore(saved.id),
@@ -3862,6 +3909,696 @@ function deselectAll() {
 }
 
 // ============================================================
+// PHOTO DE RÉFÉRENCE — calque à décalquer sous la grille
+// ============================================================
+// Reproduire un plan vu sur Discord ou dans une vidéo se faisait « à l'œil ». On projette
+// l'image à plat au niveau de l'étage courant : on pose ensuite les fondations dessus.
+// Volontairement NON sauvegardée avec le plan : une image en dataURL ferait grossir de
+// plusieurs Mo chaque enregistrement en base pour un usage de brouillon.
+const REFPHOTO = {
+  mesh: null, texture: null,
+  visible: true,
+  opacity: 0.45,
+  scale: BLOCK_CELLS,   // largeur du calque, en cases
+  rotation: 0,          // degrés
+  flip: false,          // miroir horizontal
+  offX: 0, offY: 0,     // décalage en cases depuis le centre du fief
+  aspect: 1,
+};
+
+function refPhotoCenter() {
+  const b = claimBoundsWorld();
+  return { x: (b.minX + b.maxX) / 2, z: (b.minZ + b.maxZ) / 2 };
+}
+
+function loadRefPhoto(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    new THREE.TextureLoader().load(reader.result, (tex) => {
+      tex.colorSpace = THREE.SRGBColorSpace;
+      removeRefPhoto(true);
+      REFPHOTO.texture = tex;
+      REFPHOTO.aspect = (tex.image?.height || 1) / (tex.image?.width || 1);
+      REFPHOTO.visible = true;
+      const mat = new THREE.MeshBasicMaterial({
+        map: tex, transparent: true, opacity: REFPHOTO.opacity,
+        depthWrite: false, side: THREE.DoubleSide, toneMapped: false,
+      });
+      REFPHOTO.mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), mat);
+      REFPHOTO.mesh.rotation.x = -Math.PI / 2;
+      REFPHOTO.mesh.renderOrder = -1;   // toujours derrière les pièces posées
+      scene.add(REFPHOTO.mesh);
+      applyRefPhoto();
+      refreshRefPhotoPanel();
+    }, undefined, () => showFloorResolveHud?.(state.currentFloor, 'Image illisible'));
+  };
+  reader.readAsDataURL(file);
+}
+
+/** Réapplique tous les réglages au calque (idempotent). */
+function applyRefPhoto() {
+  const m = REFPHOTO.mesh;
+  if (!m) { refreshRefPhotoPanel(); return; }
+  const w = Math.max(0.5, REFPHOTO.scale);
+  const h = w * REFPHOTO.aspect;
+  m.scale.set(REFPHOTO.flip ? -w : w, h, 1);
+  const c = refPhotoCenter();
+  // +0.02 : juste au-dessus du sol de l'étage, sinon z-fighting avec la grille du fief.
+  m.position.set(c.x + REFPHOTO.offX, getFloorYBase(state.currentFloor) + 0.02, c.z + REFPHOTO.offY);
+  // Le plan est couché (rotation.x = -90°) : la rotation « à plat » se fait donc sur Z.
+  m.rotation.set(-Math.PI / 2, 0, THREE.MathUtils.degToRad(REFPHOTO.rotation));
+  m.material.opacity = REFPHOTO.opacity;
+  m.visible = REFPHOTO.visible;
+  refreshRefPhotoPanel();
+}
+
+function removeRefPhoto(silent) {
+  if (REFPHOTO.mesh) {
+    scene.remove(REFPHOTO.mesh);
+    REFPHOTO.mesh.geometry.dispose();
+    REFPHOTO.mesh.material.dispose();
+  }
+  REFPHOTO.texture?.dispose?.();
+  REFPHOTO.mesh = null;
+  REFPHOTO.texture = null;
+  if (!silent) refreshRefPhotoPanel();
+}
+
+function refreshRefPhotoPanel() {
+  const has = !!REFPHOTO.mesh;
+  const body = document.getElementById('bp-ref-controls');
+  if (body) body.hidden = !has;
+  const empty = document.getElementById('bp-ref-empty');
+  if (empty) empty.hidden = has;
+  const set = (id, v) => { const el = document.getElementById(id); if (el && el.value != v) el.value = v; };
+  set('bp-ref-opacity', REFPHOTO.opacity);
+  set('bp-ref-scale', REFPHOTO.scale);
+  set('bp-ref-rot', REFPHOTO.rotation);
+  const tog = document.getElementById('bp-ref-toggle');
+  if (tog) tog.textContent = REFPHOTO.visible ? 'Masquer' : 'Afficher';
+  const flip = document.getElementById('bp-ref-flip');
+  if (flip) flip.classList.toggle('active', REFPHOTO.flip);
+  setText(document.getElementById('bp-ref-scale-val'), REFPHOTO.scale + ' cases');
+  setText(document.getElementById('bp-ref-rot-val'), REFPHOTO.rotation + '°');
+  setText(document.getElementById('bp-ref-opacity-val'), Math.round(REFPHOTO.opacity * 100) + ' %');
+}
+
+function nudgeRefPhoto(dx, dy) {
+  REFPHOTO.offX += dx * 0.5;
+  REFPHOTO.offY += dy * 0.5;
+  applyRefPhoto();
+}
+
+function toggleRefPhotoPanel(force) {
+  const panel = document.getElementById('bp-ref-panel');
+  if (!panel) return;
+  const open = (force != null) ? force : panel.hidden;
+  panel.hidden = !open;
+  document.getElementById('tool-refphoto')?.classList.toggle('active', open);
+  if (open) refreshRefPhotoPanel();
+}
+
+// ============================================================
+// CONSTRUCTION ASSISTÉE — cercle, mur de périmètre, murs ±1 niveau
+// ============================================================
+// Poser une rotonde ou ceinturer un étage de murs à la main, c'est des centaines de clics.
+// Ces trois outils génèrent la pose à partir de ce qui est DÉJÀ dans le plan et passent
+// par le moteur de sockets pour la position/rotation exactes — pas de géométrie devinée.
+
+/** Faction dominante du plan (sert de défaut quand aucun filtre n'est actif). */
+function dominantFaction() {
+  if (state.activeFaction) return state.activeFaction;
+  const tally = new Map();
+  for (const f of state.plan.floors) for (const it of f.items) {
+    const p = state.piecesById.get(it.piece_id);
+    if (!p || p.faction_id === 'placeables') continue;
+    tally.set(p.faction_id, (tally.get(p.faction_id) || 0) + 1);
+  }
+  let best = null;
+  for (const [fid, n] of tally) if (!best || n > best[1]) best = [fid, n];
+  return best ? best[0] : 'choam_shelter';
+}
+
+/**
+ * Pièce à utiliser pour un outil auto : la pièce ACTIVE si elle est du bon groupe
+ * (l'utilisateur a explicitement choisi son skin), sinon la pièce du groupe dans la
+ * faction dominante, sinon n'importe laquelle du groupe.
+ */
+function autoToolPieceId(group) {
+  const act = state.activePieceId ? state.piecesById.get(state.activePieceId) : null;
+  if (act && getDisplayGroup(act) === group) return act.id;
+  const pool = state.canonicals.filter(p => getDisplayGroup(p) === group);
+  if (!pool.length) return null;
+  const fac = dominantFaction();
+  return (pool.find(p => p.faction_id === fac) || pool[0]).id;
+}
+
+/** Centre cm d'une case de grille (cx, cy). */
+const cellCenterCm = (cx, cy) => ({ x: cx * CM_PER_CELL + HALF_CELL, y: cy * CM_PER_CELL + HALF_CELL });
+
+/**
+ * Pose un lot d'items d'un coup (une seule entrée d'historique pour tout le lot —
+ * un Ctrl+Z doit défaire « le cercle », pas 81 fondations une par une).
+ * @param {Array<{piece_id,x,y,cz,z,rotation}>} entries
+ * @returns {number} nombre de pièces réellement posées
+ */
+function bulkPlace(entries) {
+  const created = [];
+  for (const e of entries) {
+    const targetFloor = getFloor(e.z);
+    if (!targetFloor) continue;
+    const item = {
+      id: (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'it_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+      piece_id: e.piece_id, x: e.x, y: e.y, cz: e.cz, z: e.z, rotation: e.rotation || 0,
+    };
+    targetFloor.items.push(item);
+    const mesh = socketBuildMesh(item);
+    scene.add(mesh);
+    placedMeshes.set(item.id, mesh);
+    created.push(JSON.parse(JSON.stringify(item)));
+  }
+  if (!created.length) return 0;
+  updateFloorVisibility();
+  updateFloorBadges();
+  updatePieceCount();
+  recomputeStabilityIfActive();
+  bpSetDirty(true);
+  pushHistory(
+    () => { for (const it of created) _removeItemCore(it.id); updateFloorBadges(); updatePieceCount(); recomputeStabilityIfActive(); },
+    () => { for (const it of created) restoreItem(JSON.parse(JSON.stringify(it))); updateFloorBadges(); updatePieceCount(); recomputeStabilityIfActive(); },
+  );
+  return created.length;
+}
+
+/** Cases du cercle de rayon `r` (en cases) centré sur (cx, cy). Anneau = contour seul. */
+function circleCells(cx, cy, r, ring) {
+  const out = [];
+  const R = Math.max(1, r);
+  for (let dx = -R; dx <= R; dx++) {
+    for (let dy = -R; dy <= R; dy++) {
+      const d = Math.hypot(dx, dy);
+      // +0.5 : une case compte si son CENTRE est dans le disque de rayon r+demi-case — donne
+      // un contour franc, sans les dents de scie d'un test strict d <= r.
+      if (ring ? Math.abs(d - R) > 0.5 : d > R + 0.5) continue;
+      out.push({ cx: cx + dx, cy: cy + dy });
+    }
+  }
+  return out;
+}
+
+/** Case de grille visée par le curseur (null hors du plan de construction). */
+function cursorCell(clientX, clientY) {
+  const cur = socketCursorCm(clientX, clientY);
+  if (!cur) return null;
+  return {
+    cx: Math.round((cur.x - HALF_CELL) / CM_PER_CELL),
+    cy: Math.round((cur.y - HALF_CELL) / CM_PER_CELL),
+  };
+}
+
+/** Items du cercle prêts à poser (filtrés : dans le fief, case libre). */
+function circleEntries(center) {
+  const pieceId = autoToolPieceId('Foundation');
+  if (!pieceId || !center) return { pieceId, entries: [] };
+  const z = state.currentFloor || 0;
+  const cz = z * CM_PER_LEVEL;                       // fondation : cz = niveau × 384
+  const taken = new Set();
+  for (const f of state.plan.floors) for (const it of f.items) {
+    if (it.z !== z) continue;
+    const p = state.piecesById.get(it.piece_id);
+    if (p && (p.is_foundation || p.is_pillar)) taken.add(socketItemCell(it));
+  }
+  const entries = [];
+  for (const c of circleCells(center.cx, center.cy, state.circleRadius, state.circleRing)) {
+    const w = cellCenterCm(c.cx, c.cy);
+    if (!socketInClaim(w.x, w.y)) continue;          // hors du fief : silencieusement ignoré
+    if (taken.has(c.cx + ',' + c.cy)) continue;      // déjà une fondation ici
+    entries.push({ piece_id: pieceId, x: w.x, y: w.y, cz, z, rotation: 0 });
+  }
+  return { pieceId, entries };
+}
+
+// Aperçu du cercle : cadres filaires légers (une case = un cadre). Bien plus léger que
+// d'instancier les vrais meshes de fondation à chaque déplacement de souris.
+let circlePreview = null;
+function clearCirclePreview() {
+  if (!circlePreview) return;
+  scene.remove(circlePreview);
+  circlePreview.traverse(o => { o.geometry?.dispose?.(); o.material?.dispose?.(); });
+  circlePreview = null;
+}
+function showCirclePreview(clientX, clientY) {
+  clearCirclePreview();
+  const center = cursorCell(clientX, clientY);
+  const { entries } = circleEntries(center);
+  if (!entries.length) { setText(dom.hudCoords, 'Cercle : aucune case posable ici'); return; }
+  const g = new THREE.Group();
+  const geo = new THREE.BoxGeometry(CELL * 0.96, FOUNDATION_DEPTH, CELL * 0.96);
+  const mat = new THREE.MeshBasicMaterial({ color: COLOR_GHOST_OK, transparent: true, opacity: 0.28 });
+  const edgeMat = new THREE.LineBasicMaterial({ color: COLOR_GHOST_OK });
+  const edgeGeo = new THREE.EdgesGeometry(geo);
+  for (const e of entries) {
+    const m = new THREE.Mesh(geo, mat);
+    m.position.set(e.x * WORLD_PER_CM, e.cz * WORLD_PER_CM + FOUNDATION_DEPTH / 2, e.y * WORLD_PER_CM);
+    g.add(m);
+    const l = new THREE.LineSegments(edgeGeo, edgeMat);
+    l.position.copy(m.position);
+    g.add(l);
+  }
+  circlePreview = g;
+  scene.add(g);
+  setText(dom.hudCoords, `Cercle ${state.circleRing ? 'anneau' : 'plein'} · rayon ${state.circleRadius} · ${entries.length} fondation${entries.length > 1 ? 's' : ''}`);
+}
+
+/** Pose le cercle prévisualisé. */
+function commitCircle(clientX, clientY) {
+  const center = cursorCell(clientX, clientY);
+  const { pieceId, entries } = circleEntries(center);
+  if (!pieceId) { showFloorResolveHud?.(state.currentFloor, 'Aucune fondation disponible dans le catalogue'); return; }
+  const n = bulkPlace(entries);
+  showFloorResolveHud?.(state.currentFloor, n ? `${n} fondations posées` : 'Rien à poser ici');
+  clearCirclePreview();
+}
+
+function setBuildTool(tool) {
+  state.buildTool = (state.buildTool === tool) ? null : tool;
+  clearCirclePreview();
+  if (state.buildTool) { setActivePiece(null); deselectAll(); }
+  document.getElementById('tool-circle')?.classList.toggle('active', state.buildTool === 'circle');
+  const panel = document.getElementById('bp-circle-panel');
+  if (panel) panel.hidden = (state.buildTool !== 'circle');
+  renderer.domElement.style.cursor = state.buildTool ? 'crosshair' : 'grab';
+  if (state.buildTool === 'circle') refreshCirclePanel();
+}
+
+function refreshCirclePanel() {
+  setText(document.getElementById('bp-circle-radius-val'), String(state.circleRadius));
+  document.getElementById('bp-circle-mode-full')?.classList.toggle('active', !state.circleRing);
+  document.getElementById('bp-circle-mode-ring')?.classList.toggle('active', state.circleRing);
+  if (state.buildTool === 'circle') showCirclePreview(lastSocketClientPos.x, lastSocketClientPos.y);
+}
+
+/**
+ * MUR DE PÉRIMÈTRE — ceinture l'étage courant de murs sur le bord extérieur de sa surface.
+ * On repère les arêtes de bord (case portante dont le voisin ne l'est pas) et on laisse le
+ * moteur de sockets calculer position + rotation exactes à partir du milieu de l'arête.
+ */
+function autoWallPerimeter() {
+  const wallId = autoToolPieceId('Wall');
+  if (!wallId) { showFloorResolveHud?.(state.currentFloor, 'Aucun mur disponible dans le catalogue'); return; }
+  const z = state.currentFloor || 0;
+  const surf = socketSurfaceCells(z);
+  if (!surf.size) { showFloorResolveHud?.(state.currentFloor, 'Aucune surface à ceinturer sur cet étage'); return; }
+  const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  const zHint = (z + 1) * CM_PER_LEVEL;              // mur : cz = (niveau+1) × 384
+  // On calcule TOUT le tour avant de poser : la liste `placed` locale grandit au fur et à
+  // mesure pour que chaque mur voie les précédents (sinon deux arêtes voisines se voient
+  // proposer la même accroche), et un seul bulkPlace à la fin ⇒ un seul Ctrl+Z pour la ceinture.
+  const placed = socketPlacedList();
+  const occ = socketEngine.occSet(placed);
+  const entries = [];
+  for (const key of surf) {
+    const [cx, cy] = key.split(',').map(Number);
+    for (const [dx, dy] of DIRS) {
+      if (surf.has((cx + dx) + ',' + (cy + dy))) continue;   // arête intérieure
+      const c = cellCenterCm(cx, cy);
+      const mid = { x: c.x + dx * HALF_CELL, y: c.y + dy * HALF_CELL };
+      if (!socketInClaim(mid.x, mid.y)) continue;
+      const cands = socketEngine.snapCandidates(mid, wallId, placed, occ, { zHint, zTol: CM_PER_LEVEL / 2 });
+      // On ne garde que l'accroche qui tombe VRAIMENT sur l'arête visée : sinon le moteur
+      // proposerait le mur libre le plus proche et on ceinturerait n'importe où.
+      const hit = cands.find(k => Math.hypot(k.pos.x - mid.x, k.pos.y - mid.y) < 40);
+      if (!hit) continue;
+      entries.push({ piece_id: wallId, x: hit.pos.x, y: hit.pos.y, cz: hit.pos.z, z, rotation: hit.rotation });
+      placed.push({ id: '_auto_' + entries.length, building_type: wallId, x: hit.pos.x, y: hit.pos.y, z: hit.pos.z, rotation: hit.rotation });
+      occ.add(`${Math.round(hit.pos.x)},${Math.round(hit.pos.y)},${Math.round(hit.pos.z)}`);
+    }
+  }
+  const count = bulkPlace(entries);
+  showFloorResolveHud?.(z, count ? `${count} murs de périmètre posés` : 'Périmètre déjà fermé');
+}
+
+/**
+ * MURS ±1 NIVEAU — déplace d'un étage les murs SÉLECTIONNÉS, ou à défaut tous les murs
+ * (+ portes/fenêtres, qui font partie du même bandeau) de l'étage courant.
+ * Sert surtout juste après un mur de périmètre : on monte la ceinture pour doubler la hauteur.
+ */
+function shiftWallsLevel(delta) {
+  const isWallish = p => ['walls', 'doors', 'windows'].includes(getEffectiveCategory(p));
+  const items = [];
+  if (state.selectedItemIds.size) {
+    for (const id of state.selectedItemIds) {
+      const it = getItemById(id);
+      const p = it && state.piecesById.get(it.piece_id);
+      if (p && isWallish(p)) items.push(it);
+    }
+  } else {
+    const f = getFloor(state.currentFloor);
+    for (const it of (f?.items || [])) {
+      const p = state.piecesById.get(it.piece_id);
+      if (p && isWallish(p)) items.push(it);
+    }
+  }
+  if (!items.length) { showFloorResolveHud?.(state.currentFloor, 'Aucun mur à déplacer'); return; }
+  const minF = getMinFloor(), maxF = getMaxFloor();
+  if (items.some(it => it.z + delta < minF || it.z + delta > maxF)) {
+    showFloorResolveHud?.(state.currentFloor, 'Déplacement hors des niveaux du fief');
+    return;
+  }
+  const before = items.map(it => ({ id: it.id, z: it.z, cz: it.cz }));
+  // dir=+1 applique le décalage, dir=-1 remet l'état d'origine mémorisé (undo).
+  const move = (dir) => {
+    for (const snap of before) {
+      const it = getItemById(snap.id);
+      if (!it) continue;
+      const srcFloor = getFloor(it.z);
+      it.z  = snap.z  + (dir > 0 ? delta : 0);
+      it.cz = snap.cz + (dir > 0 ? delta * CM_PER_LEVEL : 0);
+      const dstFloor = getFloor(it.z);
+      if (srcFloor && dstFloor && srcFloor !== dstFloor) {
+        srcFloor.items.splice(srcFloor.items.indexOf(it), 1);
+        dstFloor.items.push(it);
+      }
+      const mesh = placedMeshes.get(it.id);
+      if (mesh) {
+        applyTransformSocket(mesh, it);
+        mesh.userData.floorZ = it.z;
+        mesh.userData.floorTop = it.z + pieceLevelSpan(state.piecesById.get(it.piece_id));
+      }
+    }
+    updateFloorVisibility(); updateFloorBadges(); updatePieceCount(); recomputeStabilityIfActive();
+  };
+  move(1);
+  bpSetDirty(true);
+  pushHistory(() => move(-1), () => move(1));
+  showFloorResolveHud?.(state.currentFloor, `${items.length} murs ${delta > 0 ? 'montés' : 'descendus'} d'un niveau`);
+}
+
+// ============================================================
+// DÉPLACEMENT DES PIÈCES POSÉES
+// ============================================================
+// Il n'existait aucun moyen de bouger une pièce déjà posée : il fallait la supprimer puis
+// la reposer, en perdant au passage rotation, variante et demi-étage. On déplace ici la
+// SÉLECTION ENTIÈRE, d'une cellule (512 cm) à la fois dans le plan ou d'un niveau en
+// hauteur. Toujours des pas entiers de la grille : un décalage libre mettrait les pièces
+// entre deux cases et casserait l'accroche par sockets.
+
+/** Items visés : la sélection multiple si elle existe, sinon la pièce sélectionnée. */
+function itemsForMove() {
+  const ids = state.selectedItemIds.size
+    ? Array.from(state.selectedItemIds)
+    : (state.selectedItemId ? [state.selectedItemId] : []);
+  const out = [];
+  for (const id of ids) { const it = getItemById(id); if (it) out.push(it); }
+  return out;
+}
+
+/**
+ * Déplace la sélection de (dx, dy) cellules et dz niveaux.
+ * Applique D'ABORD, contrôle ENSUITE, et revient en arrière si le résultat est invalide :
+ * `socketPlaceableReason` raisonne sur l'état réel du plan, pas sur une position
+ * hypothétique — d'où l'aller-retour plutôt qu'un test préalable.
+ */
+function moveSelected(dx, dy, dz) {
+  const items = itemsForMove();
+  if (!items.length) { showFloorResolveHud?.(state.currentFloor, 'Aucune pièce sélectionnée'); return; }
+  if (dz) {
+    const minF = getMinFloor(), maxF = getMaxFloor();
+    if (items.some(it => it.z + dz < minF || it.z + dz > maxF)) {
+      showFloorResolveHud?.(state.currentFloor, 'Déplacement hors des niveaux du fief');
+      return;
+    }
+  }
+  const before = items.map(it => ({ id: it.id, x: it.x, y: it.y, z: it.z, cz: it.cz }));
+  // dir=+1 applique le décalage, dir=-1 restaure l'état mémorisé (undo).
+  const apply = (dir) => {
+    const k = dir > 0 ? 1 : 0;
+    for (const snap of before) {
+      const it = getItemById(snap.id);
+      if (!it) continue;
+      const srcFloor = getFloor(it.z);
+      it.x  = snap.x  + k * dx * CM_PER_CELL;
+      it.y  = snap.y  + k * dy * CM_PER_CELL;
+      it.z  = snap.z  + k * dz;
+      it.cz = snap.cz + k * dz * CM_PER_LEVEL;
+      const dstFloor = getFloor(it.z);
+      if (srcFloor && dstFloor && srcFloor !== dstFloor) {
+        srcFloor.items.splice(srcFloor.items.indexOf(it), 1);
+        dstFloor.items.push(it);
+      }
+      const mesh = placedMeshes.get(it.id);
+      if (mesh) {
+        applyTransformSocket(mesh, it);
+        mesh.userData.floorZ   = it.z;
+        mesh.userData.floorTop = it.z + pieceLevelSpan(state.piecesById.get(it.piece_id));
+      }
+    }
+    updateFloorVisibility(); updateFloorBadges(); updatePieceCount(); recomputeStabilityIfActive();
+  };
+
+  apply(1);
+
+  // Contrôle : machines et véhicules uniquement — les structures se superposent librement
+  // dans ce moteur, c'est déjà vrai à la pose, on ne durcit pas la règle au déplacement.
+  const movingIds = new Set(items.map(it => it.id));
+  let refus = null;
+  for (const it of items) {
+    const r = socketPlaceableReason(it.piece_id, { x: it.x, y: it.y }, it.z, it.rotation || 0, movingIds);
+    if (r) { refus = r; break; }
+  }
+  if (refus) {
+    apply(-1);
+    showFloorResolveHud?.(state.currentFloor, 'Déplacement refusé : ' + refus.toLowerCase());
+    return;
+  }
+
+  bpSetDirty(true);
+  pushHistory(() => apply(-1), () => apply(1));
+  if (state.selectedItemId) {
+    const mesh = placedMeshes.get(state.selectedItemId);
+    if (mesh) updateSelectedPanel(mesh);
+  }
+}
+
+/**
+ * Traduit une flèche du clavier en direction sur la grille, RELATIVEMENT À LA CAMÉRA :
+ * « flèche du haut » doit éloigner la pièce de l'observateur quel que soit l'angle de vue,
+ * sinon les flèches deviennent illisibles dès qu'on a tourné autour du fief.
+ * En vue de dessus l'axe de visée est vertical et ne projette rien au sol : on prend alors
+ * le vecteur `up` de la caméra, qui EST le haut de l'écran.
+ */
+function nudgeDirFromKey(key) {
+  let ux = 0, uz = -1;                       // repli : haut de l'écran = -Z
+  const cam = activeCam;
+  if (cam) {
+    const t = (orbitControls && orbitControls.target) ? orbitControls.target : null;
+    let fx = t ? (t.x - cam.position.x) : 0;
+    let fz = t ? (t.z - cam.position.z) : 0;
+    let n = Math.hypot(fx, fz);
+    if (n < 1e-4) { fx = cam.up.x; fz = cam.up.z; n = Math.hypot(fx, fz); }   // vue de dessus
+    if (n > 1e-4) { ux = fx / n; uz = fz / n; }
+  }
+  const rx = -uz, rz = ux;                   // droite de l'écran = perpendiculaire du haut
+  let vx = 0, vz = 0;
+  if (key === 'ArrowUp')    { vx =  ux; vz =  uz; }
+  if (key === 'ArrowDown')  { vx = -ux; vz = -uz; }
+  if (key === 'ArrowRight') { vx =  rx; vz =  rz; }
+  if (key === 'ArrowLeft')  { vx = -rx; vz = -rz; }
+  // Cardinal dominant : rien ne se pose en diagonale sur cette grille.
+  return Math.abs(vx) >= Math.abs(vz)
+    ? { dx: Math.sign(vx), dy: 0 }
+    : { dx: 0, dy: Math.sign(vz) };
+}
+
+/* ---------- Déplacement à la SOURIS ---------------------------------------
+ * Deux gestes, un seul chemin de code :
+ *   · glisser une pièce DÉJÀ SÉLECTIONNÉE  (convention habituelle : on clique, puis on glisse)
+ *   · Alt + glisser n'importe quelle pièce (pour qui orbite en glissant sur la base)
+ * Contrepartie assumée du premier : sur une pièce sélectionnée, le glissé ne fait plus
+ * tourner la caméra. Partout ailleurs — vide, pièce non sélectionnée — l'orbite est intacte.
+ *
+ * Le curseur est projeté sur le PLAN DE L'ÉTAGE de la pièce, pas sur la géométrie sous la
+ * souris : pendant le glissé la pièce suit le curseur, donc se viser elle-même rendrait le
+ * déplacement récursif et sautillant. On raisonne en écart de cellules entières depuis le
+ * point de départ, jamais en position absolue — la pièce garde ainsi sa place relative sous
+ * le curseur même si on a cliqué sur son bord.
+ */
+const moveDrag = {
+  active: false, moved: false, items: [], before: [],
+  dx: 0, dy: 0, startX: 0, startZ: 0, planeY: 0, orbitWasOn: false,
+};
+
+/** Applique un écart (en cellules) depuis l'instantané de départ. Aucun historique ici. */
+function setMoveDragDelta(dx, dy) {
+  if (dx === moveDrag.dx && dy === moveDrag.dy) return;
+  moveDrag.dx = dx; moveDrag.dy = dy;
+  for (const snap of moveDrag.before) {
+    const it = getItemById(snap.id);
+    if (!it) continue;
+    it.x = snap.x + dx * CM_PER_CELL;
+    it.y = snap.y + dy * CM_PER_CELL;
+    const mesh = placedMeshes.get(it.id);
+    if (mesh) applyTransformSocket(mesh, it);
+  }
+}
+
+function beginMoveDrag(clientX, clientY, items) {
+  if (!items.length) return false;
+  const planeY = getFloorYBase(items[0].z || 0);
+  const w = screenToWorldAtHeight(clientX, clientY, planeY);
+  if (!w) return false;
+  moveDrag.active = true; moveDrag.moved = false;
+  moveDrag.items  = items;
+  moveDrag.before = items.map(it => ({ id: it.id, x: it.x, y: it.y }));
+  moveDrag.dx = 0; moveDrag.dy = 0;
+  moveDrag.startX = w.x; moveDrag.startZ = w.z; moveDrag.planeY = planeY;
+  moveDrag.orbitWasOn = orbitControls.enabled;
+  orbitControls.enabled = false;
+  renderer.domElement.style.cursor = 'grabbing';
+  return true;
+}
+
+function updateMoveDrag(clientX, clientY) {
+  if (!moveDrag.active) return;
+  const w = screenToWorldAtHeight(clientX, clientY, moveDrag.planeY);
+  if (!w) return;
+  const dx = Math.round(w.x - moveDrag.startX);   // 1 unité monde = 1 cellule
+  const dy = Math.round(w.z - moveDrag.startZ);
+  if (dx !== 0 || dy !== 0) moveDrag.moved = true;
+  setMoveDragDelta(dx, dy);
+}
+
+/** Fin du glissé : contrôle, puis UNE entrée d'historique. `cancel` remet tout en place. */
+function endMoveDrag(cancel) {
+  if (!moveDrag.active) return false;
+  moveDrag.active = false;
+  orbitControls.enabled = moveDrag.orbitWasOn;
+  renderer.domElement.style.cursor = '';
+
+  const dx = moveDrag.dx, dy = moveDrag.dy;
+  const before = moveDrag.before, items = moveDrag.items;
+  if (cancel || (dx === 0 && dy === 0)) { setMoveDragDelta(0, 0); return false; }
+
+  const ignore = new Set(items.map(it => it.id));
+  let refus = null;
+  for (const it of items) {
+    const r = socketPlaceableReason(it.piece_id, { x: it.x, y: it.y }, it.z, it.rotation || 0, ignore);
+    if (r) { refus = r; break; }
+  }
+  if (refus) {
+    setMoveDragDelta(0, 0);
+    showFloorResolveHud?.(state.currentFloor, 'Déplacement refusé : ' + refus.toLowerCase());
+    return false;
+  }
+
+  // Instantané propre : `moveDrag` est réutilisé au glissé suivant, l'historique ne doit
+  // pas pointer dessus.
+  const snapshot = before.map(b => ({ ...b }));
+  const apply = (k) => {
+    for (const b of snapshot) {
+      const it = getItemById(b.id);
+      if (!it) continue;
+      it.x = b.x + k * dx * CM_PER_CELL;
+      it.y = b.y + k * dy * CM_PER_CELL;
+      const mesh = placedMeshes.get(it.id);
+      if (mesh) applyTransformSocket(mesh, it);
+    }
+    updateFloorBadges(); updatePieceCount(); recomputeStabilityIfActive();
+  };
+  apply(1);
+  bpSetDirty(true);
+  pushHistory(() => apply(0), () => apply(1));
+  return true;
+}
+
+/**
+ * Le mousedown a-t-il de quoi démarrer un déplacement ? Renvoie les items concernés.
+ * Une pièce sélectionnée entraîne TOUTE la sélection ; Alt sur une pièce non sélectionnée
+ * ne déplace qu'elle (et la sélectionne, pour qu'on voie ce qu'on bouge).
+ */
+function moveDragCandidates(e) {
+  if (state.activePieceId || state.buildTool || e.shiftKey) return null;
+  const mesh = raycastPlacedMeshes(e.clientX, e.clientY);
+  if (!mesh || !mesh.visible) return null;
+  const id = mesh.userData.itemId;
+  if (id == null) return null;
+  const isSel = state.selectedItemIds.has(id);
+  if (!isSel && !e.altKey) return null;
+  if (!isSel) select(mesh, 'replace');
+  const ids = state.selectedItemIds.has(id) && state.selectedItemIds.size
+    ? Array.from(state.selectedItemIds) : [id];
+  const items = [];
+  for (const i of ids) { const it = getItemById(i); if (it) items.push(it); }
+  return items.length ? items : null;
+}
+
+// ============================================================
+// SÉLECTION RECTANGLE (Shift + glisser)
+// ============================================================
+// Le clic simple ne sélectionne qu'une pièce à la fois (Shift+clic pour ajouter) : au-delà
+// de quelques dizaines de pièces c'est inutilisable. Shift + glisser trace un rectangle à
+// l'écran et sélectionne tout ce qui est VISIBLE dedans (les étages masqués ne sont jamais
+// pris — sinon on modifie sans le voir ce qui est caché sous le plancher).
+const marquee = { active: false, x0: 0, y0: 0, x1: 0, y1: 0, moved: false, orbitWasOn: false };
+let marqueeEl = null;
+
+function marqueeBox() {
+  return {
+    left:   Math.min(marquee.x0, marquee.x1), right:  Math.max(marquee.x0, marquee.x1),
+    top:    Math.min(marquee.y0, marquee.y1), bottom: Math.max(marquee.y0, marquee.y1),
+  };
+}
+
+function marqueeShow() {
+  if (!marqueeEl) {
+    marqueeEl = document.createElement('div');
+    marqueeEl.className = 'bp-marquee';
+    (document.getElementById('bp-stage-container') || document.body).appendChild(marqueeEl);
+  }
+  const b = marqueeBox();
+  const host = marqueeEl.parentElement.getBoundingClientRect();
+  marqueeEl.style.display = 'block';
+  marqueeEl.style.left   = (b.left - host.left) + 'px';
+  marqueeEl.style.top    = (b.top  - host.top)  + 'px';
+  marqueeEl.style.width  = (b.right - b.left) + 'px';
+  marqueeEl.style.height = (b.bottom - b.top) + 'px';
+}
+
+function marqueeHide() { if (marqueeEl) marqueeEl.style.display = 'none'; }
+
+/** Centre monde d'un mesh posé, projeté en coordonnées écran (px page). */
+const _mqBox = new THREE.Box3();
+const _mqVec = new THREE.Vector3();
+function meshScreenPos(mesh) {
+  _mqBox.setFromObject(mesh);
+  if (_mqBox.isEmpty()) return null;
+  _mqBox.getCenter(_mqVec).project(activeCam);
+  if (!isFinite(_mqVec.x) || !isFinite(_mqVec.y)) return null;
+  const rect = renderer.domElement.getBoundingClientRect();
+  return {
+    x: rect.left + (_mqVec.x + 1) / 2 * rect.width,
+    y: rect.top  + (1 - _mqVec.y) / 2 * rect.height,
+  };
+}
+
+/** Sélectionne tout ce qui est visible dans le rectangle. `additive` = ajoute à la sélection. */
+function marqueeApply(additive) {
+  const b = marqueeBox();
+  if (!additive) deselectAll();
+  let n = 0;
+  for (const [, mesh] of placedMeshes) {
+    if (!mesh || !mesh.visible) continue;
+    const p = meshScreenPos(mesh);
+    if (!p) continue;
+    if (p.x >= b.left && p.x <= b.right && p.y >= b.top && p.y <= b.bottom) {
+      select(mesh, 'add');
+      n++;
+    }
+  }
+  showFloorResolveHud?.(state.currentFloor, n ? `${n} pièce${n > 1 ? 's' : ''} sélectionnée${n > 1 ? 's' : ''}` : 'Aucune pièce dans le rectangle');
+}
+
+// ============================================================
 // COPIER-COLLER D'ÉTAGE (Ctrl+C / Ctrl+V)
 // ============================================================
 
@@ -3971,6 +4708,13 @@ function updateSelectedPanel(mesh) {
   if (dom.deleteBtn) dom.deleteBtn.onclick = () => removeItem(item.id);
   if (dom.rotCw)     dom.rotCw.onclick  = () => rotateSelected(+90);
   if (dom.rotCcw)    dom.rotCcw.onclick = () => rotateSelected(-90);
+  // Déplacement — mêmes directions que les flèches du clavier (repère écran).
+  if (dom.moveUp)    dom.moveUp.onclick    = () => { const d = nudgeDirFromKey('ArrowUp');    moveSelected(d.dx, d.dy, 0); };
+  if (dom.moveDown)  dom.moveDown.onclick  = () => { const d = nudgeDirFromKey('ArrowDown');  moveSelected(d.dx, d.dy, 0); };
+  if (dom.moveLeft)  dom.moveLeft.onclick  = () => { const d = nudgeDirFromKey('ArrowLeft');  moveSelected(d.dx, d.dy, 0); };
+  if (dom.moveRight) dom.moveRight.onclick = () => { const d = nudgeDirFromKey('ArrowRight'); moveSelected(d.dx, d.dy, 0); };
+  if (dom.moveLvlUp) dom.moveLvlUp.onclick = () => moveSelected(0, 0, +1);
+  if (dom.moveLvlDn) dom.moveLvlDn.onclick = () => moveSelected(0, 0, -1);
 
   // === Swap de type — portes & fenêtres ===
   const pGroup = piece.group || '';
@@ -4616,6 +5360,45 @@ function initToolbar() {
   document.getElementById('tool-stability')?.addEventListener('click', toggleStabilityMode);
   document.getElementById('tool-summary')?.addEventListener('click', () => toggleSummary());
   document.getElementById('bp-summary-close')?.addEventListener('click', () => toggleSummary(false));
+
+  // ── Construction assistée ──
+  document.getElementById('tool-circle')?.addEventListener('click', () => setBuildTool('circle'));
+  document.getElementById('tool-autowall')?.addEventListener('click', autoWallPerimeter);
+  document.getElementById('tool-walls-up')?.addEventListener('click', () => shiftWallsLevel(1));
+  document.getElementById('tool-walls-down')?.addEventListener('click', () => shiftWallsLevel(-1));
+  document.getElementById('bp-circle-minus')?.addEventListener('click', () => {
+    state.circleRadius = Math.max(1, state.circleRadius - 1); refreshCirclePanel();
+  });
+  document.getElementById('bp-circle-plus')?.addEventListener('click', () => {
+    state.circleRadius = Math.min(20, state.circleRadius + 1); refreshCirclePanel();
+  });
+  document.getElementById('bp-circle-mode-full')?.addEventListener('click', () => { state.circleRing = false; refreshCirclePanel(); });
+  document.getElementById('bp-circle-mode-ring')?.addEventListener('click', () => { state.circleRing = true;  refreshCirclePanel(); });
+  document.getElementById('bp-circle-close')?.addEventListener('click', () => setBuildTool(null));
+
+  // ── Photo de référence ──
+  document.getElementById('tool-refphoto')?.addEventListener('click', () => toggleRefPhotoPanel());
+  document.getElementById('bp-ref-close')?.addEventListener('click', () => toggleRefPhotoPanel(false));
+  document.getElementById('bp-ref-file')?.addEventListener('change', (e) => {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (f) loadRefPhoto(f);
+  });
+  document.getElementById('bp-ref-pick')?.addEventListener('click', () => document.getElementById('bp-ref-file')?.click());
+  for (const [id, key] of [['bp-ref-opacity', 'opacity'], ['bp-ref-scale', 'scale'], ['bp-ref-rot', 'rotation']]) {
+    document.getElementById(id)?.addEventListener('input', (e) => {
+      REFPHOTO[key] = parseFloat(e.target.value);
+      applyRefPhoto();
+    });
+  }
+  document.getElementById('bp-ref-flip')?.addEventListener('click', () => { REFPHOTO.flip = !REFPHOTO.flip; applyRefPhoto(); });
+  document.getElementById('bp-ref-center')?.addEventListener('click', () => { REFPHOTO.offX = 0; REFPHOTO.offY = 0; applyRefPhoto(); });
+  document.getElementById('bp-ref-toggle')?.addEventListener('click', () => { REFPHOTO.visible = !REFPHOTO.visible; applyRefPhoto(); });
+  document.getElementById('bp-ref-remove')?.addEventListener('click', () => removeRefPhoto());
+  document.querySelectorAll('[data-ref-nudge]').forEach(btn => {
+    const [dx, dy] = btn.dataset.refNudge.split(',').map(Number);
+    btn.addEventListener('click', () => nudgeRefPhoto(dx, dy));
+  });
 }
 
 /** Bascule entre vue normale (verre transparent, visibilité par étage)
@@ -4723,6 +5506,7 @@ function initFloorTabs() {
 function switchFloor(z, doScroll = true) {
   state.currentFloor = z;
   updatePieceCount();
+  applyRefPhoto();          // le calque se pose au niveau de l'étage actif
   deselect();
   updateFloorVisibility();
   // Mettre à jour l'onglet actif
@@ -4741,6 +5525,16 @@ function initKeyboard() {
   document.addEventListener('keydown', (e) => {
     const tag = document.activeElement?.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+
+    // Tab — cycle d'accroche : passe au candidat de snap suivant sous le curseur.
+    // (Sans ça, quand plusieurs sockets coïncident, seul le meilleur score est atteignable.)
+    if (e.key === 'Tab' && state.activePieceId) {
+      e.preventDefault();
+      state.snapCycle = (state.snapCycle + (e.shiftKey ? -1 : 1) + 1000) % 1000;
+      snapCycleAnchor = { ...lastSocketClientPos };
+      socketShowGhost(state.activePieceId, lastSocketClientPos.x, lastSocketClientPos.y);
+      return;
+    }
 
     // Undo — Ctrl+Z
     if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'z' || e.key === 'Z')) {
@@ -4763,6 +5557,30 @@ function initKeyboard() {
       e.preventDefault(); pasteFloorClipboard(); return;
     }
 
+    // Escape — sort de l'outil assisté, du mode click-to-place, ou désélectionne tout
+    // Flèches — déplacent la sélection d'une cellule, dans le repère de l'ÉCRAN.
+    // Placé avant les autres raccourcis : preventDefault évite que la page défile.
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      if (state.selectedItemIds.size || state.selectedItemId) {
+        e.preventDefault();
+        const d = nudgeDirFromKey(e.key);
+        moveSelected(d.dx, d.dy, 0);
+      }
+      return;
+    }
+    // Page↑ / Page↓ — même déplacement, mais d'un niveau d'étage.
+    if (e.key === 'PageUp' || e.key === 'PageDown') {
+      if (state.selectedItemIds.size || state.selectedItemId) {
+        e.preventDefault();
+        moveSelected(0, 0, e.key === 'PageUp' ? 1 : -1);
+      }
+      return;
+    }
+
+    // Échap pendant un glissé : remet la sélection où elle était.
+    if (e.key === 'Escape' && moveDrag.active) { endMoveDrag(true); return; }
+
+    if (e.key === 'Escape' && state.buildTool) { setBuildTool(null); return; }
     // Escape — annule le mode click-to-place ou désélectionne tout
     if (e.key === 'Escape') {
       if (state.activePieceId) { setActivePiece(null); return; }
@@ -4868,7 +5686,50 @@ function initDragDrop() {
   let downX = 0, downY = 0, dragged = false;
   let pickPrevX = -1, pickPrevY = -1, pickIndex = 0;   // clic-pour-traverser (cycle sélection)
   const DRAG_PX = 5;
-  el.addEventListener('mousedown', (e) => { if (e.button === 0) { downX = e.clientX; downY = e.clientY; dragged = false; } });
+  el.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    downX = e.clientX; downY = e.clientY; dragged = false;
+    // Shift + glisser (hors mode pose) = sélection rectangle. On coupe l'orbite pendant
+    // le tracé, sinon la caméra tourne en même temps que le rectangle se dessine.
+    if (e.shiftKey && !state.activePieceId && !state.buildTool) {
+      marquee.active = true; marquee.moved = false;
+      marquee.x0 = marquee.x1 = e.clientX; marquee.y0 = marquee.y1 = e.clientY;
+      marquee.orbitWasOn = orbitControls.enabled;
+      orbitControls.enabled = false;
+      return;
+    }
+    // Déplacement à la souris — voir moveDragCandidates() pour les deux gestes acceptés.
+    const cand = moveDragCandidates(e);
+    if (cand) beginMoveDrag(e.clientX, e.clientY, cand);
+  });
+
+  // mouseup sur window : le glissé peut se terminer hors du canvas.
+  window.addEventListener('mouseup', (e) => {
+    if (moveDrag.active) {
+      const bouge = endMoveDrag(false);
+      if (bouge) dragged = true;            // empêche le 'click' de suivre
+      return;
+    }
+    if (!marquee.active) return;
+    marquee.active = false;
+    orbitControls.enabled = marquee.orbitWasOn;
+    marqueeHide();
+    if (!marquee.moved) return;          // simple Shift+clic → laissé au handler 'click'
+    marqueeApply(true);                  // Shift = additif (cohérent avec Shift+clic)
+    dragged = true;                      // empêche le 'click' qui suit de désélectionner
+  });
+
+  // Filet de sécurité : bouton relâché HORS de la fenêtre → pas de mouseup. Sans ça
+  // l'orbite resterait coupée et la vue 3D ne tournerait plus.
+  window.addEventListener('blur', () => {
+    // Glissé abandonné (alt-tab) : on entérine ce qui est VISIBLE à l'écran — annuler
+    // ferait disparaître un déplacement que l'utilisateur voit déjà fait.
+    if (moveDrag.active) { endMoveDrag(false); return; }
+    if (!marquee.active) return;
+    marquee.active = false;
+    orbitControls.enabled = marquee.orbitWasOn;
+    marqueeHide();
+  });
 
   // Drag-and-drop : même moteur que le click-to-place (sockets). Le ghost suit le
   // curseur pendant le survol, la pose se fait au drop via le moteur de sockets.
@@ -4890,6 +5751,8 @@ function initDragDrop() {
   el.addEventListener('click', (e) => {
     // Glissé (orbite caméra) → ni pose ni (dé)sélection : on laisse la vue pivoter.
     if (dragged) { dragged = false; return; }
+    // Outil cercle : le clic pose le lot prévisualisé, l'outil reste actif.
+    if (state.buildTool === 'circle') { commitCircle(e.clientX, e.clientY); showCirclePreview(e.clientX, e.clientY); return; }
     // Mode click-to-place : pose la pièce, garde le mode actif pour pose multiple
     if (state.activePieceId) {
       state.ghostHalf = e.shiftKey;        // capture Shift au moment du clic
@@ -4929,10 +5792,30 @@ function initDragDrop() {
 
   let lastCursorRay = 0;
   el.addEventListener('mousemove', (e) => {
+    // Déplacement en cours : la pièce suit le curseur, rien d'autre ne s'exécute.
+    if (moveDrag.active) {
+      updateMoveDrag(e.clientX, e.clientY);
+      if (moveDrag.moved) dragged = true;   // le 'click' qui suit ne doit pas re-sélectionner
+      return;
+    }
+    // Sélection rectangle en cours : on ne fait QUE redessiner le rectangle.
+    if (marquee.active) {
+      marquee.x1 = e.clientX; marquee.y1 = e.clientY;
+      if (Math.hypot(e.clientX - marquee.x0, e.clientY - marquee.y0) > DRAG_PX) marquee.moved = true;
+      if (marquee.moved) marqueeShow();
+      return;
+    }
     // Détection glissé (bouton gauche maintenu + déplacement) → orbite, pas un clic.
     if ((e.buttons & 1) && Math.hypot(e.clientX - downX, e.clientY - downY) > DRAG_PX) dragged = true;
 
     if (state.dragPieceId) return;  // pendant un drag, dragover gère le ghost
+    // Outil cercle : aperçu du lot sous le curseur.
+    if (state.buildTool === 'circle') {
+      el.style.cursor = 'crosshair';
+      lastSocketClientPos = { x: e.clientX, y: e.clientY };
+      showCirclePreview(e.clientX, e.clientY);
+      return;
+    }
     // Mode click-to-place : ghost suit le curseur (curseur de pose).
     if (state.activePieceId) {
       el.style.cursor = 'crosshair';
@@ -4951,7 +5834,12 @@ function initDragDrop() {
       if (now - lastCursorRay > 60) {
         lastCursorRay = now;
         const over = raycastPlacedMeshes(e.clientX, e.clientY);
-        el.style.cursor = over ? 'pointer' : (state.cameraMode === 'persp' ? 'grab' : 'crosshair');
+        // « move » quand le glissé déplacerait : c'est le seul indice visuel du geste.
+        const deplacable = over && !state.activePieceId && !state.buildTool &&
+                           (state.selectedItemIds.has(over.userData.itemId) || e.altKey);
+        el.style.cursor = deplacable ? 'move'
+                        : over ? 'pointer'
+                        : (state.cameraMode === 'persp' ? 'grab' : 'crosshair');
       }
     }
     // MAJ HUD coords
@@ -6145,6 +7033,8 @@ function animate() {
 window.__bp = {
   state, placedMeshes, socketEngine, meshFactory,
   get scene() { return scene; },           // getter : scene assignée pendant init()
+  get camera() { return activeCam; },
+  get orbitEnabled() { return orbitControls.enabled; },
   get ghostMesh() { return ghostMesh; },
   pauseRender() { window.__bpPauseRender = true; },
   resumeRender() { if (window.__bpPauseRender) { window.__bpPauseRender = false; animate(); } },
@@ -6216,7 +7106,7 @@ const MATERIAL_FR = {
 
 async function loadCosts() {
   try {
-    const r = await fetch('planner_costs.json?v=lot37utils');
+    const r = await fetch('planner_costs.json?v=lot39move');
     if (!r.ok) return;
     SUMMARY.costs = await r.json();
     SUMMARY.costIndex = new Map();

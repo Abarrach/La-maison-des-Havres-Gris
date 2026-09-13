@@ -106,15 +106,21 @@ export function createEngine(getPiece) {
   // opts.zHint : hauteur cm attendue (étage courant) ; opts.zTol : tolérance.
   // Permet de ne s'accrocher qu'aux sockets proches de la hauteur de l'étage courant
   // (sinon depuis N1 on s'accroche aux fondations RDC au sol).
-  function snapPiece(cur, type, list, occ, opts) {
+  //
+  // Renvoie TOUTES les accroches valides, dédoublonnées par (position, rotation) et
+  // triées du meilleur score au pire. `snapPiece` en garde la première : le comportement
+  // par défaut est donc inchangé. La liste complète sert au cycle d'accroche (Tab) côté
+  // UI, quand plusieurs sockets coïncident sous le curseur et que le meilleur score
+  // n'est pas celui que l'utilisateur visait.
+  function snapCandidates(cur, type, list, occ, opts, max = 8) {
     // Guard NaN : coordonnées invalides → pas de snap (évite que NaN>G=false ne passe tout)
-    if (!cur || !isFinite(cur.x) || !isFinite(cur.y)) return null;
-    const me = getPiece(type); if (!me || !me.sockets.length) return null;
+    if (!cur || !isFinite(cur.x) || !isFinite(cur.y)) return [];
+    const me = getPiece(type); if (!me || !me.sockets.length) return [];
     if (!occ) occ = occSet(list);
     const zHint = opts && opts.zHint, zTol = (opts && opts.zTol) != null ? opts.zTol : Infinity;
     const activeSockets = me.sockets.filter(s => s.cost !== 'No_Cost' && !IS_PASSIVE(s));
-    if (!activeSockets.length) return null;
-    let best = null;
+    if (!activeSockets.length) return [];
+    const bySlot = new Map();   // clé position+rotation → meilleur score pour cette pose
     for (const a of activeSockets) {
       for (const it of list) {
         const other = getPiece(it.building_type); if (!other) continue;
@@ -137,11 +143,37 @@ export function createEngine(getPiece) {
           const metric = Math.min(dWp, dOr);
           if (metric > G) continue;
           const score = metric * 1000 + dOr;
-          if (!best || score < best.score) best = { score, pos: { x: fx, y: fy, z: fz }, rotation: rot };
+          // Deux sockets différents peuvent produire EXACTEMENT la même pose (un mur qui
+          // s'accroche au sol de gauche ou à celui de droite) : c'est le même résultat
+          // visible, on ne le propose qu'une fois dans le cycle.
+          const slot = `${keyOf(fx, fy, fz)}|${Math.round(rot)}`;
+          const prev = bySlot.get(slot);
+          if (!prev || score < prev.score) bySlot.set(slot, { score, pos: { x: fx, y: fy, z: fz }, rotation: rot });
         }
       }
     }
-    return best ? { pos: best.pos, rotation: best.rotation } : null;
+    const sorted = [...bySlot.values()].sort((x, y) => x.score - y.score);
+    // Un même emplacement ressort presque toujours en DEUX poses (rotation et demi-tour :
+    // mur retourné, porte qui s'ouvre de l'autre côté). Sans regroupement, Tab passerait
+    // deux fois par chaque arête avant d'atteindre la suivante. On visite donc un
+    // emplacement à la fois, les variantes de rotation venant après le tour complet.
+    const byPos = new Map();
+    for (const c of sorted) {
+      const k = keyOf(c.pos.x, c.pos.y, c.pos.z);
+      if (!byPos.has(k)) byPos.set(k, []);
+      byPos.get(k).push(c);
+    }
+    const lanes = [...byPos.values()];
+    const out = [];
+    for (let i = 0; out.length < sorted.length; i++) {
+      for (const lane of lanes) if (lane[i]) out.push(lane[i]);
+    }
+    return out.slice(0, max).map(c => ({ pos: c.pos, rotation: c.rotation }));
+  }
+
+  function snapPiece(cur, type, list, occ, opts) {
+    const all = snapCandidates(cur, type, list, occ, opts, 1);
+    return all.length ? all[0] : null;
   }
 
   // Snap grille pur (fallback quand aucun socket compatible).
@@ -157,5 +189,5 @@ export function createEngine(getPiece) {
     };
   }
 
-  return { snapPiece, gridSnap, occSet, isBig };
+  return { snapPiece, snapCandidates, gridSnap, occSet, isBig };
 }

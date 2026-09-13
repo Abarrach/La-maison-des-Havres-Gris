@@ -822,6 +822,30 @@
       transition: all 0.15s;
     }
     .bp-rot-btn:hover { border-color: #cda434; color: #f3c44f; }
+    /* Pavé de déplacement — croix 3x3, seules les 4 cardinales portent un bouton. */
+    .bp-dpad {
+      display: grid;
+      grid-template-columns: repeat(3, 24px);
+      grid-template-rows: repeat(2, 22px);
+      gap: 2px;
+      justify-content: end;
+    }
+    .bp-dpad .bp-move-btn:nth-child(1) { grid-column: 2; grid-row: 1; }
+    .bp-dpad .bp-move-btn:nth-child(2) { grid-column: 1; grid-row: 2; }
+    .bp-dpad .bp-move-btn:nth-child(3) { grid-column: 2; grid-row: 2; }
+    .bp-dpad .bp-move-btn:nth-child(4) { grid-column: 3; grid-row: 2; }
+    .bp-move-btn {
+      background: rgba(26, 16, 7, 0.9);
+      border: 1px solid #2a1d0e;
+      color: #7a5c2e;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 13px;
+      line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .bp-move-btn:hover { border-color: #cda434; color: #f3c44f; }
     .bp-half-btn {
       padding: 3px 10px;
       background: rgba(26, 16, 7, 0.9);
@@ -1208,6 +1232,64 @@
     .bp-toggle input:checked + .bp-toggle-slider { background: rgba(80, 50, 10, 0.8); }
     .bp-toggle input:checked + .bp-toggle-slider::before { transform: translateX(18px); background: #cda434; }
 
+    /* ============ SÉLECTION RECTANGLE (Shift + glisser) ============ */
+    .bp-marquee {
+      position: absolute; z-index: 25; display: none; pointer-events: none;
+      border: 1px dashed #cda434; background: rgba(205, 164, 52, 0.12);
+    }
+
+    /* ============ PANNEAUX D'OUTILS (cercle, photo de référence) ============ */
+    .bp-tool-panel {
+      position: absolute; top: 10px; left: 10px; z-index: 30; width: 232px;
+      background: rgba(12, 7, 3, 0.96);
+      border: 1px solid #5c4025; border-radius: 6px;
+      box-shadow: 0 12px 36px rgba(0,0,0,0.7);
+      backdrop-filter: blur(3px);
+      font-size: 12px; color: #c9b48a;
+    }
+    .bp-tool-panel[hidden] { display: none; }
+    .bp-tool-panel + .bp-tool-panel { top: 10px; left: 252px; }
+    .bp-tool-panel header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 11px; border-bottom: 1px solid #3d2b16;
+      font-weight: bold; text-transform: uppercase; letter-spacing: 1px;
+      font-size: 10px; color: #f3c44f;
+    }
+    .bp-tool-panel header button {
+      background: none; border: none; color: #9a7c4a;
+      font-size: 17px; line-height: 1; cursor: pointer; padding: 0 2px;
+    }
+    .bp-tool-panel header button:hover { color: #f3c44f; }
+    .bp-tool-panel .body { padding: 9px 11px 11px; }
+    .bp-tp-row { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+    .bp-tp-row:last-child { margin-bottom: 0; }
+    .bp-tp-label {
+      font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px;
+      color: #8a7349; flex: 0 0 58px;
+    }
+    .bp-tp-val { font-size: 10px; color: #cda434; margin-left: auto; }
+    .bp-tp-btn {
+      background: rgba(26, 16, 7, 0.9); border: 1px solid #2a1d0e; color: #9a7c4a;
+      border-radius: 3px; cursor: pointer; font-size: 10px; padding: 4px 8px;
+      font-family: inherit; text-transform: uppercase; letter-spacing: 0.5px;
+      transition: all 0.15s;
+    }
+    .bp-tp-btn:hover { border-color: #cda434; color: #f3c44f; background: rgba(50, 30, 10, 0.9); }
+    .bp-tp-btn.active { background: rgba(80, 50, 10, 0.9); border-color: #cda434; color: #f3c44f; }
+    .bp-tp-btn.wide { flex: 1; }
+    .bp-tp-btn.danger { border-color: #6b1e1e; color: #cc6666; }
+    .bp-tp-btn.danger:hover { border-color: #cc4444; color: #ff8888; background: rgba(60,15,15,0.9); }
+    .bp-tp-num {
+      width: 26px; height: 24px; display: flex; align-items: center; justify-content: center;
+      background: rgba(26, 16, 7, 0.9); border: 1px solid #2a1d0e; color: #9a7c4a;
+      border-radius: 3px; cursor: pointer; font-size: 13px; transition: all 0.15s;
+    }
+    .bp-tp-num:hover { border-color: #cda434; color: #f3c44f; }
+    .bp-tool-panel input[type=range] { flex: 1; accent-color: #cda434; height: 16px; }
+    .bp-tp-hint { font-size: 9px; color: #6b5836; line-height: 1.5; margin-top: 8px; }
+    .bp-tp-pad { display: grid; grid-template-columns: repeat(3, 24px); gap: 3px; justify-content: center; }
+    .bp-tp-pad span { display: block; }
+
     /* ===================== PANNEAU SYNTHÈSE (overlay) ===================== */
     .bp-summary {
       position: absolute; top: 10px; right: 10px; z-index: 30;
@@ -1488,6 +1570,29 @@
 
       <div class="bp-tool-sep"></div>
 
+      <!-- Construction assistée : lots de pièces générés d'un coup -->
+      <span class="bp-tool-label">Auto</span>
+      <!-- Cercle de fondations (plein ou anneau) -->
+      <button class="bp-tool-btn" id="tool-circle" data-tip="Cercle de fondations — plein ou anneau, rayon réglable">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+      <!-- Ceinture de murs sur le périmètre de l'étage -->
+      <button class="bp-tool-btn" id="tool-autowall" data-tip="Mur de périmètre — ceinture l'étage courant de murs">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18"/><path d="M3 9h18M3 15h18M9 3v6M15 9v6M9 15v6"/></svg>
+      </button>
+      <button class="bp-tool-btn" id="tool-walls-up" data-tip="Monter les murs d'un niveau (sélection, sinon tout l'étage)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4l6 6h-4v10h-4V10H6z"/></svg>
+      </button>
+      <button class="bp-tool-btn" id="tool-walls-down" data-tip="Descendre les murs d'un niveau (sélection, sinon tout l'étage)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 20l-6-6h4V4h4v10h4z"/></svg>
+      </button>
+      <!-- Calque à décalquer -->
+      <button class="bp-tool-btn" id="tool-refphoto" data-tip="Photo de référence — calque à décalquer sous la grille">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+      </button>
+
+      <div class="bp-tool-sep"></div>
+
       <!-- Aide : légende des touches + tutoriel -->
       <button class="bp-tool-btn" id="tool-help" data-tip="Aide — raccourcis &amp; tutoriel" style="font-weight:bold;">?</button>
     </div>
@@ -1507,6 +1612,72 @@
       <div class="bp-hud bp-hud-half" id="bp-hud-half" style="display:none;">↑ ½ étage</div>
       <!-- HUD auto-stack : étage résolu différent du courant -->
       <div class="bp-hud bp-hud-floor-resolve" id="bp-hud-floor-resolve"></div>
+
+      <!-- Panneau CERCLE (overlay, ouvert par le bouton Auto > cercle) -->
+      <aside class="bp-tool-panel" id="bp-circle-panel" hidden>
+        <header>Cercle de fondations <button id="bp-circle-close" data-tip="Fermer">×</button></header>
+        <div class="body">
+          <div class="bp-tp-row">
+            <span class="bp-tp-label">Rayon</span>
+            <button class="bp-tp-num" id="bp-circle-minus" data-tip="Rayon −1">−</button>
+            <span class="bp-tp-val" id="bp-circle-radius-val" style="min-width:18px; text-align:center; margin:0;">3</span>
+            <button class="bp-tp-num" id="bp-circle-plus" data-tip="Rayon +1">+</button>
+          </div>
+          <div class="bp-tp-row">
+            <span class="bp-tp-label">Forme</span>
+            <button class="bp-tp-btn wide active" id="bp-circle-mode-full">Plein</button>
+            <button class="bp-tp-btn wide" id="bp-circle-mode-ring">Anneau</button>
+          </div>
+          <p class="bp-tp-hint">Clique dans le fief pour poser le lot à l'étage courant.
+             Les cases hors fief ou déjà occupées sont ignorées. Échap pour sortir.</p>
+        </div>
+      </aside>
+
+      <!-- Panneau PHOTO DE RÉFÉRENCE (overlay) -->
+      <aside class="bp-tool-panel" id="bp-ref-panel" hidden>
+        <header>Photo de référence <button id="bp-ref-close" data-tip="Fermer">×</button></header>
+        <div class="body">
+          <input type="file" id="bp-ref-file" accept="image/*" hidden>
+          <div class="bp-tp-row">
+            <button class="bp-tp-btn wide" id="bp-ref-pick">Charger une image</button>
+          </div>
+          <p class="bp-tp-hint" id="bp-ref-empty">Projette un plan (capture Discord, vidéo…) à plat
+             au niveau de l'étage courant pour le décalquer. Le calque n'est pas enregistré avec le plan.</p>
+          <div id="bp-ref-controls" hidden>
+            <div class="bp-tp-row">
+              <span class="bp-tp-label">Opacité</span>
+              <input type="range" id="bp-ref-opacity" min="0.05" max="1" step="0.05" value="0.45">
+              <span class="bp-tp-val" id="bp-ref-opacity-val">45 %</span>
+            </div>
+            <div class="bp-tp-row">
+              <span class="bp-tp-label">Largeur</span>
+              <input type="range" id="bp-ref-scale" min="1" max="60" step="0.5" value="10">
+              <span class="bp-tp-val" id="bp-ref-scale-val">10 cases</span>
+            </div>
+            <div class="bp-tp-row">
+              <span class="bp-tp-label">Rotation</span>
+              <input type="range" id="bp-ref-rot" min="-180" max="180" step="1" value="0">
+              <span class="bp-tp-val" id="bp-ref-rot-val">0°</span>
+            </div>
+            <div class="bp-tp-row bp-tp-pad" style="margin-bottom:8px;">
+              <span></span>
+              <button class="bp-tp-num" data-ref-nudge="0,-1" data-tip="Décaler vers le nord">↑</button>
+              <span></span>
+              <button class="bp-tp-num" data-ref-nudge="-1,0" data-tip="Décaler vers l'ouest">←</button>
+              <button class="bp-tp-num" id="bp-ref-center" data-tip="Recentrer sur le fief">⌖</button>
+              <button class="bp-tp-num" data-ref-nudge="1,0" data-tip="Décaler vers l'est">→</button>
+              <span></span>
+              <button class="bp-tp-num" data-ref-nudge="0,1" data-tip="Décaler vers le sud">↓</button>
+              <span></span>
+            </div>
+            <div class="bp-tp-row">
+              <button class="bp-tp-btn wide" id="bp-ref-flip">Miroir</button>
+              <button class="bp-tp-btn wide" id="bp-ref-toggle">Masquer</button>
+              <button class="bp-tp-btn danger" id="bp-ref-remove">Retirer</button>
+            </div>
+          </div>
+        </div>
+      </aside>
 
       <!-- Panneau SYNTHÈSE (overlay, repliable, ouvert via le bouton toolbar) -->
       <aside class="bp-summary" id="bp-summary" hidden>
@@ -1608,6 +1779,22 @@
         <button class="bp-rot-btn" id="bp-rot-ccw" data-tip="−90°">↺</button>
         <span class="bp-rot-value" id="bp-sel-rotation">0°</span>
         <button class="bp-rot-btn" id="bp-rot-cw" data-tip="+90°">↻</button>
+      </div>
+
+      <div class="bp-rotation-row">
+        <label>Déplacer</label>
+        <div class="bp-dpad">
+          <button class="bp-move-btn" id="bp-move-up"    data-tip="Reculer d'une case (flèche ↑)">↑</button>
+          <button class="bp-move-btn" id="bp-move-left"  data-tip="Vers la gauche d'une case (flèche ←)">←</button>
+          <button class="bp-move-btn" id="bp-move-down"  data-tip="Avancer d'une case (flèche ↓)">↓</button>
+          <button class="bp-move-btn" id="bp-move-right" data-tip="Vers la droite d'une case (flèche →)">→</button>
+        </div>
+      </div>
+
+      <div class="bp-rotation-row">
+        <label>Niveau</label>
+        <button class="bp-half-btn" id="bp-move-lvl-dn" data-tip="Descendre d'un étage (Page↓)">Étage ↓</button>
+        <button class="bp-half-btn" id="bp-move-lvl-up" data-tip="Monter d'un étage (Page↑)">Étage ↑</button>
       </div>
 
       <div class="bp-rotation-row">
@@ -1784,8 +1971,11 @@
           <li><b>Commence par une fondation.</b> Les fondations se posent librement dans le fief. Tout le reste (sols, murs, toits…) <b>s'accroche tout seul</b> aux pièces déjà posées — approche le curseur d'un bord existant.</li>
           <li><b>Oriente &amp; ajuste.</b> <kbd class="bp-kbd">R</kbd> ou <kbd class="bp-kbd">Ctrl</kbd>+<kbd class="bp-kbd">molette</kbd> pour pivoter ; maintiens <kbd class="bp-kbd">Shift</kbd> pour poser en demi-niveau.</li>
           <li><b>Change d'étage.</b> Onglets verticaux en bas (S7 … RDC … N6).</li>
-          <li><b>Sélectionne, déplace, supprime.</b> Clique une pièce posée (elle s'illumine en doré), <kbd class="bp-kbd">Suppr</kbd> pour l'enlever. <kbd class="bp-kbd">Shift</kbd>/<kbd class="bp-kbd">Ctrl</kbd>+clic = sélection multiple.</li>
-          <li><b>Vérifie la stabilité.</b> Bouton <b>bouclier 🛡️</b> : vert = bien porté, orange = limite, rouge = instable. Une fondation porte ~10 pièces de distance.</li>
+          <li><b>Sélectionne, déplace, supprime.</b> Clique une pièce posée (elle s'illumine en doré), <kbd class="bp-kbd">Suppr</kbd> pour l'enlever. <kbd class="bp-kbd">Shift</kbd>/<kbd class="bp-kbd">Ctrl</kbd>+clic = sélection multiple, <kbd class="bp-kbd">Shift</kbd>+glisser = rectangle de sélection. Pour la <b>déplacer</b> : les flèches du clavier (une case à la fois, dans le sens de l'écran), <kbd class="bp-kbd">Page↑</kbd>/<kbd class="bp-kbd">Page↓</kbd> pour changer d'étage, ou le pavé du panneau de droite. À la souris : <b>glisse une pièce déjà sélectionnée</b>, ou <kbd class="bp-kbd">Alt</kbd>+glisser n'importe laquelle. <kbd class="bp-kbd">Échap</kbd> pendant le glissé annule. Toute la sélection bouge d'un bloc.</li>
+          <li><b>Vérifie la stabilité.</b> Bouton <b>bouclier 🛡️</b> : vert = bien porté, orange = limite, rouge = instable. Une fondation porte 9 pièces de distance.</li>
+          <li><b>Gagne du temps (barre « Auto »).</b> <b>Cercle</b> pose un disque ou un anneau de fondations d'un clic ;
+              <b>Mur de périmètre</b> ceinture l'étage courant ; les flèches <b>↑ ↓</b> montent ou descendent les murs d'un niveau
+              (la sélection si tu en as une, sinon tout l'étage). <b>Photo de référence</b> projette une image à plat pour la décalquer.</li>
           <li><b>Sauvegarde &amp; partage.</b> Boutons en bas à droite : <b>Sauvegarder</b>, <b>Mes plans</b>, <b>Partager</b> (lien lecture seule).</li>
         </ol>
         <p class="bp-help-note">Astuce : <kbd class="bp-kbd">T</kbd> bascule en vue solide (sans verre) pour voir l'intérieur, <kbd class="bp-kbd">V</kbd> bascule plan ↔ 3D.</p>
@@ -1801,11 +1991,17 @@
         <div class="bp-key-row"><span class="k"><kbd class="bp-kbd">Clic droit</kbd></span><span class="d">Annuler la pose en cours</span></div>
         <div class="bp-key-row"><span class="k"><kbd class="bp-kbd">Molette</kbd></span><span class="d">Zoom</span></div>
         <div class="bp-key-row"><span class="k"><kbd class="bp-kbd">Ctrl</kbd>+<kbd class="bp-kbd">Molette</kbd></span><span class="d">Pivoter ±90°</span></div>
-        <div class="bp-key-row"><span class="k"><kbd class="bp-kbd">Glisser</kbd></span><span class="d">Vue 3D : orbite caméra</span></div>
+        <div class="bp-key-row"><span class="k"><kbd class="bp-kbd">Shift</kbd>+<kbd class="bp-kbd">Glisser</kbd></span><span class="d">Rectangle de sélection</span></div>
+        <div class="bp-key-row"><span class="k"><kbd class="bp-kbd">Glisser</kbd> une pièce <b>sélectionnée</b></span><span class="d">La déplacer (toute la sélection suit)</span></div>
+        <div class="bp-key-row"><span class="k"><kbd class="bp-kbd">Alt</kbd>+<kbd class="bp-kbd">Glisser</kbd></span><span class="d">Déplacer sans sélectionner d'abord</span></div>
+        <div class="bp-key-row"><span class="k"><kbd class="bp-kbd">Glisser</kbd></span><span class="d">Vue 3D : orbite caméra (sauf sur une pièce sélectionnée)</span></div>
 
         <h3>Clavier</h3>
         <div class="bp-key-row"><span class="k"><kbd class="bp-kbd">R</kbd></span><span class="d">Pivoter +90° / recentrer</span></div>
         <div class="bp-key-row"><span class="k"><kbd class="bp-kbd">Shift</kbd></span><span class="d">(maintenu) demi-niveau</span></div>
+        <div class="bp-key-row"><span class="k"><kbd class="bp-kbd">Tab</kbd></span><span class="d">Accroche suivante sous le curseur</span></div>
+        <div class="bp-key-row"><span class="k"><kbd class="bp-kbd">←</kbd><kbd class="bp-kbd">↑</kbd><kbd class="bp-kbd">↓</kbd><kbd class="bp-kbd">→</kbd></span><span class="d">Déplacer la sélection d'une case</span></div>
+        <div class="bp-key-row"><span class="k"><kbd class="bp-kbd">Page↑</kbd> / <kbd class="bp-kbd">Page↓</kbd></span><span class="d">Déplacer la sélection d'un étage</span></div>
         <div class="bp-key-row"><span class="k"><kbd class="bp-kbd">Suppr</kbd></span><span class="d">Supprimer la sélection</span></div>
         <div class="bp-key-row"><span class="k"><kbd class="bp-kbd">Échap</kbd></span><span class="d">Annuler / désélectionner</span></div>
         <div class="bp-key-row"><span class="k"><kbd class="bp-kbd">Ctrl</kbd>+<kbd class="bp-kbd">Z</kbd></span><span class="d">Annuler</span></div>
@@ -1914,6 +2110,6 @@
 
 </script>
 
-<script type="module" src="base_planner.js?v=lot37utils"></script>
+<script type="module" src="base_planner.js?v=lot39move"></script>
 </body>
 </html>

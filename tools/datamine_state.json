@@ -1,0 +1,25 @@
+{
+  "_note": "Écrit par tools/update_datamine.js. Dit de QUEL build du jeu proviennent les données du site, et quand chaque étape a tourné pour la dernière fois. Versionné exprès : c'est la seule trace de la fraîcheur des données.",
+  "updated_at": "2026-09-13T21:13:17.841Z",
+  "game": {
+    "build_id": "24654038",
+    "last_updated": "2026-08-12T16:38:14.000Z",
+    "paks_dir": "D:\\SteamLibrary\\steamapps\\common\\DuneAwakening\\DuneSandbox\\Content\\Paks"
+  },
+  "export": {
+    "root": "J:\\Download\\Fmodel\\Output\\Exports\\DuneSandbox\\Content\\Dune",
+    "mappings": "5.2.1-2007976+Seabass_sb-1.4.10.0-DuneSandbox.usmap"
+  },
+  "steps": {
+    "planner_pieces": {
+      "ran_at": "2026-09-13T21:13:17.817Z",
+      "game_build_id": "24654038",
+      "sources": {},
+      "outputs": {
+        "planner_pieces.json": {
+          "entrees": 692
+        }
+      }
+    }
+  }
+}

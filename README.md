@@ -487,11 +487,17 @@ j:\Download\Fmodel\
 
 #### Relancer le pipeline après un patch jeu
 
+Passer par l'orchestrateur, qui enchaîne le script externe **et** la régénération de
+`planner_pieces.json` qui en dépend (voir
+[« Mettre à jour les données après un patch du jeu »](#mettre-à-jour-les-données-après-un-patch-du-jeu)) :
+
 ```bash
-# Depuis j:\Download\Fmodel\
-node import_building_data.js
-# → Écrit directement dans J:\Download\Serveur\Carte Dune OK\DuneMap\base_pieces_v3.json
-# Puis déployer base_pieces_v3.json + base_planner.js via WinSCP → /srv/dune-map/v2/
+node tools/update_datamine.js --run-planner-import
+# → lance J:\Download\Fmodel\import_building_data.js (qui écrit toujours vers la racine du
+#   dépôt PRINCIPAL, chemin absolu codé en dur), recopie base_pieces_v3.json dans le dépôt
+#   courant, puis régénère planner_pieces.json en cascade.
+# Puis déployer base_pieces_v3.json + planner_pieces.json + base_planner.js via WinSCP → /srv/dune-map/v2/
+# (et bumper le ?v=lotXX de base_planner.js, sinon le navigateur sert l'ancien module)
 ```
 
 #### Raccourcis clavier / souris
@@ -550,7 +556,7 @@ Outil de **composition et comparaison de builds** — armes, armures, augments *
   - Icônes servies directement depuis le CDN gaming.tools (`cdn-hosted.gaming.tools/dune/images…`) — chargeables en `<img>` sans blocage (pas de hotlink-protection).
 - **Limite connue** : les emplacements de loot ne sont couverts que pour les **lieux nommés** (voir ci-dessus) — pas de coordonnées GPS précises, et les conteneurs génériques (grottes/épaves quelconques) restent non couverts (système de tags trop complexe).
 - **À déployer (WinSCP)** : `optimiseur.html`, `stuff_proxy.php`, `stuff_data.json`, `stuff_recipes.json`, `stuff_skills.json`, `stuff_augments.json` (effets d'augments dataminés), `stuff_loot.json` (emplacements de loot dataminés), `pages.js` (tuile « Optimiseur de Stuff »), `optimiseur.jpg` (vignette — fallback auto vers `intro.jpg` si absente). Le proxy crée `stuff_cache_list.json` + `stuff_cache_skills.json` + `stuff_cache/` (runtime, gitignorés) → PHP doit pouvoir y écrire.
-- **Après un patch du jeu — orchestrateur `tools/update_datamine.js`** (2026-07-11) : ré-exporte d'abord les DataTables via FModel (voir chemins ci-dessus), puis lance `node tools/update_datamine.js --check` (aucune écriture, vérifie juste que les exports FModel attendus existent et leur date) et `node tools/update_datamine.js` (régénère dans le bon ordre `stuff_recipes.json` / `stuff_data.json` (desc + armure) / `stuff_augments.json` / `stuff_loot.json` / `planner_pieces.json`, puis affiche un résumé des compteurs avant/après vs le dernier commit — ne commite ni ne déploie rien). `--with-snapshot` ajoute l'étape réseau gaming.tools (liste d'objets, lente/throttlée, seulement utile si le patch a ajouté de **nouveaux** objets). `--run-planner-import` lance aussi le script **externe** (hors dépôt) `J:/Download/Fmodel/import_building_data.js` qui régénère `base_pieces_v3.json` et resynchronise le résultat dans le dépôt courant (ce script écrit toujours vers la racine du dépôt principal par défaut). **Angle mort connu** : `dune_pieces_sockets.json` / `dune_socket_profiles.json` / `dune_group_config.json` (sockets/meshes du planner) n'ont **aucun script de régénération retrouvé** — `--check` le rappelle à chaque lancement.
+- **Après un patch du jeu** : tout passe par `tools/update_datamine.js`, qui détecte seul qu'un patch est sorti et dit quoi ré-exporter. Voir la section dédiée [« Mettre à jour les données après un patch du jeu »](#mettre-à-jour-les-données-après-un-patch-du-jeu).
 
 #### Roadmap Optimiseur (synthèse reviews ChatGPT + Gemini — passer de calculateur à *assistant*)
 Principes : **déterministe** (pas de LLM dans l'optimiseur), **pas de score global unique** (profil par axe à la place), **échelles calibrées** (sinon barres/heatmap incohérentes), contributions à la **vraie formule** (DPS multiplicatif).
@@ -756,6 +762,120 @@ Mini-jeux de guilde entre membres, avec records et classements. Tuile dédiée d
 - **Vérification Discord à la demande** : bouton « 🔄 Vérifier Discord » dans l'en-tête de la Gestion des utilisateurs — **déclenchement manuel uniquement** (rien au chargement de la page, trop lent/sensible au rate-limit Discord pour tourner automatiquement). Interroge l'API Discord pour tous les comptes liés (`save.php` action `checkDiscordMembership` → `discord_oauth.php` `dco_guild_members_check()`, lots de 4 en parallèle avec retry sur 429/Retry-After). Les comptes confirmés absents de la guilde affichent un badge rouge « ⚠ Hors Discord » ; un compte jamais vérifié ou en erreur transitoire n'a pas de badge (pas de faux positif).
 - **Gestion des pages (admin uniquement)** : section listant toutes les tuiles du registre `pages.js`, chacune réglable sur *Active* / *Pas active* / *En travaux*. L'état est stocké dans `settings.json` (`pages.<clé>`) via `save.php` (action `updatePage`, validation admin côté serveur). Chaque page applique son état à l'accès direct par URL grâce à `page-guard.js` (les joueurs sont bloqués sur une page *pas active* ou *en travaux*, les admins jamais)
 - **Accès nominatif par page** : bouton « 👤 Accès » sur chaque ligne de la gestion des pages → menu déroulant à cases à cocher pour donner l'accès à une page *pas active*/*en travaux* à un ou plusieurs joueurs précis, sans changer son statut global (la tuile reste invisible dans le menu, seul le lien direct fonctionne pour eux). Stocké dans `settings.json` (`pages_access.<clé>`), action `save.php` `updatePageAccess`. Les joueurs **nouvellement** cochés reçoivent automatiquement un **MP Discord** avec le lien de la page (bot, réutilise le `bot_token` de la connexion Discord).
+
+---
+
+## Mettre à jour les données après un patch du jeu
+
+Une grande partie du site sert des données **extraites du jeu** (recettes, armures, augments,
+butin, plans, catalogue du planner). Funcom patche, ces données se périment en silence : rien
+dans le site ne s'en aperçoit, et on ne le découvre qu'en voyant une valeur fausse.
+
+`tools/update_datamine.js` répond à cette question-là. Il ne devine rien : chaque verdict vient
+d'une date de fichier réelle.
+
+### La chaîne, en trois maillons
+
+| Maillon | Qui le fait | Ce que l'outil en sait |
+|---|---|---|
+| **Le jeu** | Steam télécharge des `.pak` | Lit le manifeste Steam (`buildid`, `LastUpdated`) et la date de **chaque pak** — seul signal fiable qu'un patch est sorti, le jeu n'écrivant aucun fichier de version |
+| **L'export** | **toi, dans FModel** | Compare la date de chaque DataTable exportée à celle du pak dont elle vient, et liste les chemins exacts à ré-exporter |
+| **Les sorties** | `tools/build_*.js` | Les lance dans l'ordre des dépendances, puis affiche un **diff sémantique** (quoi a été ajouté / retiré / modifié), pas un simple « le fichier a changé » |
+
+L'export FModel reste **manuel** et le restera : FModel n'a pas de ligne de commande, et les paks
+sont chiffrés (clé AES à rafraîchir dans FModel après certains patchs, mappings `.usmap` idem).
+L'outil ne peut donc pas exporter à ta place — mais il te dit **quand** et **quoi**, ce qui est
+l'essentiel de la charge mentale.
+
+### En pratique
+
+```bash
+# 1. « Est-ce qu'un patch a périmé quelque chose ? » — n'écrit rien.
+node tools/update_datamine.js --check      # ou double-clic sur tools/verifier_datamine.cmd
+# Code de sortie : 0 = tout à jour, 2 = du travail attend, 1 = erreur.
+
+# 2. Ré-exporter dans FModel UNIQUEMENT les chemins que --check a listés.
+
+# 3. Régénérer ce qui est périmé (rien d'autre).
+node tools/update_datamine.js
+
+# Variantes utiles
+node tools/update_datamine.js --dry-run            # montre les commandes, n'exécute rien
+node tools/update_datamine.js --only=loot --force  # une seule étape, même si elle semble à jour
+node tools/update_datamine.js --all                # + snapshot réseau, univers des plans,
+                                                   #   base_pieces_v3 externe, meshes .glb
+node tools/update_datamine.js --report=maj.md      # garde le compte rendu
+```
+
+Les chemins (export FModel, dossier `Paks` du jeu, `.usmap`) sont **lus dans les réglages FModel**
+(`%APPDATA%\FModel\AppSettings.json`) : plus rien n'est codé en dur, et `--export=` / `--game=`
+permettent de forcer sur une autre machine.
+
+**Être prévenu sans y penser** — tâche planifiée hebdomadaire, à créer une fois :
+
+```bash
+schtasks /create /tn "DuneMap - verif datamine" /sc weekly /d WED /st 10:00 /tr "tools\verifier_datamine.cmd /nopause"
+```
+
+⚠ Le `/nopause` est obligatoire dans une tâche planifiée : sans lui, le script attend une touche
+que personne ne tapera. (Donner le chemin complet du `.cmd` dans `/tr`.)
+
+### Les 12 étapes couvertes
+
+| id | Sortie | Source |
+|---|---|---|
+| `snapshot` | `stuff_data.json`, `stuff_skills.json`, `stuff_names.json` | gaming.tools (réseau, opt-in `--with-snapshot`) |
+| `recipes` | `stuff_recipes.json` | `Systems/Crafting/DT_ItemsCraftingRecipes` |
+| `descriptions` | `desc` dans `stuff_data.json` | `Systems/Items/CDT_BaseItems` |
+| `armor` | stats d'armure dans `stuff_data.json` | `Systems/Items/DT_ArmorItemTable` |
+| `augments` | `stuff_augments.json` | `Systems/Items/DT_ItemTable_Augments` + `Upgrades/` |
+| `loot` | `stuff_loot.json` | `Systems/LootTables/Loot_DifficultyScaled`, `Systems/Looting` |
+| `plan_sources` | `plan_sources.json` | `Systems/LootTables` + `CDT_BaseItems.ItemTags` |
+| `plan_locations` | `plan_locations.json` | `Maps/Biomes/**/CB/**` (acteurs `TemporaryLootSpawner`) |
+| `plans_index` | `plans_index.json` | `Localization/ST_Localization_Items` + `CDT_BaseItems` |
+| `plans_univers` | `plans_uniques.json` | export de l'addon en jeu (`.txt`, opt-in `--with-univers`) |
+| `planner_pieces` | `planner_pieces.json` | 100 % local (fusion v3 + sockets + utilitaires) |
+| `meshes` | `models/*.glb` | export FModel (opt-in `--with-meshes`, `models/` n'est pas versionné) |
+
+`tools/datamine_state.json` (versionné) garde la trace de **quel build du jeu** a produit les
+données du site, et de la date de chaque étape. Sans lui, plus rien ne le dit.
+
+### Pièges de ce pipeline
+
+- **La mtime d'un dossier ne bouge pas** quand on ré-exporte par-dessus des fichiers existants
+  (elle ne change qu'à l'ajout/suppression d'une entrée) : l'outil descend de deux niveaux, avec
+  un budget d'entrées — `Maps/Biomes` en contient des dizaines de milliers.
+- **`build_recipes_from_datamine.js` dégrade sans échouer.** Si `stuff_names.json` est absent
+  (il est **gitignoré**) et que gaming.tools répond 403, il réécrit les 1 271 recettes avec des
+  noms dérivés des templates, en n'affichant qu'un `⚠` noyé dans sa sortie. L'orchestrateur
+  **écarte l'étape** dans ce cas ; le remède est de récupérer le fichier depuis la prod
+  (`curl -O https://havresgris.ddns.net/stuff_names.json`) ou de lancer `--with-snapshot`.
+- **Régénérer sur un export périmé ne sert à rien** : l'outil saute ces étapes plutôt que de
+  refabriquer l'ancien contenu avec une date neuve.
+- **Le diff ignore `generated_at`** : sans ça, chaque exécution afficherait un changement pour un
+  fichier rigoureusement identique (c'est le seul écart d'un `planner_pieces.json` régénéré).
+- **Cascade** : régénérer `stuff_loot.json` entraîne `plans_index.json`, `base_pieces_v3.json`
+  entraîne `planner_pieces.json`. Sans ça, les fichiers restent incohérents entre eux jusqu'au
+  passage suivant.
+
+### Données dataminées SANS pipeline automatisé
+
+`--check` les rappelle à chaque passage — c'est le seul moyen de ne pas les oublier après un patch.
+
+- **`base_pieces_v3.json`** (670 pièces du Constructeur) : script **externe** au dépôt,
+  `J:\Download\Fmodel\import_building_data.js`, qui écrit toujours vers la racine du dépôt
+  **principal** (chemin absolu codé en dur). `--run-planner-import` le lance et recopie le
+  résultat dans le dépôt courant.
+- **`dune_pieces_sockets.json` / `dune_socket_profiles.json` / `dune_group_config.json`** :
+  aucun script de régénération n'existe (reverse engineering manuel dune.layout.tools + FModel).
+  Si un patch change la géométrie des pièces, ces fichiers ne bougeront pas. Dégradation propre :
+  une pièce absente retombe sur une pose « cellule » simple.
+- **`planner_utilities.json`** : extrait à la main de `DT_PlaceableData_Functional` + bbox des `.glb`.
+- **`planner_costs.json`** : **non dataminable** (les recettes de structures sont des
+  `InstancedStruct`), compilé par TroubleChute (tools.tcno.co/dune, crédité) — après un patch
+  d'équilibrage, vérification manuelle.
+- **`metiers.json`, `landsraad_data.json`** : saisis à la main.
+- **`base_pieces_v2.json`** : plus lu par aucune page — ne pas perdre de temps à le régénérer.
 
 ---
 

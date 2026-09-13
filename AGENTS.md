@@ -265,3 +265,9 @@ Ne pas les reproposer sans élément nouveau.
   `fix_frozen_data.py` (outil de secours réutilisable, le plus utile), `dune_logger_multi.py`
   (ancien scraper, remplacé) et `analyze_dune.py`.
 - **Registre des plans** (`/plan`) : livré et viable, mais l'utilisateur veut le retravailler.
+- **Données dataminées en retard d'un patch** (constaté le 2026-09-13) : le jeu a été patché le
+  **12/08** (`Systems.pak`, `Maps_*`), l'export FModel date de fin juin / début août. Recettes,
+  descriptions, armures, augments, butin et plans reflètent donc l'état d'avant. Le diagnostic
+  complet et la marche à suivre sortent de `node tools/update_datamine.js --check` ; l'export
+  FModel est manuel, tout le reste est automatisé (README, section « Mettre à jour les données
+  après un patch du jeu »).

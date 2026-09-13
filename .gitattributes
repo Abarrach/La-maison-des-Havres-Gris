@@ -1,2 +1,4 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+# Un .cmd ne s'execute que si ses fins de ligne sont CRLF.
+*.cmd text eol=crlf

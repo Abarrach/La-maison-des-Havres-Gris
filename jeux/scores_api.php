@@ -20,7 +20,11 @@
 require_once __DIR__ . '/../discord_oauth.php';
 header('Content-Type: application/json; charset=utf-8');
 
-$input  = json_decode(file_get_contents('php://input'), true) ?? [];
+// En CLI il n'y a pas de corps de requête, et lire php://input y bloquerait sur
+// l'entrée standard. Ce garde-fou rend ce fichier INCLUABLE depuis un script
+// d'administration (cf. add_score_admin.php), qui réutilise alors les fonctions
+// ci-dessous — plafonds, verrous, sauvegardes, webhooks — au lieu de les redéfinir.
+$input  = (PHP_SAPI === 'cli') ? [] : (json_decode(file_get_contents('php://input'), true) ?? []);
 $action = $input['action'] ?? ($_GET['action'] ?? '');
 
 // ---- Jeux connus (id => config anti-triche + méta) ----
@@ -40,9 +44,18 @@ const GAMES = [
         'max_score' => 50000,
         'cooldown'  => 2,
     ],
+    // Le score n'a PAS de borne : points de distance = (vitesse/8) × multiplicateur,
+    // et le multiplicateur monte de +5 % par épice SANS PLAFOND (`spiceMultiplier()`),
+    // dans un jeu sans fin. Repères à 60 im/s, vitesse max : sans épice ≈ 52 pts/s ;
+    // avec 40 épices (×3) ≈ 157 pts/s, soit ≈ 142 000 en un quart d'heure de course.
+    // C'est exactement ce qui est arrivé le 2026-09-08 : un score RÉEL de 142 640 est
+    // passé au-dessus de l'ancien plafond de 99 999 et a été rejeté en silence — ni
+    // classement, ni annonce Discord, alors que le jeu affichait fièrement le record
+    // (il vient du localStorage, écrit AVANT l'appel serveur).
+    // 300 000 = environ deux fois la meilleure course humaine connue. Ne pas serrer.
     'worm_rider' => [
         'name'      => 'Worm Rider',
-        'max_score' => 99999,
+        'max_score' => 300000,
         'cooldown'  => 3,
     ],
     'muaddib_rescue' => [
@@ -66,6 +79,21 @@ const GAMES = [
         'cooldown'  => 2,
     ],
 ];
+
+// ---- Journal des refus ----
+// Un score refusé ne laissait AUCUNE trace côté serveur : le joueur ne voyait qu'un
+// console.warn, l'admin ne voyait rien du tout. C'est ainsi qu'un record légitime a
+// disparu sans que personne s'en aperçoive (Worm Rider, 2026-09-08). Ces jeux étant
+// tous sans fin, tout plafond finira par être dépassé un jour : le seul remède
+// durable est que le refus soit VISIBLE.
+function log_rejected_score(string $game, string $player, int $score, string $reason): void {
+    @file_put_contents(
+        __DIR__ . '/data/scores_rejected.log',
+        sprintf("%s	%s	%s	%d	%s
+", gmdate('c'), $game, $player, $score, $reason),
+        FILE_APPEND | LOCK_EX
+    );
+}
 
 // ---- Secret pour le hash anti-triche ----
 function score_secret(): string {
@@ -420,17 +448,23 @@ if ($action === 'submit') {
     $hash   = $input['hash']  ?? '';
     $dur    = (int)($input['duration'] ?? 0);
 
-    if (!isset(GAMES[$gameId])) { echo json_encode(['ok' => false, 'error' => 'unknown_game']); exit; }
+    if (!isset(GAMES[$gameId])) {
+        log_rejected_score($gameId, $user, $score, 'unknown_game');
+        echo json_encode(['ok' => false, 'error' => 'unknown_game']); exit;
+    }
     $g = GAMES[$gameId];
 
-    // Anti-triche : plafond
+    // Anti-triche : plafond. `max` dans la réponse pour que l'appelant puisse dire au
+    // joueur POURQUOI son score saute, au lieu de le perdre sans un mot.
     if ($score <= 0 || $score > $g['max_score']) {
-        echo json_encode(['ok' => false, 'error' => 'invalid_score']); exit;
+        log_rejected_score($gameId, $user, $score, 'invalid_score (plafond ' . $g['max_score'] . ')');
+        echo json_encode(['ok' => false, 'error' => 'invalid_score', 'max' => $g['max_score']]); exit;
     }
 
     // Anti-triche : hash = sha256(game + score + duration + secret)
     $expected = hash('sha256', $gameId . $score . $dur . score_secret());
     if ($hash !== $expected) {
+        log_rejected_score($gameId, $user, $score, 'invalid_hash');
         echo json_encode(['ok' => false, 'error' => 'invalid_hash']); exit;
     }
 
@@ -579,4 +613,6 @@ if ($action === 'token') {
     exit;
 }
 
-echo json_encode(['ok' => false, 'error' => 'unknown_action']);
+// Inclus depuis un script CLI (add_score_admin.php) : aucune action n'est demandée,
+// il ne faut pas polluer sa sortie avec une réponse d'API.
+if (PHP_SAPI !== 'cli') echo json_encode(['ok' => false, 'error' => 'unknown_action']);

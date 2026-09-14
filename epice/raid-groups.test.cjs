@@ -71,3 +71,14 @@ test('Chef de base cumulable avec une fonction de commandement',()=>{
   const c=fixture();c.commandement.cs='Constructeur';const badge=context.chefHat('Constructeur',c);
   assert.match(badge,/>CS</);assert.match(badge,/>CB</);
 });
+test('alerte base : ne pas annoncer Récolte et DR incomplètes quand leurs postes sont remplis',()=>{
+  context.esc = value => String(value);
+  vm.runInContext(extract('renderCompoReadonly', '  // ── SUR LE TERRAIN') + 'return h;}', context);
+  const c=fixture();c.base_avancee.patrouilleurs=['',''];c.ingame=RaidGroups.build(c);
+  const rendered=context.renderCompoReadonly(c);
+  assert.match(rendered,/Récolte et défense rapprochée complètes/);
+  assert.match(rendered,/choisir deux patrouilleurs/);
+  assert.doesNotMatch(rendered,/prêt à partir/);
+  c.recolte[0].transporteur='';
+  assert.match(context.renderCompoReadonly(c),/Récolte : affecter un transporteur et un moissonneur/);
+});

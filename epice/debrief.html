@@ -2171,7 +2171,7 @@ function renderAssignBuilder() {
   h += `<div class="assign-group"><div class="assign-group-head"><span class="assign-group-title">🏗️ Base avancée</span>
     <button class="btn-mini btn-mini-add" onclick="toggleBaseAvancee()">${b.active ? 'Désactiver' : 'Activer pour cette sortie'}</button></div>`;
   if (b.active) {
-    h += `<div class="assign-hint">1 constructeur/pilote + 1 pilote de buggy. <strong>Deux buggys équipés de roquettes à fournir.</strong> Le Chef de base (CB) se désigne dans Commandement parmi les membres du groupe.</div>
+    h += `<div class="assign-hint">1 constructeur pilote de buggy + 1 pilote de buggy. <strong>2 buggys roquettes à fournir.</strong> Le Chef de base (CB) se désigne dans Commandement parmi les membres du groupe.</div>
       <div class="assign-slot"><span class="assign-slot-label">Constructeur / pilote buggy</span><input class="roster-input" value="${escAttr(b.constructeur)}" oninput="currentCompo.base_avancee.constructeur=this.value"></div>
       <label class="assign-hint"><input type="checkbox" ${b.sous_fief ? 'checked' : ''} onchange="currentCompo.base_avancee.sous_fief=this.checked"> Sous-fief disponible pour le constructeur</label>
       <div class="assign-slot"><span class="assign-slot-label">Second pilote buggy</span><input class="roster-input" value="${escAttr(b.buggy)}" oninput="currentCompo.base_avancee.buggy=this.value"></div>
@@ -2517,9 +2517,14 @@ function renderCompoReadonly(c) {
   const assaultOk = !currentRules || RaidGroups.assaults(c).length > 0;
   const groupWarnings = currentRules ? RaidGroups.issues(c, true) : [];
   const ready = recOk && defOk && assaultOk && !groupWarnings.length;
+  const missingFormation = [];
+  if (!recOk) missingFormation.push('Récolte : affecter un transporteur et un moissonneur');
+  if (!defOk) missingFormation.push('Défense rapprochée : affecter les quatre défenseurs cardinaux');
+  if (!assaultOk) missingFormation.push('Défense rapprochée : marquer au moins un défenseur cardinal Assaut');
   h += `<div class="orga-minimal ${ready ? 'ok' : 'ko'}">${ready
     ? '✓ Formation minimale réunie — prêt à partir (Récolte + 4 Défenseurs cardinaux' + (currentRules ? ', dont au moins un Assaut' : '') + ').'
-    : '⚠ Composition à compléter — Récolte (Transporteur + Moissonneur), 4 Défenseurs cardinaux' + (currentRules ? ' dont au moins un Assaut, et groupes en jeu à vérifier.' : '.')}</div>`;
+    : missingFormation.length ? '⚠ ' + missingFormation.map(esc).join(' · ') + '.'
+    : '✓ Récolte et défense rapprochée complètes. Les points restant à vérifier sont indiqués ci-dessous.'}</div>`;
 
   if (groupWarnings.length) h += `<div class="orga-minimal ko">${groupWarnings.map(esc).join('<br>')}</div>`;
 

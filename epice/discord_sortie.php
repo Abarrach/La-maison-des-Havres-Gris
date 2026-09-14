@@ -1496,7 +1496,7 @@ function build_sortie_message($sortie) {
     foreach ($signups as $su) { if ($st($su) === 'present') $nb++; }
     $desc .= "👥 **{$nb}** inscrit" . ($nb > 1 ? 's' : '');
     if (($sortie['type'] ?? 'epice') === 'epice') {
-        $desc .= "\n🏗️ **Base avancée (si prévue)** : 1 constructeur/pilote (sous-fief disponible) + 1 pilote de buggy. **2 buggys roquette à fournir.**";
+        $desc .= "\n🏗️ **Base avancée (si prévue)** : 1 constructeur pilote de buggy + 1 pilote de buggy. **2 buggys roquettes à fournir.** Sous-fief disponible requis pour le constructeur.";
     }
 
     $stype     = $sortie['type'] ?? 'epice';
@@ -1611,7 +1611,7 @@ function build_sortie_message($sortie) {
         $options = [];
         foreach (postes_selectable($stype) as $pid => $plabel) {
             $option = ['label' => $plabel, 'value' => $pid, 'emoji' => ['name' => POSTE_ICON[$pid] ?? '✅']];
-            if ($pid === 'base_avancee') $option['description'] = '1 constructeur/pilote (sous-fief dispo) + 1 pilote ; 2 buggys roquette à fournir.';
+            if ($pid === 'base_avancee') $option['description'] = '1 constructeur pilote de buggy + 1 pilote de buggy. 2 buggys roquettes à fournir.';
             $options[] = $option;
         }
         $components = [

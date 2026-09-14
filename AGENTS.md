@@ -185,6 +185,11 @@ Tous constatés en production ou en test, pas théoriques.
 - Les contrôles de placement (`socketPlaceableReason`) ne concernent que machines et
   véhicules ; les structures se superposent librement, c'est voulu.
 
+### Épice — base avancée et manuel
+- Le manuel visible peut venir de `epice/data/sop_content.json` et différer complètement du HTML livré. Le lire connecté avant toute modification de doctrine ; ne jamais le remplacer par le défaut du dépôt. Le bloc Base avancée est ajouté avec un marqueur stable, puis reste éditable.
+- **Assaut = propriété d’un défenseur cardinal**, cumulable avec CaC, pas un cinquième pilote. Il est groupé en jeu avec Récolte ; les deux buggys sont groupés avec deux patrouilleurs. Les rôles tactiques et les groupes en jeu se recoupent : ne pas compter ces personnes deux fois. Conserver les anciens rôles lors de la lecture des historiques.
+- La page épice dépend désormais de `epice/raid-groups.js` : livrer les deux ensemble, avec `data-api.php` et `discord_sortie.php` pour cette évolution.
+
 ### Mini-jeux et scores
 - **Un plafond `max_score` trop bas fait disparaître un record en silence** : la
   soumission sort avant enregistrement ET avant notification. C'est mécaniquement le

@@ -57,6 +57,7 @@ register_shutdown_function(function () {
 //  proposé sur Discord (distribué uniquement côté admin). Présent dans la
 //  liste complète pour afficher les inscrits déjà placés dans ce rôle côté site.
 const POSTES_EPICE = [
+    'base_avancee' => 'Équipe Base avancée — Génie et appui lourd',
     'moissonneur'  => 'Moissonneur',
     'transporteur' => 'Transporteur',
     'defenseur_cac'=> 'Défenseur CaC',
@@ -70,6 +71,7 @@ const POSTES_EPICE = [
 // volontairement absent : c'est un rôle de confiance distribué à la main par
 // l'organisateur dans le builder admin, jamais choisi librement à l'inscription.
 const POSTES_EPICE_SELECTABLE = [
+    'base_avancee' => 'Équipe Base avancée — Génie et appui lourd',
     'moissonneur'  => 'Moissonneur',
     'transporteur' => 'Transporteur',
     'orni_scout'   => 'Orni Scout (repérage)',
@@ -94,6 +96,7 @@ const POSTES_PVP = [
 ];
 
 const POSTE_ICON = [
+    'base_avancee' => '🏗️',
     'moissonneur'  => '⛏️',
     'transporteur' => '🚚',
     'defenseur_cac'=> '⚔️',
@@ -1492,6 +1495,9 @@ function build_sortie_message($sortie) {
     $nb = 0;
     foreach ($signups as $su) { if ($st($su) === 'present') $nb++; }
     $desc .= "👥 **{$nb}** inscrit" . ($nb > 1 ? 's' : '');
+    if (($sortie['type'] ?? 'epice') === 'epice') {
+        $desc .= "\n🏗️ **Base avancée (si prévue)** : 1 constructeur/pilote (sous-fief disponible) + 1 pilote de buggy. **2 buggys roquette à fournir.**";
+    }
 
     $stype     = $sortie['type'] ?? 'epice';
     $t         = sortie_type($stype);
@@ -1604,7 +1610,9 @@ function build_sortie_message($sortie) {
         // TYPES À POSTES : menu déroulant de postes + boutons peut-être / absent / désinscription.
         $options = [];
         foreach (postes_selectable($stype) as $pid => $plabel) {
-            $options[] = ['label' => $plabel, 'value' => $pid, 'emoji' => ['name' => POSTE_ICON[$pid] ?? '✅']];
+            $option = ['label' => $plabel, 'value' => $pid, 'emoji' => ['name' => POSTE_ICON[$pid] ?? '✅']];
+            if ($pid === 'base_avancee') $option['description'] = '1 constructeur/pilote (sous-fief dispo) + 1 pilote ; 2 buggys roquette à fournir.';
+            $options[] = $option;
         }
         $components = [
             ['type' => 1, 'components' => [[

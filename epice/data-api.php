@@ -97,8 +97,13 @@ function roster_from_assign($a): array {
     $names = [];
     $push = function ($v) use (&$names) { $v = trim((string)$v); if ($v !== '') $names[] = $v; };
     $cm = $a['commandement'] ?? [];
-    foreach (['cs','cdr','cp'] as $k) $push($cm[$k] ?? '');
+    foreach (['cs','cdr','cp','cb'] as $k) $push($cm[$k] ?? '');
     foreach (($a['recolte'] ?? []) as $g) foreach (['transporteur','moissonneur','defenseur_cac'] as $k) $push($g[$k] ?? '');
+    $base = $a['base_avancee'] ?? [];
+    if (!empty($base['active'])) {
+        $push($base['constructeur'] ?? ''); $push($base['buggy'] ?? '');
+        foreach (($base['patrouilleurs'] ?? []) as $p) $push($p);
+    }
     $df = $a['defense'] ?? [];
     // Défense Rapprochée : tableau d'escouades de 4 cardinaux (nouveau format, plusieurs
     // escouades possibles) ; rétro-compat ancien format = un seul objet à 4 cardinaux

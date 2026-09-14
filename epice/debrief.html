@@ -288,11 +288,13 @@
     .assign-pilote input { background:var(--surface-2); border:1px solid var(--border); border-radius:2px; padding:.5rem .75rem; font-family:'Inter',sans-serif; font-size:.85rem; color:var(--text); outline:none; }
     .assign-pilote input:focus { border-color:var(--accent-dim); }
     .assign-pilote .pil-pass { grid-column:1 / -1; }
-    .assign-def { display:grid; grid-template-columns:70px 1fr auto auto; gap:.5rem; margin-bottom:.5rem; align-items:center; }
+    .assign-def { display:grid; grid-template-columns:70px minmax(90px,1fr) auto auto auto; gap:.5rem; margin-bottom:.5rem; align-items:center; }
     .assign-def .assign-slot-label { min-width:auto; }
     .assign-def input { background:var(--surface-2); border:1px solid var(--border); border-radius:2px; padding:.5rem .75rem; font-family:'Inter',sans-serif; font-size:.85rem; color:var(--text); outline:none; }
     .assign-def input:focus { border-color:var(--accent-dim); }
     .assign-def .pil-pass { grid-column:1 / -1; }
+    .assign-slot select { min-width:0; max-width:100%; background:var(--surface-2); color:var(--text); padding:.5rem; border:1px solid var(--border); }
+    @media(max-width:600px){ .assign-def { grid-template-columns:55px minmax(0,1fr) auto; } .assign-def .btn-cac { grid-row:auto; } .assign-slot select { width:100%; } }
     /* Sous-en-tête d'un sous-bloc dans un assign-group (ex : Assauts dans Défense Rapprochée).
        Doit se voir sans surcharger la hiérarchie de l'assign-group-title principal. */
     .assign-sub-head { display:flex; align-items:center; gap:.4rem; font-size:.68rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--accent); border-top:1px solid var(--border); margin-top:1rem; padding-top:.75rem; margin-bottom:.35rem; }
@@ -550,6 +552,8 @@
           <option value="transporteur">Transporteur</option>
           <option value="moissonneur">Moissonneur</option>
           <option value="defense">Défense Rapprochée</option>
+          <option value="base_constructeur">Base avancée — Constructeur / pilote buggy</option>
+          <option value="base_buggy">Base avancée — Pilote buggy</option>
           <option value="orni_assaut">Orni Assaut Défense Transporteur</option>
           <option value="orni_scout">Orni Scout (repérage)</option>
           <option value="patrouilleur">Patrouilleur</option>
@@ -1017,6 +1021,7 @@
   </div>
 </div>
 
+<script src="raid-groups.js?v=base-avancee-1"></script>
 <script>
 // ============================================================
 // CONFIG
@@ -1058,7 +1063,7 @@ const FAUCON_MODE_ENABLED = false;
 
 const SLIDER_LBL  = ['','Critique','Mauvais','Moyen','Bien','Excellent'];
 const CRYSTAL_LBL = ['','Difficile','Moyen','Correct','Bien','Excellent'];
-const ROLES = { transporteur:'Transporteur', moissonneur:'Moissonneur', defenseur_cac:'Défenseur CAC', defense:'Défense Rapprochée', orni_assaut:'Orni Assaut Défense Transporteur', orni_scout:'Orni Scout (repérage)', patrouilleur:'Patrouilleur', pilote_orni_cac:'Pilote Ornithoptère + CaC', faucon_b:'Faucon — Pilote', faucon_a:'Faucon — Passager' };
+const ROLES = { base_constructeur:'Base avancée — Constructeur / pilote buggy', base_buggy:'Base avancée — Pilote buggy', transporteur:'Transporteur', moissonneur:'Moissonneur', defenseur_cac:'Défenseur CAC', defense:'Défense Rapprochée', orni_assaut:'Orni Assaut Défense Transporteur', orni_scout:'Orni Scout (repérage)', patrouilleur:'Patrouilleur', pilote_orni_cac:'Pilote Ornithoptère + CaC', faucon_b:'Faucon — Pilote', faucon_a:'Faucon — Passager' };
 const AXES  = [ {key:'comms',label:'Clarté des comms'},{key:'deadzone',label:'Respect DEADZONE'},{key:'aerien',label:'Doctrine aérienne'},{key:'coordination',label:'Coordination CDR/CP'} ];
 const BIEN_LBL = { comms_ok:'Comms claires', deadzone_ok:'DEADZONE tenue', aerien_ok:'Personne au sol', coordination_ok:'Bonne coordination', faucon_ok:'Faucon réussi', repli_ok:'Repli organisé', detection_ok:'Bonne détection', bien_autre:'Autre' };
 const PN_LBL   = { friendly_fire:'Tirs fratricides', spam_vocal:'Spam vocal', dispersion:'Dispersion', ordres_flous:'Ordres flous', deadzone_fail:'DEADZONE ratée', sol:'Descente au sol', panique:'Panique', pn_autre:'Autre' };
@@ -1113,7 +1118,7 @@ function _switch(name, tab) {
 // Contenu par défaut (celui livré dans le code) — capturé une seule fois au chargement du
 // script, avant tout remplacement par une version enregistrée. Sert de filet de sécurité
 // pour "Réinitialiser" si un organisateur casse l'affichage en éditant.
-const SOP_DEFAULT_HTML = document.getElementById('sop-editable').innerHTML;
+const SOP_DEFAULT_HTML = RaidGroups.withBaseSop(document.getElementById('sop-editable').innerHTML);
 let sopEditing = false;
 let sopServerHtml = null; // dernière version connue (enregistrée ou défaut) — utilisée par "Annuler"
 
@@ -1143,14 +1148,14 @@ async function renderSop() {
     try {
       const r = await fetch(`${API}?action=get_sop_content`);
       const d = await r.json();
-      sopServerHtml = (d.ok && d.html) ? d.html : SOP_DEFAULT_HTML;
+      sopServerHtml = RaidGroups.withBaseSop((d.ok && d.html) ? d.html : SOP_DEFAULT_HTML);
       // Le manuel livré a-t-il évolué depuis la dernière sauvegarde ? On ne prévient que
       // si l'empreinte est CONNUE et différente : une sauvegarde antérieure à ce mécanisme
       // n'en a pas, et on ne va pas afficher une alerte pour un simple manque d'information.
       sopBaseChanged = !!(d.ok && d.html && d.base_version && d.base_version !== SOP_DEFAULT_FP);
       document.getElementById('sop-editable').innerHTML = sopServerHtml;
       renderSopUpdateNotice();
-    } catch { sopServerHtml = SOP_DEFAULT_HTML; }
+    } catch { sopServerHtml = RaidGroups.withBaseSop(sopServerHtml || document.getElementById('sop-editable').innerHTML); document.getElementById('sop-editable').innerHTML = sopServerHtml; }
   }
 
   const box = document.getElementById('sop-live');
@@ -1177,6 +1182,7 @@ async function renderSop() {
         <div class="sop-chef"><span class="sop-chef-role">CS</span>${orgaName(cm.cs)}</div>
         <div class="sop-chef"><span class="sop-chef-role">CDR</span>${orgaName(cm.cdr)}</div>
         <div class="sop-chef"><span class="sop-chef-role">CP</span>${orgaName(cm.cp)}</div>
+        ${a.base_avancee && a.base_avancee.active ? `<div class="sop-chef"><span class="sop-chef-role">CB</span>${orgaName(cm.cb)}</div>` : ''}
       </div>`;
       // Rendu Markdown pour les consignes du soir : les organisateurs copient souvent du texte
       // Discord (titres ##, gras **, listes -) — mdToHtml() les convertit en HTML propre, avec
@@ -1826,7 +1832,9 @@ document.addEventListener('paste', function (e) {
 // Modèle de compo par défaut (vide)
 function emptyCompo() {
   return {
-    commandement: { cs:'', cdr:'', cp:'' },
+    tactical_version: 2,
+    commandement: { cs:'', cdr:'', cp:'', cb:'' },
+    base_avancee: { active:false, constructeur:'', buggy:'', sous_fief:false, patrouilleurs:['',''] },
     briefing_notes: '',                                                 // consignes particulières lues au brief (couleurs de groupe, etc.)
     recolte: [ { transporteur:'', moissonneur:'' } ],                    // defenseur_cac retiré (rôle abandonné, plus rentable) — cf normalizeCompo
     defense: [ mkDefenseSquad() ],                                      // 1 escouade par défaut ; une 2e est débloquée dès 2 groupes Récolte (cf addDefenseSquad)
@@ -1839,7 +1847,10 @@ function emptyCompo() {
 // Garantit la forme du modèle et migre l'ancien format (patrouille binômes / faucon séparé → distance.pilotes)
 function normalizeCompo(c) {
   c = c || {};
-  c.commandement = c.commandement || { cs:'', cdr:'', cp:'' };
+  c.commandement = c.commandement || { cs:'', cdr:'', cp:'', cb:'' };
+  c.commandement.cb = c.commandement.cb || '';
+  c.base_avancee = Object.assign({ active:false, constructeur:'', buggy:'', sous_fief:false, patrouilleurs:['',''] }, c.base_avancee || {});
+  c.base_avancee.patrouilleurs = Array.isArray(c.base_avancee.patrouilleurs) ? c.base_avancee.patrouilleurs.slice(0,2) : ['',''];
   c.briefing_notes = typeof c.briefing_notes === 'string' ? c.briefing_notes : '';
   // Note : les groupes récolte existants peuvent encore porter un defenseur_cac (ancien
   // format, rôle abandonné) — volontairement PAS nettoyé ici pour rester lisible dans
@@ -1855,7 +1866,7 @@ function normalizeCompo(c) {
       const v = squad[k];
       if (typeof v === 'string') out[k] = { nom:v, faucon:false, passager:'', cac:false };  // migration ancien format (chaîne)
       else if (!v || typeof v !== 'object') out[k] = { nom:'', faucon:false, passager:'', cac:false };
-      else out[k] = { nom:v.nom || '', faucon:!!v.faucon, passager:v.passager || '', cac:!!v.cac };
+      else out[k] = { nom:v.nom || '', faucon:!!v.faucon, passager:v.passager || '', cac:!!v.cac, assaut:!!v.assaut };
     });
     // Pilotes d'assaut (0..N). Rétro-compat : squads d'avant l'ajout n'ont pas la clé.
     out.assauts = Array.isArray(squad.assauts)
@@ -2053,10 +2064,11 @@ function renderAssignBuilder() {
   // Commandement
   h += `<div class="assign-group">
     <div class="assign-group-head"><span class="assign-group-title">⭐ Commandement</span></div>
-    <div class="assign-hint">Saisis le même pseudo que dans son rôle (Transporteur, un cardinal…) pour que le badge CS/CDR/CP s'affiche dans l'Organisation.</div>
+    <div class="assign-hint">Saisis le même pseudo que dans son rôle (Transporteur, un cardinal…) pour que le badge CS/CDR/CP/CB s'affiche dans l'Organisation.</div>
     <div class="assign-slot"><span class="assign-slot-label">Chef de Sortie (CS)</span><input class="roster-input" value="${escAttr(c.commandement.cs)}" oninput="currentCompo.commandement.cs=this.value"></div>
     <div class="assign-slot"><span class="assign-slot-label">Chef Défense (CDR)</span><input class="roster-input" value="${escAttr(c.commandement.cdr)}" oninput="currentCompo.commandement.cdr=this.value"></div>
     <div class="assign-slot"><span class="assign-slot-label">Chef Patrouille (CP)</span><input class="roster-input" value="${escAttr(c.commandement.cp)}" oninput="currentCompo.commandement.cp=this.value"></div>
+    ${c.base_avancee.active ? `<div class="assign-slot"><span class="assign-slot-label">Chef de base (CB)</span><input class="roster-input" value="${escAttr(c.commandement.cb)}" oninput="currentCompo.commandement.cb=this.value"></div>` : ''}
   </div>`;
 
   // Briefing du soir (texte libre affiché dans l'onglet Manuel de combat pendant que la sortie est active)
@@ -2088,12 +2100,14 @@ function renderAssignBuilder() {
         <span class="assign-group-title">🔵 Défense Rapprochée ${c.defense.length > 1 ? '— Escouade ' + (si+1) : '(4 ornis cardinaux)'}</span>
         ${c.defense.length > 1 ? `<button class="btn-mini btn-mini-del" onclick="removeDefenseSquad(${si})">✕ Retirer</button>` : ''}
       </div>
+      <div class="assign-hint">Au moins un cardinal en 🛡 Assaut (cumulable avec ⚔ CaC). Il couvre le transporteur uniquement lors du retrait après une attaque.</div>
       ${FAUCON_MODE_ENABLED ? `<div class="assign-hint">Un cardinal peut être un binôme Faucon (✈) : son passager est sur l'aile, non groupé.</div>` : ''}`;
     [['nord','Nord'],['sud','Sud'],['est','Est'],['ouest','Ouest']].forEach(([k,lbl]) => {
       const dd = squad[k];
       h += `<div class="assign-def">
         <span class="assign-slot-label">${lbl}</span>
         <input class="pil-nom roster-input" value="${escAttr(dd.nom)}" oninput="currentCompo.defense[${si}].${k}.nom=this.value">
+        <button class="btn-cac ${dd.assaut ? 'on' : ''}" aria-pressed="${!!dd.assaut}" onclick="toggleDefAssaut(${si},'${k}')" data-tip="Assaut : s’interpose entre les tirs et le transporteur au repli ; cumulable avec CaC">🛡 Assaut</button>
         <button class="btn-cac ${dd.cac ? 'on' : ''}" onclick="toggleDefCac(${si},'${k}')" data-tip="Pilote Ornithoptère + CaC (comme en patrouille)">⚔ CaC</button>
         ${FAUCON_MODE_ENABLED ? `<button class="btn-faucon ${dd.faucon ? 'on' : ''}" onclick="toggleDefFaucon(${si},'${k}')" data-tip="Désigner conducteur Faucon">✈ Faucon</button>
         ${dd.faucon ? `<input class="pil-pass roster-input" placeholder="Passager (sur l'aile, non groupé)" value="${escAttr(dd.passager)}" oninput="currentCompo.defense[${si}].${k}.passager=this.value">` : ''}` : ''}
@@ -2102,8 +2116,8 @@ function renderAssignBuilder() {
     // Sous-liste Assauts (dans la même escouade, sous le CDR — placement dynamique 0..N).
     // Rôle réservé admin, jamais présenté sur Discord (cf POSTES_EPICE_SELECTABLE).
     const assauts = squad.assauts || [];
-    h += `<div class="assign-sub-head">🛡️ Ornis Assaut Défense Transporteur</div>
-      <div class="assign-sub-hint">Pilotes attribués par le CDR pour verrouiller l'espace autour du transporteur en vol. Rôle admin, non ouvert à l'inscription libre.</div>`;
+    if (assauts.length) h += `<div class="assign-sub-head">🛡️ Anciens assauts séparés — à replacer parmi les cardinaux</div>
+      <div class="assign-sub-hint">Conserve les anciennes affectations. Désormais, marque Assaut sur un des quatre cardinaux, puis retire ici le doublon éventuel.</div>`;
     assauts.forEach((p, ai) => {
       h += `<div class="assign-def">
         <span class="assign-slot-label">Assaut ${ai+1}</span>
@@ -2112,7 +2126,6 @@ function renderAssignBuilder() {
         <span></span>
       </div>`;
     });
-    h += `<button class="btn-mini btn-mini-add" onclick="addAssaut(${si})" style="margin-top:.3rem">+ Ajouter un pilote d'assaut</button>`;
     h += `</div>`;
   });
   if (c.defense.length < 2) {
@@ -2153,6 +2166,24 @@ function renderAssignBuilder() {
   h += `<button class="btn-mini btn-mini-add" onclick="addScout()">+ Ajouter un scout</button>`;
   h += `</div>`;
 
+  // Base avancée : deux équipiers au sol et deux membres de la patrouille.
+  const b = c.base_avancee;
+  h += `<div class="assign-group"><div class="assign-group-head"><span class="assign-group-title">🏗️ Base avancée</span>
+    <button class="btn-mini btn-mini-add" onclick="toggleBaseAvancee()">${b.active ? 'Désactiver' : 'Activer pour cette sortie'}</button></div>`;
+  if (b.active) {
+    h += `<div class="assign-hint">1 constructeur/pilote + 1 pilote de buggy. <strong>Deux buggys équipés de roquettes à fournir.</strong> Le Chef de base (CB) se désigne dans Commandement parmi les membres du groupe.</div>
+      <div class="assign-slot"><span class="assign-slot-label">Constructeur / pilote buggy</span><input class="roster-input" value="${escAttr(b.constructeur)}" oninput="currentCompo.base_avancee.constructeur=this.value"></div>
+      <label class="assign-hint"><input type="checkbox" ${b.sous_fief ? 'checked' : ''} onchange="currentCompo.base_avancee.sous_fief=this.checked"> Sous-fief disponible pour le constructeur</label>
+      <div class="assign-slot"><span class="assign-slot-label">Second pilote buggy</span><input class="roster-input" value="${escAttr(b.buggy)}" oninput="currentCompo.base_avancee.buggy=this.value"></div>
+      <div class="assign-hint">Deux patrouilleurs restent en mission aérienne et rejoignent les buggys dans le même groupe en jeu. Ils attirent les ornis ennemis vers l'appui de la base.</div>`;
+    for (let i = 0; i < 2; i++) {
+      const selected = b.patrouilleurs[i] || '';
+      const choices = [...new Set([...RaidGroups.patrol(c), selected].filter(Boolean))];
+      h += `<div class="assign-slot"><span class="assign-slot-label">Patrouilleur ${i+1}</span><select aria-label="Patrouilleur base avancée ${i+1}" onfocus="refreshBasePatrolOptions(this,${i})" onchange="currentCompo.base_avancee.patrouilleurs[${i}]=this.value"><option value="">— Choisir dans la patrouille —</option>${choices.map(n => `<option value="${escAttr(n)}" ${n === selected ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></div>`;
+    }
+  }
+  h += '</div>';
+
   // Groupes en jeu (carte) — saisie manuelle, pré-remplissable depuis les rôles
   h += `<div class="assign-group">
     <div class="assign-group-head">
@@ -2175,6 +2206,13 @@ function renderAssignBuilder() {
   box.innerHTML = h;
 }
 
+function toggleDefAssaut(si,k) { const d = currentCompo.defense[si][k]; d.assaut = !d.assaut; renderAssignBuilder(); }
+function toggleBaseAvancee() { currentCompo.base_avancee.active = !currentCompo.base_avancee.active; renderAssignBuilder(); }
+function refreshBasePatrolOptions(select,i) {
+  const selected = currentCompo.base_avancee.patrouilleurs[i] || '';
+  const choices = [...new Set([...RaidGroups.patrol(currentCompo), selected].filter(Boolean))];
+  select.innerHTML = '<option value="">— Choisir dans la patrouille —</option>' + choices.map(n => `<option value="${escAttr(n)}" ${n === selected ? 'selected' : ''}>${esc(n)}</option>`).join('');
+}
 function addRecolte()    { currentCompo.recolte.push({transporteur:'',moissonneur:''}); renderAssignBuilder(); }
 function removeRecolte(i){ currentCompo.recolte.splice(i,1); renderAssignBuilder(); }
 function toggleFaucon(i) { const p = currentCompo.distance.pilotes[i]; p.faucon = !p.faucon; if (!p.faucon) p.passager = ''; renderAssignBuilder(); }
@@ -2213,7 +2251,7 @@ function rosterNames(c) {
 // NON encore placés dans la compo, filtre à la frappe, clavier ↑/↓/Entrée.
 const rosterPop = (function () {
   let pop = null, input = null, suppress = false, active = -1, hideTimer = null;
-  const POSTE_SHORT = { moissonneur:'Moiss.', transporteur:'Transp.', defenseur_cac:'CAC', orni_assaut:'Assaut', orni_scout:'Scout', pilote_orni:'Orni', pilote_orni_cac:'Orni+CaC', present:'Présent' };
+  const POSTE_SHORT = { base_avancee:'Base avancée', moissonneur:'Moiss.', transporteur:'Transp.', defenseur_cac:'CAC', orni_assaut:'Assaut', orni_scout:'Scout', pilote_orni:'Orni', pilote_orni_cac:'Orni+CaC', present:'Présent' };
 
   function ensure() {
     if (pop) return pop;
@@ -2238,18 +2276,25 @@ const rosterPop = (function () {
     });
     ((c.recon && c.recon.scouts) || []).forEach(p => { if (p.nom && p.nom.trim()) out.push(p.nom.trim().toLowerCase()); });
     ((c.distance && c.distance.pilotes) || []).forEach(p => { if (p.nom && p.nom.trim()) out.push(p.nom.trim().toLowerCase()); if (p.passager && p.passager.trim()) out.push(p.passager.trim().toLowerCase()); });
+    if (c.base_avancee && c.base_avancee.active) [c.base_avancee.constructeur,c.base_avancee.buggy].forEach(n => { if (n && n.trim()) out.push(n.trim().toLowerCase()); });
     (c.ingame || []).forEach(g => (g.membres || []).forEach(m => { if (m && m.trim()) out.push(m.trim().toLowerCase()); }));
     return new Set(out);
   }
 
   function candidates(curVal) {
     const used = usedNames(), curL = (curVal || '').trim().toLowerCase(), seen = new Set(), list = [];
-    (currentSignups || []).forEach(s => {
+    const choices = [...(currentSignups || [])];
+    if (input.closest('.ingame-slots') || input.getAttribute('oninput').includes('commandement.')) {
+      const c = currentCompo || {};
+      const assigned = rosterNames(c).concat(c.base_avancee && c.base_avancee.active ? [c.base_avancee.constructeur,c.base_avancee.buggy] : []);
+      assigned.filter(Boolean).forEach(n => choices.push({name:n,statut:'present'}));
+    }
+    choices.forEach(s => {
       if ((s.statut || 'present') === 'absent') return;           // les absents ne sont pas proposés
       const n = (s.name || '').trim(); if (!n) return;
       const nl = n.toLowerCase();
       if (seen.has(nl)) return; seen.add(nl);
-      if (used.has(nl) && nl !== curL) return;                    // déjà placé ailleurs → masqué
+      if (used.has(nl) && nl !== curL && !input.closest('.ingame-slots') && !input.getAttribute('oninput').includes('commandement.')) return;                    // déjà placé ailleurs → masqué
       list.push({ name: n, poste: s.poste || '', statut: (s.statut || 'present') });
     });
     return list;
@@ -2333,51 +2378,16 @@ function padTo4(a) { const b = a.slice(0,4); while (b.length < 4) b.push(''); re
 // Si les Assauts + Scouts saturent, la Moiss est isolée dans son propre groupe et reléguée EN
 // DERNIER (jamais collée juste après le convoi — c'est visuellement trompeur). Les overflows
 // éventuels d'assauts/scouts partent aussi en fin de liste.
-function prefillIngame() {
-  const c = currentCompo, groups = [], isolates = [], rec = c.recolte || [];
-  // Tous les assauts / scouts (agrégés depuis les escouades) — ils escortent le transporteur en vol.
-  const allAssauts = [].concat(...(c.defense || []).map(sq => (sq.assauts || []).map(p => p.nom).filter(x => x && x.trim())));
-  const allScouts  = ((c.recon && c.recon.scouts) || []).map(p => p.nom).filter(x => x && x.trim());
-  if (rec[0]) {
-    const transporteur = (rec[0].transporteur || '').trim();
-    const moiss        = (rec[0].moissonneur  || '').trim();
-    const cac          = (rec[0].defenseur_cac || '').trim();  // legacy — inclus juste après le trans si présent
-    // Ordre de priorité : Transporteur, [CAC legacy], Assauts, Scouts.
-    const ordered = [];
-    if (transporteur) ordered.push(transporteur);
-    if (cac)          ordered.push(cac);
-    allAssauts.forEach(n => ordered.push(n));
-    allScouts.forEach(n => ordered.push(n));
-    const conv = ordered.slice(0, 4);
-    const overflow = ordered.slice(4); // rare : plus de 4 personnes en priorité haute → renfort
-    if (moiss) {
-      if (conv.length < 4) conv.push(moiss);
-      else isolates.push({ label:'Moissonneuse (isolée)', membres:padTo4([moiss]) });
-    }
-    if (conv.length) groups.push({ label:'Groupe transporteur', membres:padTo4(conv) });
-    if (overflow.length) isolates.push({ label:'Groupe transporteur — renforts', membres:padTo4(overflow.slice(0,4)) });
-  }
-  (c.defense || []).forEach((squad, si) => {
-    const def = ['nord','sud','est','ouest'].map(k => squad[k] && squad[k].nom).filter(x => x && x.trim());
-    if (def.length) groups.push({ label:'Défense rapprochée' + (c.defense.length > 1 ? ' — escouade ' + (si+1) : ''), membres:padTo4(def) });
-  });
-  const pil = ((c.distance && c.distance.pilotes) || []).map(p => p.nom).filter(x => x && x.trim());
-  for (let i = 0, n = 0; i < pil.length; i += 4, n++) {
-    const suffix = pil.length > 4 ? ' — ' + (n+1) : '';
-    groups.push({ label:'Patrouille' + suffix, membres:padTo4(pil.slice(i, i+4)) });
-  }
-  for (let i = 1; i < rec.length; i++) {
-    const m = [rec[i].transporteur, rec[i].moissonneur, rec[i].defenseur_cac].filter(x => x && x.trim());
-    if (m.length) groups.push({ label:'Groupe Récolte ' + (i+1), membres:padTo4(m) });
-  }
-  // Isolés / renforts en dernier — repérage visuel clair que ce sont des exceptions.
-  groups.push(...isolates);
-  c.ingame = groups;
+async function prefillIngame() {
+  const warnings = RaidGroups.issues(currentCompo, false);
+  if (warnings.length && !(await uiConfirm(warnings.join('\n') + '\n\nPré-remplir malgré ces points à compléter ?', {title:'Composition à compléter',okLabel:'Pré-remplir'}))) return;
+  currentCompo.ingame = RaidGroups.build(currentCompo);
   renderAssignBuilder();
 }
 
 function cleanCompo(c) {
   const cc = JSON.parse(JSON.stringify(c));
+  cc.tactical_version = 2;
   cc.briefing_notes = (cc.briefing_notes || '').trim();
   cc.distance.pilotes = (cc.distance.pilotes || []).filter(p => p.nom && p.nom.trim());
   if (!cc.distance.pilotes.length) cc.distance.pilotes = [{nom:'',faucon:false,passager:'',cac:false}];
@@ -2401,7 +2411,11 @@ async function saveAssign() {
   try {
     const res = await apiPost('save_assign', { sid: currentAssignSid, assignation: cleanCompo(currentCompo) });
     note.textContent = res.ok ? '✓ Compo enregistrée' : ('Erreur : ' + res.error);
-    setTimeout(() => note.textContent = '', 3000);
+    if (res.ok) {
+      const warnings = RaidGroups.issues(currentCompo, true);
+      if (warnings.length) note.textContent = '✓ Enregistrée — ' + warnings.join(' ');
+      else setTimeout(() => note.textContent = '', 3000);
+    }
   } catch { note.textContent = 'Erreur de connexion.'; }
 }
 
@@ -2478,10 +2492,8 @@ function orgaName(v) { return v && v.trim() ? `<span class="orga-name">${esc(v)}
 function chefHat(name, c) {
   if (!name || !name.trim()) return '';
   const n = name.trim().toLowerCase(), cm = c.commandement || {};
-  if ((cm.cs  || '').trim().toLowerCase() === n) return '<span class="orga-chef">CS</span>';
-  if ((cm.cdr || '').trim().toLowerCase() === n) return '<span class="orga-chef">CDR</span>';
-  if ((cm.cp  || '').trim().toLowerCase() === n) return '<span class="orga-chef">CP</span>';
-  return '';
+  return ['cs','cdr','cp','cb'].filter(k => (k !== 'cb' || (c.base_avancee && c.base_avancee.active)) && (cm[k] || '').trim().toLowerCase() === n)
+    .map(k => '<span class="orga-chef">' + k.toUpperCase() + '</span>').join('');
 }
 // Nom + badge chef éventuel
 function nm(v, c) {
@@ -2501,9 +2513,15 @@ function renderCompoReadonly(c) {
   const recOk = ['transporteur','moissonneur'].every(k => r0[k] && r0[k].trim());
   const def0 = c.defense[0] || {};
   const defOk = ['nord','sud','est','ouest'].every(k => def0[k] && def0[k].nom && def0[k].nom.trim());
-  h += `<div class="orga-minimal ${recOk && defOk ? 'ok' : 'ko'}">${recOk && defOk
-    ? '✓ Formation minimale réunie — prêt à partir (Récolte + 4 Défenseurs cardinaux).'
-    : '⚠ Formation minimale incomplète — il faut le groupe Récolte (Transporteur + Moissonneur) et les 4 Défenseurs cardinaux pour partir.'}</div>`;
+  const currentRules = c.tactical_version >= 2;
+  const assaultOk = !currentRules || RaidGroups.assaults(c).length > 0;
+  const groupWarnings = currentRules ? RaidGroups.issues(c, true) : [];
+  const ready = recOk && defOk && assaultOk && !groupWarnings.length;
+  h += `<div class="orga-minimal ${ready ? 'ok' : 'ko'}">${ready
+    ? '✓ Formation minimale réunie — prêt à partir (Récolte + 4 Défenseurs cardinaux' + (currentRules ? ', dont au moins un Assaut' : '') + ').'
+    : '⚠ Composition à compléter — Récolte (Transporteur + Moissonneur), 4 Défenseurs cardinaux' + (currentRules ? ' dont au moins un Assaut, et groupes en jeu à vérifier.' : '.')}</div>`;
+
+  if (groupWarnings.length) h += `<div class="orga-minimal ko">${groupWarnings.map(esc).join('<br>')}</div>`;
 
   // ── SUR LE TERRAIN ──
   h += `<div class="orga-section-head">📍 Sur le terrain — rôles &amp; placement</div>`;
@@ -2524,6 +2542,7 @@ function renderCompoReadonly(c) {
   const cmp = (squad, k, dir, cls) => {
     const d = squad[k] || {};
     let inner = `<span class="cmp-dir">${dir}</span>${nm(d.nom, c)}`;
+    if (d.assaut) inner += ' <span class="cmp-cac" data-tip="Assaut — protège le transporteur au repli">🛡</span>';
     if (d.cac) inner += ` <span class="cmp-cac">⚔</span>`;
     if (d.faucon) inner += ` <span class="cmp-faucon">✈</span>`;
     if (d.faucon && d.passager && d.passager.trim()) inner += `<div class="orga-pass" style="margin-top:.2rem">+ ${esc(d.passager)} <em>(aile)</em></div>`;
@@ -2580,6 +2599,17 @@ function renderCompoReadonly(c) {
       h += `<div class="orga-row"><span class="orga-role">Scout</span>${nm(p.nom, c)}</div>`;
     });
     h += `</div>`;
+  }
+
+  const base = c.base_avancee;
+  if (base.active) {
+    h += `<div class="orga-group"><div class="orga-group-title">🏗️ Base avancée — génie et appui lourd</div>
+      <div class="orga-row"><span class="orga-role">Chef de base</span>${nm(c.commandement.cb,c)}</div>
+      <div class="orga-row"><span class="orga-role">Constructeur / pilote buggy</span>${nm(base.constructeur,c)}</div>
+      <div class="orga-row"><span class="orga-role">Second pilote buggy</span>${nm(base.buggy,c)}</div>
+      <div class="assign-hint">Sous-fief constructeur : ${base.sous_fief ? '✓ disponible' : 'à confirmer'}. Deux buggys roquette à fournir.</div>
+      ${base.patrouilleurs.map(p => `<div class="orga-row"><span class="orga-role">Appui patrouille</span>${nm(p,c)}</div>`).join('')}
+      <div class="assign-hint">Les deux patrouilleurs éloignent les ornis ennemis de la récolte et les attirent vers l'appui des buggys. Tous les quatre sont groupés en jeu.</div></div>`;
   }
 
   // ── GROUPES EN JEU (carte) ──

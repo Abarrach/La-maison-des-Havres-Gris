@@ -2268,7 +2268,7 @@ const rosterPop = (function () {
   // Tous les pseudos déjà posés dans la compo (pour ne pas les reproposer ailleurs).
   function usedNames() {
     const c = currentCompo || {}, out = [];
-    ['cs','cdr','cp'].forEach(k => { const v = c.commandement && c.commandement[k]; if (v && v.trim()) out.push(v.trim().toLowerCase()); });
+    ['cs','cdr','cp','cb'].forEach(k => { const v = c.commandement && c.commandement[k]; if (v && v.trim()) out.push(v.trim().toLowerCase()); });
     (c.recolte || []).forEach(g => ['transporteur','moissonneur','defenseur_cac'].forEach(k => { if (g[k] && g[k].trim()) out.push(g[k].trim().toLowerCase()); }));
     (c.defense || []).forEach(squad => {
       ['nord','sud','est','ouest'].forEach(k => { const d = squad[k]; if (d) { if (d.nom && d.nom.trim()) out.push(d.nom.trim().toLowerCase()); if (d.passager && d.passager.trim()) out.push(d.passager.trim().toLowerCase()); } });
@@ -2281,10 +2281,16 @@ const rosterPop = (function () {
     return new Set(out);
   }
 
+  // Groupes en jeu et Commandement REPRENNENT des pseudos déjà placés ailleurs (un chef tient
+  // aussi un rôle, un groupe rassemble des gens déjà affectés) : ces champs-là ne filtrent pas.
+  function reusesPlacedNames(el) {
+    return !!(el.closest('.ingame-slots') || (el.getAttribute('oninput') || '').includes('commandement.'));
+  }
+
   function candidates(curVal) {
     const used = usedNames(), curL = (curVal || '').trim().toLowerCase(), seen = new Set(), list = [];
     const choices = [...(currentSignups || [])];
-    if (input.closest('.ingame-slots') || input.getAttribute('oninput').includes('commandement.')) {
+    if (reusesPlacedNames(input)) {
       const c = currentCompo || {};
       const assigned = rosterNames(c).concat(c.base_avancee && c.base_avancee.active ? [c.base_avancee.constructeur,c.base_avancee.buggy] : []);
       assigned.filter(Boolean).forEach(n => choices.push({name:n,statut:'present'}));
@@ -2294,7 +2300,7 @@ const rosterPop = (function () {
       const n = (s.name || '').trim(); if (!n) return;
       const nl = n.toLowerCase();
       if (seen.has(nl)) return; seen.add(nl);
-      if (used.has(nl) && nl !== curL && !input.closest('.ingame-slots') && !input.getAttribute('oninput').includes('commandement.')) return;                    // déjà placé ailleurs → masqué
+      if (used.has(nl) && nl !== curL && !reusesPlacedNames(input)) return;   // déjà placé ailleurs → masqué
       list.push({ name: n, poste: s.poste || '', statut: (s.statut || 'present') });
     });
     return list;

@@ -188,7 +188,7 @@ Tous constatés en production ou en test, pas théoriques.
 ### Épice — base avancée et manuel
 - Le manuel visible peut venir de `epice/data/sop_content.json` et différer complètement du HTML livré. Le lire connecté avant toute modification de doctrine ; ne jamais le remplacer par le défaut du dépôt. Le bloc Base avancée est ajouté avec un marqueur stable, puis reste éditable.
 - **Assaut = propriété d’un défenseur cardinal**, cumulable avec CaC, pas un cinquième pilote. Il est groupé en jeu avec Récolte ; les deux buggys sont groupés avec deux patrouilleurs. Les rôles tactiques et les groupes en jeu se recoupent : ne pas compter ces personnes deux fois. Conserver les anciens rôles lors de la lecture des historiques.
-- La page épice dépend désormais de `epice/raid-groups.js` : livrer les deux ensemble, avec `data-api.php` et `discord_sortie.php` pour cette évolution.
+- La page épice dépend désormais de `epice/raid-groups.js` : livrer les deux ensemble, avec `data-api.php` et `discord_sortie.php` pour cette évolution. **Si ce fichier manque ou part en 404, la page débrief est entièrement morte**, pas dégradée : `SOP_DEFAULT_HTML` appelle `RaidGroups.withBaseSop()` au chargement, et la `ReferenceError` tue tout le script inline. Envoyer le JS AVANT le HTML, et bouger le `?v=` à chaque modif du module.
 
 ### Mini-jeux et scores
 - **Un plafond `max_score` trop bas fait disparaître un record en silence** : la

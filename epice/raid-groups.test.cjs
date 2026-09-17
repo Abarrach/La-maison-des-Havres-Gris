@@ -82,3 +82,24 @@ test('alerte base : ne pas annoncer Récolte et DR incomplètes quand leurs post
   c.recolte[0].transporteur='';
   assert.match(context.renderCompoReadonly(c),/Récolte : affecter un transporteur et un moissonneur/);
 });
+test('compo sans groupes en jeu : une seule alerte, pas une par joueur',()=>{
+  const c=fixture();c.ingame=[];
+  const w=RaidGroups.issues(c,true);
+  assert.deepEqual(w,['Groupes en jeu : pas encore pré-remplis.']);
+  c.ingame=[{label:'Vide',membres:['','','','']}];
+  assert.deepEqual(RaidGroups.issues(c,true),['Groupes en jeu : pas encore pré-remplis.']);
+});
+test('joueur hors groupe : pseudo rendu tel quel, et les manquants tiennent sur une ligne',()=>{
+  const c=fixture();c.ingame=RaidGroups.build(c);
+  c.ingame[2].membres=[];  // l'escouade Sud/Est/Ouest disparaît des groupes
+  const w=RaidGroups.issues(c,true);
+  assert.deepEqual(w.filter(m=>m.startsWith('Sans groupe')),['Sans groupe en jeu : Sud, Est, Ouest.']);
+  assert.doesNotMatch(w.join('\n'),/\bsud\b/);
+});
+test('Chef de base traité comme CS/CDR/CP : son pseudo compte comme déjà posé',()=>{
+  vm.runInContext(extract('usedNames','  function candidates'),context);
+  const c=context.normalizeCompo(fixture());c.ingame=[];
+  context.currentCompo=c;
+  const used=context.usedNames();
+  ['cs','cdr','cp','cb'].forEach(k=>assert.ok(used.has(c.commandement[k].toLowerCase()),k+' absent de usedNames'));
+});

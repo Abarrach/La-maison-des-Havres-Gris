@@ -10,11 +10,13 @@
     return (c.defense || []).flatMap(s => directions.filter(k => s[k] && s[k].assaut && name(s[k].nom)).map(k => name(s[k].nom)));
   }
   function issues(c, includeGroups) {
-    const warnings = [], seen = new Set();
+    // seen : clé normalisée -> pseudo tel qu'il est saisi. Les messages doivent rendre le
+    // pseudo lisible (« Abarrach »), jamais la clé de comparaison (« abarrach »).
+    const warnings = [], seen = new Map();
     function check(n) {
       if (!name(n)) return;
       if (seen.has(key(n))) warnings.push(name(n) + ' occupe plusieurs rôles tactiques.');
-      seen.add(key(n));
+      seen.set(key(n), name(n));
     }
     (c.recolte || []).forEach(r => [r.transporteur, r.moissonneur, r.defenseur_cac].forEach(check));
     (c.defense || []).forEach(s => {
@@ -36,7 +38,12 @@
     }
     if (!assaults(c).length) warnings.push('Défense rapprochée : marquer au moins un défenseur cardinal Assaut.');
     if (!named(c.recon && c.recon.scouts).length) warnings.push('Récolte : affecter un scout pour le groupe du transporteur.');
-    if (includeGroups) {
+    if (includeGroups && !(c.ingame || []).some(g => (g.membres || []).some(m => name(m)))) {
+      // Aucun groupe en jeu : c'est l'état NORMAL d'une compo en cours de préparation, pas une
+      // anomalie par joueur. Une ligne suffit — sinon la vue Organisation, lue par tout le
+      // monde, se couvre d'une alerte rouge par personne affectée.
+      if (seen.size) warnings.push('Groupes en jeu : pas encore pré-remplis.');
+    } else if (includeGroups) {
       const grouped = new Set();
       (c.ingame || []).forEach(g => {
         const members = (g.membres || []).map(name).filter(Boolean);
@@ -46,7 +53,9 @@
           grouped.add(key(n));
         });
       });
-      seen.forEach(n => { if (!grouped.has(n)) warnings.push('Joueur affecté sans groupe en jeu : ' + n + '.'); });
+      const orphelins = [];
+      seen.forEach((pseudo, k) => { if (!grouped.has(k)) orphelins.push(pseudo); });
+      if (orphelins.length) warnings.push('Sans groupe en jeu : ' + orphelins.join(', ') + '.');
       function together(values) {
         const wanted = values.map(key).filter(Boolean);
         return wanted.length === 4 && (c.ingame || []).some(g => wanted.every(n => (g.membres || []).some(m => key(m) === n)));

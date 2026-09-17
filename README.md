@@ -747,6 +747,18 @@ Mini-jeux de guilde entre membres, avec records et classements. Tuile dédiée d
   php add_score_admin.php worm_rider Neuroch 142640 --annonce
   ```
   Le nom du joueur est celui de `$_SESSION['user']` (compte du site), pas le pseudo Discord.
+  **`--annonce` ne poste qu'UN message**, comme une soumission normale (chaîne `if/elseif` de
+  l'API : le record all-time prime sur le meneur de la semaine) — sinon un rattrapage manuel se
+  reconnaît à ce qu'il fait le double de bruit d'un vrai record.
+- **`--reannonce`** : reposte l'annonce de record d'un score **déjà enregistré**, sans toucher à
+  aucun classement. Sert quand l'annonce s'est perdue, ou quand un rattrapage remet le récit du
+  canal dans l'ordre (réannoncer le tenant, puis inscrire celui qui le détrône). N'invente rien :
+  l'« ancien record » affiché est le **second du podium**, exactement ce qu'aurait dit l'annonce
+  d'origine. Refuse si le joueur n'est pas 1ᵉʳ ou si le score ne correspond pas à ce qui est
+  enregistré — on reposte un fait, pas une version arrangée.
+  ```
+  php add_score_admin.php worm_rider Lorhelyne 284390 --reannonce
+  ```
 
 - **Notif Discord « meneur de la semaine »** (2026-07-14) : en plus du message all-time existant (record battu → embed doré), un **second message distinct** (embed bleu Discord, `notify_discord_weekly_record` dans `scores_api.php`) se déclenche quand un score dépasse le **meneur hebdomadaire** en cours — sans ça, personne ne sait qu'un défi de la semaine est en jeu et personne ne le relève (principe d'interaction demandé). Ne se déclenche que si aucune notif podium (rank 1/2/3 all-time) ne part pour la même soumission (pas de double post).
 - **Hub** (`hub.html`) : panneau classement avec bascule **🗓️ Cette semaine** (défaut) / **🏆 Hall of Fame**, note explicative avec compte à rebours avant le prochain reset (calculé en UTC → juste toute l'année). Les badges « record » sur les cartes de jeux restent **toujours all-time** (valeur de prestige stable). Le mini-classement **dans chaque jeu** (`orni_flap.html` etc., panneau « 🗓️ Cette semaine ») est lui aussi passé en **hebdomadaire** (`scope=weekly`) — sinon un nouveau joueur ne s'y voit jamais, écrasé par les scores historiques.

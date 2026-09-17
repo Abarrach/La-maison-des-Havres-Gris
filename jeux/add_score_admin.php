@@ -13,8 +13,11 @@
 //  Usage :
 //    php add_score_admin.php <jeu> <joueur> <score> [--annonce] [--dry]
 //
-//    --annonce  poste sur Discord comme l'aurait fait une soumission normale
-//               (record all-time et/ou meneur de la semaine, selon le cas)
+//    --annonce  poste sur Discord comme l'aurait fait une soumission normale :
+//               UN seul message (record all-time, sinon meneur de la semaine)
+//    --reannonce  ne touche à aucun classement, reposte seulement l'annonce de
+//               record d'un score DÉJÀ enregistré (annonce perdue, ou récit du
+//               canal Discord à remettre dans l'ordre après un rattrapage)
 //    --dry      n'écrit rien, affiche seulement ce qui serait fait
 //
 //  Exemple :
@@ -34,11 +37,12 @@ $args = array_slice($argv, 1);
 $flags = array_values(array_filter($args, fn($a) => str_starts_with($a, '--')));
 $pos   = array_values(array_filter($args, fn($a) => !str_starts_with($a, '--')));
 
-$annonce = in_array('--annonce', $flags, true);
+$annonce   = in_array('--annonce', $flags, true);
+$reannonce = in_array('--reannonce', $flags, true);
 $dry     = in_array('--dry', $flags, true);
 
 if (count($pos) < 3) {
-    exit("Usage : php add_score_admin.php <jeu> <joueur> <score> [--annonce] [--dry]\n"
+    exit("Usage : php add_score_admin.php <jeu> <joueur> <score> [--annonce] [--reannonce] [--dry]\n"
        . "Jeux connus : " . implode(', ', array_keys(GAMES)) . "\n");
 }
 
@@ -63,8 +67,39 @@ if ($score > $plafond) {
        . "Inscris d'abord le score intermédiaire, ou relève le plancher si ce score est légitime.\n");
 }
 
+// ============================================================
+//  MODE --reannonce : reposter l'annonce d'un score DÉJÀ enregistré
+//  Sert quand l'annonce s'est perdue (webhook muet, score réinscrit après
+//  coup, récit du canal à remettre dans l'ordre). N'ÉCRIT RIEN et n'invente
+//  rien : l'« ancien record » est le second du podium, c'est-a-dire
+//  exactement ce qu'aurait dit l'annonce d'origine.
+// ============================================================
+if ($reannonce) {
+    $podium = podium_top3(read_scores('alltime'), $gameId);
+    if (podium_rank($podium, $player) !== 1) {
+        exit("{$player} n'est pas 1er sur {$gameId} : l'annonce de record ne s'applique pas." . "\n"
+           . "Podium actuel : " . implode(', ', array_map(fn($e) => "{$e['player']} {$e['score']}", $podium)) . "\n");
+    }
+    if ((int)($podium[0]['score'] ?? 0) !== $score) {
+        exit("Score enregistré pour {$player} : {$podium[0]['score']}, pas {$score}." . "\n"
+           . "Réannonce le score RÉEL, ou inscris d'abord le bon score sans --reannonce." . "\n");
+    }
+    $recordAvant = (int)($podium[1]['score'] ?? 0);
+    $tenantAvant = (string)($podium[1]['player'] ?? '');
+    if ($dry) {
+        exit("[dry-run] réannonce {$g['name']} — {$player} : {$score} "
+           . "(présentée comme battant {$recordAvant}" . ($tenantAvant ? " de {$tenantAvant}" : '') . ")" . "\n");
+    }
+    notify_discord_rank1($gameId, $player, $score, $recordAvant, $tenantAvant, null, $podium);
+    echo "{$g['name']} — {$player} : {$score}" . "\n";
+    echo "  annonce : record all-time repostée sur Discord (aucun classement modifié)" . "\n";
+    exit;
+}
+
 $now = time();
 $resume = [];
+$annonceFn = null;      // une seule annonce par ajout, comme une soumission normale
+$annonceQuoi = '';
 
 foreach (['alltime', 'weekly'] as $scope) {
     $avant = read_scores($scope);
@@ -104,16 +139,22 @@ foreach (['alltime', 'weekly'] as $scope) {
     $resume[$scope] = "ajouté — rang " . ($rang ?? '>3')
                     . " (record avant : {$recordAvant}" . ($tenantAvant ? " par {$tenantAvant}" : '') . ")";
 
-    if ($annonce && $scope === 'alltime' && $score > $recordAvant) {
-        $podiumApres = podium_top3($apres, $gameId);
-        notify_discord_rank1($gameId, $player, $score, $recordAvant, $tenantAvant, null, $podiumApres);
-        $resume['annonce_alltime'] = 'record all-time posté sur Discord';
-    }
-    if ($annonce && $scope === 'weekly' && $score > $recordAvant) {
-        notify_discord_weekly_record($gameId, $player, $score, $recordAvant, $tenantAvant);
-        $resume['annonce_weekly'] = 'meneur de la semaine posté sur Discord';
+    // L'API ne poste QU'UN message par score (chaîne if/elseif : le record all-time
+    // prime sur le meneur de la semaine). On s'aligne, sinon un ajout manuel se
+    // remarque à ce qu'il fait le double de bruit d'un vrai record.
+    if ($annonce && $score > $recordAvant) {
+        if ($scope === 'alltime') {
+            $podiumApres = podium_top3($apres, $gameId);
+            $annonceFn   = fn() => notify_discord_rank1($gameId, $player, $score, $recordAvant, $tenantAvant, null, $podiumApres);
+            $annonceQuoi = 'record all-time';
+        } elseif ($annonceFn === null) {
+            $annonceFn   = fn() => notify_discord_weekly_record($gameId, $player, $score, $recordAvant, $tenantAvant);
+            $annonceQuoi = 'meneur de la semaine';
+        }
     }
 }
+
+if ($annonceFn) { ($annonceFn)(); $resume['annonce'] = $annonceQuoi . ' posté sur Discord'; }
 
 echo ($dry ? "[dry-run] " : "") . "{$g['name']} — {$player} : {$score}\n";
 foreach ($resume as $k => $v) echo "  {$k} : {$v}\n";

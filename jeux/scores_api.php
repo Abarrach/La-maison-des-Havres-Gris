@@ -206,6 +206,24 @@ function podium_rank(array $podium, string $player): ?int {
     return null;
 }
 
+// ---- Plafond de plausibilité ----
+// Un plafond ÉCRIT À LA MAIN finit toujours par manger un vrai record : ces jeux sont
+// sans fin et leurs multiplicateurs ne sont pas bornés, donc la meilleure course
+// humaine n'est limitée que par la patience du joueur. On l'a appris deux fois :
+//   2026-09-08 — plafond 99 999  → le 142 640 de Neuroch rejeté en silence ;
+//   2026-09-16 — plafond 300 000 → le 361 704 de Bahlor rejeté en silence.
+// Relever encore le chiffre ne ferait que fixer la date de la troisième fois. Donc
+// `max_score` de GAMES n'est plus qu'un PLANCHER — il ne sert que tant que personne
+// n'a marqué — et au-dessus la barre suit la communauté : 3 × le record établi. Un
+// score forgé à 10× reste refusé ; un joueur qui progresse ne l'est plus jamais.
+const SCORE_CEILING_FACTOR = 3;
+
+function score_ceiling(string $gameId): int {
+    $base   = (int)(GAMES[$gameId]['max_score'] ?? 0);
+    $record = (int)(podium_top3(read_scores('alltime'), $gameId)[0]['score'] ?? 0);
+    return max($base, $record * SCORE_CEILING_FACTOR);
+}
+
 // ---- Webhook Discord (podium) ----
 function discord_webhook_url(): ?string {
     $f = __DIR__ . '/data/discord_webhook.txt';
@@ -456,9 +474,10 @@ if ($action === 'submit') {
 
     // Anti-triche : plafond. `max` dans la réponse pour que l'appelant puisse dire au
     // joueur POURQUOI son score saute, au lieu de le perdre sans un mot.
-    if ($score <= 0 || $score > $g['max_score']) {
-        log_rejected_score($gameId, $user, $score, 'invalid_score (plafond ' . $g['max_score'] . ')');
-        echo json_encode(['ok' => false, 'error' => 'invalid_score', 'max' => $g['max_score']]); exit;
+    $plafond = score_ceiling($gameId);
+    if ($score <= 0 || $score > $plafond) {
+        log_rejected_score($gameId, $user, $score, 'invalid_score (plafond ' . $plafond . ')');
+        echo json_encode(['ok' => false, 'error' => 'invalid_score', 'max' => $plafond]); exit;
     }
 
     // Anti-triche : hash = sha256(game + score + duration + secret)

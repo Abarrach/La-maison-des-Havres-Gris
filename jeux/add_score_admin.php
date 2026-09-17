@@ -52,12 +52,15 @@ $g = GAMES[$gameId];
 
 if ($score <= 0) exit("Score invalide : {$score}\n");
 
-// On applique le MÊME plafond qu'une soumission normale : si le score le dépasse,
-// c'est le plafond qu'il faut corriger dans GAMES, pas ce contrôle qu'il faut
-// contourner — sinon on réintroduit à la main le trou qu'on essaie de boucher.
-if ($score > $g['max_score']) {
-    exit("Score {$score} au-dessus du plafond de {$gameId} ({$g['max_score']}).\n"
-       . "Relève d'abord `max_score` dans GAMES (scores_api.php) si ce score est légitime.\n");
+// On applique le MÊME plafond qu'une soumission normale — celui qui SUIT le record
+// établi (cf. score_ceiling()), pas la constante de GAMES. Si le score le dépasse,
+// c'est le plafond qu'il faut revoir, pas ce contrôle qu'il faut contourner : sinon
+// on réintroduit à la main le trou qu'on essaie de boucher.
+$plafond = score_ceiling($gameId);
+if ($score > $plafond) {
+    exit("Score {$score} au-dessus du plafond de {$gameId} ({$plafond}).\n"
+       . "Plancher GAMES = {$g['max_score']}, record actuel × " . SCORE_CEILING_FACTOR . " = {$plafond}.\n"
+       . "Inscris d'abord le score intermédiaire, ou relève le plancher si ce score est légitime.\n");
 }
 
 $now = time();

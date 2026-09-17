@@ -723,11 +723,25 @@ Mini-jeux de guilde entre membres, avec records et classements. Tuile dédiée d
 > ⚠ À noter : le secret anti-triche est **servi au client** (`action: 'token'`), donc le hash ne
 > protège de rien face à quelqu'un de déterminé — c'est le plafond qui fait le vrai garde-fou.
 > Le relever a un coût, ne pas le relever aussi ; l'arbitrage se documente ici.
+>
+> **2026-09-17 — deuxième fois, donc on arrête d'écrire des chiffres à la main.** Le 361 704 de
+> Bahlor sur *Worm Rider* a sauté exactement comme le 142 640 de Neuroch, contre le plafond de
+> 300 000 posé neuf jours plus tôt — et pendant ce temps un score inférieur (284 390) était annoncé
+> 1ᵉʳ sur Discord. Relever le nombre n'aurait fait que fixer la date de la troisième fois.
+> Désormais `max_score` de `GAMES` n'est plus qu'un **plancher** — il ne vaut que tant que
+> personne n'a marqué — et au-delà la barre **suit la communauté** : `score_ceiling($jeu)` =
+> `max(plancher, record all-time × SCORE_CEILING_FACTOR)`, facteur **3**. Un joueur qui progresse
+> n'est plus jamais refusé ; un score forgé à 10× le record l'est toujours. La règle vaut pour
+> **tous** les jeux d'un coup, y compris ceux dont le plancher n'a jamais été revu.
+> `add_score_admin.php` applique la même barre : pour inscrire un score très au-dessus du record,
+> inscrire d'abord le score intermédiaire, ou relever le plancher — jamais contourner le contrôle.
+> Reste ouvert : côté client, un refus est **toujours** un simple `console.warn`, donc le joueur
+> continue de voir son record à l'écran sans savoir qu'il n'est pas parti.
 
 - **Ajout manuel d'un score** : `jeux/add_score_admin.php` (CLI uniquement, à lancer en tant que
   `dune`). Réutilise les fonctions de `scores_api.php` — mêmes verrous, mêmes sauvegardes, mêmes
   droits 664, mêmes annonces Discord —, alimente les **deux** classements, refuse un score au-dessus
-  du plafond (sinon on rouvre à la main le trou qu'on vient de boucher), et n'écrase jamais un
+  du plafond **calculé** `score_ceiling()` (sinon on rouvre à la main le trou qu'on vient de boucher), et n'écrase jamais un
   meilleur score existant. `--dry` simule, `--annonce` poste sur Discord.
   ```
   php add_score_admin.php worm_rider Neuroch 142640 --annonce

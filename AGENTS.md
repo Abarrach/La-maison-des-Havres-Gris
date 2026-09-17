@@ -193,10 +193,14 @@ Tous constatés en production ou en test, pas théoriques.
 ### Mini-jeux et scores
 - **Un plafond `max_score` trop bas fait disparaître un record en silence** : la
   soumission sort avant enregistrement ET avant notification. C'est mécaniquement le
-  meilleur joueur qu'on pénalise, et personne ne s'en aperçoit. Tous ces jeux sont
-  **sans fin**, donc tout plafond finira par être dépassé : les refus sont désormais
+  meilleur joueur qu'on pénalise, et personne ne s'en aperçoit. Les refus sont
   journalisés dans `jeux/data/scores_rejected.log` — **le consulter avant de conclure
   qu'un joueur ment**.
+- **Ne jamais "corriger" ce bug en réécrivant le nombre.** Ça a été fait deux fois
+  (99 999 → 300 000 → dépassé neuf jours plus tard) : ces jeux sont sans fin, tout
+  chiffre fixe a une date de péremption. `max_score` n'est qu'un **plancher** ; la barre
+  réelle est `score_ceiling()` = `max(plancher, record all-time × 3)` et suit donc la
+  communauté. Si un score légitime saute encore, c'est le FACTEUR qu'on discute.
 - Le secret anti-triche est **servi au client** : le hash ne protège de rien face à
   quelqu'un de déterminé. C'est le plafond qui fait le garde-fou réel.
 - L'affichage « meilleur score » des jeux vient du `localStorage`, écrit **avant** l'appel
@@ -263,9 +267,10 @@ Ne pas les reproposer sans élément nouveau.
 - **Bannières d'activité du bot Sorties** : 25 images à générer.
 - **Plans manquants / lieux de drop** : 8 régions récoltées, ~70 % de couverture ;
   restent 92 emplacements non identifiés et l'export FR d'une table de localisation.
-- **Plafonds `max_score` des autres mini-jeux** (`orni_flap` 9 999, `spice_runner` 99 999,
-  `sandstorm_memory` 50 000, `muaddib_rescue` 50 000) : mêmes jeux sans fin, même risque
-  qu'avec Worm Rider. Le journal des refus dira lequel coince en premier.
+- **Refus côté joueur toujours muet** : `submit` renvoie bien `max`, mais les six jeux se
+  contentent d'un `console.warn`, et le « MEILLEUR SCORE » affiché vient du `localStorage`
+  écrit avant l'appel serveur. Un joueur peut donc voir un record que le classement ignore —
+  c'est ce qui a fait croire deux fois à une triche ou à un bug de classement.
 - **Trois scripts non versionnés** dans `dunelogger/` sur le poste de l'utilisateur :
   `fix_frozen_data.py` (outil de secours réutilisable, le plus utile), `dune_logger_multi.py`
   (ancien scraper, remplacé) et `analyze_dune.py`.

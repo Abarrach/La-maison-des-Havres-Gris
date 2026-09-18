@@ -202,12 +202,12 @@ body::after { display: none; }
                 <div class="record-line" id="record-muaddib_rescue">—</div>
             </div>
         </a>
-        <a href="sandwalk.html" class="game-card">
-            <div class="game-thumb">👣<img src="img/thumb_sandwalk.jpg" alt="" onerror="this.remove()"></div>
+        <a href="dernier_rempart.html" class="game-card">
+            <div class="game-thumb">🛡️<img src="img/rempart_arrakis.webp" alt="" onerror="this.remove()"></div>
             <div class="game-info">
-                <h3>La Marche du Désert</h3>
-                <p>Suis la marche irrégulière des Fremen. Marcher en cadence, c'est appeler le ver.</p>
-                <div class="record-line" id="record-sandwalk">—</div>
+                <h3>Dernier Rempart</h3>
+                <p>Défends la base : intercepte les salves, déclenche des réactions en chaîne et tiens le ciel !</p>
+                <div class="record-line" id="record-dernier_rempart">—</div>
             </div>
         </a>
         <!-- Les prochains jeux s'ajoutent ici -->
@@ -237,7 +237,7 @@ body::after { display: none; }
 <script>
 (function () {
     const me = localStorage.getItem('user') || '';
-    const GAME_NAMES = { orni_flap: 'Ornithopter Flap', spice_runner: 'Spice Runner', sandstorm_memory: 'Sandstorm Memory', worm_rider: 'Worm Rider', muaddib_rescue: "Muad'Dib Rescue", sandwalk: 'La Marche du Désert' };
+    const GAME_NAMES = { orni_flap: 'Ornithopter Flap', spice_runner: 'Spice Runner', sandstorm_memory: 'Sandstorm Memory', worm_rider: 'Worm Rider', muaddib_rescue: "Muad'Dib Rescue", sandwalk: 'La Marche du Désert', dernier_rempart: 'Dernier Rempart' };
     let currentFilter = '';
     let currentScope = 'weekly'; // 'weekly' = classement de la semaine (remis à zéro chaque mardi 05:00 UTC) · 'alltime' = Hall of Fame
 
@@ -321,7 +321,7 @@ body::after { display: none; }
     // Tabs
     function renderTabs() {
         const tabs = document.getElementById('lb-tabs');
-        const all = [{ id: '', name: 'Tous' }, { id: 'orni_flap', name: 'Ornithopter Flap' }, { id: 'spice_runner', name: 'Spice Runner' }, { id: 'sandstorm_memory', name: 'Sandstorm Memory' }, { id: 'worm_rider', name: 'Worm Rider' }, { id: 'muaddib_rescue', name: "Muad'Dib Rescue" }, { id: 'sandwalk', name: 'La Marche du Désert' }];
+        const all = [{ id: '', name: 'Tous' }, { id: 'orni_flap', name: 'Ornithopter Flap' }, { id: 'spice_runner', name: 'Spice Runner' }, { id: 'sandstorm_memory', name: 'Sandstorm Memory' }, { id: 'worm_rider', name: 'Worm Rider' }, { id: 'muaddib_rescue', name: "Muad'Dib Rescue" }, { id: 'dernier_rempart', name: 'Dernier Rempart' }];
         tabs.innerHTML = all.map(g =>
             `<button class="lb-tab ${g.id === currentFilter ? 'active' : ''}" data-game="${g.id}">${esc(g.name)}</button>`
         ).join('');

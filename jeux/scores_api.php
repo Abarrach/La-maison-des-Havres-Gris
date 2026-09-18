@@ -29,6 +29,13 @@ $action = $input['action'] ?? ($_GET['action'] ?? '');
 
 // ---- Jeux connus (id => config anti-triche + méta) ----
 const GAMES = [
+    // Dernier Rempart : défense sans fin. Plancher initial uniquement ;
+    // score_ceiling() suit ensuite le record communautaire (facteur partagé).
+    'dernier_rempart' => [
+        'name'      => 'Dernier Rempart',
+        'max_score' => 300000,
+        'cooldown'  => 2,
+    ],
     'orni_flap' => [
         'name'      => 'Ornithopter Flap',
         'max_score' => 9999,

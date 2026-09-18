@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#111b23">
+<title>Dernier Rempart · Havres Gris</title>
+<script src="../auth-guard.js"></script>
+<style>
+:root{color-scheme:dark;--gold:#edcb91;--ice:#93e5ee;--muted:#9baab4;--line:#ffffff20}
+*{box-sizing:border-box}body{margin:0;background:#0b1219;color:#eef3f3;font:15px system-ui,sans-serif;background-image:radial-gradient(ellipse at 50% 0,#27313b 0,transparent 65%);min-height:100vh}
+button,a{touch-action:manipulation}button{font:inherit;color:inherit;cursor:pointer;border:1px solid var(--line);background:#ffffff08;border-radius:4px;padding:10px 15px}button:hover{background:#ffffff17}button:focus-visible,a:focus-visible,canvas:focus-visible{outline:2px solid var(--ice);outline-offset:4px}button:disabled{opacity:.45;cursor:default}[hidden]{display:none!important}
+header{max-width:1200px;margin:auto;padding:24px 22px 18px;display:flex;align-items:center;justify-content:space-between;gap:18px}header a{color:var(--muted);text-decoration:none;font-size:13px}.eyebrow{font-size:10px;letter-spacing:.22em;color:var(--gold);text-transform:uppercase}h1{font-size:25px;font-weight:500;letter-spacing:.09em;text-transform:uppercase;margin:4px 0}header .tag{color:var(--muted);font-size:12px}
+main{max-width:1200px;margin:auto;padding:0 22px 25px}.layout{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:18px}.stage{position:relative;aspect-ratio:3/2;overflow:hidden;border:1px solid #b5c4ce35;background:#111e2b;box-shadow:0 20px 70px #0005;border-radius:6px}canvas{width:100%;height:100%;display:block;touch-action:none;cursor:crosshair}
+.hud{position:absolute;inset:0 0 auto;pointer-events:none;padding:17px 20px;display:flex;justify-content:space-between;gap:15px;background:linear-gradient(#091219df,transparent)}.hud label{display:block;color:var(--muted);font-size:10px;letter-spacing:.15em}.hud strong{font-size:25px;font-weight:500;font-variant-numeric:tabular-nums}.hud .wave{text-align:right}.hud .wave strong{font-size:18px;color:var(--gold)}.hud small{display:block;font-size:11px;margin-top:4px;color:var(--muted)}
+.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#07101988;backdrop-filter:blur(3px);padding:22px}.panel{max-width:460px;text-align:center;padding:26px 30px;background:#101c26f0;border:1px solid #dab97d60;box-shadow:0 15px 70px #0008}.panel h2{font-size:34px;font-weight:500;margin:10px 0 12px;letter-spacing:.02em}.panel p{color:#c0cbd1;line-height:1.55;font-size:14px}.panel .big-score{font-size:44px;color:var(--gold)}.primary{background:var(--gold);color:#19212a;border:0;font-weight:700;padding:13px 23px}.primary:hover{background:#ffe1ad}.panel .hint{font-size:11px;color:var(--muted)}.brief{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:22px 0}.brief b{display:block;color:var(--ice);font-size:21px;margin-bottom:5px}.brief span{font-size:11px;color:#bbc7cc}
+.controls{display:flex;align-items:center;gap:10px;padding:12px 0;flex-wrap:wrap}.controls .pulse{color:var(--ice);border-color:#93e5ee55;min-width:190px}.controls .ready{background:#93e5ee20;box-shadow:inset 0 -2px var(--ice)}.controls .help{font-size:11px;color:var(--muted);margin-left:auto}.energy{width:120px;height:5px;background:#ffffff18;margin-top:6px}.energy i{display:block;height:100%;background:var(--ice);width:100%}
+aside{border-top:1px solid var(--line);padding-top:16px}aside h2{font-size:11px;letter-spacing:.13em;font-weight:500;color:var(--gold);margin:0 0 15px}aside p{font-size:12px;color:var(--muted);line-height:1.6}.legend{display:flex;gap:10px;align-items:center;margin:17px 0;font-size:12px}.symbol{font-size:23px;width:25px;text-align:center}.legend small{display:block;color:var(--muted);font-size:10px;margin-top:3px}.legend.normal .symbol{color:#ff9279}.legend.fast .symbol{color:#ffcc73}.legend.split .symbol{color:#e1adff}.legend.armored .symbol{color:#d2e3ee}
+.lb{border-top:1px solid var(--line);margin-top:24px;padding-top:18px}.tabs{display:flex;gap:5px;margin-bottom:12px}.tabs button{font-size:10px;padding:7px 9px}.tabs button[aria-pressed=true]{border-color:var(--gold);color:var(--gold)}ol{padding:0;list-style:none;margin:0}ol li{display:flex;gap:8px;justify-content:space-between;font-size:12px;border-bottom:1px solid #ffffff0b;padding:9px 0}ol li span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}ol li b{color:var(--gold);font-weight:500;font-variant-numeric:tabular-nums}
+.save{font-size:12px;min-height:18px;color:var(--muted);margin:5px 0}.save.error{color:#ffac95}.stats{font-size:13px;line-height:1.8;color:#c3cfd5}footer{font-size:10px;color:#7c8f9b;line-height:1.6;margin-top:14px}kbd{font:inherit;border:1px solid #ffffff30;padding:1px 4px;border-radius:3px}
+@media(max-width:850px){.layout{grid-template-columns:1fr}aside{display:none}header{padding-top:12px}.tag{display:none}main{max-width:1000px}.controls .help{display:none}}
+@media(max-width:550px){main{padding:0 6px 15px}header{padding:12px 10px}h1{font-size:19px}.stage{border-radius:2px}.hud{padding:9px 12px}.hud strong{font-size:20px}.hud label{font-size:8px}.hud .wave strong{font-size:14px}.hud small{font-size:9px}.panel{padding:14px 18px}.panel h2{font-size:25px;margin:5px 0}.panel p{font-size:12px;margin:8px 0}.brief{margin:12px 0;gap:6px}.brief b{font-size:17px}.brief span{font-size:10px}.panel .hint{display:none}.controls{gap:6px}.controls button{padding:9px;font-size:12px}.controls .pulse{min-width:170px}.energy{width:80px}.overlay{padding:10px}.panel .big-score{font-size:30px}}
+@media(max-width:550px){.overlay{padding:6px}.panel{max-height:100%;overflow-y:auto;padding:8px 14px}.brief{margin:6px 0}.panel p{font-size:11px;margin:6px 0}.panel h2{font-size:22px}.panel .eyebrow{font-size:9px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<header><div><div class="eyebrow">Havres Gris · Défense d'Arrakis</div><h1>Dernier Rempart</h1></div><span class="tag">Une interception. Toute une réaction en chaîne.</span><a href="hub.html">← Hub de jeux</a></header>
+<main>
+<div class="layout">
+<section aria-label="Jeu de défense">
+<div class="stage">
+<canvas id="game" width="960" height="640" tabindex="0" aria-label="Visez avec la souris ou le doigt et cliquez devant les missiles pour les intercepter. Espace : impulsion. P : pause."></canvas>
+<div class="hud"><div><label>SCORE</label><strong id="score">0</strong><small id="best">Record personnel : —</small></div><div><label>INTERCEPTEURS</label><strong id="ammo">12</strong><div class="energy"><i id="energy"></i></div></div><div class="wave"><label id="wave">VAGUE 01</label><strong id="pattern">ÉVENTAIL</strong><small id="clock">Salve suivante · 18 s</small></div></div>
+<div class="overlay" id="intro"><div class="panel"><div class="eyebrow">La base compte sur vous</div><h2>Tenez le ciel.</h2><p>Cliquez <b>devant les missiles</b> : votre tir explose au point visé. Une explosion peut en déclencher toute une chaîne.</p><div class="brief"><div><b>01</b><span>Anticipez<br>les trajectoires</span></div><div><b>×6</b><span>Enchaînez<br>les interceptions</span></div><div><b>ESPACE</b><span>Impulsion<br>de secours</span></div></div><button class="primary" id="start">Défendre la base</button><p class="hint">Souris ou tactile · Recharge automatique · Pas de tir ami</p></div></div>
+<div class="overlay" id="paused" hidden><div class="panel"><div class="eyebrow">Combat suspendu</div><h2>Pause</h2><p>Les missiles vous attendent. Reprenez quand vous êtes prêt.</p><button class="primary" id="resume">Reprendre</button></div></div>
+<div class="overlay" id="ending" hidden><div class="panel"><div class="eyebrow">La base est tombée</div><h2 id="end-title">Une dernière salve…</h2><div class="big-score" id="end-score">0</div><div class="stats" id="stats"></div><p id="advice"></p><button class="primary" id="restart">Rejouer</button><p class="hint">Chaque essai repart à armes égales. Seule votre maîtrise progresse.</p></div></div>
+</div>
+<div class="controls"><button id="pulse" class="pulse ready" disabled>Impulsion prête · Espace</button><button id="pause" disabled>Pause · P</button><button id="sound" aria-pressed="true">Son activé</button><span class="help">Clic / toucher : tirer · maintenir : rafale · <kbd>Espace</kbd> : secours</span></div>
+<div class="save" id="save" role="status" aria-live="polite">Les réserves d'eau, l'énergie et le hangar ont chacun 3 points de résistance.</div><button id="retry-save" hidden>Réessayer l'enregistrement</button>
+</section>
+<aside><h2>IDENTIFIER LA MENACE</h2><div class="legend normal"><span class="symbol">▼</span><div>Missile<small>Une explosion suffit</small></div></div><div class="legend fast"><span class="symbol">ϟ</span><div>Flèche rapide · vague 2<small>Anticipez davantage</small></div></div><div class="legend split"><span class="symbol">◇</span><div>Charge multiple · vague 3<small>Interceptez avant la séparation</small></div></div><div class="legend armored"><span class="symbol">⬡</span><div>Blindé · vague 4<small>Deux explosions distinctes</small></div></div><p>Les chaînes multiplient les points. Les interceptions près du sol donnent un bonus de sauvetage — mais la marge d'erreur est mince.</p><p>Chaque vague répare un point sur un bâtiment encore debout. Un bâtiment détruit reste perdu.</p><div class="lb"><h2>CLASSEMENT DE GUILDE</h2><div class="tabs"><button data-scope="weekly" aria-pressed="true">Semaine</button><button data-scope="alltime" aria-pressed="false">Hall of Fame</button></div><ol id="leaderboard"><li>Chargement…</li></ol></div></aside>
+</div>
+<footer>Création de fan inspirée de Missile Command, dans l'univers de Dune: Awakening. Mécaniques arcade non officielles. Version de test · aucun avantage permanent à débloquer.</footer>
+</main>
+<script src="dernier_rempart_engine.js?v=1"></script>
+<script src="dernier_rempart_view.js?v=1"></script>
+<script src="dernier_rempart.js?v=1"></script>
+</body>
+</html>

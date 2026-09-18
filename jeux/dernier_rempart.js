@@ -137,8 +137,8 @@
         mode = 'over'; held = false; $('ending').hidden = false; $('pause').disabled = true; $('pulse').disabled = true;
         $('end-score').textContent = format(game.score);
         $('end-title').textContent = game.score > best && game.score > 0 ? 'Belle résistance.' : 'Une dernière salve…';
-        $('stats').textContent = 'Vague '+game.wave+' · '+Math.floor(game.time)+' s · '+game.stats.kills+' interceptions · chaîne record : '+game.stats.bestChain;
-        $('advice').textContent = game.pulse >= 100 ? 'Votre impulsion était prête : Espace aurait pu dégager le ciel.' :
+        $('stats').textContent = 'Vague '+game.wave+' · '+Math.floor(game.time)+' s · '+game.stats.kills+' interceptions · chaîne record : '+game.stats.bestChain+' · '+game.stats.usefulShots+'/'+game.stats.shots+' tirs utiles · '+game.stats.overheats+' surchauffes · bonus de chaînes : '+format(game.stats.chainBonus);
+        $('advice').textContent = game.stats.overheats >= 2 ? 'Espacez vos tirs : les surchauffes vous privent de défense. Visez le passage d’un groupe avec un seul tir.' : game.pulse >= 100 ? 'Votre impulsion était prête : Espace aurait pu dégager le ciel.' :
             game.stats.bestChain < 4 ? 'Visez les groupes : une seule explosion peut arrêter une salve entière.' :
             'Les charges violettes se divisent. Les intercepter en altitude évite deux menaces rapides.';
         lastResult = { id:runId,score:game.score,duration:Math.floor(game.time),saved:false };
@@ -152,7 +152,14 @@
     }
     function hud() {
         $('score').textContent = format(game.score); $('ammo').textContent = Math.floor(game.energy);
-        $('energy').style.width = game.energy/12*100+'%'; $('wave').textContent = 'VAGUE '+String(game.wave).padStart(2,'0');
+        $('heat').style.width = game.heat+'%';
+        const hot = game.overheated || game.heat >= 70;
+        $('heat').style.background = hot ? '#ff9279' : '#93e5ee';
+        $('heat-value').textContent = Math.ceil(game.heat)+' %';
+        $('heat-value').style.color = hot ? '#ff9279' : '#eef3f3';
+        $('weapon-state').textContent = game.overheated ? 'SURCHAUFFE · ATTENDEZ' : 'TEMPÉRATURE';
+        $('efficiency').textContent = (game.stats.shots ? Math.round(game.stats.usefulShots/game.stats.shots*100) : 0)+' % utiles';
+        $('wave').textContent = 'VAGUE '+String(game.wave).padStart(2,'0');
         $('pattern').textContent = game.pattern; $('clock').textContent = 'Salve suivante · '+Math.max(0,Math.ceil(game.waveDuration-game.waveTime))+' s';
         $('pulse').textContent = game.pulse >= 100 ? 'Impulsion prête · Espace' : 'Impulsion · '+Math.floor(game.pulse)+' %';
         $('pulse').classList.toggle('ready',game.pulse >= 100); $('pulse').disabled = mode !== 'playing' || game.pulse < 100;

@@ -31,20 +31,21 @@ aside{border-top:1px solid var(--line);padding-top:16px}aside h2{font-size:11px;
 <section aria-label="Jeu de défense">
 <div class="stage">
 <canvas id="game" width="960" height="640" tabindex="0" aria-label="Visez avec la souris ou le doigt et cliquez devant les missiles pour les intercepter. Espace : impulsion. P : pause."></canvas>
-<div class="hud"><div><label>SCORE</label><strong id="score">0</strong><small id="best">Record personnel : —</small></div><div><label>INTERCEPTEURS</label><strong id="ammo">12</strong><div class="energy"><i id="energy"></i></div></div><div class="wave"><label id="wave">VAGUE 01</label><strong id="pattern">ÉVENTAIL</strong><small id="clock">Salve suivante · 18 s</small></div></div>
+<div class="hud"><div><label>SCORE</label><strong id="score">0</strong><small id="best">Record personnel : —</small></div><div><label id="weapon-state">TEMPÉRATURE</label><strong id="heat-value">0 %</strong><div class="energy"><i id="heat" style="width:0%"></i></div><small><span id="ammo">12</span> intercepteurs · <span id="efficiency">0 % utiles</span></small></div><div class="wave"><label id="wave">VAGUE 01</label><strong id="pattern">ÉVENTAIL</strong><small id="clock">Salve suivante · 18 s</small></div></div>
 <div class="overlay" id="intro"><div class="panel"><div class="eyebrow">La base compte sur vous</div><h2>Tenez le ciel.</h2><p>Cliquez <b>devant les missiles</b> : votre tir explose au point visé. Une explosion peut en déclencher toute une chaîne.</p><div class="brief"><div><b>01</b><span>Anticipez<br>les trajectoires</span></div><div><b>×6</b><span>Enchaînez<br>les interceptions</span></div><div><b>ESPACE</b><span>Impulsion<br>de secours</span></div></div><button class="primary" id="start">Défendre la base</button><p class="hint">Souris ou tactile · Recharge automatique · Pas de tir ami</p></div></div>
 <div class="overlay" id="paused" hidden><div class="panel"><div class="eyebrow">Combat suspendu</div><h2>Pause</h2><p>Les missiles vous attendent. Reprenez quand vous êtes prêt.</p><button class="primary" id="resume">Reprendre</button></div></div>
 <div class="overlay" id="ending" hidden><div class="panel"><div class="eyebrow">La base est tombée</div><h2 id="end-title">Une dernière salve…</h2><div class="big-score" id="end-score">0</div><div class="stats" id="stats"></div><p id="advice"></p><button class="primary" id="restart">Rejouer</button><p class="hint">Chaque essai repart à armes égales. Seule votre maîtrise progresse.</p></div></div>
 </div>
-<div class="controls"><button id="pulse" class="pulse ready" disabled>Impulsion prête · Espace</button><button id="pause" disabled>Pause · P</button><button id="sound" aria-pressed="true">Son activé</button><span class="help">Clic / toucher : tirer · maintenir : rafale · <kbd>Espace</kbd> : secours</span></div>
+<div class="controls"><button id="pulse" class="pulse ready" disabled>Impulsion prête · Espace</button><button id="pause" disabled>Pause · P</button><button id="sound" aria-pressed="true">Son activé</button><span class="help">Tirs espacés : refroidissement · rafale : surchauffe · <kbd>Espace</kbd> : secours</span></div>
+<p style="color:var(--gold);font-size:12px;margin:0 0 8px">La rafale fait chauffer les canons. Espacez vos tirs ; une chaîne rapporte jusqu'à +250 points supplémentaires par victime.</p>
 <div class="save" id="save" role="status" aria-live="polite">Les réserves d'eau, l'énergie et le hangar ont chacun 3 points de résistance.</div><button id="retry-save" hidden>Réessayer l'enregistrement</button>
 </section>
 <aside><h2>IDENTIFIER LA MENACE</h2><div class="legend normal"><span class="symbol">▼</span><div>Missile<small>Une explosion suffit</small></div></div><div class="legend fast"><span class="symbol">ϟ</span><div>Flèche rapide · vague 2<small>Anticipez davantage</small></div></div><div class="legend split"><span class="symbol">◇</span><div>Charge multiple · vague 3<small>Interceptez avant la séparation</small></div></div><div class="legend armored"><span class="symbol">⬡</span><div>Blindé · vague 4<small>Deux explosions distinctes</small></div></div><p>Les chaînes multiplient les points. Les interceptions près du sol donnent un bonus de sauvetage — mais la marge d'erreur est mince.</p><p>Chaque vague répare un point sur un bâtiment encore debout. Un bâtiment détruit reste perdu.</p><div class="lb"><h2>CLASSEMENT DE GUILDE</h2><div class="tabs"><button data-scope="weekly" aria-pressed="true">Semaine</button><button data-scope="alltime" aria-pressed="false">Hall of Fame</button></div><ol id="leaderboard"><li>Chargement…</li></ol></div></aside>
 </div>
 <footer>Création de fan inspirée de Missile Command, dans l'univers de Dune: Awakening. Mécaniques arcade non officielles. Version de test · aucun avantage permanent à débloquer.</footer>
 </main>
-<script src="dernier_rempart_engine.js?v=1"></script>
-<script src="dernier_rempart_view.js?v=1"></script>
-<script src="dernier_rempart.js?v=1"></script>
+<script src="dernier_rempart_engine.js?v=2"></script>
+<script src="dernier_rempart_view.js?v=2"></script>
+<script src="dernier_rempart.js?v=2"></script>
 </body>
 </html>

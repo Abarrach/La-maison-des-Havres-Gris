@@ -32,6 +32,8 @@
                     this.subtitle = e.wave === 2 ? 'NOUVEAU : FLÈCHES RAPIDES' : e.wave === 3 ? 'CHARGES MULTIPLES : DÉTRUISEZ-LES EN ALTITUDE' : e.wave === 4 ? 'BLINDÉS : DEUX EXPLOSIONS DISTINCTES' : e.wave % 5 === 0 ? 'SATURATION : SALVE RENFORCÉE' : 'INTERCEPTEZ · ENCHAÎNEZ · TENEZ';
                     this.bannerLife = 2.4;
                 }
+                if (e.type === 'overheat') this.labels.push({ x:480,y:470,text:'SURCHAUFFE — REFROIDISSEMENT',life:1.5,color:'#ff9279' });
+                if (e.type === 'cooled') this.labels.push({ x:480,y:470,text:'CANONS DISPONIBLES',life:.8,color:'#93e5ee' });
                 if (e.type === 'pulse') this.pulseFlash = .5;
             }
             this.particles = this.particles.slice(-420); this.labels = this.labels.slice(-24);
@@ -171,8 +173,8 @@
             }
             c.shadowBlur = 0; c.globalAlpha = 1;
             if (active && this.aim) {
-                this.circle(this.aim.x,this.aim.y,70,'#a6edf133');
-                this.circle(this.aim.x,this.aim.y,10,g.energy >= 1 ? '#b7f3f2' : '#ff947d');
+                this.circle(this.aim.x,this.aim.y,44,'#a6edf155');
+                this.circle(this.aim.x,this.aim.y,10,g.energy >= 1 && !g.overheated ? '#b7f3f2' : '#ff947d');
                 this.line([[this.aim.x - 15,this.aim.y],[this.aim.x - 6,this.aim.y]],'#b7f3f2');
                 this.line([[this.aim.x + 6,this.aim.y],[this.aim.x + 15,this.aim.y]],'#b7f3f2');
             }

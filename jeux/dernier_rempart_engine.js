@@ -21,9 +21,10 @@
             this.seed = seed; this.time = 0; this.wave = 0; this.waveTime = 0;
             this.state = 'playing'; this.score = 0; this.energy = 12; this.pulse = 100;
             this.cooldown = 0; this.enemies = []; this.shots = []; this.blasts = [];
+            this.heat = 0; this.overheated = false; this.coolingDelay = 0;
             this.events = []; this.schedule = []; this.nextId = 1;
             this.cities = [190, 480, 770].map((x, i) => ({ x, hp: 3, name: ['EAU', 'ÉNERGIE', 'HANGAR'][i] }));
-            this.stats = { kills: 0, shots: 0, bestChain: 0, saves: 0, damage: 0, pulses: 0 };
+            this.stats = { kills: 0, shots: 0, bestChain: 0, saves: 0, damage: 0, pulses: 0, usefulShots: 0, chainBonus: 0, overheats: 0 };
             this.nextWave();
         }
         emit(type, data = {}) { this.events.push({ type, ...data }); }
@@ -76,12 +77,16 @@
                 target, kind, hp: kind === 'armored' ? 2 : 1, splitY: 205 + this.random() * 70, dead: false });
         }
         fire(x, y) {
-            if (this.state !== 'playing' || !Number.isFinite(x) || !Number.isFinite(y) || this.cooldown > 0 || this.energy < 1) return false;
+            if (this.state !== 'playing' || !Number.isFinite(x) || !Number.isFinite(y) || this.cooldown > 0 || this.energy < 1 || this.overheated) return false;
             x = clamp(x, 12, W - 12); y = clamp(y, 35, GROUND - 36);
             const launchX = [70, 480, 890].reduce((a, b) => Math.abs(a - x) < Math.abs(b - x) ? a : b);
             const launchY = launchX === 480 ? 604 : GROUND;
-            this.shots.push({ x: launchX, y: launchY, sx: launchX, sy: launchY, tx: x, ty: y });
+            this.shots.push({ x: launchX, y: launchY, sx: launchX, sy: launchY, tx: x, ty: y, chain: { kills: 0, emergency: false, shot: true, useful: false } });
             this.energy--; this.cooldown = .16; this.stats.shots++;
+            this.heat = Math.min(100, this.heat + 22); this.coolingDelay = .12;
+            if (this.heat >= 100) {
+                this.overheated = true; this.stats.overheats++; this.emit('overheat');
+            }
             this.emit('fire', { x: launchX, y: launchY });
             return true;
         }
@@ -92,7 +97,7 @@
             this.emit('pulse');
             return true;
         }
-        explode(x, y, chain = { kills: 0, emergency: false }, max = 70, life = .95) {
+        explode(x, y, chain = { kills: 0, emergency: false }, max = 44, life = .48) {
             this.blasts.push({ x, y, chain, max, life, age: 0, r: 0, hit: new Set() });
             this.emit('blast', { x, y, emergency: chain.emergency });
         }
@@ -101,12 +106,13 @@
             this.stats.bestChain = Math.max(this.stats.bestChain, chain.kills);
             const late = enemy.y > 410;
             const multi = Math.min(6, 1 + Math.floor((chain.kills - 1) / 3));
-            const points = chain.emergency ? 25 : (enemy.kind === 'armored' ? 150 : enemy.kind === 'split' ? 125 : 100) * multi + (late ? 50 : 0);
+            const efficiencyBonus = chain.emergency ? 0 : Math.min(250, (chain.kills - 1) * 50);
+            const points = chain.emergency ? 25 : (enemy.kind === 'armored' ? 150 : enemy.kind === 'split' ? 125 : 100) * multi + (late ? 50 : 0) + efficiencyBonus;
+            this.stats.chainBonus += efficiencyBonus;
             this.score += points;
             if (!chain.emergency) {
                 this.pulse = Math.min(100, this.pulse + 4 + (late ? 2 : 0));
-                this.energy = Math.min(12, this.energy + .18);
-                this.explode(enemy.x, enemy.y, chain, 47, .7);
+                this.explode(enemy.x, enemy.y, chain, 42, .5);
                 if (late) this.stats.saves++;
             }
             this.emit('kill', { x: enemy.x, y: enemy.y, points, chain: chain.kills, late, emergency: chain.emergency });
@@ -122,11 +128,15 @@
         update(dt) {
             this.time += dt; this.waveTime += dt;
             this.cooldown = Math.max(0, this.cooldown - dt);
+            const coolingTime = Math.max(0, dt - this.coolingDelay);
+            this.coolingDelay = Math.max(0, this.coolingDelay - dt);
+            this.heat = Math.max(0, this.heat - coolingTime * 48);
+            if (this.overheated && this.heat <= 30) { this.overheated = false; this.emit('cooled'); }
             this.energy = Math.min(12, this.energy + dt * 3.1);
             while (this.schedule.length && this.schedule[0].at <= this.waveTime) this.spawn(this.schedule.shift());
             for (const s of this.shots) {
                 const dx = s.tx - s.x, dy = s.ty - s.y, distance = Math.hypot(dx, dy), travel = 930 * dt;
-                if (distance <= travel) { s.dead = true; this.explode(s.tx, s.ty); }
+                if (distance <= travel) { s.dead = true; this.explode(s.tx, s.ty, s.chain); }
                 else { s.x += dx / distance * travel; s.y += dy / distance * travel; }
             }
             this.shots = this.shots.filter(s => !s.dead);
@@ -140,6 +150,8 @@
                     if (b.age >= b.life || b.hit.has(e.id)) continue;
                     if (segmentDistance(b.x, b.y, e.px, e.py, e.x, e.y) <= b.r + 5) {
                         b.hit.add(e.id);
+                        // Un tir qui brise le blindage est utile, même sans destruction.
+                        if (b.chain.shot && !b.chain.useful) { b.chain.useful = true; this.stats.usefulShots++; }
                         e.hp -= b.chain.emergency ? 2 : 1;
                         if (e.hp <= 0) { this.kill(e, b.chain); break; }
                         this.emit('armor', { x: e.x, y: e.y });

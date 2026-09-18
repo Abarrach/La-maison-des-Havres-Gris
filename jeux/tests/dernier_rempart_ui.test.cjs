@@ -44,7 +44,13 @@ function harness({local=true,accept=true,networkFail=false}={}) {
         key(code){documentHandlers.keydown({code,repeat:false,target:element('game'),preventDefault(){}});},
         pointer(type,x=300,y=300){element('game').handlers[type]({button:0,pointerId:1,clientX:x,clientY:y,preventDefault(){}});}};
 }
-async function settle(){for(let i=0;i<8;i++)await new Promise(resolve=>setImmediate(resolve));}
+async function settle(done){
+    const deadline=Date.now()+5000;
+    while(!done()){
+        if(Date.now()>deadline)throw new Error('La soumission simulée ne se termine pas.');
+        await new Promise(resolve=>setTimeout(resolve,5));
+    }
+}
 (async()=>{
     const local=harness();local.click('start');local.tick(.5);
     assert.ok(local.game().enemies.length>0);
@@ -61,7 +67,8 @@ async function settle(){for(let i=0;i<8;i++)await new Promise(resolve=>setImmedi
     local.click('restart');assert.equal(local.game().score,0);assert.equal(local.game().time,0);assert.equal(local.element('ending').hidden,true);
     console.log('OK démarrage, tirs maintenus, pointercancel, pause/reprise, perte de focus, onglet masqué, impulsion, fin, relance, aucun appel réseau local');
     for(const options of [{accept:true},{accept:false},{accept:true,networkFail:true}]) {
-        const h=harness({local:false,...options});h.click('start');h.game().score=1500;h.game().cities.forEach(c=>c.hp=0);h.tick(.1);await settle();
+        const h=harness({local:false,...options});h.click('start');h.game().score=1500;h.game().cities.forEach(c=>c.hp=0);h.tick(.1);
+        await settle(()=>/Score accepté|Score non enregistré/.test(h.element('save').textContent));
         const submissions=h.requests.filter(r=>r.body?.action==='submit');assert.equal(submissions.length,1);
         assert.equal(submissions[0].body.score,1500);assert.match(submissions[0].body.hash,/^[0-9a-f]{64}$/);
         if(options.accept&&!options.networkFail){assert.match(h.element('save').textContent,/Score accepté/);assert.match(h.element('best').textContent,/1.?500/);}

@@ -1011,7 +1011,7 @@ function creneaux_resume($indices, $creneaux) {
  * l'effectif mais ne comblent aucun poste : c'est à l'organisateur d'arbitrer.
  */
 function creneau_couverture($signups, $i) {
-    $presents = 0; $maybe = 0; $transp = 0; $moiss = 0; $pilotes = 0; $noms = [];
+    $presents = 0; $maybe = 0; $transp = 0; $moiss = 0; $pilotes = 0;
     foreach ($signups as $su) {
         $cr = $su['creneaux'] ?? null;
         // Inscription sans créneau déclaré : compte partout. Un joueur qui ne précise
@@ -1021,7 +1021,6 @@ function creneau_couverture($signups, $i) {
         if ($statut === 'maybe') { $maybe++; continue; }
         if ($statut !== 'present') continue;
         $presents++;
-        $noms[] = $su['name'] ?? '?';
         $p = $su['poste'] ?? '';
         if ($p === 'transporteur') $transp++;
         elseif ($p === 'moissonneur') $moiss++;
@@ -1034,7 +1033,7 @@ function creneau_couverture($signups, $i) {
     if (!$transp)     $manques[] = 'transporteur';
     if (!$moiss)      $manques[] = 'moissonneur';
     if ($pilotes < 4) $manques[] = (4 - $pilotes) . ' pilote' . (4 - $pilotes > 1 ? 's' : '');
-    return ['presents' => $presents, 'maybe' => $maybe, 'manques' => $manques, 'noms' => $noms];
+    return ['presents' => $presents, 'maybe' => $maybe, 'manques' => $manques];
 }
 
 // Formate la durée pour l'affichage : "2" → "2h" ; "1h30"/"2h" → tels quels ; vide → "".
@@ -1656,36 +1655,15 @@ function build_sortie_message($sortie) {
         foreach ($creneaux as $c) {
             $cov = creneau_couverture($signups, $c['i']);
             if (!$cov['manques']) $complets++;
-            // UNE entrée par créneau, verdict puis présents. Le regroupement par
-            // combinaison de créneaux (« 08–12 · trois noms ») était plus court dans les cas
-            // favorables mais NON BORNÉ : avec quatre blocs il existe quinze combinaisons,
-            // donc douze inscrits pouvaient produire douze lignes. Par créneau, c'est
-            // toujours autant de lignes qu'il y a de créneaux — quatre ou cinq, jamais plus.
-            // Les noms en italique se distinguent du verdict sans bloc de code ni colonnes.
+            // UNE entrée par créneau, et RIEN QUE le verdict : la couverture répond à
+            // « est-ce que ça tient », pas à « qui est là ». Le QUI vit dans les colonnes
+            // de postes, où chacun retrouve sa plage derrière son nom (choix de la cheffe
+            // de guilde, qui lit l'encart plus souvent que quiconque).
             $marque = !$cov['manques'] ? '✅' : ($cov['presents'] * 2 < RALLY_MINIMUM ? '✖' : '⚠');
             $effectif = $cov['presents'] . ' présent' . ($cov['presents'] > 1 ? 's' : '')
                       . ($cov['maybe'] ? ' (+' . $cov['maybe'] . ' ?)' : '');
             $verdict  = !$cov['manques'] ? 'complet' : 'manque ' . implode(', ', $cov['manques']);
             $lignes[] = $marque . ' **' . $c['court'] . '** · ' . $effectif . ' — ' . $verdict;
-            // Garde-fou : un champ d'encart plafonne à 1024 caractères. Avec cinq créneaux
-            // et une sortie très fournie, la liste nominative pourrait le dépasser et
-            // Discord rejetterait TOUT le message.
-            if ($cov['noms']) {
-                // strlen() et non mb_strlen() : PAS de mbstring sur le serveur (cf. AGENTS.md).
-                // On compte donc des OCTETS — un prénom accentué en pèse un peu plus qu'il
-                // n'occupe de caractères, ce qui tronque un cheveu plus tôt. C'est un
-                // garde-fou, pas une mise en page : l'approximation est sans conséquence.
-                // Budget ADAPTATIF : la limite de 1024 se partage entre tous les créneaux.
-                // Un plafond fixe tenait à quatre blocs et sautait à six (rally de 12 h).
-                $budget = max(60, intdiv(900, count($creneaux)) - 80);
-                $liste = implode(', ', $cov['noms']);
-                if (strlen($liste) > $budget) {
-                    $court = [];  $n = 0;
-                    foreach ($cov['noms'] as $nom) { if (strlen(implode(', ', $court) . $nom) > $budget - 20) break; $court[] = $nom; $n++; }
-                    $liste = implode(', ', $court) . ' … +' . (count($cov['noms']) - $n);
-                }
-                $lignes[] = '*' . $liste . '*';
-            }
         }
         $fields[] = [
             'name'   => '⏱️ Couverture — ' . $complets . ' créneau' . ($complets > 1 ? 'x complets' : ' complet') . ' sur ' . count($creneaux),
@@ -1710,7 +1688,13 @@ function build_sortie_message($sortie) {
             foreach ($signups as $su) {
                 if ($st($su) !== 'present' || $bucket($su) !== $pid) continue;
                 // 🎖️ : a candidaté comme Chef de section (drapeau optionnel, cf handle_toggle_chef).
-                $names[] = $su['name'] . (!empty($su['chef_section']) ? ' 🎖️' : '');
+                // Plage de disponibilité derrière le nom. Ces colonnes sont étroites (un
+                // tiers d'encart) donc une plage non contiguë — « 08–10, 14–16 » — passe à
+                // la ligne. C'est assumé : creneaux_resume() fusionne les blocs consécutifs,
+                // et le cas courant (« je suis là le matin ») tient en sept caractères.
+                $plage = $creneaux ? creneaux_resume($su['creneaux'] ?? null, $creneaux) : '';
+                $names[] = $su['name'] . (!empty($su['chef_section']) ? ' 🎖️' : '')
+                         . ($plage ? ' · ' . $plage : '');
             }
             // Poste retiré du menu (ex. Défenseur CaC) ET personne dessus : le "0" n'a
             // aucun sens puisque plus personne ne peut le choisir → colonne masquée.

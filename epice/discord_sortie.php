@@ -448,6 +448,9 @@ if ($type === 5) {
     if (strpos($cid, 'sortie_edit_modal:') === 0) {
         handle_edit_save($body, substr($cid, strlen('sortie_edit_modal:')));
     }
+    if (strpos($cid, 'creneauxmodal:') === 0) {
+        handle_creneaux_modal($body, substr($cid, strlen('creneauxmodal:')));
+    }
     if (strpos($cid, 'sortie_create_modal') === 0) {
         // Le type est encodé dans le custom_id : "sortie_create_modal:<type>".
         $stype = (strpos($cid, ':') !== false) ? substr($cid, strpos($cid, ':') + 1) : 'epice';
@@ -1264,6 +1267,74 @@ function upsert_signup(&$s, $user, $poste, $statut) {
 // Le poste est validé contre le jeu de postes DU TYPE de la sortie (épice ≠ PvP) :
 // on relit donc la sortie avant de muter, pour connaître son type.
 /**
+ * MODAL de créneaux, ouvert juste après le choix d'un poste sur une sortie longue.
+ *
+ * Pourquoi un modal et pas un second menu sur l'encart : deux composants d'un
+ * message sont des interactions INDÉPENDANTES — Discord ne sait pas « valider
+ * l'un seulement quand l'autre est saisi ». Un modal, lui, se soumet d'un bloc et
+ * ses champs peuvent être obligatoires. C'est le seul moyen de garantir qu'un
+ * inscrit d'un rally a déclaré ses disponibilités.
+ *
+ * Bénéfice secondaire, et pas le moindre : un modal est construit POUR un joueur,
+ * pas pour le message. Ses créneaux déjà cochés y sont donc pré-sélectionnés —
+ * ce qu'un menu d'encart, partagé par tout le monde, ne peut pas faire.
+ */
+function sortie_creneaux_modal($sortieId, $poste, $blocs, $deja = []) {
+    $deja = array_map('intval', is_array($deja) ? $deja : []);
+    $options = [];
+    foreach ($blocs as $b) {
+        $o = ['label' => $b['label'], 'value' => (string)$b['i']];
+        if (in_array($b['i'], $deja, true)) $o['default'] = true;
+        $options[] = $o;
+    }
+    // custom_id en "creneauxmodal:<poste>:<id de sortie>" : il se termine par l'id de
+    // sortie, donc le filet de routage de discord_interactions.php le reconnaît sans
+    // qu'on ait à lui ajouter un préfixe de plus (cf. AGENTS.md).
+    return ['type' => 9, 'data' => [
+        'custom_id'  => 'creneauxmodal:' . $poste . ':' . $sortieId,
+        'title'      => sn_cut('Tes créneaux — ' . (POSTES_EPICE_SELECTABLE[$poste] ?? $poste), 45),
+        'components' => [[
+            'type' => 18,
+            'label' => 'Quand seras-tu là ?',
+            'description' => 'Coche tous les blocs où tu peux être présent.',
+            'component' => [
+                'type' => 3, 'custom_id' => 'creneaux', 'required' => true,
+                'placeholder' => 'Choisis un ou plusieurs créneaux',
+                'min_values' => 1, 'max_values' => count($blocs),
+                'options' => $options,
+            ],
+        ]],
+    ]];
+}
+
+/**
+ * Soumission du modal : le poste ET les créneaux arrivent ensemble, donc on
+ * enregistre les deux d'un coup. C'est tout l'intérêt du détour par le modal.
+ */
+function handle_creneaux_modal($body, $reste) {
+    $sep = strpos($reste, ':');
+    if ($sep === false) respond_message("Formulaire de créneaux invalide.", true);
+    $poste    = substr($reste, 0, $sep);
+    $sortieId = substr($reste, $sep + 1);
+    $sortie = find_sortie($sortieId);
+    if (!$sortie) respond_message("Cette sortie n'existe plus.", true);
+    if (!array_key_exists($poste, postes_all($sortie['type'] ?? 'epice'))) respond_message("Poste inconnu.", true);
+    $valeurs = array_map('intval', modal_values_multi($body)['creneaux'] ?? []);
+    $user = interaction_user($body);
+    $updated = mutate_sortie($sortieId, function (&$s) use ($user, $poste, $valeurs) {
+        upsert_signup($s, $user, $poste, 'present');
+        foreach ($s['signups'] as &$su) {
+            if (($su['id'] ?? '') === $user['id']) { $su['creneaux'] = array_values(array_unique($valeurs)); sort($su['creneaux']); }
+        }
+        unset($su);
+    });
+    if (!$updated) respond_message("Cette sortie n'existe plus.", true);
+    dlog('creneaux (modal) ' . $user['name'] . ' · ' . $poste . ' -> [' . implode(',', $valeurs) . ']');
+    echo json_encode(['type' => 7, 'data' => build_sortie_message($updated)]);
+    exit;
+}
+
+/**
  * Enregistre les créneaux d'un joueur sur une sortie longue.
  * Exige une inscription préalable à un poste : sans poste, la couverture ne
  * saurait pas quoi compter, et un joueur « disponible pour rien » brouille la
@@ -1299,6 +1370,17 @@ function handle_signup($body, $sortieId) {
     if (!$sortie) respond_message("Cette sortie n'existe plus.", true);
     if (!array_key_exists($poste, postes_all($sortie['type'] ?? 'epice'))) respond_message("Poste inconnu.", true);
     $user = interaction_user($body);
+    // Sortie longue : on n'enregistre PAS tout de suite. Le modal réclame les créneaux,
+    // et c'est sa soumission qui inscrit poste et disponibilités ensemble.
+    $blocs = creneaux_sortie($sortie);
+    if ($blocs) {
+        $deja = [];
+        foreach ($sortie['signups'] ?? [] as $su) {
+            if (($su['id'] ?? '') === $user['id']) { $deja = $su['creneaux'] ?? []; break; }
+        }
+        echo json_encode(sortie_creneaux_modal($sortieId, $poste, $blocs, $deja));
+        exit;
+    }
     $updated = mutate_sortie($sortieId, function (&$s) use ($user, $poste) {
         upsert_signup($s, $user, $poste, 'present');
     });
@@ -1812,19 +1894,12 @@ function build_sortie_message($sortie) {
                 'placeholder' => "M'inscrire à un poste", 'options' => $options,
             ]]],
         ];
-        // Sortie longue : second menu, à choix multiple. Une seule interaction pour
-        // cocher tous ses blocs. Absent des sorties courtes — rien ne change pour elles.
-        $blocs = creneaux_sortie($sortie);
-        if ($blocs) {
-            $components[] = ['type' => 1, 'components' => [[
-                'type' => 3, 'custom_id' => "creneaux:{$sid}",
-                'placeholder' => 'Mes créneaux de disponibilité',
-                'min_values' => 1, 'max_values' => count($blocs),
-                'options' => array_map(function ($c) {
-                    return ['label' => $c['label'], 'value' => (string)$c['i'], 'emoji' => ['name' => '⏱️']];
-                }, $blocs),
-            ]]];
-        }
+        // Plus de menu de créneaux ici : il permettait de s'inscrire à un poste SANS
+        // jamais déclarer ses disponibilités, ce qui est exactement ce qu'on veut
+        // empêcher sur un rally. Le choix d'un poste ouvre désormais un modal qui les
+        // réclame (cf. handle_signup). Pour les modifier, on re-choisit son poste : le
+        // modal se rouvre pré-coché. handle_creneaux() reste en place pour les encarts
+        // déjà publiés, qui portent encore l'ancien menu.
         $components = array_merge($components, [
             ['type' => 1, 'components' => [
                 ['type' => 2, 'style' => 1, 'label' => 'Peut-être',      'emoji' => ['name' => '❓'], 'custom_id' => "maybe:{$sid}"],
@@ -1904,6 +1979,27 @@ function respond_update($text) {
 // Et deux façons de porter la valeur : une liste ou un radio renvoient `values`
 // (TABLEAU), un champ texte renvoie `value`. Lire seulement `value` renverrait
 // des jour/heure/durée vides, donc une sortie créée sans date.
+/**
+ * Comme modal_values(), mais renvoie TOUTES les valeurs d'un composant à choix
+ * multiple (modal_values() ne garde que la première, ce qui suffit aux listes
+ * simples du formulaire de sortie mais perdrait trois créneaux sur quatre).
+ */
+function modal_values_multi($body) {
+    $out  = [];
+    $walk = function ($c) use (&$out, &$walk) {
+        if (!is_array($c)) return;
+        if (isset($c['component'])) { $walk($c['component']); return; }
+        if (isset($c['components']) && is_array($c['components'])) {
+            foreach ($c['components'] as $x) $walk($x);
+            return;
+        }
+        $id = (string)($c['custom_id'] ?? '');
+        if ($id !== '' && isset($c['values']) && is_array($c['values'])) $out[$id] = $c['values'];
+    };
+    foreach ($body['data']['components'] ?? [] as $c) $walk($c);
+    return $out;
+}
+
 function modal_values($body) {
     $out  = [];
     $walk = function ($c) use (&$out, &$walk) {

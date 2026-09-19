@@ -1011,7 +1011,7 @@ function creneaux_resume($indices, $creneaux) {
  * l'effectif mais ne comblent aucun poste : c'est à l'organisateur d'arbitrer.
  */
 function creneau_couverture($signups, $i) {
-    $presents = 0; $maybe = 0; $transp = 0; $moiss = 0; $pilotes = 0;
+    $presents = 0; $maybe = 0; $transp = 0; $moiss = 0; $pilotes = 0; $noms = [];
     foreach ($signups as $su) {
         $cr = $su['creneaux'] ?? null;
         // Inscription sans créneau déclaré : compte partout. Un joueur qui ne précise
@@ -1021,6 +1021,7 @@ function creneau_couverture($signups, $i) {
         if ($statut === 'maybe') { $maybe++; continue; }
         if ($statut !== 'present') continue;
         $presents++;
+        $noms[] = $su['name'] ?? '?';
         $p = $su['poste'] ?? '';
         if ($p === 'transporteur') $transp++;
         elseif ($p === 'moissonneur') $moiss++;
@@ -1033,7 +1034,7 @@ function creneau_couverture($signups, $i) {
     if (!$transp)     $manques[] = 'transporteur';
     if (!$moiss)      $manques[] = 'moissonneur';
     if ($pilotes < 4) $manques[] = (4 - $pilotes) . ' pilote' . (4 - $pilotes > 1 ? 's' : '');
-    return ['presents' => $presents, 'maybe' => $maybe, 'manques' => $manques];
+    return ['presents' => $presents, 'maybe' => $maybe, 'manques' => $manques, 'noms' => $noms];
 }
 
 // Formate la durée pour l'affichage : "2" → "2h" ; "1h30"/"2h" → tels quels ; vide → "".
@@ -1655,15 +1656,32 @@ function build_sortie_message($sortie) {
         foreach ($creneaux as $c) {
             $cov = creneau_couverture($signups, $c['i']);
             if (!$cov['manques']) $complets++;
-            // UNE entrée par créneau, et RIEN QUE le verdict : la couverture répond à
-            // « est-ce que ça tient », pas à « qui est là ». Le QUI vit dans les colonnes
-            // de postes, où chacun retrouve sa plage derrière son nom (choix de la cheffe
-            // de guilde, qui lit l'encart plus souvent que quiconque).
+            // DEUX lectures du même créneau, et c'est voulu : la ligne de verdict répond
+            // à « est-ce que ça tient », les présents juste en dessous à « qui est là », et
+            // les colonnes de postes gardent la plage derrière chaque nom pour que chacun
+            // relise ce qu'il a coché. Redondant sur le papier, mais les trois questions se
+            // posent à des moments différents — et l'organisateur ne veut pas dérouler
+            // l'encart pour savoir qui couvre midi.
             $marque = !$cov['manques'] ? '✅' : ($cov['presents'] * 2 < RALLY_MINIMUM ? '✖' : '⚠');
             $effectif = $cov['presents'] . ' présent' . ($cov['presents'] > 1 ? 's' : '')
                       . ($cov['maybe'] ? ' (+' . $cov['maybe'] . ' ?)' : '');
             $verdict  = !$cov['manques'] ? 'complet' : 'manque ' . implode(', ', $cov['manques']);
             $lignes[] = $marque . ' **' . $c['court'] . '** · ' . $effectif . ' — ' . $verdict;
+            if ($cov['noms']) {
+                // Un champ d'encart plafonne à 1024 caractères et un message rejeté l'est
+                // EN ENTIER : le budget de noms se partage donc entre tous les créneaux.
+                // strlen() et non mb_strlen() : pas de mbstring sur le serveur (cf. AGENTS.md).
+                // On compte des octets, ce qui tronque un cheveu plus tôt sur les prénoms
+                // accentués — sans conséquence pour un garde-fou.
+                $budget = max(60, intdiv(900, count($creneaux)) - 80);
+                $liste = implode(', ', $cov['noms']);
+                if (strlen($liste) > $budget) {
+                    $court = [];  $n = 0;
+                    foreach ($cov['noms'] as $nom) { if (strlen(implode(', ', $court) . $nom) > $budget - 20) break; $court[] = $nom; $n++; }
+                    $liste = implode(', ', $court) . ' … +' . (count($cov['noms']) - $n);
+                }
+                $lignes[] = '*' . $liste . '*';
+            }
         }
         $fields[] = [
             'name'   => '⏱️ Couverture — ' . $complets . ' créneau' . ($complets > 1 ? 'x complets' : ' complet') . ' sur ' . count($creneaux),

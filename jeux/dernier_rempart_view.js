@@ -28,16 +28,22 @@
         // tailles et de vitesses qui donne la profondeur, et les quelques éclats vifs
         // qui donnent le scintillement du soleil rasant sur les grains.
         const grains = [];
-        for (let i = 0; i < 190; i++) {
-            const eclat = r() < .26;                       // grain pris dans la lumière
+        for (let i = 0; i < 330; i++) {
+            const eclat = r() < .3;                        // grain pris dans la lumière
+            // Grains SOUS le pixel et allongés dans le sens du vent : c'est la taille et la
+            // traînée qui disent « sable ». Un point rond avec un halo dit « luciole ».
+            const taille = (eclat ? .75 : .55) + r() * .5;
             grains.push({
                 x: r() * 960, y: 26 + r() * 570,
-                v: (eclat ? 14 : 7) + r() * 38,
-                taille: eclat ? 1.4 + r() * 1.2 : (r() < .75 ? .8 : 1.4),
-                a: eclat ? .6 + r() * .4 : .18 + r() * .34,
+                v: (eclat ? 14 : 7) + r() * 40,
+                lx: taille * (1.7 + r() * 1.2),            // étiré par la course
+                ly: taille * .75,
+                a: eclat ? .62 + r() * .38 : .22 + r() * .34,
                 eclat,
                 phase: r() * 6.283,
-                freq: eclat ? 2.4 + r() * 3.6 : .8 + r() * 1.4   // les éclats battent plus vite
+                // Les éclats battent VITE : un grain de sable accroche le soleil un instant
+                // en tournant sur lui-même, il ne respire pas lentement.
+                freq: eclat ? 5 + r() * 7 : .8 + r() * 1.4
             });
         }
         const cretes = [];          // crêtes de dunes proches, balayées par le vent
@@ -361,26 +367,17 @@
             // dégradé radial — cent cinquante dégradés par image, c'est un téléphone à genoux.
             for (const gr of sk.grains) {
                 const battement = gr.eclat
-                    ? .28 + .72 * Math.pow((1 + Math.sin(t * gr.freq + gr.phase)) / 2, 2)
+                    ? .16 + .84 * Math.pow((1 + Math.sin(t * gr.freq + gr.phase)) / 2, 3)
                     : .55 + .45 * Math.sin(t * gr.freq + gr.phase);
                 const rasance = .58 + .42 * Math.min(1, Math.max(0, (gr.y - 90) / 380));
                 const alpha = gr.a * battement * rasance * (.85 + sk.rafale * .8);
                 if (alpha < .02) continue;
-                if (gr.eclat) {
-                    // Halo + cœur en disques : un grain qui accroche le soleil n'est pas un
-                    // carré, et à deux pixels de côté ça se voit. Deux arcs par éclat restent
-                    // bon marché — c'est le dégradé radial qu'il fallait éviter, pas le tracé.
-                    c.globalAlpha = alpha * .22;
-                    c.fillStyle = '#ffdca6';
-                    c.beginPath(); c.arc(gr.x, gr.y, gr.taille * 2.3, 0, Math.PI * 2); c.fill();
-                    c.globalAlpha = Math.min(1, alpha * 1.2);
-                    c.fillStyle = '#fff4d8';
-                    c.beginPath(); c.arc(gr.x, gr.y, gr.taille * .75, 0, Math.PI * 2); c.fill();
-                } else {
-                    c.globalAlpha = alpha;
-                    c.fillStyle = '#ffd18a';
-                    c.fillRect(gr.x, gr.y, gr.taille, gr.taille);
-                }
+                // PAS de halo : c'est lui qui faisait lire des lucioles. Un grain de sable
+                // dans la lumière rasante est un éclat sec, pas une source lumineuse. Le
+                // scintillement vient du battement d'opacité, pas d'une auréole.
+                c.globalAlpha = gr.eclat ? Math.min(1, alpha * 1.2) : alpha;
+                c.fillStyle = gr.eclat ? '#ffe7b4' : '#ffd18a';
+                c.fillRect(gr.x, gr.y, gr.lx, gr.ly);
             }
             c.globalAlpha = 1;
         }

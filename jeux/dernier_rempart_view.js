@@ -61,6 +61,13 @@
                     if (e.type === 'impact') this.impactFlash = .35;
                 }
                 if (e.type === 'repair') this.labels.push({ x: e.x, y: 505, text: 'RÉPARATION +1', life: 1.7, color: '#e8c88a' });
+                // Fin de vague : les deux bonus sont annoncés SÉPARÉMENT. C'est le seul moment
+                // où le joueur peut relier ce qu'il a fait à ce qu'il a gagné.
+                if (e.type === 'bonus') {
+                    this.labels.push({ x: 480, y: 252, text: 'TENUE DE POSITION  +' + e.tenue, life: 2.4, color: '#f5deb3' });
+                    this.labels.push({ x: 480, y: 276, text: 'PRÉCISION  +' + e.precision + '   (' + Math.round(e.taux * 100) + ' % de tirs utiles)',
+                        life: 2.4, color: e.taux >= .75 ? '#cda434' : e.taux >= .5 ? '#b7a077' : '#c4553c' });
+                }
                 if (e.type === 'wave') {
                     this.banner = 'VAGUE ' + String(e.wave).padStart(2, '0') + '  /  ' + e.pattern;
                     this.subtitle = e.wave === 2 ? 'DARDS : PROJECTILES À HAUTE VITESSE' : e.wave === 3 ? 'OGIVES À SOUS-MUNITIONS : INTERCEPTEZ EN ALTITUDE' : e.wave === 4 ? 'OBUS BLINDÉS : DEUX EXPLOSIONS DISTINCTES' : e.wave % 5 === 0 ? 'SATURATION : SALVE RENFORCÉE' : 'INTERCEPTEZ · ENCHAÎNEZ · TENEZ';

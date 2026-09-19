@@ -152,11 +152,13 @@
         $('end-score').textContent = format(game.score);
         $('end-title').textContent = game.score > best && game.score > 0 ? 'Belle résistance.' : 'Une dernière salve…';
         $('stats').replaceChildren(); $('stats').className = 'stats result-grid';
-        for(const [value,label] of [[game.wave,'Vague atteinte'],[Math.floor(game.time)+' s','Résistance'],[game.stats.kills,'Interceptions'],[game.stats.usefulShots+'/'+game.stats.shots,'Tirs utiles'],[game.stats.bestChain,'Meilleure chaîne'],[game.stats.overheats,'Surchauffes']]) {
+        for(const [value,label] of [[game.wave,'Vague atteinte'],[Math.floor(game.time)+' s','Résistance'],[game.stats.kills,'Interceptions'],[game.stats.usefulShots+'/'+game.stats.shots,'Tirs utiles'],[game.stats.bestChain,'Meilleure chaîne'],[game.stats.overheats,'Surchauffes'],['+'+game.stats.holdBonus,'Tenue de position'],['+'+game.stats.precisionBonus,'Bonus de précision']]) {
             const item=document.createElement('div'),number=document.createElement('b'),caption=document.createElement('small');
             number.textContent=value;caption.textContent=label;item.append(number,caption);$('stats').append(item);
         }
-        $('advice').textContent = game.stats.overheats >= 2 ? 'Espacez vos tirs : les surchauffes vous privent de défense. Visez le passage d’un groupe avec un seul tir.' : game.pulse >= 100 ? 'Votre impulsion était prête : Espace aurait pu dégager le ciel.' :
+        const tauxFinal = game.stats.shots ? game.stats.usefulShots / game.stats.shots : 0;
+        $('advice').textContent = tauxFinal < .5 ? 'Un tir sur deux n’a rien touché : le bonus de précision est au carré, viser mieux vaut plus que tirer plus.' :
+            game.stats.overheats >= 2 ? 'Espacez vos tirs : les surchauffes vous privent de défense. Visez le passage d’un groupe avec un seul tir.' : game.pulse >= 100 ? 'Votre impulsion était prête : Espace aurait pu dégager le ciel.' :
             game.stats.bestChain < 4 ? 'Visez les groupes : une seule explosion peut arrêter une salve entière.' :
             'Les charges violettes se divisent. Les intercepter en altitude évite deux menaces rapides.';
         lastResult = { id:runId,score:game.score,duration:Math.floor(game.time),saved:false };

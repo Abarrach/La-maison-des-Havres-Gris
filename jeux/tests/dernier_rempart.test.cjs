@@ -26,7 +26,8 @@ test('réaction en chaîne : score, recharge et compteur partagés',()=>{
     const g=empty();g.pulse=0;g.spawn({x:300,y:200,target:0});g.spawn({x:340,y:200,target:0});g.spawn({x:380,y:200,target:0});
     for(const e of g.enemies){e.vx=0;e.vy=0;}
     g.explode(300,200,undefined,15);advance(g,.5);
-    assert.equal(g.stats.kills,3);assert.equal(g.stats.bestChain,3);assert.equal(g.score,450);assert.equal(g.pulse,12);
+    // 100×1+0  puis  100×1+50  puis  100×2+100  (palier de chaîne tous les 2, plafond ×4)
+    assert.equal(g.stats.kills,3);assert.equal(g.stats.bestChain,3);assert.equal(g.score,550);assert.equal(g.pulse,12);
 });
 test('blindage : une explosion ne frappe qu’une fois',()=>{
     const g=empty();g.spawn({x:300,y:200,target:0,kind:'armored'});g.enemies[0].vx=0;g.enemies[0].vy=0;
@@ -48,7 +49,8 @@ test('impulsion : détruit le blindage, pas de recharge autoréférente',()=>{
 });
 test('réparation limitée et bâtiments détruits jamais ressuscités',()=>{
     const g=empty();g.cities[0].hp=0;g.cities[1].hp=1;g.cities[2].hp=2;
-    g.nextWave();assert.deepEqual(g.cities.map(c=>c.hp),[0,2,2]);assert.equal(g.score,300);
+    // Tenue de position : 2 bâtiments debout × 75 × vague 1. Précision nulle : aucun tir.
+    g.nextWave();assert.deepEqual(g.cities.map(c=>c.hp),[0,2,2]);assert.equal(g.score,150);
 });
 test('pause logique / fin : aucun tir ni progression après game over',()=>{
     const g=empty();g.cities.forEach(c=>c.hp=0);g.step(.1);assert.equal(g.state,'over');
@@ -130,3 +132,53 @@ test('équilibrage : inaction rapidement sanctionnée, visée récompensée',()=
 });
 console.log(JSON.stringify(report,null,2));
 console.log(passed+' tests passés');
+
+test('valeur par type : la difficulté paie, pas l’épaisseur',()=>{
+    const seul=(kind)=>{const g=empty();g.spawn({x:300,y:200,target:0,kind});
+        for(const e of g.enemies){e.vx=0;e.vy=0;}
+        g.explode(300,200,undefined,15);advance(g,.5);
+        if(kind==='armored'){g.explode(300,200,undefined,15);advance(g,.5);}   // 2 explosions
+        return g.score;};
+    assert.equal(seul('normal'),100);
+    assert.equal(seul('fast'),150);      // 48 % plus rapide : la cible la plus dure
+    assert.equal(seul('armored'),200);   // 2 tirs -> 100 par tir, à parité avec un normal
+    assert.equal(seul('split'),250);
+});
+test('ogive : intercepter en altitude paie STRICTEMENT plus que laisser faire',()=>{
+    const intercepte=empty();intercepte.spawn({x:300,y:150,target:0,kind:'split'});
+    for(const e of intercepte.enemies){e.vx=0;e.vy=0;}
+    intercepte.explode(300,150,undefined,15);advance(intercepte,.5);
+    assert.equal(intercepte.enemies.length,0);
+
+    const separe=empty();separe.spawn({x:300,y:300,target:0,kind:'split'});advance(separe,.05);
+    assert.equal(separe.enemies.length,2);
+    for(const e of separe.enemies){e.vx=0;e.vy=0;}
+    separe.explode(300,separe.enemies[0].y,undefined,40);advance(separe,.5);
+    assert.equal(separe.stats.kills,2);
+    // Les deux débris réunis (60 chacun, avec bonus de chaîne) doivent rester sous 250 :
+    // sinon la légende « interceptez avant la séparation » paie l'inverse de ce qu'elle dit.
+    assert.ok(separe.score < intercepte.score,
+        'laisser se séparer rapporte '+separe.score+' contre '+intercepte.score+' en interceptant');
+});
+test('sauvetage : le bonus suit le multiplicateur de chaîne',()=>{
+    const g=empty();
+    for(const x of [300,340,380]) g.spawn({x,y:450,target:0});    // y > 410 : zone de sauvetage
+    for(const e of g.enemies){e.vx=0;e.vy=0;}
+    g.explode(340,450,undefined,60);advance(g,.5);
+    assert.equal(g.stats.kills,3);assert.equal(g.stats.saves,3);
+    // 100×1+50×1  ·  100×1+50×1+50  ·  100×2+50×2+100   =  150 + 200 + 400
+    assert.equal(g.score,750);
+});
+test('fin de vague : tenue de position et précision, deux lignes distinctes',()=>{
+    const g=empty();
+    g.stats.shots=10;g.stats.usefulShots=9;        // 90 % de tirs utiles sur la vague
+    const avant=g.score;g.nextWave();
+    const bonus=g.drainEvents().find(e=>e.type==='bonus');
+    assert.equal(bonus.tenue,3*75*1);              // 3 bâtiments debout, vague 1
+    assert.equal(bonus.precision,Math.round(400*.9*.9));
+    assert.equal(g.score-avant,bonus.tenue+bonus.precision);
+    // La tenue suit le numéro de vague : survivre profond ne paie plus comme la vague 1.
+    g.stats.shots=20;g.stats.usefulShots=18;g.nextWave();
+    const bonus2=g.drainEvents().find(e=>e.type==='bonus');
+    assert.equal(bonus2.tenue,3*75*2);
+});

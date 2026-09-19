@@ -8,6 +8,19 @@
     const LAUNCHERS = Object.freeze([{x:70,y:558},{x:385,y:604},{x:890,y:558}].map(Object.freeze));
     const BARREL = 30;
     const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+    // Barème par type : ce qui était DIFFICILE, pas ce qui était gros.
+    //  - `fast` va 48 % plus vite que le reste : c'est la cible la plus dure à anticiper.
+    //  - `armored` demande DEUX explosions : à 200 il rend 100 par tir, comme un normal.
+    //    (à 150 il en rendait 75, soit le pire rendement du jeu pour la cible la plus
+    //    impressionnante — un piège à points.)
+    //  - `split` intercepté en altitude doit battre le fait de le laisser se séparer,
+    //    sinon la légende du jeu (« interceptez avant la séparation ») paie l'inverse
+    //    de ce qu'elle demande. 250 contre 2 × 60 : la consigne et le barème s'accordent.
+    const VALEUR = { normal: 100, fast: 150, split: 250, armored: 200 };
+    const VALEUR_DEBRIS = 60;   // enfant d'une ogive : un débris, pas une cible neuve
+    // Plafond de chaîne calé sur ce qui est ATTEIGNABLE. L'ancien ×6 exigeait seize
+    // victimes d'une seule explosion ; les meilleures parties plafonnent vers cinq.
+    const CHAINE_PALIER = 2, CHAINE_MAX = 4;
     function seeded(seed) {
         let n = seed >>> 0;
         return () => { n += 0x6D2B79F5; let t = n; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; };
@@ -27,7 +40,8 @@
             this.heat = 0; this.overheated = false; this.coolingDelay = 0;
             this.events = []; this.schedule = []; this.nextId = 1;
             this.cities = [190, 480, 770].map((x, i) => ({ x, hp: 3, name: ['EAU', 'ÉNERGIE', 'HANGAR'][i] }));
-            this.stats = { kills: 0, shots: 0, bestChain: 0, saves: 0, damage: 0, pulses: 0, usefulShots: 0, chainBonus: 0, overheats: 0 };
+            this.stats = { kills: 0, shots: 0, bestChain: 0, saves: 0, damage: 0, pulses: 0, usefulShots: 0, chainBonus: 0, overheats: 0, holdBonus: 0, precisionBonus: 0 };
+            this.waveShots = 0; this.waveUseful = 0;   // repères pour la précision de la vague
             this.nextWave();
         }
         emit(type, data = {}) { this.events.push({ type, ...data }); }
@@ -35,9 +49,21 @@
         nextWave() {
             if (this.wave) {
                 const alive = this.cities.filter(c => c.hp > 0);
-                const bonus = alive.length * 150;
+                // Deux lignes SÉPARÉES et annoncées comme telles : le joueur doit voir ce que
+                // chacun de ses choix lui rapporte. Un bonus unique ne dit rien.
+                //  - Tenue : suit le numéro de vague. À 150 fixe, survivre à la vague 11
+                //    (62 missiles) payait comme survivre à la vague 1 (22 missiles).
+                //  - Précision : le « % utiles » était affiché mais n'entrait jamais dans le
+                //    score. Au carré, pour récompenser la maîtrise et non la moyenne :
+                //    90 % → 324, 60 % → 144, 40 % → 64.
+                const tenue = alive.length * 75 * this.wave;
+                const tirs = this.stats.shots - this.waveShots;
+                const taux = tirs > 0 ? (this.stats.usefulShots - this.waveUseful) / tirs : 0;
+                const precision = Math.round(400 * taux * taux);
+                const bonus = tenue + precision;
+                this.stats.holdBonus += tenue; this.stats.precisionBonus += precision;
                 this.score += bonus;
-                this.emit('bonus', { bonus });
+                this.emit('bonus', { bonus, tenue, precision, taux });
                 // Un seul point réparé, jamais de résurrection : les erreurs restent coûteuses.
                 if (alive.length) {
                     const weakest = alive.reduce((a, b) => a.hp <= b.hp ? a : b);
@@ -46,6 +72,7 @@
                 this.energy = Math.min(12, this.energy + 3);
             }
             this.wave++; this.waveTime = 0;
+            this.waveShots = this.stats.shots; this.waveUseful = this.stats.usefulShots;
             this.waveDuration = Math.max(12, 18 - Math.max(0, this.wave - 4) * .35);
             const count = Math.min(78, 18 + this.wave * 4 + (this.wave % 5 === 0 ? 8 : 0));
             const patterns = ['ÉVENTAIL', 'TIRS CROISÉS', 'SIÈGE'];
@@ -77,7 +104,8 @@
             const dist = Math.hypot(tx - x, GROUND - y);
             this.enemies.push({ id: this.nextId++, x, y, px: x, py: y, sx: x, sy: y,
                 vx: (tx - x) / dist * speed, vy: (GROUND - y) / dist * speed,
-                target, kind, hp: kind === 'armored' ? 2 : 1, splitY: 205 + this.random() * 70, dead: false });
+                target, kind, debris: !!spec.debris,
+                hp: kind === 'armored' ? 2 : 1, splitY: 205 + this.random() * 70, dead: false });
         }
         fire(x, y) {
             if (this.state !== 'playing' || !Number.isFinite(x) || !Number.isFinite(y) || this.cooldown > 0 || this.energy < 1 || this.overheated) return false;
@@ -110,9 +138,12 @@
             enemy.dead = true; chain.kills++; this.stats.kills++;
             this.stats.bestChain = Math.max(this.stats.bestChain, chain.kills);
             const late = enemy.y > 410;
-            const multi = Math.min(6, 1 + Math.floor((chain.kills - 1) / 3));
+            const multi = Math.min(CHAINE_MAX, 1 + Math.floor((chain.kills - 1) / CHAINE_PALIER));
             const efficiencyBonus = chain.emergency ? 0 : Math.min(250, (chain.kills - 1) * 50);
-            const points = chain.emergency ? 25 : (enemy.kind === 'armored' ? 150 : enemy.kind === 'split' ? 125 : 100) * multi + (late ? 50 : 0) + efficiencyBonus;
+            const valeur = enemy.debris ? VALEUR_DEBRIS : (VALEUR[enemy.kind] || VALEUR.normal);
+            // Le sauvetage suit le multiplicateur : à +50 fixe il devenait du bruit dès que
+            // la chaîne montait, alors que c'est justement l'interception la plus risquée.
+            const points = chain.emergency ? 25 : valeur * multi + (late ? 50 * multi : 0) + efficiencyBonus;
             this.stats.chainBonus += efficiencyBonus;
             this.score += points;
             if (!chain.emergency) {
@@ -165,8 +196,8 @@
                 if (e.dead) continue;
                 if (e.kind === 'split' && e.y >= e.splitY) {
                     e.dead = true;
-                    children.push({ x: e.x - 5, y: e.y, target: (e.target + 2) % 3, kind: 'fast' },
-                        { x: e.x + 5, y: e.y, target: (e.target + 1) % 3, kind: 'fast' });
+                    children.push({ x: e.x - 5, y: e.y, target: (e.target + 2) % 3, kind: 'fast', debris: true },
+                        { x: e.x + 5, y: e.y, target: (e.target + 1) % 3, kind: 'fast', debris: true });
                     this.emit('split', { x: e.x, y: e.y });
                 } else if (e.y >= GROUND) {
                     e.dead = true;

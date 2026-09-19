@@ -2119,9 +2119,15 @@ function creneauxSortie(sortie) {
 
 // Un inscrit SANS créneau déclaré est réputé disponible partout (même règle que Discord :
 // les inscriptions antérieures au mode rally ne doivent pas disparaître de la grille).
+// parseInt et non Number : PHP relit ces index avec intval(), qui rend 2 sur « 2x »
+// et 0 sur une valeur illisible, là où Number() rendrait NaN. La grille perdrait
+// alors des gens que l'encart Discord compte. Le PHP fait foi : c'est lui qui écrit.
+// Verrouillé par epice/creneaux_parite.test.cjs, qui a trouvé exactement ce cas.
+const versIndexCreneau = v => { const n = parseInt(v, 10); return Number.isNaN(n) ? 0 : n; };
+
 function dispoCreneau(su, i) {
   const cr = su && su.creneaux;
-  return !Array.isArray(cr) || cr.map(Number).indexOf(i) !== -1;
+  return !Array.isArray(cr) || cr.map(versIndexCreneau).indexOf(i) !== -1;
 }
 
 function creneauCouverture(signups, i) {

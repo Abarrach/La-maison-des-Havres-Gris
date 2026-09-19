@@ -202,6 +202,15 @@ Tous constatés en production ou en test, pas théoriques.
 - Corollaire de diagnostic : **deux journaux, deux étages**. Rien dans
   `discord_sortie.log` mais l'interaction part quand même → le problème est en amont,
   dans le routage, pas dans le handler.
+- ⚠ **Le découpage d'un rally en créneaux est écrit DEUX FOIS** : en PHP dans
+  `epice/discord_sortie.php` (`creneaux_sortie` / `creneau_couverture`, ce que Discord
+  affiche et ce qui ÉCRIT les données) et en JS dans `epice/debrief.html`
+  (`creneauxSortie` / `creneauCouverture`, la grille de l'onglet Assignation).
+  `data-api.php` ne peut pas inclure `discord_sortie.php`, qui s'exécute au chargement.
+  **Toucher à l'un des deux → lancer `node epice/creneaux_parite.test.cjs`**, qui confronte
+  les deux implémentations sur 154 cas communs. En cas de divergence, **le PHP fait foi**.
+  Le test lit les constantes `RALLY_*` dans le fichier au lieu de les redéfinir, donc un
+  seuil changé d'un seul côté le fait rougir.
 
 ### Mini-jeux et scores
 - **Un plafond `max_score` trop bas fait disparaître un record en silence** : la

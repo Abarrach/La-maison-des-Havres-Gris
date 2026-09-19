@@ -403,7 +403,13 @@ if (!defined('DUNE_INTERACTIONS_DISPATCHED')) {
 header('Content-Type: application/json; charset=utf-8');
 $body = json_decode($raw, true) ?? [];
 $type = $body['type'] ?? 0;
-dlog('signature valide, type=' . $type . ($type === 5 ? ' custom_id=' . ($body['data']['custom_id'] ?? '?') : ''));
+// Le custom_id n'était journalisé que pour les modals (type 5). Sur un clic de
+// composant (type 3) on ne savait donc pas QUEL menu ou bouton avait été actionné :
+// impossible de distinguer « le handler a planté » de « l'interaction n'est jamais
+// arrivée ». Les valeurs choisies sont journalisées avec, elles tiennent en peu de place.
+$cidLog = ($type === 3 || $type === 5) ? ' custom_id=' . ($body['data']['custom_id'] ?? '?') : '';
+if ($type === 3 && !empty($body['data']['values'])) $cidLog .= ' values=' . implode(',', (array)$body['data']['values']);
+dlog('signature valide, type=' . $type . $cidLog);
 
 // -- PING : poignée de main de Discord ------------------------
 if ($type === 1) { echo json_encode(['type' => 1]); exit; }
@@ -1250,7 +1256,10 @@ function handle_creneaux($body, $sortieId) {
         unset($su);
     });
     if (!$updated) respond_message("Cette sortie n'existe plus.", true);
-    echo json_encode(['type' => 7, 'data' => build_sortie_message($updated)]);
+    $reponse = json_encode(['type' => 7, 'data' => build_sortie_message($updated)]);
+    dlog('creneaux ' . $user['name'] . ' -> [' . implode(',', $valeurs) . '] · réponse ' . strlen($reponse) . ' octets'
+        . ($reponse === false ? ' · ERREUR json_encode : ' . json_last_error_msg() : ''));
+    echo $reponse;
     exit;
 }
 

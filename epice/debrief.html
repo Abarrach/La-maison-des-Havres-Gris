@@ -315,6 +315,26 @@
     .cren-grid tfoot td { font-size:.68rem; background:var(--surface-2); white-space:normal; }
     .cren-grid tfoot .cren-nom { font-size:.66rem; letter-spacing:.06em; text-transform:uppercase; color:var(--text-muted); }
     .cren-peutetre { color:var(--text-muted); font-weight:400; }
+    /* La tranche EST le selecteur : cliquer l'en-tete d'une colonne compose cette releve. */
+    .cren-grid th.cren-tete { cursor:pointer; user-select:none; }
+    .cren-grid th.cren-tete:hover { color:var(--text); background:var(--accent-glow); }
+    .cren-grid th.cren-actif { background:var(--accent); color:#0A0800; }
+    .cren-pose { font-size:.9em; margin-left:.25rem; opacity:.75; }
+    .cren-grid td.cren-col { background:rgba(200,146,16,0.07); }
+    .cren-grid tfoot td.cren-col { background:rgba(200,146,16,0.13); }
+    .cren-barre { display:flex; align-items:center; justify-content:space-between; gap:.75rem;
+                  flex-wrap:wrap; margin-top:.7rem; padding-top:.6rem; border-top:1px solid var(--border); }
+    .cren-barre-txt { font-size:.75rem; color:var(--text-muted); }
+    .cren-barre-txt strong { color:var(--accent); }
+    .cren-barre-txt em { color:var(--text-faint); font-style:italic; }
+    /* Onglets de creneau de la vue joueur (pas de grille de dispos cote joueur). */
+    .orga-creneaux { display:flex; flex-wrap:wrap; gap:.4rem; margin-bottom:1rem; }
+    .orga-cren { padding:.4rem .8rem; border:1px solid var(--border); border-radius:2px; background:transparent;
+                 color:var(--text-muted); font-family:'Inter',sans-serif; font-size:.72rem; font-weight:700;
+                 letter-spacing:.06em; cursor:pointer; white-space:nowrap; }
+    .orga-cren:hover { color:var(--text); border-color:var(--accent-dim); }
+    .orga-cren.on { background:var(--accent); border-color:var(--accent); color:#0A0800; }
+    .orga-cren-note { font-size:.72rem; color:var(--text-faint); font-style:italic; margin-bottom:.9rem; }
     .cren-verdict-ok { color:#5AB06A; }
     .cren-verdict-warn { color:var(--accent); }
     .cren-verdict-ko { color:#C05040; }
@@ -1922,6 +1942,14 @@ let currentSignups = []; // inscrits Discord de la sortie active (pour l'autocom
 // pas des inscriptions — sans elle on ne saurait pas quelles colonnes afficher.
 let currentSortie = null;
 
+// Compos PAR CRÉNEAU d'un rally : { 0: compo, 2: compo, … }. `currentCompo` reste la
+// compo affichée — c'est LE MÊME OBJET que currentCompos[currentCreneau], jamais une
+// copie, pour que les dizaines de `oninput="currentCompo…"` du builder continuent
+// d'écrire au bon endroit sans qu'on y touche.
+let currentCompos   = {};
+let currentCreneau  = 0;
+let creneauxEnregistres = new Set();   // créneaux déjà revenus du serveur (le reste = nouveau)
+
 // Libellés courts des postes. Défini ici et non dans rosterPop : la grille des créneaux
 // s'en sert aussi, et un catalogue en deux exemplaires finit toujours par diverger
 // (cf. le catalogue des jeux, qui existait en cinq copies).
@@ -2026,7 +2054,7 @@ async function loadAssignBuilder() {
   if (!assignSorties.length) {
     if (bar) bar.style.display = 'none';
     if (actions) actions.style.display = 'none';
-    currentAssignSid = null; currentCompo = null;
+    currentAssignSid = null; currentCompo = null; currentCompos = {}; currentCreneau = 0;
     box.innerHTML = '<div class="empty">Aucune sortie ouverte à assigner.<br>Crée une soirée (ou attends qu\'une te soit attribuée).<br><span style="font-size:.78rem">(les compos clôturées se consultent dans l\'Historique)</span></div>';
     return;
   }
@@ -2061,9 +2089,17 @@ async function loadAssignSortie(sid) {
     }
     if (actions) actions.style.display = 'flex';
     currentAssignSid = sid;
-    currentCompo = normalizeCompo(data.sortie.assignation ? data.sortie.assignation : emptyCompo());
     currentSignups = Array.isArray(data.sortie.signups) ? data.sortie.signups : [];
     currentSortie = data.sortie;
+    currentCompos = { 0: normalizeCompo(data.sortie.assignation ? data.sortie.assignation : emptyCompo()) };
+    creneauxEnregistres = new Set(data.sortie.assignation ? [0] : []);
+    const suivants = data.sortie.assignations || {};
+    Object.keys(suivants).forEach(k => {
+      const i = parseInt(k, 10);
+      if (i > 0 && suivants[k]) { currentCompos[i] = normalizeCompo(suivants[k]); creneauxEnregistres.add(i); }
+    });
+    currentCreneau = 0;
+    currentCompo = currentCompos[0];
     renderAssignBuilder();
   } catch { box.innerHTML = '<div class="empty">Erreur de connexion.</div>'; }
 }
@@ -2172,10 +2208,16 @@ function renderCreneauxGrid() {
   }
 
   let h = `<div class="assign-group"><div class="assign-group-head"><span class="assign-group-title">🕗 Créneaux de disponibilité</span></div>
-    <div class="assign-hint">Qui est là, et quand. Une ligne grisée en italique = « peut-être ». Un inscrit qui n'a coché aucun créneau est compté partout (○) — c'est le cas des inscriptions faites avant le passage en rally.</div>
+    <div class="assign-hint">Qui est là, et quand. Une ligne grisée en italique = « peut-être ». Un inscrit qui n'a coché aucun créneau est compté partout (○) — c'est le cas des inscriptions faites avant le passage en rally.
+    <strong>Clique une tranche pour composer la relève de cette tranche-là.</strong></div>
     <div class="cren-wrap"><table class="cren-grid">
     <thead><tr><th class="cren-nom">Inscrit</th>`;
-  creneaux.forEach(c => { h += `<th title="${escAttr(c.label)}">${esc(c.court)}</th>`; });
+  creneaux.forEach(c => {
+    const actif = c.i === currentCreneau;
+    const pose  = !!currentCompos[c.i];
+    h += `<th class="cren-tete${actif ? ' cren-actif' : ''}" title="${escAttr(c.label + (actif ? ' — compo affichée' : ' — cliquer pour composer cette tranche'))}"
+             onclick="basculerCreneau(${c.i})">${esc(c.court)}${pose ? '<span class="cren-pose" title="Compo posée">•</span>' : ''}</th>`;
+  });
   h += `</tr></thead><tbody>`;
 
   gens.forEach(su => {
@@ -2184,8 +2226,9 @@ function renderCreneauxGrid() {
     const tag = POSTE_SHORT[su.poste || ''] ? `<span class="cren-poste">${esc(POSTE_SHORT[su.poste])}</span>` : '';
     h += `<tr class="${maybe ? 'cren-maybe' : ''}"><td class="cren-nom">${maybe ? '❓ ' : ''}${esc(su.name)}${tag}</td>`;
     creneaux.forEach(c => {
-      if (libre) h += `<td class="cren-libre" title="Aucun créneau déclaré : compté partout">○</td>`;
-      else h += dispoCreneau(su, c.i) ? `<td class="cren-on">✓</td>` : `<td class="cren-off">·</td>`;
+      const col = c.i === currentCreneau ? ' cren-col' : '';
+      if (libre) h += `<td class="cren-libre${col}" title="Aucun créneau déclaré : compté partout">○</td>`;
+      else h += dispoCreneau(su, c.i) ? `<td class="cren-on${col}">✓</td>` : `<td class="cren-off${col}">·</td>`;
     });
     h += `</tr>`;
   });
@@ -2193,7 +2236,7 @@ function renderCreneauxGrid() {
   h += `</tbody><tfoot><tr><td class="cren-nom">Effectif</td>`;
   creneaux.forEach(c => {
     const cov = creneauCouverture(currentSignups, c.i);
-    h += `<td>${cov.presents}${cov.maybe ? ` <span class="cren-peutetre">+${cov.maybe}&nbsp;?</span>` : ''}</td>`;
+    h += `<td class="${c.i === currentCreneau ? 'cren-col' : ''}">${cov.presents}${cov.maybe ? ` <span class="cren-peutetre">+${cov.maybe}&nbsp;?</span>` : ''}</td>`;
   });
   h += `</tr><tr><td class="cren-nom">Verdict</td>`;
   creneaux.forEach(c => {
@@ -2201,13 +2244,57 @@ function renderCreneauxGrid() {
     // Mêmes seuils que l'encart Discord : complet / il manque du monde / trop juste.
     const cls = !cov.manques.length ? 'cren-verdict-ok' : (cov.presents * 2 < RALLY_MINIMUM ? 'cren-verdict-ko' : 'cren-verdict-warn');
     const txt = !cov.manques.length ? '✅ complet' : (cls === 'cren-verdict-ko' ? '✖ ' : '⚠ ') + 'manque ' + cov.manques.join(', ');
-    h += `<td class="${cls}">${esc(txt)}</td>`;
+    h += `<td class="${cls}${c.i === currentCreneau ? ' cren-col' : ''}">${esc(txt)}</td>`;
   });
-  h += `</tr></tfoot></table></div></div>`;
+  h += `</tr></tfoot></table></div>`;
+
+  // Ce qui suit dans la page (Commandement, Récolte, Défense…) compose CE créneau et
+  // pas un autre : le dire ici, juste sous la grille, évite d'éditer 14–16 en croyant
+  // travailler sur le matin.
+  const ici = creneaux[currentCreneau] || creneaux[0];
+  const prec = currentCreneau > 0 ? creneaux[currentCreneau - 1] : null;
+  const neuf = !creneauxEnregistres.has(currentCreneau);
+  h += `<div class="cren-barre">
+    <span class="cren-barre-txt">Compo affichée : <strong>${esc(ici.label)}</strong>${
+      neuf && prec ? ' <em>— reprise du créneau précédent, ajuste les relèves</em>' : (neuf ? ' <em>— nouvelle compo</em>' : '')}</span>
+    ${prec ? `<button class="btn-mini btn-mini-add" onclick="recopierCreneauPrecedent()" data-tip="Remplace la compo de ce créneau par celle de ${escAttr(prec.court)}">⟲ Recopier ${esc(prec.court)}</button>` : ''}
+  </div></div>`;
   return h;
 }
 
+// Bascule le builder sur un autre créneau. Un créneau jamais ouvert est PRÉ-REMPLI par
+// copie du dernier créneau composé : une relève se règle en remplaçant deux ou trois
+// noms, pas en ressaisissant quatre fois la même compo pour une journée de 8 h.
+function basculerCreneau(i, muet) {
+  i = parseInt(i, 10) || 0;
+  if (!currentCompos[i]) {
+    let source = null;
+    for (let j = i - 1; j >= 0; j--) if (currentCompos[j]) { source = currentCompos[j]; break; }
+    currentCompos[i] = source ? normalizeCompo(JSON.parse(JSON.stringify(cleanCompo(source)))) : emptyCompo();
+  }
+  currentCreneau = i;
+  currentCompo   = currentCompos[i];
+  if (!muet) renderAssignBuilder();
+}
+
+async function recopierCreneauPrecedent() {
+  const creneaux = creneauxSortie(currentSortie);
+  const prec = creneaux[currentCreneau - 1];
+  if (!prec || !currentCompos[prec.i]) return;
+  if (!(await uiConfirm(`Remplacer la compo de ${creneaux[currentCreneau].court} par celle de ${prec.court} ? Les ajustements faits sur ce créneau seront perdus.`,
+        { title: 'Recopier le créneau précédent', okLabel: 'Recopier', danger: true }))) return;
+  currentCompos[currentCreneau] = normalizeCompo(JSON.parse(JSON.stringify(cleanCompo(currentCompos[prec.i]))));
+  currentCompo = currentCompos[currentCreneau];
+  renderAssignBuilder();
+}
+
 function renderAssignBuilder() {
+  // La durée a pu être raccourcie depuis : ne pas rester sur un créneau disparu. À faire
+  // AVANT de figer `c`, sinon le builder rendrait la compo du créneau qu'on vient de
+  // quitter pendant que la grille en surligne un autre.
+  const creneauxDispo = creneauxSortie(currentSortie);
+  if (creneauxDispo.length && currentCreneau >= creneauxDispo.length) basculerCreneau(0, true);
+
   const c = currentCompo;
   const box = document.getElementById('assign-builder');
   let h = '';
@@ -2569,7 +2656,17 @@ async function saveAssign() {
   if (!currentAssignSid) { note.textContent = 'Aucune sortie sélectionnée.'; return; }
   note.textContent = 'Enregistrement…';
   try {
-    const res = await apiPost('save_assign', { sid: currentAssignSid, assignation: cleanCompo(currentCompo) });
+    // On envoie TOUS les créneaux ouverts, pas seulement celui à l'écran : sur une
+    // journée on passe son temps à comparer 08–10 et 14–16, et un enregistrement
+    // par créneau perdrait le travail de celui qu'on vient de quitter.
+    const paquet = {};
+    Object.keys(currentCompos).forEach(k => { paquet[k] = cleanCompo(currentCompos[k]); });
+    const res = await apiPost('save_assign', {
+      sid: currentAssignSid,
+      assignations: paquet,
+      assignation: paquet[0]        // repli si le serveur n'a pas encore la version créneaux
+    });
+    if (res.ok) Object.keys(currentCompos).forEach(k => creneauxEnregistres.add(parseInt(k, 10)));
     note.textContent = res.ok ? '✓ Compo enregistrée' : ('Erreur : ' + res.error);
     if (res.ok) {
       const warnings = RaidGroups.issues(currentCompo, true);
@@ -2583,6 +2680,7 @@ async function saveAssign() {
 async function resetCompo() {
   if (!(await uiConfirm('Vider tous les rôles et groupes de la compo en cours ? La compo vide sera enregistrée.', { title:'Réinitialiser la compo', okLabel:'Réinitialiser', danger:true }))) return;
   currentCompo = emptyCompo();
+  currentCompos[currentCreneau] = currentCompo;   // la carte doit suivre, sinon on enregistre l'ancienne
   renderAssignBuilder();
   saveAssign();
 }
@@ -2629,21 +2727,67 @@ async function renderOrga() {
 }
 
 // Affiche la compo d'un raid donné (vue publique, compo seule). sid vide → page vide.
+// Sur un rally, la compo n'est plus unique : on clique une tranche horaire, on obtient
+// la relève de cette tranche-là. La grille de disponibilités, elle, reste côté admin —
+// un joueur n'a pas à savoir qui a coché quelles heures.
+let orgaData = null, orgaCreneau = 0;
+
 async function showOrgaSortie(sid) {
   const box = document.getElementById('orga-compo');
   if (!box) return;
+  orgaData = null; orgaCreneau = 0;
   if (!sid) { box.innerHTML = ''; return; }
   box.innerHTML = '<div class="orga-empty">Chargement…</div>';
   try {
     const res = await fetch(`${API}?action=public_sortie&sid=${encodeURIComponent(sid)}`);
     const data = await res.json();
     if (!data.ok) { box.innerHTML = '<div class="orga-empty">Sortie introuvable.</div>'; return; }
-    const meta = data.soiree.date + (data.soiree.zone ? ' — ' + data.soiree.zone : '') + (data.soiree.statut !== 'ouverte' ? ' · clôturée' : '');
-    let h = `<div class="orga-header"><div class="orga-title">${esc(data.soiree.titre)}</div><div class="orga-sub">${esc(meta)}</div></div>`;
-    h += data.assignation ? renderCompoReadonly(data.assignation)
-                          : '<div class="orga-empty">Composition non définie pour ce raid.</div>';
-    box.innerHTML = h;
+    orgaData = data;
+    peindreOrgaCompo();
   } catch { box.innerHTML = '<div class="orga-empty">Erreur de connexion.</div>'; }
+}
+
+// Compo affichée pour un créneau. Un créneau que l'organisateur n'a pas composé
+// n'est PAS vide : il hérite du dernier créneau composé — c'est le sens même d'une
+// relève, on ne change que ce qui change. `source` dit d'où elle vient, pour le dire
+// au joueur plutôt que de lui laisser croire que la compo est propre à sa tranche.
+function orgaCompoCreneau(i) {
+  const suivants = (orgaData && orgaData.assignations) || {};
+  for (let j = i; j >= 0; j--) {
+    const c = j === 0 ? (orgaData && orgaData.assignation) : suivants[j];
+    if (c) return { compo: c, source: j };
+  }
+  return { compo: null, source: -1 };
+}
+
+function orgaChoisirCreneau(i) { orgaCreneau = parseInt(i, 10) || 0; peindreOrgaCompo(); }
+
+function peindreOrgaCompo() {
+  const box = document.getElementById('orga-compo');
+  if (!box || !orgaData) return;
+  const s = orgaData.soiree;
+  const meta = s.date + (s.zone ? ' — ' + s.zone : '') + (s.statut !== 'ouverte' ? ' · clôturée' : '');
+  let h = `<div class="orga-header"><div class="orga-title">${esc(s.titre)}</div><div class="orga-sub">${esc(meta)}</div></div>`;
+
+  const creneaux = creneauxSortie(s);
+  if (creneaux.length) {
+    if (orgaCreneau >= creneaux.length) orgaCreneau = 0;
+    h += `<div class="orga-creneaux">`;
+    creneaux.forEach(c => {
+      h += `<button class="orga-cren${c.i === orgaCreneau ? ' on' : ''}" onclick="orgaChoisirCreneau(${c.i})"
+              data-tip="${escAttr(c.label)}">${esc(c.court)}</button>`;
+    });
+    h += `</div>`;
+    const { compo, source } = orgaCompoCreneau(orgaCreneau);
+    if (compo && source !== orgaCreneau)
+      h += `<div class="orga-cren-note">Même disposition qu'à ${esc(creneaux[source].court)} — rien ne change sur cette tranche.</div>`;
+    h += compo ? renderCompoReadonly(compo)
+               : '<div class="orga-empty">Composition non définie pour ce créneau.</div>';
+  } else {
+    h += orgaData.assignation ? renderCompoReadonly(orgaData.assignation)
+                              : '<div class="orga-empty">Composition non définie pour ce raid.</div>';
+  }
+  box.innerHTML = h;
 }
 
 function orgaName(v) { return v && v.trim() ? `<span class="orga-name">${esc(v)}</span>` : '<span class="orga-name vide">— non assigné —</span>'; }

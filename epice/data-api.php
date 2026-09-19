@@ -91,6 +91,57 @@ function active_sortie_id(array $d): string {
     return '';
 }
 
+// ---- Compos par créneau (rallys) --------------------------------------------
+// Le créneau 0 — et toute sortie qui n'est PAS un rally — vit dans `assignation`,
+// les créneaux suivants dans `assignations`. Asymétrique à dessein : les lecteurs
+// historiques (Manuel de combat, historique, liste des participants, `a_compo`)
+// n'ont rien à apprendre sur les rallys, et surtout chaque compo n'est stockée
+// qu'à UN endroit. Recopier le créneau 0 dans les deux champs pour faire joli
+// ouvrirait exactement la divergence qu'on passe son temps à traquer ailleurs.
+function sortie_compo($s, $i) {
+    $i = (int)$i;
+    if ($i <= 0) return $s['assignation'] ?? null;
+    return $s['assignations'][$i] ?? null;
+}
+
+// Toutes les compos réellement posées, créneau 0 compris.
+function sortie_compos($s): array {
+    $out = [];
+    if (!empty($s['assignation'])) $out[] = $s['assignation'];
+    foreach (($s['assignations'] ?? []) as $c) if (!empty($c)) $out[] = $c;
+    return $out;
+}
+
+// Range les compos reçues de save_assign dans la sortie. Sortie de la boucle du
+// switch pour être testable : c'est la seule transformation du lot qui peut détruire
+// des données, elle ne doit pas vivre noyée dans un case.
+function apply_compos(array $s, array $input): array {
+    // Nouveau client : la carte ENTIÈRE des créneaux, en un seul enregistrement.
+    // Enregistrer créneau par créneau perdrait le travail de celui qu'on vient de
+    // quitter — et sur une journée on passe son temps à les comparer.
+    if (isset($input['assignations']) && is_array($input['assignations'])) {
+        $compos = $input['assignations'];
+        $s['assignation'] = $compos[0] ?? [];
+        $reste = [];
+        foreach ($compos as $k => $v) if ((int)$k > 0 && !empty($v)) $reste[(int)$k] = $v;
+        if ($reste) $s['assignations'] = $reste; else unset($s['assignations']);
+        return $s;
+    }
+    // Ancien client (page ouverte avant le déploiement) : compo unique. On ne touche
+    // PAS à `assignations` — l'écraser effacerait les relèves d'un rally parce que
+    // quelqu'un a laissé un onglet ouvert depuis la veille.
+    $s['assignation'] = $input['assignation'] ?? [];
+    return $s;
+}
+
+// Participants de TOUTE la sortie, créneaux confondus : sur un rally, quelqu'un qui
+// n'a joué que de 14 h à 16 h doit pouvoir déposer son retour comme les autres.
+function roster_from_sortie($s): array {
+    $names = [];
+    foreach (sortie_compos($s) as $c) foreach (roster_from_assign($c) as $n) $names[] = $n;
+    return array_values(array_unique($names));
+}
+
 // Liste dédupliquée des participants à partir de l'assignation (pour la liste déroulante joueur)
 function roster_from_assign($a): array {
     if (!is_array($a)) return [];
@@ -142,7 +193,7 @@ switch ($action) {
         foreach ($d['sorties'] as $s) { if (($s['id'] ?? '') === $id) { $target = $s; break; } }
         if (!$target) out(false, [], 'Aucune soirée ouverte');
         $soiree = ['id'=>$target['id'],'date'=>$target['date'] ?? '','titre'=>$target['titre'] ?? '','zone'=>$target['zone'] ?? '','statut'=>'ouverte'];
-        out(true, ['soiree' => $soiree, 'participants' => roster_from_assign($target['assignation'] ?? null)]);
+        out(true, ['soiree' => $soiree, 'participants' => roster_from_sortie($target)]);
 
     // Retour existant d'un joueur (public — pour pré-remplir / modifier)
     case 'my_debrief':
@@ -288,7 +339,9 @@ switch ($action) {
         if (!epice_owns_sortie($target))
             out(false, [], 'Tu ne peux modifier que la compo de tes propres sorties.');
         foreach ($d['sorties'] as &$s) {
-            if (($s['id'] ?? '') === $sid) { $s['assignation'] = $input['assignation'] ?? []; break; }
+            if (($s['id'] ?? '') !== $sid) continue;
+            $s = apply_compos($s, $input);
+            break;
         }
         unset($s);
         write_data($d);
@@ -344,9 +397,13 @@ switch ($action) {
         $d   = read_data();
         foreach ($d['sorties'] as $s) {
             if ($s['id'] === $sid) {
+                // heure + duree : la vue joueur en déduit le découpage en créneaux,
+                // exactement comme l'encart Discord et la grille d'assignation.
                 out(true, [
-                    'soiree'      => ['titre'=>$s['titre'],'date'=>$s['date'],'zone'=>$s['zone'],'statut'=>$s['statut']],
-                    'assignation' => $s['assignation'] ?? null
+                    'soiree'       => ['titre'=>$s['titre'],'date'=>$s['date'],'zone'=>$s['zone'],'statut'=>$s['statut'],
+                                       'heure'=>$s['heure'] ?? '','duree'=>$s['duree'] ?? ''],
+                    'assignation'  => $s['assignation'] ?? null,
+                    'assignations' => $s['assignations'] ?? null
                 ]);
             }
         }

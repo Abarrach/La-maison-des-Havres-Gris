@@ -211,6 +211,13 @@ Tous constatés en production ou en test, pas théoriques.
   les deux implémentations sur 154 cas communs. En cas de divergence, **le PHP fait foi**.
   Le test lit les constantes `RALLY_*` dans le fichier au lieu de les redéfinir, donc un
   seuil changé d'un seul côté le fait rougir.
+- ⚠ **Une sortie longue a UNE COMPO PAR CRÉNEAU**, et leur rangement est asymétrique
+  **à dessein** : créneau 0 dans `sortie.assignation`, suivants dans `sortie.assignations`.
+  Ne pas « harmoniser » en dupliquant le créneau 0 des deux côtés — les lecteurs
+  historiques (Manuel de combat, historique, participants) n'ont rien à savoir des rallys,
+  et chaque compo ne doit vivre qu'à un endroit. `node epice/compos_creneaux.test.cjs`
+  verrouille le modèle, y compris le fait qu'un client d'avant le déploiement, qui n'envoie
+  que `assignation`, ne doit PAS effacer les relèves.
 
 ### Mini-jeux et scores
 - **Un plafond `max_score` trop bas fait disparaître un record en silence** : la

@@ -19,7 +19,7 @@ Le paquet contient aussi jeux/hub.html et jeux/scores_api.php. **Ce sont des fic
 - API : ajouter l'entrée dernier_rempart dans GAMES, nom Dernier Rempart, plancher max_score 300000 et cooldown 2. Conserver score_ceiling() dynamique existant.
 - Hub : carte, nom du jeu et onglet de classement. La carte Sandwalk est retirée, son jeu et ses scores ne sont pas supprimés.
 
-Envoyer les JS et images AVANT le HTML. Tous les modules sont appelés avec ?v=4. Ne pas envoyer tout le dépôt et ne jamais remplacer jeux/data/, les comptes, les configurations ou les secrets. Le jeu utilise les gardes d'authentification déjà présentes sur le site.
+Envoyer les JS et images AVANT le HTML. Tous les modules sont appelés avec ?v=5. Les tourelles suivent la visée et la batterie centrale est décalée ; envoyer moteur et rendu ensemble pour conserver les mêmes positions de tir. Ne pas envoyer tout le dépôt et ne jamais remplacer jeux/data/, les comptes, les configurations ou les secrets. Le jeu utilise les gardes d'authentification déjà présentes sur le site.
 
 ## Recette indispensable avant promotion à la racine
 

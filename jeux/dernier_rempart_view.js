@@ -9,12 +9,17 @@
             this.canvas = canvas; this.ctx = canvas.getContext('2d'); this.background = background;
             this.buildings = buildings;
             this.battery = battery;
+            this.turrets = new Map();
             this.particles = []; this.labels = []; this.banner = ''; this.bannerLife = 0;
             this.pulseFlash = 0; this.impactFlash = 0; this.aim = null;
             this.reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
         }
         events(events) {
             for (const e of events) {
+                if(e.type === 'fire') {
+                    const t=this.turrets.get(e.launcherX);
+                    if(t){t.angle=e.angle;t.kick=1;}
+                }
                 if (e.type === 'kill' || e.type === 'impact' || e.type === 'armor') {
                     const color = e.type === 'impact' ? '#ff9c6b' : e.type === 'armor' ? '#d5e9f6' : '#ffd693';
                     for (let i = 0; i < (this.reduced ? 3 : e.type === 'impact' ? 32 : 12); i++) {
@@ -41,6 +46,14 @@
             this.particles = this.particles.slice(-420); this.labels = this.labels.slice(-24);
         }
         advance(dt) {
+            for(const t of this.turrets.values()) {
+                if(this.aim) {
+                    const target=Math.atan2(this.aim.y-t.y,this.aim.x-t.x)+Math.PI/2;
+                    const delta=Math.atan2(Math.sin(target-t.angle),Math.cos(target-t.angle));
+                    t.angle+=delta*(1-Math.exp(-24*dt));
+                }
+                t.kick=Math.max(0,t.kick-dt*8);
+            }
             for (const p of this.particles) { p.age += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += dt * 65; }
             this.particles = this.particles.filter(p => p.age < p.life);
             for (const f of this.labels) { f.life -= dt; if (!this.reduced) f.y -= dt * 24; }
@@ -146,6 +159,38 @@
                 this.line([[-4,2],[4,2]],color,3);
             }
         }
+        turret(t, overheated) {
+            const c=this.ctx,x=t.x,y=t.y;
+            // Socle immobile, tête et tubes articulés : ne pas faire tourner le bâtiment entier.
+            c.save();c.translate(x,y);
+            if(this.battery && this.battery.complete && this.battery.naturalWidth>0) {
+                const h=this.battery.naturalHeight,w=this.battery.naturalWidth;
+                c.drawImage(this.battery,0,h*.72,w,h*.28,-38,5,76,22);
+            } else {
+                c.fillStyle='#77664d';c.beginPath();c.moveTo(-35,20);c.lineTo(-26,5);c.lineTo(26,5);c.lineTo(35,20);c.closePath();c.fill();
+            }
+            this.circle(0,0,17,'#c5ac7d','#252827',2);
+            c.save();c.rotate(t.angle);
+            const recoil=this.reduced?0:t.kick*4;
+            const metal=c.createLinearGradient(-15,0,15,0);
+            metal.addColorStop(0,'#292b2a');metal.addColorStop(.32,'#a99b79');metal.addColorStop(.55,'#625d4f');metal.addColorStop(1,'#222627');
+            c.translate(0,recoil);
+            for(const dx of [-8,8]) {
+                c.fillStyle=metal;c.fillRect(dx-4,-30,8,29);
+                c.strokeStyle='#b49d70';c.lineWidth=1;c.strokeRect(dx-4,-30,8,29);
+                for(let j=0;j<4;j++)this.line([[dx-5,-9-j*4],[dx+5,-9-j*4]],'#393c36',2);
+                c.fillStyle='#111918';c.fillRect(dx-3,-31,6,4);
+            }
+            c.fillStyle=metal;c.beginPath();c.moveTo(-16,-7);c.lineTo(-11,-14);c.lineTo(11,-14);c.lineTo(16,-7);c.lineTo(13,13);c.lineTo(-13,13);c.closePath();c.fill();
+            this.line([[-11,7],[11,7]],'#c6aa73',2);
+            this.line([[0,-10],[0,3]],overheated?'#ff7957':'#e8c77e',2);
+            if(t.kick>.45 && !this.reduced) {
+                c.globalAlpha=t.kick;
+                for(const dx of [-8,8])this.line([[dx,-32],[dx,-39]],'#fff0c6',3);
+                c.globalAlpha=1;
+            }
+            c.restore();c.restore();
+        }
         draw(g, active = true) {
             const c = this.ctx;
             c.setTransform(this.canvas.width / 960, 0, 0, this.canvas.height / 640, 0, 0);
@@ -159,15 +204,9 @@
             c.setLineDash([3, 9]); this.line([[20,410],[940,410]], '#edb27325'); c.setLineDash([]);
             this.text('ZONE CRITIQUE', 18, 403, 9, '#d5aa7270', 'left');
             for (let i = 0; i < 3; i++) this.building(g.cities[i], i, g.time);
-            for (const x of [70, 480, 890]) {
-                const y = x === 480 ? 604 : 558;
-                if(this.battery && this.battery.complete && this.battery.naturalWidth>0) {
-                    c.drawImage(this.battery,x-46,y-39,92,68);
-                } else {
-                    c.fillStyle='#796954'; c.beginPath(); c.moveTo(x-31,y+14);c.lineTo(x-23,y-17);c.lineTo(x+23,y-17);c.lineTo(x+31,y+14);c.closePath();c.fill();
-                    for(const dx of [-12,0,12]){c.fillStyle='#181a19';c.fillRect(x+dx-4,y-14,8,14);}
-                }
-                this.line([[x-12,y+18],[x+12,y+18]],g.overheated?'#ff7857':'#d2b77b',2);
+            for (const launcher of g.launchers) {
+                if(!this.turrets.has(launcher.x))this.turrets.set(launcher.x,{...launcher,angle:0,kick:0});
+                this.turret(this.turrets.get(launcher.x),g.overheated);
             }
             for (const s of g.shots) {
                 this.line([[s.sx,s.sy],[s.x,s.y]], '#85ecff40', 1);

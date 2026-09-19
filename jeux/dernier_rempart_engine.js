@@ -5,6 +5,8 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
     'use strict';
     const W = 960, H = 640, GROUND = 558;
+    const LAUNCHERS = Object.freeze([{x:70,y:558},{x:385,y:604},{x:890,y:558}].map(Object.freeze));
+    const BARREL = 30;
     const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
     function seeded(seed) {
         let n = seed >>> 0;
@@ -18,6 +20,7 @@
     class Game {
         constructor(seed = Date.now()) {
             this.random = seeded(seed);
+            this.launchers = LAUNCHERS;
             this.seed = seed; this.time = 0; this.wave = 0; this.waveTime = 0;
             this.state = 'playing'; this.score = 0; this.energy = 12; this.pulse = 100;
             this.cooldown = 0; this.enemies = []; this.shots = []; this.blasts = [];
@@ -79,15 +82,17 @@
         fire(x, y) {
             if (this.state !== 'playing' || !Number.isFinite(x) || !Number.isFinite(y) || this.cooldown > 0 || this.energy < 1 || this.overheated) return false;
             x = clamp(x, 12, W - 12); y = clamp(y, 35, GROUND - 36);
-            const launchX = [70, 480, 890].reduce((a, b) => Math.abs(a - x) < Math.abs(b - x) ? a : b);
-            const launchY = launchX === 480 ? 604 : GROUND;
+            const launcher = LAUNCHERS.reduce((a,b)=>Math.abs(a.x-x)<Math.abs(b.x-x)?a:b);
+            const angle = Math.atan2(y-launcher.y,x-launcher.x);
+            const launchX = launcher.x + Math.cos(angle)*BARREL;
+            const launchY = launcher.y + Math.sin(angle)*BARREL;
             this.shots.push({ x: launchX, y: launchY, sx: launchX, sy: launchY, tx: x, ty: y, chain: { kills: 0, emergency: false, shot: true, useful: false } });
             this.energy--; this.cooldown = .16; this.stats.shots++;
             this.heat = Math.min(100, this.heat + 19); this.coolingDelay = .12;
             if (this.heat >= 100) {
                 this.overheated = true; this.stats.overheats++; this.emit('overheat');
             }
-            this.emit('fire', { x: launchX, y: launchY });
+            this.emit('fire', { x: launchX, y: launchY, launcherX:launcher.x, angle:angle+Math.PI/2 });
             return true;
         }
         emergency() {
@@ -177,5 +182,5 @@
             if (this.waveTime >= this.waveDuration) this.nextWave();
         }
     }
-    return { Game, W, H, GROUND, seeded, segmentDistance, clamp };
+    return { Game, W, H, GROUND, LAUNCHERS, BARREL, seeded, segmentDistance, clamp };
 });

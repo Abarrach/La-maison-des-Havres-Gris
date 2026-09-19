@@ -1673,6 +1673,36 @@ function build_sortie_message($sortie) {
             'value'  => implode("\n", $lignes),
             'inline' => false,
         ];
+
+        // Disponibilités : un champ PLEINE LARGEUR, groupé PAR PLAGE et non par personne.
+        // Mettre la plage à côté de chaque nom dans les colonnes de postes paraissait
+        // économe, mais ces colonnes font un tiers de largeur : « Abarrach · 08–10,
+        // 14–16 » y tient sur deux lignes et l'encart devient un mur en escalier.
+        // Groupé par plage, une sortie de douze personnes tient en trois ou quatre
+        // lignes — et ça se lit comme un planning : qui est là, et quand.
+        $parPlage = [];
+        foreach ($signups as $su) {
+            if (($su['statut'] ?? 'present') !== 'present') continue;
+            $plage = creneaux_resume($su['creneaux'] ?? null, $creneaux);
+            if ($plage === '') continue;          // n'a rien précisé : compte partout
+            // On mémorise le premier bloc pour trier : classer les libellés par ordre
+            // alphabétique marcherait pour une journée, mais pas pour un rally de nuit
+            // où « 00–06 » passerait avant « 22–00 ».
+            $premier = min(array_map('intval', $su['creneaux']));
+            if (!isset($parPlage[$plage])) $parPlage[$plage] = ['debut' => $premier, 'noms' => []];
+            $parPlage[$plage]['noms'][] = $su['name'];
+        }
+        if ($parPlage) {
+            uasort($parPlage, function ($a, $b) { return $a['debut'] <=> $b['debut']; });
+            $dispo = [];
+            foreach ($parPlage as $plage => $g) $dispo[] = '**' . $plage . '** · ' . implode(', ', $g['noms']);
+            $muets = 0;
+            foreach ($signups as $su) {
+                if (($su['statut'] ?? 'present') === 'present' && creneaux_resume($su['creneaux'] ?? null, $creneaux) === '') $muets++;
+            }
+            if ($muets) $dispo[] = '*' . $muets . ' inscrit' . ($muets > 1 ? "s n'ont" : " n'a") . ' pas précisé — compté' . ($muets > 1 ? 's' : '') . ' sur tous les créneaux.*';
+            $fields[] = ['name' => '🗓️ Disponibilités', 'value' => implode("\n", $dispo), 'inline' => false];
+        }
     }
 
     if ($usePostes) {
@@ -1691,12 +1721,7 @@ function build_sortie_message($sortie) {
             foreach ($signups as $su) {
                 if ($st($su) !== 'present' || $bucket($su) !== $pid) continue;
                 // 🎖️ : a candidaté comme Chef de section (drapeau optionnel, cf handle_toggle_chef).
-                // Les créneaux déclarés apparaissent à côté du nom : c'est le SEUL endroit
-                // où un joueur peut relire ce qu'il a coché — un menu déroulant Discord est
-                // partagé par tout le monde, il ne peut donc pas être pré-coché par personne.
-                $plages = $creneaux ? creneaux_resume($su['creneaux'] ?? null, $creneaux) : '';
-                $names[] = $su['name'] . (!empty($su['chef_section']) ? ' 🎖️' : '')
-                         . ($plages ? ' · ' . $plages : '');
+                $names[] = $su['name'] . (!empty($su['chef_section']) ? ' 🎖️' : '');
             }
             // Poste retiré du menu (ex. Défenseur CaC) ET personne dessus : le "0" n'a
             // aucun sens puisque plus personne ne peut le choisir → colonne masquée.

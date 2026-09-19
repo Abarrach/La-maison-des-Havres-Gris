@@ -201,7 +201,16 @@ Tous constatés en production ou en test, pas théoriques.
   chiffre fixe a une date de péremption. `max_score` n'est qu'un **plancher** ; la barre
   réelle est `score_ceiling()` = `max(plancher, record all-time × 3)` et suit donc la
   communauté. Si un score légitime saute encore, c'est le FACTEUR qu'on discute.
-- **Un nouveau jeu se déclare à UN seul endroit** : `GAMES` dans `jeux/scores_api.php`.
+- **Un compteur « par vague » ne doit jamais mélanger deux horloges.** Le bonus de
+  précision de Dernier Rempart comptait le TIR à l'appui sur la détente et son UTILITÉ à
+  l'explosion : un tir lâché en fin de vague tombait des deux côtés de la bascule et le
+  taux dépassait 100 % (reproduit à 200 %, 1 600 points pour un plafond de 400).
+  Règle : rattacher l'événement à la vague où il **s'achève**, pas où il commence — et se
+  méfier d'un `min()` correctif, qui masque ce genre de bug au lieu de le corriger.
+- **Un nouveau jeu se déclare à UN seul endroit** : `jeux/games_catalog.php` (un simple
+  `return [...]`, sans aucune inclusion — le cron de reset doit pouvoir le lire sans
+  démarrer de session ni dépendre de l'OAuth). `scores_api.php` le charge par
+  `define('GAMES', require …)` ; `const` ne peut pas être initialisée par un `require`.
   Le catalogue a existé en **cinq exemplaires** et chaque copie oubliée donnait une panne
   silencieuse différente : champion de la semaine jamais annoncé (`weekly_reset.php`),
   record absent de la tuile du hub (`loadRecords`), identifiant brut dans Mon Compte

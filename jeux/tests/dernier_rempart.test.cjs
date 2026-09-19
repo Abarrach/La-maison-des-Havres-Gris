@@ -171,14 +171,44 @@ test('sauvetage : le bonus suit le multiplicateur de chaîne',()=>{
 });
 test('fin de vague : tenue de position et précision, deux lignes distinctes',()=>{
     const g=empty();
-    g.stats.shots=10;g.stats.usefulShots=9;        // 90 % de tirs utiles sur la vague
+    g.tirsResolus=10;g.tirsUtilesResolus=9;        // 90 % de tirs utiles sur la vague
     const avant=g.score;g.nextWave();
     const bonus=g.drainEvents().find(e=>e.type==='bonus');
     assert.equal(bonus.tenue,3*75*1);              // 3 bâtiments debout, vague 1
     assert.equal(bonus.precision,Math.round(400*.9*.9));
     assert.equal(g.score-avant,bonus.tenue+bonus.precision);
     // La tenue suit le numéro de vague : survivre profond ne paie plus comme la vague 1.
-    g.stats.shots=20;g.stats.usefulShots=18;g.nextWave();
+    g.tirsResolus=20;g.tirsUtilesResolus=18;g.nextWave();
     const bonus2=g.drainEvents().find(e=>e.type==='bonus');
     assert.equal(bonus2.tenue,3*75*2);
+});
+
+test('précision : un tir à cheval sur deux vagues ne dépasse jamais 100 %',()=>{
+    // Régression. Un tir lâché juste avant la bascule explose pendant la vague
+    // suivante. Quand le TIR était compté d'un côté de la bascule et son UTILITÉ de
+    // l'autre, le taux montait à 200 % et la précision à 1 600 pour un plafond de 400.
+    const g=empty();
+    g.waveTime=g.waveDuration-.02;
+    g.spawn({x:200,y:150,target:0}); g.spawn({x:700,y:150,target:0});
+    for(const e of g.enemies){e.vx=0;e.vy=0;}
+    g.fire(200,150); g.cooldown=0; g.fire(700,150);
+    advance(g,1);                       // la bascule a lieu, les deux tirs touchent après
+    assert.equal(g.wave,2);
+    assert.equal(g.stats.usefulShots,2);
+    g.waveTime=g.waveDuration;
+    let bonus=null;
+    for(let i=0;i<300;i++){ g.step(1/120); for(const e of g.drainEvents()) if(e.type==='bonus') bonus=e; }
+    assert.ok(bonus,'la vague suivante doit annoncer son bonus');
+    assert.ok(bonus.taux<=1,'taux de tirs utiles à '+bonus.taux+' : un tir ne peut pas être utile plus d’une fois');
+    assert.ok(bonus.precision<=400,'précision à '+bonus.precision+' au-dessus du plafond de 400');
+});
+test('précision : chaque tir compte une seule fois, chaîne comprise',()=>{
+    const g=empty();
+    for(const x of [300,340,380]) g.spawn({x,y:200,target:0});
+    for(const e of g.enemies){e.vx=0;e.vy=0;}
+    g.fire(340,200);                    // un SEUL tir, qui déclenche une chaîne de trois
+    advance(g,2);
+    assert.equal(g.stats.kills,3);
+    assert.equal(g.tirsResolus,1,'une chaîne reste UN tir au dénominateur');
+    assert.equal(g.tirsUtilesResolus,1);
 });

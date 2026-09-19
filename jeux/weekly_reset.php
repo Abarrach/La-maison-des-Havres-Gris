@@ -32,8 +32,10 @@ date_default_timezone_set('Europe/Paris');
 // sans avoir jamais été nommé. Constaté avec Dernier Rempart le 2026-09-19.
 // Un jeu sans aucun score est ignoré tout seul (cf. `if ($best)` plus bas), donc
 // un jeu déclaré mais pas encore livré ne pollue rien.
-require_once __DIR__ . '/scores_api.php';   // définit GAMES + les fonctions de stockage
-const NOMS_JEUX = GAMES;
+// Le catalogue seul, pas toute l'API : scores_api.php inclut discord_oauth.php, qui
+// fait un session_start() au chargement. Un cron n'a aucune raison d'ouvrir une
+// session ni de dépendre de la configuration OAuth pour lire une liste de noms.
+define('NOMS_JEUX', require __DIR__ . '/games_catalog.php');
 
 $DRY = in_array('--dry', $argv ?? [], true);
 

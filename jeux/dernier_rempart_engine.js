@@ -41,7 +41,13 @@
             this.events = []; this.schedule = []; this.nextId = 1;
             this.cities = [190, 480, 770].map((x, i) => ({ x, hp: 3, name: ['EAU', 'ÉNERGIE', 'HANGAR'][i] }));
             this.stats = { kills: 0, shots: 0, bestChain: 0, saves: 0, damage: 0, pulses: 0, usefulShots: 0, chainBonus: 0, overheats: 0, holdBonus: 0, precisionBonus: 0 };
-            this.waveShots = 0; this.waveUseful = 0;   // repères pour la précision de la vague
+            // Comptabilité de précision. Un tir est rattaché à la vague où sa CHAÎNE
+            // S'ACHÈVE, pas à celle où on a appuyé : un tir lâché en fin de vague explose
+            // souvent pendant la suivante, et compter le tir d'un côté de la bascule et son
+            // utilité de l'autre faisait dépasser 100 % (reproduit à 200 %, soit 1 600 points
+            // pour un plafond prévu à 400). Numérateur et dénominateur sont désormais
+            // toujours dans la même vague, donc le taux est borné par construction.
+            this.tirsResolus = 0; this.tirsUtilesResolus = 0;
             this.nextWave();
         }
         emit(type, data = {}) { this.events.push({ type, ...data }); }
@@ -57,8 +63,8 @@
                 //    score. Au carré, pour récompenser la maîtrise et non la moyenne :
                 //    90 % → 324, 60 % → 144, 40 % → 64.
                 const tenue = alive.length * 75 * this.wave;
-                const tirs = this.stats.shots - this.waveShots;
-                const taux = tirs > 0 ? (this.stats.usefulShots - this.waveUseful) / tirs : 0;
+                const tirs = this.tirsResolus;
+                const taux = tirs > 0 ? this.tirsUtilesResolus / tirs : 0;
                 const precision = Math.round(400 * taux * taux);
                 const bonus = tenue + precision;
                 this.stats.holdBonus += tenue; this.stats.precisionBonus += precision;
@@ -72,7 +78,7 @@
                 this.energy = Math.min(12, this.energy + 3);
             }
             this.wave++; this.waveTime = 0;
-            this.waveShots = this.stats.shots; this.waveUseful = this.stats.usefulShots;
+            this.tirsResolus = 0; this.tirsUtilesResolus = 0;
             this.waveDuration = Math.max(12, 18 - Math.max(0, this.wave - 4) * .35);
             const count = Math.min(78, 18 + this.wave * 4 + (this.wave % 5 === 0 ? 8 : 0));
             const patterns = ['ÉVENTAIL', 'TIRS CROISÉS', 'SIÈGE'];
@@ -207,7 +213,18 @@
             }
             this.enemies = this.enemies.filter(e => !e.dead);
             children.forEach(e => this.spawn(e));
+            // Une chaîne est close quand sa DERNIÈRE explosion s'éteint : c'est à ce
+            // moment-là, et une seule fois, que le tir entre dans la précision de la vague.
+            const expirees = this.blasts.filter(b => b.age >= b.life);
             this.blasts = this.blasts.filter(b => b.age < b.life);
+            for (const b of expirees) {
+                const c = b.chain;
+                if (!c || !c.shot || c.compte) continue;
+                if (this.blasts.some(o => o.chain === c)) continue;   // la chaîne se propage encore
+                c.compte = true;
+                this.tirsResolus++;
+                if (c.useful) this.tirsUtilesResolus++;
+            }
             if (!this.cities.some(c => c.hp > 0)) { this.state = 'over'; this.emit('over'); return; }
             // Pas d'écran d'attente entre les vagues : les dernières menaces restent actives.
             if (this.waveTime >= this.waveDuration) this.nextWave();

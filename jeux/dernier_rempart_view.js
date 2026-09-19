@@ -24,8 +24,22 @@
         for (let i = 0; i < 46; i++) etoiles.push({ x: r() * 960, y: 18 + r() * 320, taille: r() < .78 ? .7 : 1.4, phase: r() * 6.28 });
         const voiles = [];          // nappes de poussière haute, deux profondeurs
         for (let i = 0; i < 9; i++) voiles.push({ x: r() * 1100, y: 55 + r() * 230, l: 150 + r() * 260, h: 12 + r() * 26, v: .35 + r() * .5, a: .05 + r() * .07 });
-        const grains = [];          // sable en suspension, plan rapproché
-        for (let i = 0; i < 70; i++) grains.push({ x: r() * 960, y: 30 + r() * 560, v: 9 + r() * 34, taille: r() < .8 ? .8 : 1.5, a: .12 + r() * .34 });
+        // Sable en suspension. Trois populations plutôt qu'une : c'est le mélange de
+        // tailles et de vitesses qui donne la profondeur, et les quelques éclats vifs
+        // qui donnent le scintillement du soleil rasant sur les grains.
+        const grains = [];
+        for (let i = 0; i < 190; i++) {
+            const eclat = r() < .26;                       // grain pris dans la lumière
+            grains.push({
+                x: r() * 960, y: 26 + r() * 570,
+                v: (eclat ? 14 : 7) + r() * 38,
+                taille: eclat ? 1.4 + r() * 1.2 : (r() < .75 ? .8 : 1.4),
+                a: eclat ? .6 + r() * .4 : .18 + r() * .34,
+                eclat,
+                phase: r() * 6.283,
+                freq: eclat ? 2.4 + r() * 3.6 : .8 + r() * 1.4   // les éclats battent plus vite
+            });
+        }
         const cretes = [];          // crêtes de dunes proches, balayées par le vent
         for (let i = 0; i < 14; i++) cretes.push({ x: r() * 960, y: 512 + r() * 26, l: 26 + r() * 44, a: .06 + r() * .1 });
         return { etoiles, voiles, grains, cretes, vent: 0, rafale: 0 };
@@ -339,10 +353,34 @@
             c.globalAlpha = 1;
 
             // Grains en suspension : la couche qui fait respirer tout l'écran.
-            c.fillStyle = '#ffd18a';
+            // Le scintillement est un battement d'opacité par grain (phase et fréquence
+            // propres), pas un clignotement global — sinon tout l'écran pulse ensemble et
+            // ça se voit comme un défaut d'affichage.
+            // La lumière vient du couchant, bas et à droite : plus un grain est près de
+            // l'horizon, plus il accroche. `lueur` est un halo carré à bas alpha, pas un
+            // dégradé radial — cent cinquante dégradés par image, c'est un téléphone à genoux.
             for (const gr of sk.grains) {
-                c.globalAlpha = gr.a * (.8 + sk.rafale * .9);
-                c.fillRect(gr.x, gr.y, gr.taille, gr.taille);
+                const battement = gr.eclat
+                    ? .28 + .72 * Math.pow((1 + Math.sin(t * gr.freq + gr.phase)) / 2, 2)
+                    : .55 + .45 * Math.sin(t * gr.freq + gr.phase);
+                const rasance = .58 + .42 * Math.min(1, Math.max(0, (gr.y - 90) / 380));
+                const alpha = gr.a * battement * rasance * (.85 + sk.rafale * .8);
+                if (alpha < .02) continue;
+                if (gr.eclat) {
+                    // Halo + cœur en disques : un grain qui accroche le soleil n'est pas un
+                    // carré, et à deux pixels de côté ça se voit. Deux arcs par éclat restent
+                    // bon marché — c'est le dégradé radial qu'il fallait éviter, pas le tracé.
+                    c.globalAlpha = alpha * .22;
+                    c.fillStyle = '#ffdca6';
+                    c.beginPath(); c.arc(gr.x, gr.y, gr.taille * 2.3, 0, Math.PI * 2); c.fill();
+                    c.globalAlpha = Math.min(1, alpha * 1.2);
+                    c.fillStyle = '#fff4d8';
+                    c.beginPath(); c.arc(gr.x, gr.y, gr.taille * .75, 0, Math.PI * 2); c.fill();
+                } else {
+                    c.globalAlpha = alpha;
+                    c.fillStyle = '#ffd18a';
+                    c.fillRect(gr.x, gr.y, gr.taille, gr.taille);
+                }
             }
             c.globalAlpha = 1;
         }

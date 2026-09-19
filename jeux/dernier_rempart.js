@@ -82,11 +82,17 @@
             if (!data.leaderboard.length) $('leaderboard').textContent = 'Le premier record vous attend.';
         } catch (_) { if (id === leaderboardRequest) $('leaderboard').textContent = 'Classement indisponible pour le moment.'; }
     }
+    // Un seul endroit pour le record : le HUD (pendant la partie) et la carte de
+    // démarrage (avant), comme dans Orni Flap et Spice Runner.
+    function montreRecord() {
+        $('best').textContent = 'Record personnel : ' + format(best);
+        $('intro-best').textContent = best > 0 ? 'Meilleur : ' + format(best) : 'Aucun record';
+    }
     async function personalBest() {
         if (local) return;
         try {
             const data = await request('scores_api.php?action=my_scores&game=dernier_rempart');
-            if (data.ok) { best = Math.max(best,...data.scores.map(s => Number(s.score) || 0)); $('best').textContent = 'Record personnel : '+format(best); }
+            if (data.ok) { best = Math.max(best,...data.scores.map(s => Number(s.score) || 0)); montreRecord(); }
         } catch (_) { /* Le classement n'empêche jamais de jouer. */ }
     }
     async function submit(result) {
@@ -110,7 +116,7 @@
             const failedIndex = failedResults.indexOf(result);
             if (failedIndex >= 0) failedResults.splice(failedIndex,1);
             $('retry-save').hidden = failedResults.length === 0;
-            $('best').textContent = 'Record personnel : '+format(best);
+            montreRecord();
             if (result.id === runId) status('Score accepté par le serveur : '+format(result.score)+' points.');
             leaderboard();
         } catch (error) {

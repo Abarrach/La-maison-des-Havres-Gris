@@ -201,6 +201,11 @@ Tous constatés en production ou en test, pas théoriques.
   chiffre fixe a une date de péremption. `max_score` n'est qu'un **plancher** ; la barre
   réelle est `score_ceiling()` = `max(plancher, record all-time × 3)` et suit donc la
   communauté. Si un score légitime saute encore, c'est le FACTEUR qu'on discute.
+- **Un nouveau jeu se déclare à UN seul endroit** : `GAMES` dans `jeux/scores_api.php`.
+  `weekly_reset.php` le lit par `require_once` depuis 2026-09-19 — avant, il tenait sa
+  propre copie en dur, et un jeu absent de CETTE liste-là voyait son champion de la
+  semaine effacé par le reset du mardi sans jamais être annoncé. Si un jour un autre
+  fichier a besoin du catalogue, le lire, ne jamais le recopier.
 - **Un nouveau jeu doit arriver dans la palette du hub**, pas avec la sienne : `--bg:#0a0402`,
   `--gold:#cda434`, `--text:#f5deb3`, `--muted:#7c5e2a`, titres `'Cinzel', Georgia, serif`
   (la police n'est pas chargée, elle retombe sur Georgia — c'est voulu et commun aux six jeux).

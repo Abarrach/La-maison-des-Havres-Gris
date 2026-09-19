@@ -31,11 +31,6 @@ $action = $input['action'] ?? ($_GET['action'] ?? '');
 const GAMES = [
     // Dernier Rempart : défense sans fin. Plancher initial uniquement ;
     // score_ceiling() suit ensuite le record communautaire (facteur partagé).
-    'dernier_rempart' => [
-        'name'      => 'Dernier Rempart',
-        'max_score' => 300000,
-        'cooldown'  => 2,
-    ],
     'orni_flap' => [
         'name'      => 'Ornithopter Flap',
         'max_score' => 9999,
@@ -82,6 +77,13 @@ const GAMES = [
     // joueur en soit averti, et c'est le meilleur joueur qu'on pénalise en silence.
     'sandwalk' => [
         'name'      => 'La Marche du Désert',
+        'max_score' => 300000,
+        'cooldown'  => 2,
+    ],
+    // Dernier arrivé, placé en dernier : l'ordre de GAMES est celui de l'annonce
+    // hebdomadaire et de l'action `games`, et il doit suivre l'ordre des tuiles du hub.
+    'dernier_rempart' => [
+        'name'      => 'Dernier Rempart',
         'max_score' => 300000,
         'cooldown'  => 2,
     ],

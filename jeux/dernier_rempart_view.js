@@ -283,7 +283,7 @@
                 if (v.x + v.l < 0 || v.x > 960) continue;   // hors champ : pas de dégradé inutile
                 const cx = v.x + v.l / 2, cy = v.y + Math.sin(t * .3 + v.x * .01) * 5, rx = v.l / 2;
                 const grad = c.createRadialGradient(cx, cy, 0, cx, cy, rx);
-                const a = v.a * .5 * (1 + sk.rafale);
+                const a = v.a * .72 * (1 + sk.rafale);
                 grad.addColorStop(0, 'rgba(222,160,92,' + a.toFixed(3) + ')');
                 grad.addColorStop(.6, 'rgba(222,160,92,' + (a * .45).toFixed(3) + ')');
                 grad.addColorStop(1, 'rgba(222,160,92,0)');
@@ -294,7 +294,12 @@
 
             // Front de tempête : monte avec les vagues. Le décor raconte la difficulté au
             // lieu de la laisser au seul compteur — et il reste sous la ligne de tir.
-            this.tempete = Math.min(1, Math.max(0, ((g && g.wave) || 0) - 2) / 9);
+            // Courbe calée sur les parties RÉELLES, pas sur la vague maximale théorique :
+            // presque personne ne dépasse la vague 5-6, donc une montée linéaire jusqu'à 11
+            // laissait l'immense majorité des parties dans un décor vide. Racine ~0,55 :
+            // l'ambiance est déjà là dès la vague 1, l'essentiel du changement visible se
+            // joue entre 1 et 5, et la saturation arrive vers 8 pour les acharnés.
+            this.tempete = Math.pow(Math.min(1, ((g && g.wave) || 1) / 8), .55);
             if (this.tempete > .01) {
                 for (let i = 0; i < 4; i++) {
                     const base = 505 - i * 27 * this.tempete, amp = 10 + i * 9, a = this.tempete * (.34 - i * .07);

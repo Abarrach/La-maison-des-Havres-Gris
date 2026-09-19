@@ -1004,8 +1004,8 @@ function creneau_couverture($signups, $i) {
     // personne. « transp. » et « moiss. » se comprennent sans légende, et économisent
     // quand même onze caractères sur les mots entiers — la ligne reste dans le champ.
     $manques = [];
-    if (!$transp)     $manques[] = 'transp.';
-    if (!$moiss)      $manques[] = 'moiss.';
+    if (!$transp)     $manques[] = 'transporteur';
+    if (!$moiss)      $manques[] = 'moissonneur';
     if ($pilotes < 4) $manques[] = (4 - $pilotes) . ' pilote' . (4 - $pilotes > 1 ? 's' : '');
     return ['presents' => $presents, 'maybe' => $maybe, 'manques' => $manques];
 }
@@ -1629,19 +1629,22 @@ function build_sortie_message($sortie) {
         foreach ($creneaux as $c) {
             $cov = creneau_couverture($signups, $c['i']);
             if (!$cov['manques']) $complets++;
-            // Un champ d'encart est ÉTROIT : au-delà d'une trentaine de caractères la ligne
-            // passe à la ligne et l'alignement du bloc de code s'effondre — constaté sur le
-            // premier jet, qui écrivait « manque transporteur, moissonneur, 4 pilotes » en
-            // toutes lettres, barre de progression comprise. D'où les initiales, explicitées
-            // par une légende sous le tableau.
-            $effectif = $cov['presents'] . '/' . RALLY_MINIMUM . ($cov['maybe'] ? ' +' . $cov['maybe'] . '?' : '');
+            // PAS de bloc de code. Aligner des colonnes en chasse fixe dans un champ
+            // d'encart est perdu d'avance : la largeur utile tourne autour de 41 caractères
+            // sur un client de bureau et bien moins sur téléphone, et dès qu'une ligne
+            // déborde elle passe à la ligne — l'alignement s'effondre et le tableau devient
+            // illisible. Trois essais pour l'admettre. En texte courant, une ligne trop
+            // longue se replie proprement : il n'y a plus de colonnes à casser, et le
+            // symbole de tête suffit à balayer les créneaux du regard.
+            $marque = !$cov['manques'] ? '✅' : ($cov['presents'] * 2 < RALLY_MINIMUM ? '✖' : '⚠');
+            $effectif = $cov['presents'] . ' présent' . ($cov['presents'] > 1 ? 's' : '')
+                      . ($cov['maybe'] ? ' (+' . $cov['maybe'] . ' ?)' : '');
             $verdict  = !$cov['manques'] ? 'complet' : 'manque ' . implode(', ', $cov['manques']);
-            $lignes[] = sprintf('%s %-9s %s', $c['court'], $effectif, $verdict);
+            $lignes[] = $marque . ' **' . $c['court'] . '** · ' . $effectif . ' — ' . $verdict;
         }
         $fields[] = [
             'name'   => '⏱️ Couverture — ' . $complets . ' créneau' . ($complets > 1 ? 'x complets' : ' complet') . ' sur ' . count($creneaux),
-            'value'  => "```\n" . implode("\n", $lignes) . "\n```"
-                      . '+n? = inscrits « peut-être » sur ce créneau',
+            'value'  => implode("\n", $lignes),
             'inline' => false,
         ];
     }

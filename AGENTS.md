@@ -190,6 +190,19 @@ Tous constatés en production ou en test, pas théoriques.
 - **Assaut = propriété d’un défenseur cardinal**, cumulable avec CaC, pas un cinquième pilote. Il est groupé en jeu avec Récolte ; les deux buggys sont groupés avec deux patrouilleurs. Les rôles tactiques et les groupes en jeu se recoupent : ne pas compter ces personnes deux fois. Conserver les anciens rôles lors de la lecture des historiques.
 - La page épice dépend désormais de `epice/raid-groups.js` : livrer les deux ensemble, avec `data-api.php` et `discord_sortie.php` pour cette évolution. **Si ce fichier manque ou part en 404, la page débrief est entièrement morte**, pas dégradée : `SOP_DEFAULT_HTML` appelle `RaidGroups.withBaseSop()` au chargement, et la `ReferenceError` tue tout le script inline. Envoyer le JS AVANT le HTML, et bouger le `?v=` à chaque modif du module.
 
+### Bot Sorties — routage des composants
+- **`discord_interactions.php` est un dispatcher à LISTE BLANCHE de préfixes.** Ajouter un
+  bouton ou un menu à l'encart de sortie sans ajouter son préfixe ici renvoie un **400** :
+  Discord affiche « n'a pas répondu à temps », `epice/discord_sortie.php` n'est jamais
+  atteint et **son journal reste muet** — on cherche le bug dans le handler alors qu'il
+  n'a jamais tourné. Arrivé au menu de créneaux le 2026-09-19.
+- Un filet rattrape désormais tout `:<id de sortie>` final (`/:sortie_\d+$/`), mais **le
+  journal du dispatcher** (`epice/data/discord_interactions.log`) reste le premier endroit
+  où regarder quand un composant ne répond pas : il écrit `route inconnue → 400`.
+- Corollaire de diagnostic : **deux journaux, deux étages**. Rien dans
+  `discord_sortie.log` mais l'interaction part quand même → le problème est en amont,
+  dans le routage, pas dans le handler.
+
 ### Mini-jeux et scores
 - **Un plafond `max_score` trop bas fait disparaître un record en silence** : la
   soumission sort avant enregistrement ET avant notification. C'est mécaniquement le

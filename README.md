@@ -596,6 +596,9 @@ Outil de **préparation, débrief et analyse** des sorties de récolte d'épice 
 
 ##### Rally — inscription par créneaux (2026-09-19, NON DÉPLOYÉ)
 
+> ⚠ **Le menu ne répondait pas, et le handler n'y était pour rien.** `discord_interactions.php` route les interactions vers les handlers via une **liste blanche de préfixes de `custom_id`** ; `creneaux:` n'y figurait pas, donc le dispatcher répondait **400** et `epice/discord_sortie.php` n'était jamais inclus. Symptôme trompeur : Discord affiche « n'a pas répondu à temps » et **le journal du handler reste vide**, ce qui envoie chercher un plantage là où aucun code n'a tourné. Deux corrections : le préfixe ajouté, et un **filet** qui route vers `sortie` tout `custom_id` finissant par un id de sortie (`/:sortie_\d+$/`), pour qu'un futur composant ne retombe jamais dans ce piège. Le diagnostic a coûté trois allers-retours parce que le `custom_id` n'était journalisé que pour les modals (type 5) — il l'est désormais pour les composants (type 3) avec les valeurs choisies.
+
+
 Né d'un besoin concret : organiser une récolte d'épice de **8 h à 16 h** et savoir *avant* le jour J si c'est tenable. La coche ✅/❌ d'un message classique dit **combien** de monde vient, jamais **quand** — or personne ne tient huit heures d'affilée et tout le monde tourne.
 
 - **Rien à saisir de plus.** Trois durées longues s'ajoutent au formulaire (`6`, `8`, `10` h). Dès que la durée atteint **`RALLY_SEUIL_H` = 6 h**, `creneaux_sortie()` découpe la sortie en blocs de **`RALLY_BLOC_H` = 2 h** à partir de l'heure de début. Sous ce seuil, **rien ne change** : ni menu, ni tableau. Heure ou durée illisible → aucun créneau, la sortie reste une sortie classique.

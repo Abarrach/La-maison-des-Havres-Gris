@@ -126,10 +126,19 @@ function detect_route(array $body): ?string {
             // doivent rester routés indéfiniment, sinon les boutons déjà épinglés
             // cessent de répondre du jour où on les retirerait d'ici.
             'newcat:', 'newsub:', 'newpick:', 'newtype', 'newback',
+            'creneaux:',
         ];
         foreach ($sortiePrefixes as $p) {
             if (strpos($cid, $p) === 0) return 'sortie';
         }
+        // FILET : tout composant posé sur un encart de sortie a un custom_id de la
+        // forme "<action>:<id de sortie>", et les ids de sortie sont "sortie_<horodatage>".
+        // Sans ce filet, ajouter un composant à l'encart SANS penser à cette liste-ci
+        // renvoie un 400 et Discord affiche « n'a pas répondu à temps » — le handler
+        // n'est jamais atteint, son journal reste muet, et le vrai coupable est
+        // invisible. C'est exactement ce qui est arrivé au menu de créneaux le
+        // 2026-09-19 : une liste de plus, tenue à distance du code qui la remplit.
+        if (preg_match('/:sortie_\d+$/', $cid)) return 'sortie';
         // Commande : namespace réservé pour le lot 3+ (pas encore de handler).
         if (strpos($cid, 'cmd_') === 0) return 'commande';
         return null;

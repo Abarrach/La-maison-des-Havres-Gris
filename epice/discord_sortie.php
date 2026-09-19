@@ -973,9 +973,35 @@ function creneaux_sortie($sortie) {
         $f = min($t + RALLY_BLOC_H * 60, $fin);
         $fmt = function ($minutes) { return sprintf('%02d:%02d', intdiv($minutes, 60) % 24, $minutes % 60); };
         $ct  = function ($minutes) { return sprintf('%02d', intdiv($minutes, 60) % 24); };
-        $out[] = ['i' => $i, 'label' => $fmt($t) . ' → ' . $fmt($f), 'court' => $ct($t) . '–' . $ct($f)];
+        $out[] = ['i' => $i, 'label' => $fmt($t) . ' → ' . $fmt($f), 'court' => $ct($t) . '–' . $ct($f), 'h1' => $ct($t), 'h2' => $ct($f)];
     }
     return $out;
+}
+
+/**
+ * Résume les créneaux d'un joueur en plages lisibles : « 08–12 » plutôt que
+ * « 08–10, 10–12 ». Les gens pensent en tranches continues (« je suis là le
+ * matin »), pas en blocs de deux heures — et ça raccourcit d'autant l'affichage.
+ * Renvoie '' si rien n'est déclaré : l'absence de créneau vaut « disponible
+ * partout » (cf. creneau_couverture), inutile de l'écrire à côté de chaque nom.
+ */
+function creneaux_resume($indices, $creneaux) {
+    if (!is_array($indices) || !$indices) return '';
+    $par = [];
+    foreach ($creneaux as $c) $par[$c['i']] = $c;
+    $ids = array_values(array_unique(array_map('intval', $indices)));
+    sort($ids);
+    $ids = array_values(array_filter($ids, function ($i) use ($par) { return isset($par[$i]); }));
+    if (!$ids) return '';
+    $plages = []; $debut = $ids[0]; $prec = $ids[0];
+    foreach (array_slice($ids, 1) as $i) {
+        if ($i !== $prec + 1) { $plages[] = [$debut, $prec]; $debut = $i; }
+        $prec = $i;
+    }
+    $plages[] = [$debut, $prec];
+    $txt = [];
+    foreach ($plages as [$a, $b]) $txt[] = $par[$a]['h1'] . '–' . $par[$b]['h2'];
+    return implode(', ', $txt);
 }
 
 /**
@@ -1665,7 +1691,12 @@ function build_sortie_message($sortie) {
             foreach ($signups as $su) {
                 if ($st($su) !== 'present' || $bucket($su) !== $pid) continue;
                 // 🎖️ : a candidaté comme Chef de section (drapeau optionnel, cf handle_toggle_chef).
-                $names[] = $su['name'] . (!empty($su['chef_section']) ? ' 🎖️' : '');
+                // Les créneaux déclarés apparaissent à côté du nom : c'est le SEUL endroit
+                // où un joueur peut relire ce qu'il a coché — un menu déroulant Discord est
+                // partagé par tout le monde, il ne peut donc pas être pré-coché par personne.
+                $plages = $creneaux ? creneaux_resume($su['creneaux'] ?? null, $creneaux) : '';
+                $names[] = $su['name'] . (!empty($su['chef_section']) ? ' 🎖️' : '')
+                         . ($plages ? ' · ' . $plages : '');
             }
             // Poste retiré du menu (ex. Défenseur CaC) ET personne dessus : le "0" n'a
             // aucun sens puisque plus personne ne peut le choisir → colonne masquée.

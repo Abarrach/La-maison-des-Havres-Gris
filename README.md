@@ -594,6 +594,29 @@ Outil de **préparation, débrief et analyse** des sorties de récolte d'épice 
 
 #### Bot Sorties Discord (`epice/discord_sortie.php`)
 
+##### Rally — inscription par créneaux (2026-09-19, NON DÉPLOYÉ)
+
+Né d'un besoin concret : organiser une récolte d'épice de **8 h à 16 h** et savoir *avant* le jour J si c'est tenable. La coche ✅/❌ d'un message classique dit **combien** de monde vient, jamais **quand** — or personne ne tient huit heures d'affilée et tout le monde tourne.
+
+- **Rien à saisir de plus.** Trois durées longues s'ajoutent au formulaire (`6`, `8`, `10` h). Dès que la durée atteint **`RALLY_SEUIL_H` = 6 h**, `creneaux_sortie()` découpe la sortie en blocs de **`RALLY_BLOC_H` = 2 h** à partir de l'heure de début. Sous ce seuil, **rien ne change** : ni menu, ni tableau. Heure ou durée illisible → aucun créneau, la sortie reste une sortie classique.
+- **Un second menu déroulant** « Mes créneaux de disponibilité », **à choix multiple** (`min_values` 1, `max_values` = nombre de blocs) : le joueur coche tous ses blocs en une interaction. L'encart passe ainsi de 3 à **4 rangées de composants** sur les **5** autorisées par Discord — il reste une rangée de marge, à ne pas oublier avant d'en ajouter une autre.
+- **Le menu exige un poste d'abord** : sans poste, la couverture ne saurait pas quoi compter, et un joueur « disponible pour rien » brouille la lecture. Message éphémère explicite plutôt qu'une inscription fantôme.
+- **Tableau de couverture en tête de l'encart**, avant les listes de noms, en bloc de code pour rester aligné :
+
+  ```
+  08–10 ███████░  7        complet
+  10–12 ██████░░  6        manque 2 pilotes
+  12–14 ████░░░░  4        manque moissonneur, 3 pilotes
+  14–16 █████▒░░  5 (+1?)  manque moissonneur, 1 pilote
+  ```
+
+  `█` présent, `▒` peut-être, `░` vide. Le titre du champ résume : « ⏱️ Couverture — 1 créneau complet sur 4 ». Tout le monde voit le trou de midi **avant** samedi et quelqu'un peut décaler sa pause.
+- **Règle de viabilité** : celle de la formation minimale du site — **1 transporteur + 1 moissonneur + 4 pilotes d'ornithoptère**. Volontairement simple ; l'organisateur arbitre avec les inscrits. Un « Présent (poste à définir) » compte dans l'effectif mais **ne comble aucun poste**.
+- **Une inscription sans créneau déclaré compte dans TOUS les blocs.** Un joueur qui ne précise rien est réputé disponible : le faire disparaître des colonnes donnerait une couverture faussement catastrophique, et ça rend la fonction rétrocompatible avec les inscriptions existantes.
+- ⚠ **Les créneaux sont stockés en INDEX** (`signup.creneaux = [0,2,3]`), pas en horaires absolus. Conséquence à connaître : si l'organisateur **modifie l'heure de début** après des inscriptions, les blocs se décalent avec la sortie et chacun garde « le 1ᵉʳ bloc, le 3ᵉ… » plutôt que « 8 h–10 h ». Si la durée **raccourcit**, les index hors plage sont simplement ignorés. C'est le comportement le moins surprenant dans le cas courant (décalage global d'une sortie), mais il faut le savoir avant de déplacer un rally de 8 h à 10 h.
+- Vérifié sur banc : découpage (8 h → 4 blocs, 7 h 30 → dernier bloc tronqué à 14–15, passage de minuit 22–00/00–02), cas limites (heure vide, durée vide, durée courte → 0 créneau), et rendu du tableau sur un jeu d'inscriptions réaliste. **Reste à faire** : la grille joueurs × créneaux côté site, dans l'onglet Assignation, pour préparer les rotations.
+
+
 > **État au 2026-08-13 — ✅ EN PRODUCTION.** Le **catalogue à trois niveaux** (34 activités) et le **formulaire refondu** ont été testés sur `/v2` via l'app « DuneMap Dev », puis déployés à la racine.
 >
 > **Procédure de déploiement** (pour les prochaines évolutions) : téléverser `epice/discord_sortie.php`, `discord_interactions.php`, `account.html`, `epice/discord_register.php` — les deux premiers **ensemble** (le dispatcher route les préfixes `newsub:`/`newpick:` que le handler produit) — puis ouvrir `https://.../epice/discord_register.php` **dans cet ordre** : l'inverse afficherait `/sortie panneau` aux joueurs pendant que l'ancien code répond « Commande inconnue ». Ne **jamais** téléverser `epice/discord_sortie_config.php` (gitignoré, `bot_token` de prod).

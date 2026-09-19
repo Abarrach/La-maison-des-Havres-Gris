@@ -297,7 +297,19 @@ const DUREE_OPTIONS = [
     '2h30' => '2 h 30',
     '3'    => '3 h',
     '4'    => 'Soirée entière (4 h)',
+    // À partir de 6 h, la sortie devient un RALLY : l'encart affiche un second menu
+    // « Mes créneaux » et un tableau de couverture. Personne ne tient huit heures
+    // d'affilée, la vraie question n'est plus « qui vient » mais « qui, et quand ».
+    '6'    => 'Rally — 6 h (créneaux)',
+    '8'    => 'Rally — journée, 8 h (créneaux)',
+    '10'   => 'Rally — 10 h (créneaux)',
 ];
+
+// Durée minimale à partir de laquelle on découpe en créneaux, et taille d'un bloc.
+// Deux heures : quatre lignes pour une journée, c'est lu d'un coup d'œil. À l'heure
+// près on obtient huit lignes que plus personne ne lit.
+const RALLY_SEUIL_H = 6;
+const RALLY_BLOC_H  = 2;
 
 // Activité dont la bannière sert d'illustration par défaut aux autres.
 // « Activité Guilde » (id historique 'guilde') est le fourre-tout du catalogue :
@@ -449,6 +461,7 @@ if ($type === 3) {
     if (strpos($cid, 'newtype') === 0)     { handle_new_type($body); }
     if (strpos($cid, 'newbackcat:') === 0) { handle_new_back_cat(substr($cid, 11)); }
     if (strpos($cid, 'newback') === 0)     { handle_new_back(); }
+    if (strpos($cid, 'creneaux:') === 0) { handle_creneaux($body, substr($cid, 9)); }
     if (strpos($cid, 'signup:') === 0)   { handle_signup($body, substr($cid, 7)); }
     if (strpos($cid, 'present:') === 0)  { handle_status($body, substr($cid, 8), 'present'); }
     if (strpos($cid, 'maybe:') === 0)    { handle_status($body, substr($cid, 6), 'maybe'); }
@@ -926,6 +939,66 @@ function modal_when(array $v): array {
     return [$date, parse_heure($v['heure'] ?? '')];
 }
 
+// ============================================================
+//  CRÉNEAUX (sorties longues « rally »)
+// ============================================================
+
+/**
+ * Découpe une sortie longue en blocs de RALLY_BLOC_H heures.
+ * Renvoie [] pour toute sortie courte : rien ne change alors dans l'encart.
+ * Chaque créneau : ['i' => index, 'label' => '08:00 → 10:00', 'court' => '08–10'].
+ */
+function creneaux_sortie($sortie) {
+    $heure = trim((string)($sortie['heure'] ?? ''));
+    if (!preg_match('/^(\d{2}):(\d{2})$/', $heure, $m)) return [];
+    $duree = trim((string)($sortie['duree'] ?? ''));
+    // Même lecture que duree_to_hours() du script de purge : « 8 » ou « 2h30 ».
+    if (ctype_digit($duree)) $h = (float)$duree;
+    elseif (preg_match('/^(\d+)\s*h\s*(\d+)?$/i', $duree, $d)) $h = (float)$d[1] + (isset($d[2]) && $d[2] !== '' ? ((int)$d[2]) / 60 : 0);
+    else return [];
+    if ($h < RALLY_SEUIL_H) return [];
+
+    $debut = ((int)$m[1]) * 60 + ((int)$m[2]);
+    $fin   = $debut + (int)round($h * 60);
+    $out   = [];
+    for ($t = $debut, $i = 0; $t < $fin && $i < 12; $t += RALLY_BLOC_H * 60, $i++) {
+        $f = min($t + RALLY_BLOC_H * 60, $fin);
+        $fmt = function ($minutes) { return sprintf('%02d:%02d', intdiv($minutes, 60) % 24, $minutes % 60); };
+        $ct  = function ($minutes) { return sprintf('%02d', intdiv($minutes, 60) % 24); };
+        $out[] = ['i' => $i, 'label' => $fmt($t) . ' → ' . $fmt($f), 'court' => $ct($t) . '–' . $ct($f)];
+    }
+    return $out;
+}
+
+/**
+ * Couverture d'un créneau : qui est là, et la formation minimale est-elle tenue ?
+ * Règle (celle de la formation minimale du site) : 1 transporteur + 1 moissonneur
+ * + 4 pilotes d'ornithoptère. Les « Présent (poste à définir) » comptent dans
+ * l'effectif mais ne comblent aucun poste : c'est à l'organisateur d'arbitrer.
+ */
+function creneau_couverture($signups, $i) {
+    $presents = 0; $maybe = 0; $transp = 0; $moiss = 0; $pilotes = 0;
+    foreach ($signups as $su) {
+        $cr = $su['creneaux'] ?? null;
+        // Inscription sans créneau déclaré : compte partout. Un joueur qui ne précise
+        // rien est réputé disponible — ne pas le faire disparaître des colonnes.
+        if (is_array($cr) && !in_array($i, array_map('intval', $cr), true)) continue;
+        $statut = $su['statut'] ?? 'present';
+        if ($statut === 'maybe') { $maybe++; continue; }
+        if ($statut !== 'present') continue;
+        $presents++;
+        $p = $su['poste'] ?? '';
+        if ($p === 'transporteur') $transp++;
+        elseif ($p === 'moissonneur') $moiss++;
+        elseif ($p === 'pilote_orni' || $p === 'pilote_orni_cac') $pilotes++;
+    }
+    $manques = [];
+    if (!$transp)        $manques[] = 'transporteur';
+    if (!$moiss)         $manques[] = 'moissonneur';
+    if ($pilotes < 4)    $manques[] = (4 - $pilotes) . ' pilote' . (4 - $pilotes > 1 ? 's' : '');
+    return ['presents' => $presents, 'maybe' => $maybe, 'manques' => $manques];
+}
+
 // Formate la durée pour l'affichage : "2" → "2h" ; "1h30"/"2h" → tels quels ; vide → "".
 function fmt_duree($d) {
     $d = trim((string)$d);
@@ -1152,6 +1225,33 @@ function upsert_signup(&$s, $user, $poste, $statut) {
 // Inscription à un poste (select des types à postes). Statut « présent » + poste choisi.
 // Le poste est validé contre le jeu de postes DU TYPE de la sortie (épice ≠ PvP) :
 // on relit donc la sortie avant de muter, pour connaître son type.
+/**
+ * Enregistre les créneaux d'un joueur sur une sortie longue.
+ * Exige une inscription préalable à un poste : sans poste, la couverture ne
+ * saurait pas quoi compter, et un joueur « disponible pour rien » brouille la
+ * lecture au lieu de l'aider.
+ */
+function handle_creneaux($body, $sortieId) {
+    $valeurs = array_map('intval', $body['data']['values'] ?? []);
+    $sortie  = find_sortie($sortieId);
+    if (!$sortie) respond_message("Cette sortie n'existe plus.", true);
+    $user = interaction_user($body);
+    $inscrit = false;
+    foreach ($sortie['signups'] ?? [] as $su) {
+        if (($su['id'] ?? '') === $user['id'] && ($su['statut'] ?? 'present') === 'present') { $inscrit = true; break; }
+    }
+    if (!$inscrit) respond_message("Choisis d'abord ton poste dans le menu du dessus, puis tes créneaux.", true);
+    $updated = mutate_sortie($sortieId, function (&$s) use ($user, $valeurs) {
+        foreach ($s['signups'] as &$su) {
+            if (($su['id'] ?? '') === $user['id']) { $su['creneaux'] = array_values(array_unique($valeurs)); sort($su['creneaux']); }
+        }
+        unset($su);
+    });
+    if (!$updated) respond_message("Cette sortie n'existe plus.", true);
+    echo json_encode(['type' => 7, 'data' => build_sortie_message($updated)]);
+    exit;
+}
+
 function handle_signup($body, $sortieId) {
     $poste  = $body['data']['values'][0] ?? '';
     $sortie = find_sortie($sortieId);
@@ -1504,6 +1604,35 @@ function build_sortie_message($sortie) {
     $usePostes = (bool)$t['postes'];
 
     $fields = [];
+
+    // ---- Couverture par créneau (sorties longues seulement) ----
+    // C'est LA question d'un rally : pas « qui vient » mais « à quelle heure
+    // sommes-nous assez nombreux ». Le tableau est en tête des champs pour être
+    // lu avant les listes de noms, et en bloc de code pour rester aligné.
+    $creneaux = $usePostes ? creneaux_sortie($sortie) : [];
+    if ($creneaux) {
+        $lignes = []; $complets = 0;
+        foreach ($creneaux as $c) {
+            $cov = creneau_couverture($signups, $c['i']);
+            if (!$cov['manques']) $complets++;
+            $pleins = min(8, $cov['presents']);
+            $doutes = min(8 - $pleins, $cov['maybe']);
+            $barre  = str_repeat('█', $pleins) . str_repeat('▒', $doutes) . str_repeat('░', 8 - $pleins - $doutes);
+            $effectif = $cov['presents'] . ($cov['maybe'] ? ' (+' . $cov['maybe'] . '?)' : '');
+            $verdict = !$cov['presents'] ? 'personne'
+                     : (!$cov['manques'] ? 'complet' : 'manque ' . implode(', ', $cov['manques']));
+            $lignes[] = sprintf('%-6s %s  %-8s %s', $c['court'], $barre, $effectif, $verdict);
+        }
+        $fields[] = [
+            'name'   => '⏱️ Couverture — ' . $complets . ' créneau' . ($complets > 1 ? 'x complets' : ' complet') . ' sur ' . count($creneaux),
+            'value'  => "```
+" . implode("
+", $lignes) . "
+```",
+            'inline' => false,
+        ];
+    }
+
     if ($usePostes) {
         // TYPES À POSTES (épice, entraînement PvP) : un champ par poste (présents regroupés)
         $selectable = postes_selectable($stype);
@@ -1619,13 +1748,28 @@ function build_sortie_message($sortie) {
                 'type' => 3, 'custom_id' => "signup:{$sid}",
                 'placeholder' => "M'inscrire à un poste", 'options' => $options,
             ]]],
+        ];
+        // Sortie longue : second menu, à choix multiple. Une seule interaction pour
+        // cocher tous ses blocs. Absent des sorties courtes — rien ne change pour elles.
+        $blocs = creneaux_sortie($sortie);
+        if ($blocs) {
+            $components[] = ['type' => 1, 'components' => [[
+                'type' => 3, 'custom_id' => "creneaux:{$sid}",
+                'placeholder' => 'Mes créneaux de disponibilité',
+                'min_values' => 1, 'max_values' => count($blocs),
+                'options' => array_map(function ($c) {
+                    return ['label' => $c['label'], 'value' => (string)$c['i'], 'emoji' => ['name' => '⏱️']];
+                }, $blocs),
+            ]]];
+        }
+        $components = array_merge($components, [
             ['type' => 1, 'components' => [
                 ['type' => 2, 'style' => 1, 'label' => 'Peut-être',      'emoji' => ['name' => '❓'], 'custom_id' => "maybe:{$sid}"],
                 ['type' => 2, 'style' => 4, 'label' => 'Absent',         'emoji' => ['name' => '✖️'], 'custom_id' => "absent:{$sid}"],
                 ['type' => 2, 'style' => 2, 'label' => 'Me désinscrire', 'custom_id' => "unsignup:{$sid}"],
                 ['type' => 2, 'style' => 2, 'label' => 'Chef de section', 'emoji' => ['name' => '🎖️'], 'custom_id' => "chef:{$sid}"],
             ]],
-        ];
+        ]);
     } else {
         // AUTRES TYPES : RSVP simple (Présent / Peut-être / Absent / Me désinscrire).
         $components = [

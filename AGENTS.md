@@ -201,6 +201,15 @@ Tous constatés en production ou en test, pas théoriques.
   chiffre fixe a une date de péremption. `max_score` n'est qu'un **plancher** ; la barre
   réelle est `score_ceiling()` = `max(plancher, record all-time × 3)` et suit donc la
   communauté. Si un score légitime saute encore, c'est le FACTEUR qu'on discute.
+- **Un nouveau jeu doit arriver dans la palette du hub**, pas avec la sienne : `--bg:#0a0402`,
+  `--gold:#cda434`, `--text:#f5deb3`, `--muted:#7c5e2a`, titres `'Cinzel', Georgia, serif`
+  (la police n'est pas chargée, elle retombe sur Georgia — c'est voulu et commun aux six jeux).
+  Un fond STATIQUE trahit aussi l'intrus : tous les autres ont un ciel qui bouge.
+- **Tester un jeu canvas dans le pane navigateur est impossible en l'état** : l'onglet reste
+  caché, donc `requestAnimationFrame` ne se déclenche jamais et l'écran est noir. Le
+  contournement qui marche : une page jetable qui avance moteur et vue À LA MAIN puis appelle
+  `draw()` une seule fois depuis `img.onload` (pas de rAF). On peut alors photographier
+  n'importe quelle vague. Ne pas conclure « le jeu est cassé » sur un canvas noir.
 - Le secret anti-triche est **servi au client** : le hash ne protège de rien face à
   quelqu'un de déterminé. C'est le plafond qui fait le garde-fou réel.
 - L'affichage « meilleur score » des jeux vient du `localStorage`, écrit **avant** l'appel

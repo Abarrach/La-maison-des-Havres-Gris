@@ -172,7 +172,7 @@
         $('score').textContent = format(game.score); $('ammo').textContent = Math.floor(game.energy);
         $('heat').style.width = game.heat+'%';
         const hot = game.overheated || game.heat >= 70;
-        $('heat').style.background = hot ? '#ff9279' : '#93e5ee';
+        $('heat').style.background = hot ? '#c4553c' : '#cda434';
         $('heat-value').textContent = Math.ceil(game.heat)+' %';
         $('heat-value').style.color = hot ? '#ff9279' : '#eef3f3';
         $('weapon-state').textContent = game.overheated ? 'SURCHAUFFE · ATTENDEZ' : 'TEMPÉRATURE';

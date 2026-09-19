@@ -1000,10 +1000,13 @@ function creneau_couverture($signups, $i) {
         elseif ($p === 'moissonneur') $moiss++;
         elseif ($p === 'pilote_orni' || $p === 'pilote_orni_cac') $pilotes++;
     }
+    // Abrégé mais LISIBLE : « T·M·4P » tenait dans la largeur mais ne disait rien à
+    // personne. « transp. » et « moiss. » se comprennent sans légende, et économisent
+    // quand même onze caractères sur les mots entiers — la ligne reste dans le champ.
     $manques = [];
-    if (!$transp)     $manques[] = 'T';
-    if (!$moiss)      $manques[] = 'M';
-    if ($pilotes < 4) $manques[] = (4 - $pilotes) . 'P';
+    if (!$transp)     $manques[] = 'transp.';
+    if (!$moiss)      $manques[] = 'moiss.';
+    if ($pilotes < 4) $manques[] = (4 - $pilotes) . ' pilote' . (4 - $pilotes > 1 ? 's' : '');
     return ['presents' => $presents, 'maybe' => $maybe, 'manques' => $manques];
 }
 
@@ -1632,13 +1635,13 @@ function build_sortie_message($sortie) {
             // toutes lettres, barre de progression comprise. D'où les initiales, explicitées
             // par une légende sous le tableau.
             $effectif = $cov['presents'] . '/' . RALLY_MINIMUM . ($cov['maybe'] ? ' +' . $cov['maybe'] . '?' : '');
-            $verdict  = !$cov['manques'] ? 'complet' : 'manque ' . implode('·', $cov['manques']);
+            $verdict  = !$cov['manques'] ? 'complet' : 'manque ' . implode(', ', $cov['manques']);
             $lignes[] = sprintf('%s %-9s %s', $c['court'], $effectif, $verdict);
         }
         $fields[] = [
             'name'   => '⏱️ Couverture — ' . $complets . ' créneau' . ($complets > 1 ? 'x complets' : ' complet') . ' sur ' . count($creneaux),
             'value'  => "```\n" . implode("\n", $lignes) . "\n```"
-                      . 'T transporteur · M moissonneur · P pilote · +n? peut-être',
+                      . '+n? = inscrits « peut-être » sur ce créneau',
             'inline' => false,
         ];
     }

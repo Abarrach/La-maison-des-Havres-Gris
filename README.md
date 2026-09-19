@@ -605,11 +605,12 @@ Né d'un besoin concret : organiser une récolte d'épice de **8 h à 16 h** et 
 
   ```
   08–10 7/6       complet
-  10–12 6/6       manque 2P
-  12–14 4/6       manque M·3P
-  14–16 5/6 +1?   manque M·1P
+  10–12 6/6       manque 2 pilotes
+  12–14 4/6       manque moiss., 3 pilotes
+  14–16 5/6 +1?   manque moiss., 1 pilote
   ```
-  légende : `T transporteur · M moissonneur · P pilote · +n? peut-être`
+
+  Premier jet trop long (68 caractères, la ligne passait à la ligne), second jet trop cryptique (`manque M·3P` — abrégé au point de ne plus rien dire, retour utilisateur immédiat). L'équilibre tenable : `transp.` / `moiss.` et les pilotes en toutes lettres, **42 caractères en usage courant, 51 au pire** (personne d'inscrit sur le créneau — soit le cas où le message importe le moins). Plus besoin de légende de rôles : seul le `+n?` en demande une.
 
   ⚠ **Un champ d'encart Discord est ÉTROIT.** Le premier jet écrivait « manque transporteur, moissonneur, 4 pilotes » en toutes lettres avec une barre de progression : au-delà d'une trentaine de caractères la ligne passe à la ligne et l'alignement du bloc de code s'effondre — illisible, surtout sur mobile. D'où les initiales et le format `présents/minimum`, qui tiennent en **30 caractères au pire**. Le titre du champ résume : « ⏱️ Couverture — 1 créneau complet sur 4 ». Tout le monde voit le trou de midi **avant** samedi et quelqu'un peut décaler sa pause.
 - **Règle de viabilité** : celle de la formation minimale du site — **1 transporteur + 1 moissonneur + 4 pilotes d'ornithoptère**. Volontairement simple ; l'organisateur arbitre avec les inscrits. Un « Présent (poste à définir) » compte dans l'effectif mais **ne comble aucun poste**.

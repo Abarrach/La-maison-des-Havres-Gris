@@ -11,6 +11,7 @@ const files = new Map([
     ['/jeux/dernier_rempart_view.js',['dernier_rempart_view.js','text/javascript; charset=utf-8']],
     ['/jeux/dernier_rempart.js',['dernier_rempart.js','text/javascript; charset=utf-8']],
     ['/jeux/img/rempart_arrakis.webp',['img/rempart_arrakis.webp','image/webp']],
+    ['/jeux/img/rempart_buildings.png',['img/rempart_buildings.png','image/png']],
 ]);
 http.createServer((req,res)=>{
     if(req.method!=='GET'){res.writeHead(405);res.end();return;}
@@ -23,4 +24,4 @@ http.createServer((req,res)=>{
         if(file[0].endsWith('.html'))content=content.toString('utf8').replace('<script src="../auth-guard.js"></script>','<!-- Garde conservée dans le fichier livré ; aperçu local uniquement. -->');
         res.writeHead(200,{'Content-Type':file[1],'Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(content);
     }catch(_){res.writeHead(500);res.end('Preview asset unavailable');}
-}).listen(8768,'127.0.0.1',()=>console.log('Dernier Rempart : http://127.0.0.1:8768/jeux/dernier_rempart.html'));
+}).listen(Number(process.argv[2])||8768,'127.0.0.1',()=>console.log('Dernier Rempart : http://127.0.0.1:'+(Number(process.argv[2])||8768)+'/jeux/dernier_rempart.html'));

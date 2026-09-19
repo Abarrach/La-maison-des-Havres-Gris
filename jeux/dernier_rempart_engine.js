@@ -83,7 +83,7 @@
             const launchY = launchX === 480 ? 604 : GROUND;
             this.shots.push({ x: launchX, y: launchY, sx: launchX, sy: launchY, tx: x, ty: y, chain: { kills: 0, emergency: false, shot: true, useful: false } });
             this.energy--; this.cooldown = .16; this.stats.shots++;
-            this.heat = Math.min(100, this.heat + 22); this.coolingDelay = .12;
+            this.heat = Math.min(100, this.heat + 19); this.coolingDelay = .12;
             if (this.heat >= 100) {
                 this.overheated = true; this.stats.overheats++; this.emit('overheat');
             }

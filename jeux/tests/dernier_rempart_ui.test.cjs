@@ -72,7 +72,13 @@ async function settle(done){
         const submissions=h.requests.filter(r=>r.body?.action==='submit');assert.equal(submissions.length,1);
         assert.equal(submissions[0].body.score,1500);assert.match(submissions[0].body.hash,/^[0-9a-f]{64}$/);
         if(options.accept&&!options.networkFail){assert.match(h.element('save').textContent,/Score accepté/);assert.match(h.element('best').textContent,/1.?500/);}
-        else{assert.match(h.element('save').textContent,/non enregistré/);assert.equal(h.element('retry-save').hidden,false);assert.ok(!/1.?500/.test(h.element('best').textContent));}
+        else{
+            assert.match(h.element('save').textContent,/non enregistré/);assert.equal(h.element('retry-save').hidden,false);assert.ok(!/1.?500/.test(h.element('best').textContent));
+            h.click('restart');assert.equal(h.element('retry-save').hidden,false);
+            h.click('retry-save');
+            await settle(()=>h.requests.filter(r=>r.body?.action==='submit').length===2);
+            assert.equal(h.requests.filter(r=>r.body?.action==='submit')[1].body.score,1500);
+        }
     }
     console.log('OK score signé, acceptation, refus explicite, panne réseau, aucun faux record');
     console.log('Tests interface réussis (DOM/canvas simulés, aucun serveur de scores contacté).');

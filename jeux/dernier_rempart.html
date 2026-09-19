@@ -22,6 +22,25 @@ aside{border-top:1px solid var(--line);padding-top:16px}aside h2{font-size:11px;
 @media(max-width:550px){main{padding:0 6px 15px}header{padding:12px 10px}h1{font-size:19px}.stage{border-radius:2px}.hud{padding:9px 12px}.hud strong{font-size:20px}.hud label{font-size:8px}.hud .wave strong{font-size:14px}.hud small{font-size:9px}.panel{padding:14px 18px}.panel h2{font-size:25px;margin:5px 0}.panel p{font-size:12px;margin:8px 0}.brief{margin:12px 0;gap:6px}.brief b{font-size:17px}.brief span{font-size:10px}.panel .hint{display:none}.controls{gap:6px}.controls button{padding:9px;font-size:12px}.controls .pulse{min-width:170px}.energy{width:80px}.overlay{padding:10px}.panel .big-score{font-size:30px}}
 @media(max-width:550px){.overlay{padding:6px}.panel{max-height:100%;overflow-y:auto;padding:8px 14px}.brief{margin:6px 0}.panel p{font-size:11px;margin:6px 0}.panel h2{font-size:22px}.panel .eyebrow{font-size:9px}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+/* Édition guilde : minéral, laiton patiné, bleu réservé aux commandes actives. */
+body{background-color:#12110f;background-image:radial-gradient(ellipse at 50% -20%,#55433466,transparent 65%)}
+header{border-bottom:1px solid #b89c6428;margin-bottom:20px;padding-bottom:20px}
+h1{font-family:Georgia,serif;letter-spacing:.13em;font-size:29px;color:#f0e5ce}
+.eyebrow{color:#cbb382}.stage{border-color:#ac936651;border-radius:2px;box-shadow:0 20px 70px #0008}
+.overlay{background:#0b11164d;backdrop-filter:blur(1px)}
+.panel{position:relative;background:linear-gradient(145deg,#27251ff5,#111b21f5);border-color:#c4a66d80;border-top:3px solid #c4a66d;padding-top:24px}
+.panel:before{content:"◆";display:block;color:#c4a66d;font-size:13px;margin-bottom:10px}
+.panel h2{font-family:Georgia,serif;font-weight:400}.panel .big-score{font-family:Georgia,serif}
+.primary{background:linear-gradient(110deg,#c6a776,#ead3a0);border-radius:1px}
+.hud{background:linear-gradient(#101511e8,transparent)}.hud label{color:#c8b58f}.hud small{color:#b4bcb9}
+.energy{height:6px;border:1px solid #d1b57c40}.controls button{border-radius:1px}
+aside{border-color:#bba16c55}aside h2{color:#d1b989}aside p{color:#b1b0a6}
+.result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:15px 0}
+.result-grid>div{padding:8px 5px;border:1px solid #d0b98525;background:#080d1133}
+.result-grid b{display:block;font-size:18px;font-weight:500;color:#eed7a6}
+.result-grid small{display:block;font-size:10px;color:#aebbbf}
+@media(max-width:850px){aside{display:block}aside>.legend,aside>p,aside>h2{display:none}.lb{margin-top:0}header{margin-bottom:12px}}
+@media(max-width:550px){h1{font-size:18px}header{padding-bottom:12px}.panel{padding:8px 14px}.panel:before{display:none}.result-grid{gap:4px;margin:8px 0}.result-grid b{font-size:15px}.result-grid small{font-size:9px}.hud{gap:6px}.hud small{font-size:8px}.hud label{letter-spacing:.05em}}
 </style>
 </head>
 <body>
@@ -42,10 +61,10 @@ aside{border-top:1px solid var(--line);padding-top:16px}aside h2{font-size:11px;
 </section>
 <aside><h2>IDENTIFIER LA MENACE</h2><div class="legend normal"><span class="symbol">▼</span><div>Missile<small>Une explosion suffit</small></div></div><div class="legend fast"><span class="symbol">ϟ</span><div>Flèche rapide · vague 2<small>Anticipez davantage</small></div></div><div class="legend split"><span class="symbol">◇</span><div>Charge multiple · vague 3<small>Interceptez avant la séparation</small></div></div><div class="legend armored"><span class="symbol">⬡</span><div>Blindé · vague 4<small>Deux explosions distinctes</small></div></div><p>Les chaînes multiplient les points. Les interceptions près du sol donnent un bonus de sauvetage — mais la marge d'erreur est mince.</p><p>Chaque vague répare un point sur un bâtiment encore debout. Un bâtiment détruit reste perdu.</p><div class="lb"><h2>CLASSEMENT DE GUILDE</h2><div class="tabs"><button data-scope="weekly" aria-pressed="true">Semaine</button><button data-scope="alltime" aria-pressed="false">Hall of Fame</button></div><ol id="leaderboard"><li>Chargement…</li></ol></div></aside>
 </div>
-<footer>Création de fan inspirée de Missile Command, dans l'univers de Dune: Awakening. Mécaniques arcade non officielles. Version de test · aucun avantage permanent à débloquer.</footer>
+<footer>Dernier Rempart · Édition guilde 1.0 · Création de fan inspirée de Missile Command et de l'univers de Dune: Awakening. Non affiliée à Funcom ou Atari. Illustrations originales ; mécaniques arcade non officielles.</footer>
 </main>
-<script src="dernier_rempart_engine.js?v=2"></script>
-<script src="dernier_rempart_view.js?v=2"></script>
-<script src="dernier_rempart.js?v=2"></script>
+<script src="dernier_rempart_engine.js?v=3"></script>
+<script src="dernier_rempart_view.js?v=3"></script>
+<script src="dernier_rempart.js?v=3"></script>
 </body>
 </html>

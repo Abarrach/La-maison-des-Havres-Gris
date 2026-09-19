@@ -60,7 +60,9 @@ test('menaces variées à partir de la quatrième vague',()=>{
 });
 test('rafale : surchauffe, blocage puis refroidissement sans clic parasite',()=>{
     const g=empty();
-    for(let i=0;i<6;i++){g.fire(450,100);advance(g,.17);}
+    for(let i=0;i<5;i++){assert.ok(g.fire(450,100));advance(g,.17);}
+    assert.equal(g.overheated,false); // Édition 1.0 : un tir de marge supplémentaire.
+    assert.ok(g.fire(450,100));advance(g,.17);
     assert.equal(g.overheated,true);assert.equal(g.stats.overheats,1);
     const shots=g.stats.shots;assert.equal(g.fire(450,100),false);assert.equal(g.stats.shots,shots);
     advance(g,1.7);assert.equal(g.overheated,false);assert.ok(g.fire(450,100));

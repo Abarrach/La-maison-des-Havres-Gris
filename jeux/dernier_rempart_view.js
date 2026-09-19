@@ -5,8 +5,9 @@
     'use strict';
     const COLORS = { normal: '#ff9279', fast: '#ffcf73', split: '#dfabff', armored: '#c9e5f5' };
     class View {
-        constructor(canvas, background) {
+        constructor(canvas, background, buildings) {
             this.canvas = canvas; this.ctx = canvas.getContext('2d'); this.background = background;
+            this.buildings = buildings;
             this.particles = []; this.labels = []; this.banner = ''; this.bannerLife = 0;
             this.pulseFlash = 0; this.impactFlash = 0; this.aim = null;
             this.reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -64,10 +65,23 @@
             const c = this.ctx, x = city.x, y = 558;
             c.save(); c.translate(x, y);
             const alive = city.hp > 0;
-            c.fillStyle = '#070d13'; c.beginPath(); c.ellipse(0, 5, 70, 12, 0, 0, Math.PI * 2); c.fill();
+            c.fillStyle = '#070d1377'; c.beginPath(); c.ellipse(0, 2, 65, 6, 0, 0, Math.PI * 2); c.fill();
             if (!alive) {
                 c.fillStyle = '#293037'; c.beginPath(); c.moveTo(-48, 0); c.lineTo(-28, -11); c.lineTo(-13, -5); c.lineTo(-2, -19); c.lineTo(20, -7); c.lineTo(38, -12); c.lineTo(50, 0); c.fill();
                 this.text('PERDU', 0, 26, 10, '#ec997f'); c.restore(); return;
+            }
+            if (this.buildings && this.buildings.complete && this.buildings.naturalWidth > 0) {
+                const cell = this.buildings.naturalWidth / 3;
+                c.drawImage(this.buildings,index*cell,0,cell,this.buildings.naturalHeight,-68,-109,136,128);
+                if(city.hp < 3) {
+                    c.globalAlpha=.45;
+                    this.line([[-15,-48],[-5,-32],[-13,-20],[3,-8]],'#160e0b',3);
+                    c.globalAlpha=1;
+                }
+                for(let i=0;i<3;i++){c.fillStyle=i<city.hp?(city.hp===1?'#ff9279':'#d9c399'):'#ffffff20';c.fillRect(-22+i*16,14,12,3);}
+                this.text(city.name,0,33,10,'#e3d7c1');
+                if(city.hp===1)this.circle(0,-35,62,'#ff927950');
+                c.restore();return;
             }
             const wall = c.createLinearGradient(-42, -40, 35, 0); wall.addColorStop(0, '#8b7c65'); wall.addColorStop(.5, '#4e5352'); wall.addColorStop(1, '#252d33');
             c.fillStyle = wall; c.strokeStyle = '#c4bba16b'; c.lineWidth = 1;
@@ -180,8 +194,9 @@
             }
             if (this.bannerLife > 0 && active) {
                 c.globalAlpha = Math.min(1,this.bannerLife*2);
-                this.text(this.banner,480,112,17,'#edcb91');
-                this.text(this.subtitle,480,133,10,'#d0dde2'); c.globalAlpha = 1;
+                const bannerY = this.canvas.getBoundingClientRect().width < 550 ? 200 : 112;
+                this.text(this.banner,480,bannerY,17,'#edcb91');
+                this.text(this.subtitle,480,bannerY+21,10,'#d0dde2'); c.globalAlpha = 1;
             }
             if (!this.reduced && this.pulseFlash > 0) { c.fillStyle = 'rgba(153,232,242,' + this.pulseFlash*.16 + ')'; c.fillRect(0,0,960,640); }
             if (this.impactFlash > 0) {

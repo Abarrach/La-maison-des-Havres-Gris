@@ -1,11 +1,13 @@
 (function () {
     'use strict';
     const $ = id => document.getElementById(id);
-    const canvas = $('game'), image = new Image();
+    const canvas = $('game'), image = new Image(), buildings = new Image();
     image.src = 'img/rempart_arrakis.webp';
-    let game = new Rempart.Game(), view = new RempartView(canvas, image), mode = 'menu';
+    buildings.src = 'img/rempart_buildings.png';
+    let game = new Rempart.Game(), view = new RempartView(canvas, image, buildings), mode = 'menu';
     let held = false, last = 0, accumulator = 0, runId = 0, lastResult = null, saving = false;
     let scope = 'weekly', leaderboardRequest = 0, best = 0;
+    const failedResults = [];
     const local = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname) || location.protocol === 'file:';
     const format = n => Math.floor(n).toLocaleString('fr-FR');
     const audio = {
@@ -100,11 +102,16 @@
                 throw new Error(messages[data.error] || 'Score non enregistré par le serveur.');
             }
             result.saved = true; best = Math.max(best,result.score);
+            const failedIndex = failedResults.indexOf(result);
+            if (failedIndex >= 0) failedResults.splice(failedIndex,1);
+            $('retry-save').hidden = failedResults.length === 0;
             $('best').textContent = 'Record personnel : '+format(best);
             if (result.id === runId) status('Score accepté par le serveur : '+format(result.score)+' points.');
             leaderboard();
         } catch (error) {
-            if (result.id === runId) { status('Score non enregistré. '+(error.name === 'AbortError' ? 'Le serveur ne répond pas.' : error.message),true); $('retry-save').hidden = false; }
+            if (!failedResults.includes(result)) failedResults.push(result);
+            status('Score non enregistré ('+format(result.score)+' points). '+(error.name === 'AbortError' ? 'Le serveur ne répond pas.' : error.message),true);
+            $('retry-save').hidden = false;
         } finally {
             saving = false;
             // Si une autre partie s'est terminée pendant l'envoi, ne pas la perdre.
@@ -120,10 +127,12 @@
     function start() {
         runId++; lastResult = null; held = false; accumulator = 0;
         game = new Rempart.Game((Date.now() ^ Math.floor(Math.random()*0xffffffff)) >>> 0);
-        view = new RempartView(canvas,image); mode = 'playing';
+        view = new RempartView(canvas,image,buildings); mode = 'playing';
         for (const id of ['intro','paused','ending','retry-save']) $(id).hidden = true;
+        $('retry-save').hidden = failedResults.length === 0;
         $('pause').disabled = false; $('pulse').disabled = false; $('pause').textContent = 'Pause · P';
         status(local ? 'Essai local · aucun score envoyé. Clic devant les missiles, Espace en cas d’urgence.' : 'Clic devant les missiles · Espace : secours · les chaînes rechargent l’impulsion.');
+        if (failedResults.length) status('Un score précédent reste non enregistré. Le bouton de nouvelle tentative est disponible.',true);
         audio.unlock(); canvas.focus({preventScroll:true}); events(); hud();
     }
     function pause() {
@@ -137,7 +146,11 @@
         mode = 'over'; held = false; $('ending').hidden = false; $('pause').disabled = true; $('pulse').disabled = true;
         $('end-score').textContent = format(game.score);
         $('end-title').textContent = game.score > best && game.score > 0 ? 'Belle résistance.' : 'Une dernière salve…';
-        $('stats').textContent = 'Vague '+game.wave+' · '+Math.floor(game.time)+' s · '+game.stats.kills+' interceptions · chaîne record : '+game.stats.bestChain+' · '+game.stats.usefulShots+'/'+game.stats.shots+' tirs utiles · '+game.stats.overheats+' surchauffes · bonus de chaînes : '+format(game.stats.chainBonus);
+        $('stats').replaceChildren(); $('stats').className = 'stats result-grid';
+        for(const [value,label] of [[game.wave,'Vague atteinte'],[Math.floor(game.time)+' s','Résistance'],[game.stats.kills,'Interceptions'],[game.stats.usefulShots+'/'+game.stats.shots,'Tirs utiles'],[game.stats.bestChain,'Meilleure chaîne'],[game.stats.overheats,'Surchauffes']]) {
+            const item=document.createElement('div'),number=document.createElement('b'),caption=document.createElement('small');
+            number.textContent=value;caption.textContent=label;item.append(number,caption);$('stats').append(item);
+        }
         $('advice').textContent = game.stats.overheats >= 2 ? 'Espacez vos tirs : les surchauffes vous privent de défense. Visez le passage d’un groupe avec un seul tir.' : game.pulse >= 100 ? 'Votre impulsion était prête : Espace aurait pu dégager le ciel.' :
             game.stats.bestChain < 4 ? 'Visez les groupes : une seule explosion peut arrêter une salve entière.' :
             'Les charges violettes se divisent. Les intercepter en altitude évite deux menaces rapides.';
@@ -187,7 +200,7 @@
         if (audio.master) audio.master.gain.value = audio.enabled ? .28 : 0;
         if (audio.enabled) audio.unlock();
     });
-    $('retry-save').addEventListener('click',() => submit(lastResult));
+    $('retry-save').addEventListener('click',() => submit(failedResults[0] || lastResult));
     document.addEventListener('keydown',event => {
         if (event.repeat || event.target.closest('input,textarea,select')) return;
         if (event.code === 'KeyP' || event.code === 'Escape') { event.preventDefault(); pause(); }
@@ -211,6 +224,6 @@
         }
         view.draw(game,mode === 'playing');
     }
-    window.addEventListener('resize',resize); image.onload=resize;
+    window.addEventListener('resize',resize); image.onload=resize; buildings.onload=resize;
     resize(); leaderboard(); personalBest(); requestAnimationFrame(frame);
 })();

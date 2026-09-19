@@ -1,5 +1,13 @@
 # Dernier Rempart — décor
 
+## Atlas de bâtiments — édition guilde 1.0
+
+rempart_buildings.png : atlas original transparent, 2172 × 724 (3 cases de 724 px), généré le 2026-09-19 avec l'outil intégré ImageGen, sans extraction d'assets officiels. Les cases sont découpées au rendu canvas, pas en fichiers séparés. Copie PNG complète conservant l'alpha.
+
+Prompt final :
+
+Use case: stylized-concept. Asset type: production game sprite atlas for Dune Awakening inspired fan arcade base defense. One wide 3:1 transparent PNG containing EXACTLY THREE separate buildings in one horizontal row of three equal square cells. Each building fits fully in its own cell with 8 percent padding all around and the same ground baseline at 90 percent of image height. LEFT: a fortified water cistern complex, twin cylindrical reservoirs integrated into massive sand-colored concrete buttresses and pipes. CENTER: a compact angular spice-fuel power generator, ribbed cooling towers, dark metal vents, small amber lamps, clearly power plant not wind turbine. RIGHT: an ornithopter hangar with heavy sloped sandstone walls, recessed black trapezoid door, warm amber light inside. ORIGINAL architecture inspired by Dune Awakening brutalist industrial desert outposts, no official logos. Highly detailed textured 3D game render, weathered warm sandstone, tarnished bronze, gunmetal, dust, few pale blue operational lights. Front three-quarter view from only slightly above ground, low orthographic camera, identical scale and lighting across sprites. Warm sunset rim light from right, cool dusk fill from left. Important: actual transparent background, no opaque backdrop, no ground plane outside each object's small plinth, no fake checkerboard, no scene, no text, no labels, no frames, no overlapping sprites. Strong distinct silhouettes legible when reduced to 140px width.
+
 Fichier : `rempart_arrakis.webp`, 1536 × 1024, décor original généré avec l'outil intégré ImageGen le 2026-09-18. Aucun asset extrait de Dune: Awakening ni d'Atari. Fond seul ; bâtiments, missiles et explosions sont rendus séparément pour préserver les collisions et la lisibilité.
 
 Image source conservée hors dépôt dans le dossier des images générées Codex ; conversion WebP qualité 85. Aucun appel distant ni dépendance ImageGen pendant une partie.

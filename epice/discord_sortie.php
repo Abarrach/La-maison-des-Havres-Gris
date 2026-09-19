@@ -1011,7 +1011,7 @@ function creneaux_resume($indices, $creneaux) {
  * l'effectif mais ne comblent aucun poste : c'est à l'organisateur d'arbitrer.
  */
 function creneau_couverture($signups, $i) {
-    $presents = 0; $maybe = 0; $transp = 0; $moiss = 0; $pilotes = 0;
+    $presents = 0; $maybe = 0; $transp = 0; $moiss = 0; $pilotes = 0; $noms = [];
     foreach ($signups as $su) {
         $cr = $su['creneaux'] ?? null;
         // Inscription sans créneau déclaré : compte partout. Un joueur qui ne précise
@@ -1021,6 +1021,7 @@ function creneau_couverture($signups, $i) {
         if ($statut === 'maybe') { $maybe++; continue; }
         if ($statut !== 'present') continue;
         $presents++;
+        $noms[] = $su['name'] ?? '?';
         $p = $su['poste'] ?? '';
         if ($p === 'transporteur') $transp++;
         elseif ($p === 'moissonneur') $moiss++;
@@ -1033,7 +1034,7 @@ function creneau_couverture($signups, $i) {
     if (!$transp)     $manques[] = 'transporteur';
     if (!$moiss)      $manques[] = 'moissonneur';
     if ($pilotes < 4) $manques[] = (4 - $pilotes) . ' pilote' . (4 - $pilotes > 1 ? 's' : '');
-    return ['presents' => $presents, 'maybe' => $maybe, 'manques' => $manques];
+    return ['presents' => $presents, 'maybe' => $maybe, 'manques' => $manques, 'noms' => $noms];
 }
 
 // Formate la durée pour l'affichage : "2" → "2h" ; "1h30"/"2h" → tels quels ; vide → "".
@@ -1655,54 +1656,42 @@ function build_sortie_message($sortie) {
         foreach ($creneaux as $c) {
             $cov = creneau_couverture($signups, $c['i']);
             if (!$cov['manques']) $complets++;
-            // PAS de bloc de code. Aligner des colonnes en chasse fixe dans un champ
-            // d'encart est perdu d'avance : la largeur utile tourne autour de 41 caractères
-            // sur un client de bureau et bien moins sur téléphone, et dès qu'une ligne
-            // déborde elle passe à la ligne — l'alignement s'effondre et le tableau devient
-            // illisible. Trois essais pour l'admettre. En texte courant, une ligne trop
-            // longue se replie proprement : il n'y a plus de colonnes à casser, et le
-            // symbole de tête suffit à balayer les créneaux du regard.
+            // UNE entrée par créneau, verdict puis présents. Le regroupement par
+            // combinaison de créneaux (« 08–12 · trois noms ») était plus court dans les cas
+            // favorables mais NON BORNÉ : avec quatre blocs il existe quinze combinaisons,
+            // donc douze inscrits pouvaient produire douze lignes. Par créneau, c'est
+            // toujours autant de lignes qu'il y a de créneaux — quatre ou cinq, jamais plus.
+            // Les noms en italique se distinguent du verdict sans bloc de code ni colonnes.
             $marque = !$cov['manques'] ? '✅' : ($cov['presents'] * 2 < RALLY_MINIMUM ? '✖' : '⚠');
             $effectif = $cov['presents'] . ' présent' . ($cov['presents'] > 1 ? 's' : '')
                       . ($cov['maybe'] ? ' (+' . $cov['maybe'] . ' ?)' : '');
             $verdict  = !$cov['manques'] ? 'complet' : 'manque ' . implode(', ', $cov['manques']);
             $lignes[] = $marque . ' **' . $c['court'] . '** · ' . $effectif . ' — ' . $verdict;
+            // Garde-fou : un champ d'encart plafonne à 1024 caractères. Avec cinq créneaux
+            // et une sortie très fournie, la liste nominative pourrait le dépasser et
+            // Discord rejetterait TOUT le message.
+            if ($cov['noms']) {
+                // strlen() et non mb_strlen() : PAS de mbstring sur le serveur (cf. AGENTS.md).
+                // On compte donc des OCTETS — un prénom accentué en pèse un peu plus qu'il
+                // n'occupe de caractères, ce qui tronque un cheveu plus tôt. C'est un
+                // garde-fou, pas une mise en page : l'approximation est sans conséquence.
+                // Budget ADAPTATIF : la limite de 1024 se partage entre tous les créneaux.
+                // Un plafond fixe tenait à quatre blocs et sautait à six (rally de 12 h).
+                $budget = max(60, intdiv(900, count($creneaux)) - 80);
+                $liste = implode(', ', $cov['noms']);
+                if (strlen($liste) > $budget) {
+                    $court = [];  $n = 0;
+                    foreach ($cov['noms'] as $nom) { if (strlen(implode(', ', $court) . $nom) > $budget - 20) break; $court[] = $nom; $n++; }
+                    $liste = implode(', ', $court) . ' … +' . (count($cov['noms']) - $n);
+                }
+                $lignes[] = '*' . $liste . '*';
+            }
         }
         $fields[] = [
             'name'   => '⏱️ Couverture — ' . $complets . ' créneau' . ($complets > 1 ? 'x complets' : ' complet') . ' sur ' . count($creneaux),
             'value'  => implode("\n", $lignes),
             'inline' => false,
         ];
-
-        // Disponibilités : un champ PLEINE LARGEUR, groupé PAR PLAGE et non par personne.
-        // Mettre la plage à côté de chaque nom dans les colonnes de postes paraissait
-        // économe, mais ces colonnes font un tiers de largeur : « Abarrach · 08–10,
-        // 14–16 » y tient sur deux lignes et l'encart devient un mur en escalier.
-        // Groupé par plage, une sortie de douze personnes tient en trois ou quatre
-        // lignes — et ça se lit comme un planning : qui est là, et quand.
-        $parPlage = [];
-        foreach ($signups as $su) {
-            if (($su['statut'] ?? 'present') !== 'present') continue;
-            $plage = creneaux_resume($su['creneaux'] ?? null, $creneaux);
-            if ($plage === '') continue;          // n'a rien précisé : compte partout
-            // On mémorise le premier bloc pour trier : classer les libellés par ordre
-            // alphabétique marcherait pour une journée, mais pas pour un rally de nuit
-            // où « 00–06 » passerait avant « 22–00 ».
-            $premier = min(array_map('intval', $su['creneaux']));
-            if (!isset($parPlage[$plage])) $parPlage[$plage] = ['debut' => $premier, 'noms' => []];
-            $parPlage[$plage]['noms'][] = $su['name'];
-        }
-        if ($parPlage) {
-            uasort($parPlage, function ($a, $b) { return $a['debut'] <=> $b['debut']; });
-            $dispo = [];
-            foreach ($parPlage as $plage => $g) $dispo[] = '**' . $plage . '** · ' . implode(', ', $g['noms']);
-            $muets = 0;
-            foreach ($signups as $su) {
-                if (($su['statut'] ?? 'present') === 'present' && creneaux_resume($su['creneaux'] ?? null, $creneaux) === '') $muets++;
-            }
-            if ($muets) $dispo[] = '*' . $muets . ' inscrit' . ($muets > 1 ? "s n'ont" : " n'a") . ' pas précisé — compté' . ($muets > 1 ? 's' : '') . ' sur tous les créneaux.*';
-            $fields[] = ['name' => '🗓️ Disponibilités', 'value' => implode("\n", $dispo), 'inline' => false];
-        }
     }
 
     if ($usePostes) {

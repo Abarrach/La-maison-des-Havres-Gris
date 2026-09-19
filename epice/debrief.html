@@ -298,6 +298,26 @@
     /* Sous-en-tête d'un sous-bloc dans un assign-group (ex : Assauts dans Défense Rapprochée).
        Doit se voir sans surcharger la hiérarchie de l'assign-group-title principal. */
     .assign-sub-head { display:flex; align-items:center; gap:.4rem; font-size:.68rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--accent); border-top:1px solid var(--border); margin-top:1rem; padding-top:.75rem; margin-bottom:.35rem; }
+    /* Grille joueurs x creneaux (rallys) : lue en diagonale, donc tout doit tenir
+       sur une ligne par personne. Le scroller horizontal evite qu'une journee de
+       10 h (5 colonnes) ne casse la mise en page sur telephone. */
+    .cren-wrap { overflow-x:auto; }
+    .cren-grid { border-collapse:collapse; font-size:.75rem; min-width:100%; }
+    .cren-grid th, .cren-grid td { border:1px solid var(--border); padding:.3rem .5rem; text-align:center; white-space:nowrap; }
+    .cren-grid th { font-size:.66rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--accent); background:var(--surface-2); }
+    .cren-grid .cren-nom { text-align:left; color:var(--text); font-weight:600; }
+    .cren-grid tbody tr:hover { background:var(--accent-glow); }
+    .cren-poste { color:var(--text-muted); font-size:.66rem; font-weight:400; margin-left:.45rem; }
+    .cren-on { color:var(--accent); font-weight:700; }
+    .cren-off { color:var(--text-faint); }
+    .cren-libre { color:var(--text-muted); }   /* visible, mais clairement plus faible qu'un creneau coche */
+    .cren-maybe .cren-nom { color:var(--text-muted); font-weight:400; font-style:italic; }
+    .cren-grid tfoot td { font-size:.68rem; background:var(--surface-2); white-space:normal; }
+    .cren-grid tfoot .cren-nom { font-size:.66rem; letter-spacing:.06em; text-transform:uppercase; color:var(--text-muted); }
+    .cren-peutetre { color:var(--text-muted); font-weight:400; }
+    .cren-verdict-ok { color:#5AB06A; }
+    .cren-verdict-warn { color:var(--accent); }
+    .cren-verdict-ko { color:#C05040; }
     .assign-sub-hint { font-size:.72rem; color:var(--text-muted); font-style:italic; margin-bottom:.6rem; line-height:1.5; }
     .btn-faucon { padding:.4rem .7rem; border-radius:2px; font-size:.65rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; cursor:pointer; border:1px solid var(--border); background:transparent; color:var(--text-muted); font-family:'Inter',sans-serif; white-space:nowrap; }
     .btn-faucon.on { background:var(--accent); border-color:var(--accent); color:#0A0800; }
@@ -1898,6 +1918,15 @@ function normalizeCompo(c) {
 
 let currentCompo = null;
 let currentSignups = []; // inscrits Discord de la sortie active (pour l'autocomplétion des rôles)
+// La sortie complète (date/heure/durée) : la grille des créneaux se déduit de l'horaire,
+// pas des inscriptions — sans elle on ne saurait pas quelles colonnes afficher.
+let currentSortie = null;
+
+// Libellés courts des postes. Défini ici et non dans rosterPop : la grille des créneaux
+// s'en sert aussi, et un catalogue en deux exemplaires finit toujours par diverger
+// (cf. le catalogue des jeux, qui existait en cinq copies).
+// L'ORDRE compte : il sert de tri des lignes de la grille.
+const POSTE_SHORT = { transporteur:'Transp.', moissonneur:'Moiss.', base_avancee:'Base avancée', pilote_orni:'Orni', pilote_orni_cac:'Orni+CaC', orni_scout:'Scout', orni_assaut:'Assaut', defenseur_cac:'CAC', present:'Présent' };
 
 // ============================================================
 // SOUS-ONGLETS ADMIN
@@ -2025,7 +2054,7 @@ async function loadAssignSortie(sid) {
     const res = await fetch(`${API}?action=list&sid=${encodeURIComponent(sid)}`);
     const data = await res.json();
     if (!data.ok || !data.sortie || data.sortie.statut !== 'ouverte') {
-      currentCompo = null;
+      currentCompo = null; currentSortie = null;
       if (actions) actions.style.display = 'none';
       box.innerHTML = '<div class="empty">' + (data.error ? esc(data.error) : 'Sortie indisponible.') + '</div>';
       return;
@@ -2034,6 +2063,7 @@ async function loadAssignSortie(sid) {
     currentAssignSid = sid;
     currentCompo = normalizeCompo(data.sortie.assignation ? data.sortie.assignation : emptyCompo());
     currentSignups = Array.isArray(data.sortie.signups) ? data.sortie.signups : [];
+    currentSortie = data.sortie;
     renderAssignBuilder();
   } catch { box.innerHTML = '<div class="empty">Erreur de connexion.</div>'; }
 }
@@ -2056,10 +2086,129 @@ async function closeSelectedSortie() {
   } catch { uiAlert('Erreur de connexion.'); }
 }
 
+// ============================================================
+// GRILLE DES CRÉNEAUX (rallys)
+// ============================================================
+// Miroir JS de creneaux_sortie() / creneau_couverture() de epice/discord_sortie.php.
+// Duplication assumée et SIGNALÉE : data-api.php ne peut pas inclure discord_sortie.php
+// (c'est un endpoint qui s'exécute au chargement). Si le découpage change côté Discord —
+// seuil, taille de bloc, formation minimale — il faut changer ces trois constantes ici,
+// sinon l'encart Discord et la grille du site diront deux choses différentes sur la
+// même sortie, ce qui est pire que pas de grille du tout.
+const RALLY_SEUIL_H = 6, RALLY_BLOC_H = 2, RALLY_MINIMUM = 6;
+
+function creneauxSortie(sortie) {
+  const heure = String((sortie && sortie.heure) || '').trim();
+  const m = /^(\d{2}):(\d{2})$/.exec(heure);
+  if (!m) return [];
+  const duree = String((sortie && sortie.duree) || '').trim();
+  let h;
+  if (/^\d+$/.test(duree)) h = parseFloat(duree);
+  else { const d = /^(\d+)\s*h\s*(\d+)?$/i.exec(duree); if (!d) return []; h = parseInt(d[1],10) + (d[2] ? parseInt(d[2],10)/60 : 0); }
+  if (h < RALLY_SEUIL_H) return [];
+  const pad = n => String(n).padStart(2,'0');
+  const fmt = mn => pad(Math.floor(mn/60)%24) + ':' + pad(mn%60);
+  const ct  = mn => pad(Math.floor(mn/60)%24);
+  const debut = parseInt(m[1],10)*60 + parseInt(m[2],10), fin = debut + Math.round(h*60), out = [];
+  for (let t = debut, i = 0; t < fin && i < 12; t += RALLY_BLOC_H*60, i++) {
+    const f = Math.min(t + RALLY_BLOC_H*60, fin);
+    out.push({ i, label: fmt(t) + ' → ' + fmt(f), court: ct(t) + '–' + ct(f) });
+  }
+  return out;
+}
+
+// Un inscrit SANS créneau déclaré est réputé disponible partout (même règle que Discord :
+// les inscriptions antérieures au mode rally ne doivent pas disparaître de la grille).
+function dispoCreneau(su, i) {
+  const cr = su && su.creneaux;
+  return !Array.isArray(cr) || cr.map(Number).indexOf(i) !== -1;
+}
+
+function creneauCouverture(signups, i) {
+  let presents = 0, maybe = 0, transp = 0, moiss = 0, pilotes = 0;
+  (signups || []).forEach(su => {
+    if (!dispoCreneau(su, i)) return;
+    const statut = su.statut || 'present';
+    if (statut === 'maybe') { maybe++; return; }
+    if (statut !== 'present') return;
+    presents++;
+    const p = su.poste || '';
+    if (p === 'transporteur') transp++;
+    else if (p === 'moissonneur') moiss++;
+    else if (p === 'pilote_orni' || p === 'pilote_orni_cac') pilotes++;
+  });
+  const manques = [];
+  if (!transp) manques.push('transporteur');
+  if (!moiss)  manques.push('moissonneur');
+  if (pilotes < 4) manques.push((4 - pilotes) + ' pilote' + (4 - pilotes > 1 ? 's' : ''));
+  return { presents, maybe, manques };
+}
+
+// La grille joueurs × créneaux : une ligne par inscrit, une colonne par bloc de 2 h.
+// L'encart Discord répond à « est-ce que ça tient » ; ici l'organisateur prépare les
+// RELÈVES, donc il lui faut le tableau entier d'un coup d'œil — qui part à midi, qui
+// arrive à 14 h — et pas seulement le verdict par créneau.
+function renderCreneauxGrid() {
+  const creneaux = creneauxSortie(currentSortie);
+  if (!creneaux.length) return '';
+
+  const ordre = Object.keys(POSTE_SHORT);
+  const rang = p => { const i = ordre.indexOf(p); return i === -1 ? 99 : i; };
+  const gens = (currentSignups || [])
+    .filter(su => (su.statut || 'present') !== 'absent' && (su.name || '').trim())
+    .slice()
+    .sort((a, b) => rang(a.poste || '') - rang(b.poste || '')
+                 || (a.name || '').localeCompare(b.name || '', 'fr'));
+
+  if (!gens.length) {
+    return `<div class="assign-group"><div class="assign-group-head"><span class="assign-group-title">🕗 Créneaux de disponibilité</span></div>
+      <div class="assign-hint">Personne d'inscrit pour l'instant. La grille se remplira au fur et à mesure des inscriptions Discord.</div></div>`;
+  }
+
+  let h = `<div class="assign-group"><div class="assign-group-head"><span class="assign-group-title">🕗 Créneaux de disponibilité</span></div>
+    <div class="assign-hint">Qui est là, et quand. Une ligne grisée en italique = « peut-être ». Un inscrit qui n'a coché aucun créneau est compté partout (○) — c'est le cas des inscriptions faites avant le passage en rally.</div>
+    <div class="cren-wrap"><table class="cren-grid">
+    <thead><tr><th class="cren-nom">Inscrit</th>`;
+  creneaux.forEach(c => { h += `<th title="${escAttr(c.label)}">${esc(c.court)}</th>`; });
+  h += `</tr></thead><tbody>`;
+
+  gens.forEach(su => {
+    const maybe = (su.statut || 'present') === 'maybe';
+    const libre = !Array.isArray(su.creneaux);
+    const tag = POSTE_SHORT[su.poste || ''] ? `<span class="cren-poste">${esc(POSTE_SHORT[su.poste])}</span>` : '';
+    h += `<tr class="${maybe ? 'cren-maybe' : ''}"><td class="cren-nom">${maybe ? '❓ ' : ''}${esc(su.name)}${tag}</td>`;
+    creneaux.forEach(c => {
+      if (libre) h += `<td class="cren-libre" title="Aucun créneau déclaré : compté partout">○</td>`;
+      else h += dispoCreneau(su, c.i) ? `<td class="cren-on">✓</td>` : `<td class="cren-off">·</td>`;
+    });
+    h += `</tr>`;
+  });
+
+  h += `</tbody><tfoot><tr><td class="cren-nom">Effectif</td>`;
+  creneaux.forEach(c => {
+    const cov = creneauCouverture(currentSignups, c.i);
+    h += `<td>${cov.presents}${cov.maybe ? ` <span class="cren-peutetre">+${cov.maybe}&nbsp;?</span>` : ''}</td>`;
+  });
+  h += `</tr><tr><td class="cren-nom">Verdict</td>`;
+  creneaux.forEach(c => {
+    const cov = creneauCouverture(currentSignups, c.i);
+    // Mêmes seuils que l'encart Discord : complet / il manque du monde / trop juste.
+    const cls = !cov.manques.length ? 'cren-verdict-ok' : (cov.presents * 2 < RALLY_MINIMUM ? 'cren-verdict-ko' : 'cren-verdict-warn');
+    const txt = !cov.manques.length ? '✅ complet' : (cls === 'cren-verdict-ko' ? '✖ ' : '⚠ ') + 'manque ' + cov.manques.join(', ');
+    h += `<td class="${cls}">${esc(txt)}</td>`;
+  });
+  h += `</tr></tfoot></table></div></div>`;
+  return h;
+}
+
 function renderAssignBuilder() {
   const c = currentCompo;
   const box = document.getElementById('assign-builder');
   let h = '';
+
+  // La grille des créneaux d'abord : sur un rally, « qui est là à quelle heure »
+  // conditionne toutes les affectations en dessous. Vide (chaîne '') hors rally.
+  h += renderCreneauxGrid();
 
   // Commandement
   h += `<div class="assign-group">
@@ -2251,7 +2400,6 @@ function rosterNames(c) {
 // NON encore placés dans la compo, filtre à la frappe, clavier ↑/↓/Entrée.
 const rosterPop = (function () {
   let pop = null, input = null, suppress = false, active = -1, hideTimer = null;
-  const POSTE_SHORT = { base_avancee:'Base avancée', moissonneur:'Moiss.', transporteur:'Transp.', defenseur_cac:'CAC', orni_assaut:'Assaut', orni_scout:'Scout', pilote_orni:'Orni', pilote_orni_cac:'Orni+CaC', present:'Présent' };
 
   function ensure() {
     if (pop) return pop;

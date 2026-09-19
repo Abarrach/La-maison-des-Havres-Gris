@@ -604,13 +604,14 @@ Né d'un besoin concret : organiser une récolte d'épice de **8 h à 16 h** et 
 - **Tableau de couverture en tête de l'encart**, avant les listes de noms, en bloc de code pour rester aligné :
 
   ```
-  08–10 ███████░  7        complet
-  10–12 ██████░░  6        manque 2 pilotes
-  12–14 ████░░░░  4        manque moissonneur, 3 pilotes
-  14–16 █████▒░░  5 (+1?)  manque moissonneur, 1 pilote
+  08–10 7/6       complet
+  10–12 6/6       manque 2P
+  12–14 4/6       manque M·3P
+  14–16 5/6 +1?   manque M·1P
   ```
+  légende : `T transporteur · M moissonneur · P pilote · +n? peut-être`
 
-  `█` présent, `▒` peut-être, `░` vide. Le titre du champ résume : « ⏱️ Couverture — 1 créneau complet sur 4 ». Tout le monde voit le trou de midi **avant** samedi et quelqu'un peut décaler sa pause.
+  ⚠ **Un champ d'encart Discord est ÉTROIT.** Le premier jet écrivait « manque transporteur, moissonneur, 4 pilotes » en toutes lettres avec une barre de progression : au-delà d'une trentaine de caractères la ligne passe à la ligne et l'alignement du bloc de code s'effondre — illisible, surtout sur mobile. D'où les initiales et le format `présents/minimum`, qui tiennent en **30 caractères au pire**. Le titre du champ résume : « ⏱️ Couverture — 1 créneau complet sur 4 ». Tout le monde voit le trou de midi **avant** samedi et quelqu'un peut décaler sa pause.
 - **Règle de viabilité** : celle de la formation minimale du site — **1 transporteur + 1 moissonneur + 4 pilotes d'ornithoptère**. Volontairement simple ; l'organisateur arbitre avec les inscrits. Un « Présent (poste à définir) » compte dans l'effectif mais **ne comble aucun poste**.
 - **Une inscription sans créneau déclaré compte dans TOUS les blocs.** Un joueur qui ne précise rien est réputé disponible : le faire disparaître des colonnes donnerait une couverture faussement catastrophique, et ça rend la fonction rétrocompatible avec les inscriptions existantes.
 - ⚠ **Les créneaux sont stockés en INDEX** (`signup.creneaux = [0,2,3]`), pas en horaires absolus. Conséquence à connaître : si l'organisateur **modifie l'heure de début** après des inscriptions, les blocs se décalent avec la sortie et chacun garde « le 1ᵉʳ bloc, le 3ᵉ… » plutôt que « 8 h–10 h ». Si la durée **raccourcit**, les index hors plage sont simplement ignorés. C'est le comportement le moins surprenant dans le cas courant (décalage global d'une sortie), mais il faut le savoir avant de déplacer un rally de 8 h à 10 h.

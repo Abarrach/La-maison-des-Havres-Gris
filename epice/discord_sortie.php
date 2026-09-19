@@ -308,6 +308,8 @@ const DUREE_OPTIONS = [
 // Durée minimale à partir de laquelle on découpe en créneaux, et taille d'un bloc.
 // Deux heures : quatre lignes pour une journée, c'est lu d'un coup d'œil. À l'heure
 // près on obtient huit lignes que plus personne ne lit.
+// Formation minimale d'un créneau : 1 transporteur + 1 moissonneur + 4 pilotes.
+const RALLY_MINIMUM = 6;
 const RALLY_SEUIL_H = 6;
 const RALLY_BLOC_H  = 2;
 
@@ -993,9 +995,9 @@ function creneau_couverture($signups, $i) {
         elseif ($p === 'pilote_orni' || $p === 'pilote_orni_cac') $pilotes++;
     }
     $manques = [];
-    if (!$transp)        $manques[] = 'transporteur';
-    if (!$moiss)         $manques[] = 'moissonneur';
-    if ($pilotes < 4)    $manques[] = (4 - $pilotes) . ' pilote' . (4 - $pilotes > 1 ? 's' : '');
+    if (!$transp)     $manques[] = 'T';
+    if (!$moiss)      $manques[] = 'M';
+    if ($pilotes < 4) $manques[] = (4 - $pilotes) . 'P';
     return ['presents' => $presents, 'maybe' => $maybe, 'manques' => $manques];
 }
 
@@ -1596,7 +1598,7 @@ function build_sortie_message($sortie) {
     foreach ($signups as $su) { if ($st($su) === 'present') $nb++; }
     $desc .= "👥 **{$nb}** inscrit" . ($nb > 1 ? 's' : '');
     if (($sortie['type'] ?? 'epice') === 'epice') {
-        $desc .= "\n🏗️ **Base avancée (si prévue)** : 1 constructeur pilote de buggy + 1 pilote de buggy. **2 buggys roquettes à fournir.** Sous-fief disponible requis pour le constructeur.";
+        $desc .= "\n🏗️ **Base avancée (si prévue)** : 1 constructeur pilote de buggy + 1 pilote de buggy *(buggys roquettes à fournir)*. Sous-fief disponible requis pour le constructeur.";
     }
 
     $stype     = $sortie['type'] ?? 'epice';
@@ -1615,20 +1617,19 @@ function build_sortie_message($sortie) {
         foreach ($creneaux as $c) {
             $cov = creneau_couverture($signups, $c['i']);
             if (!$cov['manques']) $complets++;
-            $pleins = min(8, $cov['presents']);
-            $doutes = min(8 - $pleins, $cov['maybe']);
-            $barre  = str_repeat('█', $pleins) . str_repeat('▒', $doutes) . str_repeat('░', 8 - $pleins - $doutes);
-            $effectif = $cov['presents'] . ($cov['maybe'] ? ' (+' . $cov['maybe'] . '?)' : '');
-            $verdict = !$cov['presents'] ? 'personne'
-                     : (!$cov['manques'] ? 'complet' : 'manque ' . implode(', ', $cov['manques']));
-            $lignes[] = sprintf('%-6s %s  %-8s %s', $c['court'], $barre, $effectif, $verdict);
+            // Un champ d'encart est ÉTROIT : au-delà d'une trentaine de caractères la ligne
+            // passe à la ligne et l'alignement du bloc de code s'effondre — constaté sur le
+            // premier jet, qui écrivait « manque transporteur, moissonneur, 4 pilotes » en
+            // toutes lettres, barre de progression comprise. D'où les initiales, explicitées
+            // par une légende sous le tableau.
+            $effectif = $cov['presents'] . '/' . RALLY_MINIMUM . ($cov['maybe'] ? ' +' . $cov['maybe'] . '?' : '');
+            $verdict  = !$cov['manques'] ? 'complet' : 'manque ' . implode('·', $cov['manques']);
+            $lignes[] = sprintf('%s %-9s %s', $c['court'], $effectif, $verdict);
         }
         $fields[] = [
             'name'   => '⏱️ Couverture — ' . $complets . ' créneau' . ($complets > 1 ? 'x complets' : ' complet') . ' sur ' . count($creneaux),
-            'value'  => "```
-" . implode("
-", $lignes) . "
-```",
+            'value'  => "```\n" . implode("\n", $lignes) . "\n```"
+                      . 'T transporteur · M moissonneur · P pilote · +n? peut-être',
             'inline' => false,
         ];
     }
@@ -1740,7 +1741,7 @@ function build_sortie_message($sortie) {
         $options = [];
         foreach (postes_selectable($stype) as $pid => $plabel) {
             $option = ['label' => $plabel, 'value' => $pid, 'emoji' => ['name' => POSTE_ICON[$pid] ?? '✅']];
-            if ($pid === 'base_avancee') $option['description'] = '1 constructeur pilote de buggy + 1 pilote de buggy. 2 buggys roquettes à fournir.';
+            if ($pid === 'base_avancee') $option['description'] = '1 constructeur pilote de buggy + 1 pilote de buggy (buggys roquettes à fournir).';
             $options[] = $option;
         }
         $components = [

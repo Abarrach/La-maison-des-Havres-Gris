@@ -4,7 +4,7 @@ Version préparée dans le worktree codex/dernier-rempart. Main et production no
 
 ## Livraison manuelle dans /v2 uniquement, puis validation
 
-Envoyer ces six fichiers avec leur arborescence :
+Envoyer ces sept fichiers avec leur arborescence :
 
 - jeux/dernier_rempart.html
 - jeux/dernier_rempart_engine.js
@@ -12,13 +12,14 @@ Envoyer ces six fichiers avec leur arborescence :
 - jeux/dernier_rempart.js
 - jeux/img/rempart_arrakis.webp
 - jeux/img/rempart_buildings.png
+- jeux/img/rempart_battery.png
 
 Le paquet contient aussi jeux/hub.html et jeux/scores_api.php. **Ce sont des fichiers partagés basés sur le dépôt, pas des copies vérifiées de la production.** Comparer aux fichiers effectivement utilisés sur /v2 et en production, en normalisant CRLF/LF, et reporter seulement les changements nécessaires si ces fichiers ont évolué :
 
 - API : ajouter l'entrée dernier_rempart dans GAMES, nom Dernier Rempart, plancher max_score 300000 et cooldown 2. Conserver score_ceiling() dynamique existant.
 - Hub : carte, nom du jeu et onglet de classement. La carte Sandwalk est retirée, son jeu et ses scores ne sont pas supprimés.
 
-Envoyer les JS et images AVANT le HTML. Tous les modules sont appelés avec ?v=3. Ne pas envoyer tout le dépôt et ne jamais remplacer jeux/data/, les comptes, les configurations ou les secrets. Le jeu utilise les gardes d'authentification déjà présentes sur le site.
+Envoyer les JS et images AVANT le HTML. Tous les modules sont appelés avec ?v=4. Ne pas envoyer tout le dépôt et ne jamais remplacer jeux/data/, les comptes, les configurations ou les secrets. Le jeu utilise les gardes d'authentification déjà présentes sur le site.
 
 ## Recette indispensable avant promotion à la racine
 

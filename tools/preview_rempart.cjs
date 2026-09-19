@@ -12,6 +12,7 @@ const files = new Map([
     ['/jeux/dernier_rempart.js',['dernier_rempart.js','text/javascript; charset=utf-8']],
     ['/jeux/img/rempart_arrakis.webp',['img/rempart_arrakis.webp','image/webp']],
     ['/jeux/img/rempart_buildings.png',['img/rempart_buildings.png','image/png']],
+    ['/jeux/img/rempart_battery.png',['img/rempart_battery.png','image/png']],
 ]);
 http.createServer((req,res)=>{
     if(req.method!=='GET'){res.writeHead(405);res.end();return;}

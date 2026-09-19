@@ -1,10 +1,15 @@
 (function () {
     'use strict';
     const $ = id => document.getElementById(id);
-    const canvas = $('game'), image = new Image(), buildings = new Image();
+    const canvas = $('game'), image = new Image(), buildings = new Image(), battery = new Image();
     image.src = 'img/rempart_arrakis.webp';
     buildings.src = 'img/rempart_buildings.png';
-    let game = new Rempart.Game(), view = new RempartView(canvas, image, buildings), mode = 'menu';
+    battery.src = 'img/rempart_battery.png';
+    let game = new Rempart.Game(), view = new RempartView(canvas, image, buildings, battery), mode = 'menu';
+    document.querySelectorAll('canvas[data-munition]').forEach(icon => {
+        const legend = new RempartView(icon);
+        legend.ctx.translate(20,20); legend.munition(icon.dataset.munition,2);
+    });
     let held = false, last = 0, accumulator = 0, runId = 0, lastResult = null, saving = false;
     let scope = 'weekly', leaderboardRequest = 0, best = 0;
     const failedResults = [];
@@ -127,7 +132,7 @@
     function start() {
         runId++; lastResult = null; held = false; accumulator = 0;
         game = new Rempart.Game((Date.now() ^ Math.floor(Math.random()*0xffffffff)) >>> 0);
-        view = new RempartView(canvas,image,buildings); mode = 'playing';
+        view = new RempartView(canvas,image,buildings,battery); mode = 'playing';
         for (const id of ['intro','paused','ending','retry-save']) $(id).hidden = true;
         $('retry-save').hidden = failedResults.length === 0;
         $('pause').disabled = false; $('pulse').disabled = false; $('pause').textContent = 'Pause · P';
@@ -224,6 +229,6 @@
         }
         view.draw(game,mode === 'playing');
     }
-    window.addEventListener('resize',resize); image.onload=resize; buildings.onload=resize;
+    window.addEventListener('resize',resize); image.onload=resize; buildings.onload=resize; battery.onload=resize;
     resize(); leaderboard(); personalBest(); requestAnimationFrame(frame);
 })();

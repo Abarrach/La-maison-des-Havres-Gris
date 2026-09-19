@@ -41,6 +41,7 @@ aside{border-color:#bba16c55}aside h2{color:#d1b989}aside p{color:#b1b0a6}
 .result-grid small{display:block;font-size:10px;color:#aebbbf}
 @media(max-width:850px){aside{display:block}aside>.legend,aside>p,aside>h2{display:none}.lb{margin-top:0}header{margin-bottom:12px}}
 @media(max-width:550px){h1{font-size:18px}header{padding-bottom:12px}.panel{padding:8px 14px}.panel:before{display:none}.result-grid{gap:4px;margin:8px 0}.result-grid b{font-size:15px}.result-grid small{font-size:9px}.hud{gap:6px}.hud small{font-size:8px}.hud label{letter-spacing:.05em}}
+.munition-icon{width:40px;height:40px;flex:0 0 40px;cursor:default}
 </style>
 </head>
 <body>
@@ -59,12 +60,12 @@ aside{border-color:#bba16c55}aside h2{color:#d1b989}aside p{color:#b1b0a6}
 <p style="color:var(--gold);font-size:12px;margin:0 0 8px">La rafale fait chauffer les canons. Espacez vos tirs ; une chaîne rapporte jusqu'à +250 points supplémentaires par victime.</p>
 <div class="save" id="save" role="status" aria-live="polite">Les réserves d'eau, l'énergie et le hangar ont chacun 3 points de résistance.</div><button id="retry-save" hidden>Réessayer l'enregistrement</button>
 </section>
-<aside><h2>IDENTIFIER LA MENACE</h2><div class="legend normal"><span class="symbol">▼</span><div>Missile<small>Une explosion suffit</small></div></div><div class="legend fast"><span class="symbol">ϟ</span><div>Flèche rapide · vague 2<small>Anticipez davantage</small></div></div><div class="legend split"><span class="symbol">◇</span><div>Charge multiple · vague 3<small>Interceptez avant la séparation</small></div></div><div class="legend armored"><span class="symbol">⬡</span><div>Blindé · vague 4<small>Deux explosions distinctes</small></div></div><p>Les chaînes multiplient les points. Les interceptions près du sol donnent un bonus de sauvetage — mais la marge d'erreur est mince.</p><p>Chaque vague répare un point sur un bâtiment encore debout. Un bâtiment détruit reste perdu.</p><div class="lb"><h2>CLASSEMENT DE GUILDE</h2><div class="tabs"><button data-scope="weekly" aria-pressed="true">Semaine</button><button data-scope="alltime" aria-pressed="false">Hall of Fame</button></div><ol id="leaderboard"><li>Chargement…</li></ol></div></aside>
+<aside><h2>IDENTIFIER LA MENACE</h2><div class="legend normal"><canvas class="munition-icon" data-munition="normal" width="40" height="40" aria-hidden="true"></canvas><div>Roquette<small>Une explosion suffit</small></div></div><div class="legend fast"><canvas class="munition-icon" data-munition="fast" width="40" height="40" aria-hidden="true"></canvas><div>Dard rapide · vague 2<small>Anticipez davantage</small></div></div><div class="legend split"><canvas class="munition-icon" data-munition="split" width="40" height="40" aria-hidden="true"></canvas><div>Ogive à sous-munitions · vague 3<small>Interceptez avant la séparation</small></div></div><div class="legend armored"><canvas class="munition-icon" data-munition="armored" width="40" height="40" aria-hidden="true"></canvas><div>Obus blindé · vague 4<small>Deux explosions distinctes</small></div></div><p>Les chaînes multiplient les points. Les interceptions près du sol donnent un bonus de sauvetage — mais la marge d'erreur est mince.</p><p>Chaque vague répare un point sur un bâtiment encore debout. Un bâtiment détruit reste perdu.</p><div class="lb"><h2>CLASSEMENT DE GUILDE</h2><div class="tabs"><button data-scope="weekly" aria-pressed="true">Semaine</button><button data-scope="alltime" aria-pressed="false">Hall of Fame</button></div><ol id="leaderboard"><li>Chargement…</li></ol></div></aside>
 </div>
 <footer>Dernier Rempart · Édition guilde 1.0 · Création de fan inspirée de Missile Command et de l'univers de Dune: Awakening. Non affiliée à Funcom ou Atari. Illustrations originales ; mécaniques arcade non officielles.</footer>
 </main>
-<script src="dernier_rempart_engine.js?v=3"></script>
-<script src="dernier_rempart_view.js?v=3"></script>
-<script src="dernier_rempart.js?v=3"></script>
+<script src="dernier_rempart_engine.js?v=4"></script>
+<script src="dernier_rempart_view.js?v=4"></script>
+<script src="dernier_rempart.js?v=4"></script>
 </body>
 </html>

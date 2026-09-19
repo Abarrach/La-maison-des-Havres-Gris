@@ -5,9 +5,10 @@
     'use strict';
     const COLORS = { normal: '#ff9279', fast: '#ffcf73', split: '#dfabff', armored: '#c9e5f5' };
     class View {
-        constructor(canvas, background, buildings) {
+        constructor(canvas, background, buildings, battery) {
             this.canvas = canvas; this.ctx = canvas.getContext('2d'); this.background = background;
             this.buildings = buildings;
+            this.battery = battery;
             this.particles = []; this.labels = []; this.banner = ''; this.bannerLife = 0;
             this.pulseFlash = 0; this.impactFlash = 0; this.aim = null;
             this.reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -30,7 +31,7 @@
                 if (e.type === 'repair') this.labels.push({ x: e.x, y: 505, text: 'RÉPARATION +1', life: 1.7, color: '#93e5ee' });
                 if (e.type === 'wave') {
                     this.banner = 'VAGUE ' + String(e.wave).padStart(2, '0') + '  /  ' + e.pattern;
-                    this.subtitle = e.wave === 2 ? 'NOUVEAU : FLÈCHES RAPIDES' : e.wave === 3 ? 'CHARGES MULTIPLES : DÉTRUISEZ-LES EN ALTITUDE' : e.wave === 4 ? 'BLINDÉS : DEUX EXPLOSIONS DISTINCTES' : e.wave % 5 === 0 ? 'SATURATION : SALVE RENFORCÉE' : 'INTERCEPTEZ · ENCHAÎNEZ · TENEZ';
+                    this.subtitle = e.wave === 2 ? 'DARDS : PROJECTILES À HAUTE VITESSE' : e.wave === 3 ? 'OGIVES À SOUS-MUNITIONS : INTERCEPTEZ EN ALTITUDE' : e.wave === 4 ? 'OBUS BLINDÉS : DEUX EXPLOSIONS DISTINCTES' : e.wave % 5 === 0 ? 'SATURATION : SALVE RENFORCÉE' : 'INTERCEPTEZ · ENCHAÎNEZ · TENEZ';
                     this.bannerLife = 2.4;
                 }
                 if (e.type === 'overheat') this.labels.push({ x:480,y:470,text:'SURCHAUFFE — REFROIDISSEMENT',life:1.5,color:'#ff9279' });
@@ -118,6 +119,33 @@
             if (city.hp === 1) { c.globalAlpha = .5 + .3 * Math.sin(time * 5); this.circle(0, -24, 58, '#ff927970'); }
             c.restore();
         }
+        munition(kind, hp = 1) {
+            const c = this.ctx, color = COLORS[kind];
+            // Toutes les silhouettes pointent vers +Y ; même dessin dans la légende.
+            const hull = (points, fill) => {
+                c.beginPath(); points.forEach((p,i)=>i?c.lineTo(...p):c.moveTo(...p));
+                c.closePath(); c.fillStyle=fill; c.fill(); c.strokeStyle='#e9d9b8'; c.lineWidth=.8; c.stroke();
+            };
+            if(kind === 'fast') {
+                hull([[0,15],[-2,5],[-2,-10],[-5,-14],[0,-11],[5,-14],[2,-10],[2,5]],'#bba77c');
+                this.line([[0,-9],[0,10]],'#fff0b6',1.5);
+            } else if(kind === 'split') {
+                for(const x of [-6,6]) { c.save(); c.translate(x,-2); hull([[-3,-9],[3,-9],[3,6],[0,10],[-3,6]],'#6e526c'); c.restore(); }
+                hull([[-4,-13],[4,-13],[5,6],[0,13],[-5,6]],'#b5a08b');
+                this.line([[-9,-4],[9,-4]],color,3);
+            } else if(kind === 'armored') {
+                hull([[-7,-11],[7,-11],[9,4],[5,12],[0,15],[-5,12],[-9,4]],hp>1?'#65737a':'#463c32');
+                this.line([[-6,-6],[6,-6]],color,3);
+                this.line([[-7,0],[7,0]],'#242d31',2);
+                this.line([[0,-9],[0,10]],'#e1d2ae',1);
+                if(hp>1){this.line([[-12,-9],[-12,8]],color,2);this.line([[12,-9],[12,8]],color,2);}
+            } else {
+                hull([[-4,-10],[4,-10],[4,5],[0,13],[-4,5]],'#b6a18a');
+                hull([[-4,-9],[-9,-13],[-9,-4],[-4,-2]],'#776959');
+                hull([[4,-9],[9,-13],[9,-4],[4,-2]],'#776959');
+                this.line([[-4,2],[4,2]],color,3);
+            }
+        }
         draw(g, active = true) {
             const c = this.ctx;
             c.setTransform(this.canvas.width / 960, 0, 0, this.canvas.height / 640, 0, 0);
@@ -133,12 +161,13 @@
             for (let i = 0; i < 3; i++) this.building(g.cities[i], i, g.time);
             for (const x of [70, 480, 890]) {
                 const y = x === 480 ? 604 : 558;
-                c.fillStyle = '#1b2c36'; c.fillRect(x - 19, y - 10, 38, 13);
-                c.save(); c.translate(x, y - 11);
-                const aim = this.aim || { x, y: 180 };
-                c.rotate(Math.atan2(aim.y - 558, aim.x - x) + Math.PI / 2);
-                c.fillStyle = '#acbaba'; c.fillRect(-4, -22, 8, 22); c.fillStyle = '#263d49'; c.fillRect(-7, -5, 14, 12); c.restore();
-                this.circle(x, y - 5, 4, '#a0e6e8', '#b9f8f1');
+                if(this.battery && this.battery.complete && this.battery.naturalWidth>0) {
+                    c.drawImage(this.battery,x-46,y-39,92,68);
+                } else {
+                    c.fillStyle='#796954'; c.beginPath(); c.moveTo(x-31,y+14);c.lineTo(x-23,y-17);c.lineTo(x+23,y-17);c.lineTo(x+31,y+14);c.closePath();c.fill();
+                    for(const dx of [-12,0,12]){c.fillStyle='#181a19';c.fillRect(x+dx-4,y-14,8,14);}
+                }
+                this.line([[x-12,y+18],[x+12,y+18]],g.overheated?'#ff7857':'#d2b77b',2);
             }
             for (const s of g.shots) {
                 this.line([[s.sx,s.sy],[s.x,s.y]], '#85ecff40', 1);
@@ -161,17 +190,11 @@
             for (const e of g.enemies) {
                 const color = COLORS[e.kind];
                 this.line([[e.sx,e.sy],[e.x,e.y]], color + '35');
-                const speed = Math.hypot(e.vx, e.vy), tx = e.x - e.vx / speed * 35, ty = e.y - e.vy / speed * 35;
-                this.line([[tx,ty],[e.x,e.y]], color + 'aa', 2);
+                const speed = Math.hypot(e.vx, e.vy) || 1;
+                const trail = e.kind === 'fast' ? 52 : 30;
+                this.line([[e.x-e.vx/speed*trail,e.y-e.vy/speed*trail],[e.x-e.vx/speed*12,e.y-e.vy/speed*12]], color + '88', e.kind==='fast'?1:3);
                 c.save(); c.translate(e.x,e.y); c.rotate(Math.atan2(e.vy,e.vx) - Math.PI/2);
-                c.fillStyle = color; c.strokeStyle = '#fff0da'; c.lineWidth = 1;
-                c.beginPath();
-                if (e.kind === 'split') { c.moveTo(0,9); c.lineTo(-8,0); c.lineTo(0,-10); c.lineTo(8,0); }
-                else if (e.kind === 'armored') { c.moveTo(0,10); c.lineTo(-8,4); c.lineTo(-8,-5); c.lineTo(0,-10); c.lineTo(8,-5); c.lineTo(8,4); }
-                else { c.moveTo(0,e.kind === 'fast' ? 11 : 8); c.lineTo(-5,-6); c.lineTo(0,-3); c.lineTo(5,-6); }
-                c.closePath(); c.fill(); c.stroke();
-                if (e.kind === 'armored' && e.hp > 1) this.circle(0,0,13,color + 'aa',null,2);
-                if (e.kind === 'split') this.line([[-4,0],[0,4],[4,0]], '#493664', 2);
+                this.munition(e.kind,e.hp);
                 c.restore();
                 if (e.y > 430) this.circle(e.x,e.y,16,color + '66');
             }

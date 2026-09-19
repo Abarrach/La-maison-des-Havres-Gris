@@ -1,5 +1,15 @@
 # Dernier Rempart — décor
 
+## Batterie de défense et munitions — passe armes
+
+Asset : rempart_battery.png, généré avec l'outil intégré ImageGen, alpha conservé. Création originale, pas un asset Funcom extrait. Les petites munitions sont dessinées en canvas pour garder des silhouettes lisibles, réutilisées telles quelles dans la légende.
+
+Référence officielle : [Communinet Signal #6](https://duneawakening.com/news/communinet-signal-6/) confirme fléchettes, lasguns et lance-roquettes. Les batteries, ogives à sous-munitions et obus blindés du mini-jeu sont des adaptations arcade originales, sans prétention de reproduire des objets officiels.
+
+Prompt final :
+
+> Use case: stylized-concept. Asset type: transparent production sprite for Dune Awakening inspired fan game. Primary request: one formidable compact vertical-launch interceptor battery, original brutalist Arrakis military industrial design. Low broad hexagonal sandstone armored plinth, slanted angular gunmetal armored casing, three recessed upward facing missile launch cells at center, ribbed bronze cooling panels, heavy mechanical construction, sand abrasion, restrained small amber status light. NO long cannon barrel, NO wheels, NO tripod, NO radar dish, NO neon blue. View: front three-quarter orthographic seen slightly above, fixed ground installation, centered complete object with 10 percent padding. Detailed realistic 3D game render with strong readable silhouette at 90 pixels wide. Warm sunset rim light from right, cool dusk fill. Genuine transparent background with alpha, no landscape, no ground plane outside small integral plinth, no text, no logos, no watermark. Square canvas.
+
 ## Atlas de bâtiments — édition guilde 1.0
 
 rempart_buildings.png : atlas original transparent, 2172 × 724 (3 cases de 724 px), généré le 2026-09-19 avec l'outil intégré ImageGen, sans extraction d'assets officiels. Les cases sont découpées au rendu canvas, pas en fichiers séparés. Copie PNG complète conservant l'alpha.

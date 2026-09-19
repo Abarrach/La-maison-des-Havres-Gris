@@ -336,7 +336,11 @@ body::after { display: none; }
     // Records sur les cartes — toujours le record ALL-TIME (Hall of Fame),
     // pour rester une valeur de prestige stable, indépendante du reset hebdo.
     async function loadRecords() {
-        for (const gid of ['orni_flap', 'spice_runner', 'sandstorm_memory', 'worm_rider', 'muaddib_rescue', 'sandwalk']) {
+        // Liste DÉRIVÉE des tuiles présentes, jamais réécrite à la main : c'était une
+        // copie de plus du catalogue, et elle a été oubliée en ajoutant Dernier Rempart
+        // (elle contenait encore sandwalk). La tuile restait à « — » sans rien signaler.
+        const ids = [...document.querySelectorAll('.record-line[id^="record-"]')].map(el => el.id.slice(7));
+        for (const gid of ids) {
             try {
                 const r = await fetch('scores_api.php?action=leaderboard&game=' + gid + '&limit=1&scope=alltime', { credentials: 'same-origin' });
                 const j = await r.json();

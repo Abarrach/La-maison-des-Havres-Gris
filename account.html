@@ -954,10 +954,16 @@ function renderActivityPanel(which) {
 
 // ====== MES RECORDS (mini-jeux, personnel) ======
 let scoresData = null;
-const GAME_LABEL = { orni_flap: "Ornithopter Flap", spice_runner: "Spice Runner", sandstorm_memory: "Sandstorm Memory", worm_rider: "Worm Rider", muaddib_rescue: "Muad'Dib Rescue" };
+// Noms des jeux : lus depuis l'API (`action=games`), jamais recopiés ici. Cette table
+// était figée et un jeu ajouté au hub s'affichait avec son identifiant brut
+// (« dernier_rempart ») dans Mon Compte. À défaut de réponse, on retombe sur l'id.
+let GAME_LABEL = {};
 
 async function loadMyScores() {
   try {
+    const catalogue = await fetch("jeux/scores_api.php?action=games", { credentials: "same-origin" })
+      .then(r => r.json()).catch(() => null);
+    if (catalogue && catalogue.ok) for (const g of catalogue.games) GAME_LABEL[g.id] = g.name;
     const res  = await fetch("jeux/scores_api.php?action=my_scores", { credentials: "same-origin" });
     const data = await res.json();
     if (!data.ok) return;

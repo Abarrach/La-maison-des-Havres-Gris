@@ -202,10 +202,12 @@ Tous constatés en production ou en test, pas théoriques.
   réelle est `score_ceiling()` = `max(plancher, record all-time × 3)` et suit donc la
   communauté. Si un score légitime saute encore, c'est le FACTEUR qu'on discute.
 - **Un nouveau jeu se déclare à UN seul endroit** : `GAMES` dans `jeux/scores_api.php`.
-  `weekly_reset.php` le lit par `require_once` depuis 2026-09-19 — avant, il tenait sa
-  propre copie en dur, et un jeu absent de CETTE liste-là voyait son champion de la
-  semaine effacé par le reset du mardi sans jamais être annoncé. Si un jour un autre
-  fichier a besoin du catalogue, le lire, ne jamais le recopier.
+  Le catalogue a existé en **cinq exemplaires** et chaque copie oubliée donnait une panne
+  silencieuse différente : champion de la semaine jamais annoncé (`weekly_reset.php`),
+  record absent de la tuile du hub (`loadRecords`), identifiant brut dans Mon Compte
+  (`account.html`). Tous lisent ou dérivent la source désormais — `require_once` côté PHP,
+  `action=games` ou le DOM côté navigateur. **Ne jamais recopier le catalogue.**
+  Restent à la main dans `hub.html` : `GAME_NAMES` et la liste des onglets de classement.
 - **Un nouveau jeu doit arriver dans la palette du hub**, pas avec la sienne : `--bg:#0a0402`,
   `--gold:#cda434`, `--text:#f5deb3`, `--muted:#7c5e2a`, titres `'Cinzel', Georgia, serif`
   (la police n'est pas chargée, elle retombe sur Georgia — c'est voulu et commun aux six jeux).

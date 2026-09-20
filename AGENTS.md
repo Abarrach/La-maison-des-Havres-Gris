@@ -218,6 +218,13 @@ Tous constatés en production ou en test, pas théoriques.
   et chaque compo ne doit vivre qu'à un endroit. `node epice/compos_creneaux.test.cjs`
   verrouille le modèle, y compris le fait qu'un client d'avant le déploiement, qui n'envoie
   que `assignation`, ne doit PAS effacer les relèves.
+- **La proposition automatique d'organisation** (`epice/raid-auto.js`, bouton de l'onglet
+  Assignation) ne doit JAMAIS combler un poste critique par défaut : sans transporteur
+  déclaré ni habituel, la case reste vide. Remplir ferait passer un créneau intenable pour
+  complet. Même principe pour le Chef de Sortie. `node epice/raid-auto.test.cjs`.
+  Les habitudes viennent de `action=role_stats`, calculé côté serveur et renvoyé sous les
+  pseudos exacts envoyés par le client — c'est ce qui évite une seconde normalisation
+  `Lorhelyne✨` ↔ `Lorhelyne` à garder d'accord.
 
 ### Mini-jeux et scores
 - **Un plafond `max_score` trop bas fait disparaître un record en silence** : la

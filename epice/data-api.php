@@ -12,7 +12,7 @@ $raw   = file_get_contents('php://input');
 $input = json_decode($raw, true) ?? [];
 
 // --- Contrôle d'accès serveur (basé sur la session du site, plus de token en dur) ---
-$organize_actions = ['list', 'open_sorties', 'new_soiree', 'close_soiree', 'reopen_sortie', 'save_assign', 'save_analyse', 'history', 'sortie_detail', 'delete_sortie', 'save_sop_content'];
+$organize_actions = ['list', 'open_sorties', 'new_soiree', 'close_soiree', 'reopen_sortie', 'save_assign', 'save_analyse', 'history', 'sortie_detail', 'delete_sortie', 'save_sop_content', 'role_stats'];
 $member_actions   = ['init', 'get_assign', 'my_debrief', 'save_debrief', 'public_history', 'public_sortie', 'me', 'my_activity', 'get_sop_content'];
 $admin_only       = ['get_orga', 'set_orga', 'activity_report'];
 if      (in_array($action, $admin_only, true))       epice_require_admin();
@@ -110,6 +110,67 @@ function sortie_compos($s): array {
     if (!empty($s['assignation'])) $out[] = $s['assignation'];
     foreach (($s['assignations'] ?? []) as $c) if (!empty($c)) $out[] = $c;
     return $out;
+}
+
+// ---- Habitudes de poste ------------------------------------------------------
+// Clé de rapprochement entre un pseudo Discord et un pseudo tapé à la main dans une
+// vieille compo : « Lorhelyne✨ » et « Lorhelyne » doivent se retrouver, « Sté » et
+// « Sté » aussi. On ne garde que [a-z0-9] — sur une chaîne UTF-8 cela retire les
+// emojis, les accents et la ponctuation en travaillant sur les OCTETS, donc sans
+// mbstring (absente de ce serveur, cf. AGENTS.md). Appliqué des DEUX côtés de la
+// comparaison, un « é » perdu ne gêne pas : « Sté » et « Sté » donnent tous deux « st ».
+function pseudo_key($s): string {
+    return preg_replace('/[^a-z0-9]/', '', strtolower((string)$s));
+}
+
+// Compte les rôles tenus dans UNE compo. Vocabulaire volontairement plus fin que les
+// postes Discord : « cardinal » et « patrouille » sont deux métiers différents alors
+// que Discord ne connaît que « pilote d'ornithoptère ».
+function tally_compo($c, array &$stats): void {
+    if (!is_array($c)) return;
+    $vus = [];
+    $add = function ($nom, $role) use (&$stats, &$vus) {
+        $nom = trim((string)$nom);
+        if ($nom === '') return;
+        $k = pseudo_key($nom);
+        if ($k === '') return;
+        if (!isset($stats[$k])) $stats[$k] = ['nom' => $nom, 'roles' => [], 'sorties' => 0];
+        $stats[$k]['roles'][$role] = ($stats[$k]['roles'][$role] ?? 0) + 1;
+        $vus[$k] = true;
+    };
+    foreach (($c['recolte'] ?? []) as $g) {
+        $add($g['transporteur'] ?? '', 'transporteur');
+        $add($g['moissonneur'] ?? '', 'moissonneur');
+        $add($g['defenseur_cac'] ?? '', 'cardinal');
+    }
+    // Défense rapprochée : tableau d'escouades (format courant) ou objet unique (ancien).
+    $df = $c['defense'] ?? [];
+    $squads = (is_array($df) && array_key_exists('nord', $df)) ? [$df] : (is_array($df) ? $df : []);
+    foreach ($squads as $sq) {
+        if (!is_array($sq)) continue;
+        foreach (['nord', 'sud', 'est', 'ouest'] as $k) {
+            $d = $sq[$k] ?? null;
+            $nom = is_array($d) ? ($d['nom'] ?? '') : $d;   // ancien format : la valeur EST le pseudo
+            $add($nom, 'cardinal');
+            if (is_array($d) && !empty($d['assaut'])) $add($nom, 'assaut');
+            if (is_array($d) && !empty($d['cac']))    $add($nom, 'cac');
+        }
+        foreach (($sq['assauts'] ?? []) as $p) $add($p['nom'] ?? '', 'assaut');
+    }
+    foreach ((($c['distance'] ?? [])['pilotes'] ?? []) as $p) {
+        $add($p['nom'] ?? '', 'patrouille');
+        if (!empty($p['cac'])) $add($p['nom'] ?? '', 'cac');
+    }
+    foreach ((($c['recon'] ?? [])['scouts'] ?? []) as $p) $add($p['nom'] ?? '', 'scout');
+    $b = $c['base_avancee'] ?? [];
+    if (!empty($b['active'])) {
+        $add($b['constructeur'] ?? '', 'base_constructeur');
+        $add($b['buggy'] ?? '', 'base_buggy');
+    }
+    foreach (['cs', 'cdr', 'cp', 'cb'] as $k) $add(($c['commandement'] ?? [])[$k] ?? '', $k);
+    // Une sortie compte pour UNE, quel que soit le nombre de rôles tenus dedans :
+    // c'est ce qui permet de dire « 6 fois sur 8 sorties » plutôt qu'un chiffre gonflé.
+    foreach (array_keys($vus) as $k) $stats[$k]['sorties']++;
 }
 
 // Range les compos reçues de save_assign dans la sortie. Sortie de la boucle du
@@ -375,6 +436,28 @@ switch ($action) {
             'soiree'      => ['titre'=>$target['titre'] ?? '','date'=>$target['date'] ?? '','zone'=>$target['zone'] ?? ''],
             'assignation' => $target['assignation'] ?? null
         ]);
+
+    // Habitudes de poste, tirées de TOUTES les compos passées (créneaux compris).
+    // Calculé côté serveur et renvoyé sous les pseudos EXACTEMENT tels que le client les
+    // a envoyés : le rapprochement « Lorhelyne✨ » ↔ « Lorhelyne » n'existe qu'ici, il n'y
+    // a donc pas deux normalisations à garder d'accord.
+    case 'role_stats':
+        $d = read_data();
+        $stats = [];
+        foreach ($d['sorties'] as $s) {
+            // On EXCLUT la sortie en cours de composition : se recommander soi-même
+            // ferait passer un brouillon à moitié rempli pour une habitude.
+            if (($s['id'] ?? '') === trim($input['sauf'] ?? '')) continue;
+            foreach (sortie_compos($s) as $c) tally_compo($c, $stats);
+        }
+        $noms = is_array($input['noms'] ?? null) ? $input['noms'] : [];
+        $out  = [];
+        foreach ($noms as $n) {
+            $k = pseudo_key($n);
+            if ($k !== '' && isset($stats[$k]))
+                $out[(string)$n] = ['roles' => $stats[$k]['roles'], 'sorties' => $stats[$k]['sorties']];
+        }
+        out(true, ['stats' => $out]);
 
     // Historique PUBLIC (vue joueur) — liste assainie : AUCUN retour, note ni analyse
     case 'public_history':

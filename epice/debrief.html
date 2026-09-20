@@ -1010,6 +1010,7 @@
       </div>
       <div id="assign-builder"></div>
       <div id="assign-actions" style="display:flex;gap:.5rem;margin-top:1rem;flex-wrap:wrap">
+        <button class="btn" id="assign-auto-btn" onclick="proposerOrganisation()" data-tip="Brouillon d'organisation à partir des postes choisis et des sorties passées — rien n'est enregistré">✨ Proposition automatique</button>
         <button class="btn btn-accent" onclick="saveAssign()">💾 Enregistrer la compo</button>
         <button class="btn btn-danger" onclick="resetCompo()">↺ Réinitialiser</button>
         <span id="assign-save-note" style="font-size:.72rem;color:var(--text-faint);align-self:center"></span>
@@ -1062,6 +1063,7 @@
 </div>
 
 <script src="raid-groups.js?v=base-avancee-1"></script>
+<script src="raid-auto.js?v=creneaux-1"></script>
 <script>
 // ============================================================
 // CONFIG
@@ -2088,6 +2090,10 @@ async function loadAssignSortie(sid) {
       return;
     }
     if (actions) actions.style.display = 'flex';
+    // raid-auto.js absent du serveur (oubli de déploiement) : on retire le bouton au
+    // lieu de laisser cliquer sur une fonction qui n'existe pas.
+    const autoBtn = document.getElementById('assign-auto-btn');
+    if (autoBtn) autoBtn.style.display = (typeof RaidAuto === 'undefined') ? 'none' : '';
     currentAssignSid = sid;
     currentSignups = Array.isArray(data.sortie.signups) ? data.sortie.signups : [];
     currentSortie = data.sortie;
@@ -2674,6 +2680,70 @@ async function saveAssign() {
       else setTimeout(() => note.textContent = '', 3000);
     }
   } catch { note.textContent = 'Erreur de connexion.'; }
+}
+
+// ============================================================
+// PROPOSITION D'ORGANISATION
+// ============================================================
+// Remplit TOUS les créneaux d'un coup — c'est là qu'est le gain : composer une
+// journée à la main, c'est quatre fois le même travail avec trois noms qui changent.
+// Le résultat est un brouillon ; il n'est PAS enregistré, pour que l'organisateur le
+// relise avant de l'assumer.
+async function proposerOrganisation() {
+  if (!currentAssignSid || !currentCompo) return;
+  if (typeof RaidAuto === 'undefined') { uiAlert('Module de proposition absent (raid-auto.js).'); return; }
+  const note = document.getElementById('assign-save-note');
+
+  const creneaux = creneauxSortie(currentSortie);
+  const cibles   = creneaux.length ? creneaux.map(c => c.i) : [0];
+  const quoi = creneaux.length ? `les ${creneaux.length} créneaux` : 'la compo';
+  if (!(await uiConfirm(
+        `Proposer une organisation pour ${quoi} ? Les rôles déjà saisis seront remplacés. Rien ne sera enregistré : tu relis, tu corriges, puis tu enregistres.`,
+        { title: 'Proposition automatique', okLabel: 'Proposer', danger: true }))) return;
+
+  note.textContent = 'Lecture des sorties passées…';
+  let stats = {};
+  try {
+    // Les habitudes sont calculées côté serveur, sous les pseudos exacts qu'on envoie.
+    // `sauf` exclut la sortie en cours : se recommander soi-même ferait passer un
+    // brouillon à moitié rempli pour une habitude établie.
+    const r = await apiPost('role_stats', {
+      sid: currentAssignSid,
+      sauf: currentAssignSid,
+      noms: (currentSignups || []).map(su => su.name).filter(Boolean)
+    });
+    if (r.ok) stats = r.stats || {};
+  } catch { /* sans historique la proposition reste possible, elle est juste plus bête */ }
+
+  const resume = [];
+  let places = 0, appuyes = 0;
+  cibles.forEach(i => {
+    const candidats = (currentSignups || [])
+      .filter(su => (su.statut || 'present') !== 'absent')
+      .filter(su => !creneaux.length || dispoCreneau(su, i))
+      .map(su => ({ name: su.name, poste: su.poste || '', statut: su.statut || 'present' }));
+    const { compo, journal } = RaidAuto.proposer(emptyCompo(), candidats, stats);
+    compo.ingame = RaidGroups.build(compo);
+    // On conserve les consignes du soir : elles sont écrites à la main et n'ont rien
+    // à voir avec la répartition des rôles.
+    compo.briefing_notes = (currentCompos[i] && currentCompos[i].briefing_notes) || '';
+    currentCompos[i] = normalizeCompo(compo);
+    // « Appuyé sur un précédent » compte les affectations où la personne avait déjà tenu
+    // ce rôle — quelle que soit la branche qui l'a choisie. Compter la seule branche
+    // « habitude » sous-estimerait grossièrement l'apport de l'historique : il sert
+    // surtout à DÉPARTAGER des gens qui ont tous coché « pilote d'ornithoptère ».
+    const tous = journal.poste.concat(journal.habitude, journal.defaut);
+    places  += tous.length;
+    appuyes += tous.filter(j => j.fois > 0).length;
+    const nom = creneaux.length ? creneaux[i].court : 'Compo';
+    resume.push(nom + (journal.manque.length ? ' ⚠ manque ' + journal.manque.join(', ') : ' ✓'));
+  });
+
+  currentCompo = currentCompos[currentCreneau] || currentCompos[cibles[0]];
+  renderAssignBuilder();
+  note.textContent = '✨ ' + resume.join(' · ')
+    + ` — ${places} affectation${places > 1 ? 's' : ''}, dont ${appuyes} appuyée${appuyes > 1 ? 's' : ''} sur un précédent.`
+    + ' Rien n’est encore enregistré.';
 }
 
 // Vide la compo en cours (rôles + groupes) et l'enregistre

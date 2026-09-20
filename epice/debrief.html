@@ -198,11 +198,13 @@
     .statut-ouverte { background:rgba(58,122,74,.2); color:#5AB06A; border:1px solid #3A7A4A; }
     .statut-archivée { background:rgba(60,40,20,.3); color:var(--text-muted); border:1px solid var(--border); }
     .btn-row { display:flex; gap:.5rem; flex-wrap:wrap; }
-    .btn { padding:.45rem 1rem; border-radius:2px; font-family:'Inter',sans-serif; font-size:.68rem; font-weight:700; cursor:pointer; border:1px solid; transition:opacity .15s; letter-spacing:.1em; text-transform:uppercase; }
+    .btn { padding:.45rem 1rem; border-radius:2px; font-family:'Inter',sans-serif; font-size:.68rem; font-weight:700; cursor:pointer; transition:opacity .15s; letter-spacing:.1em; text-transform:uppercase;
+           background:transparent; border:1px solid var(--border); color:var(--text-muted); }   /* defaut tenable : sans variante, .btn sortait BLANC (style natif du navigateur) */
     .btn:hover:not(:disabled) { opacity:.8; }
     .btn:disabled { opacity:.3; cursor:not-allowed; }
     .btn-accent { background:var(--accent); border-color:var(--accent); color:#0A0800; }
     .btn-ghost  { background:transparent; border-color:var(--border); color:var(--text-muted); }
+    .btn-outline{ background:transparent; border-color:var(--accent-dim); color:var(--accent); }   /* action offerte : moins que l'or plein d'Enregistrer, plus qu'un ghost */
     .btn-danger { background:transparent; border-color:#6A2218; color:#C05040; }
 
     .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:.65rem; margin-bottom:1rem; }
@@ -1010,7 +1012,7 @@
       </div>
       <div id="assign-builder"></div>
       <div id="assign-actions" style="display:flex;gap:.5rem;margin-top:1rem;flex-wrap:wrap">
-        <button class="btn" id="assign-auto-btn" onclick="proposerOrganisation()" data-tip="Brouillon d'organisation à partir des postes choisis et des sorties passées — rien n'est enregistré">✨ Proposition automatique</button>
+        <button class="btn btn-outline" id="assign-auto-btn" onclick="proposerOrganisation()" data-tip="Brouillon d'organisation à partir des postes choisis et des sorties passées — rien n'est enregistré">✨ Proposition automatique</button>
         <button class="btn btn-accent" onclick="saveAssign()">💾 Enregistrer la compo</button>
         <button class="btn btn-danger" onclick="resetCompo()">↺ Réinitialiser</button>
         <span id="assign-save-note" style="font-size:.72rem;color:var(--text-faint);align-self:center"></span>

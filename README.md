@@ -1254,6 +1254,40 @@ archives, `data/`) et la clé API restent dehors (`dunelogger/.gitignore`).
 | `dune_archiver.py` | déplace les vieilles lignes vers `history/*.csv.gz` | serveur, cron `0 3 * * 1` |
 | `build_daily_summary.py` | produit les 3 fichiers agrégés lus par la page | serveur, cron `10 * * * *` |
 | `recover_history.py` | récupération **ponctuelle** du 2026-09-05, déjà passée | **PC uniquement, jamais le serveur** |
+| `diag_couverture.py` | sonde : combien de joueurs le collecteur ne voit pas | serveur, **à la main** |
+
+#### ⚠ Deux angles morts du collecteur, tous deux SILENCIEUX
+
+Constatés le **2026-09-21**, en comparant la page à SteamDB : le compte mondial de Steam a été
+multiplié par ~4 sur la semaine (patch du 17-18 septembre), la courbe de la page par ~1,6 seulement.
+
+1. **La whitelist `OFFICIAL_SERVERS` est figée** (extraite le 2026-05-14, revérifiée le 2026-07-05).
+   Le filtre `matched = [b for b in battlegroups if b['displayName'] in OFFICIAL_SERVERS]` **n'alerte
+   que dans un sens** : il prévient quand un serveur de la liste a disparu de l'API, jamais quand
+   l'API renvoie un serveur que la liste ignore — celui-là est écarté sans un mot. Or un afflux de
+   joueurs pousse l'éditeur à **rouvrir des mondes**, qui tombent alors dans ce trou : la courbe
+   s'aplatit au moment précis où elle devrait monter. Même motif que le catalogue des jeux — une
+   liste tenue à l'écart du code qui la remplit.
+2. **`REGION_ID = "Europe"` est en dur**, sur **sept régions** existantes. L'Amérique du Nord en
+   occupe trois à elle seule (US East / West / Central, ~40 mondes). Corollaire à ne pas oublier au
+   moment de comparer : le pic 24 h de SteamDB est un pic **mondial**, atteint en soirée américaine,
+   quand le pic de la page est **européen** — deux maxima qui ne tombent pas à la même heure.
+
+Et une différence de nature, celle-là irréductible : **SteamDB compte les clients Steam qui ont le
+jeu lancé** (menus, création de personnage, chargement, file d'attente), là où le collecteur lit
+`activePlayers`, soit les joueurs **placés dans un sietch**. L'écart s'élargit mécaniquement pendant
+un afflux, puisque les files d'attente grossissent. Ordre de grandeur relevé le 2026-09-21 :
+dunestatus annonçait 4 131 joueurs en monde toutes régions confondues quand SteamDB affichait
+7 103 clients — deux relevés non simultanés, à prendre comme un ordre de grandeur.
+
+`diag_couverture.py` répond en chiffres plutôt qu'en hypothèses : nombre de serveurs écartés en
+silence, **joueurs qu'ils portent**, part de sous-estimation, et (avec `--regions`) les noms de
+régions que l'API accepte. Elle importe la whitelist et la clé du collecteur au lieu de les recopier,
+n'écrit aucun CSV et ne modifie rien.
+
+```bash
+cd /home/dune && /home/dune/.venvs/dune_logger_env/bin/python diag_couverture.py --regions
+```
 
 ⚠ `recover_history.py` ne doit pas être déployé : ses sources sont des chemins Windows locaux
 (`J:\Download\Serveur\...`, copies éparpillées de l'ancien `dune_counts.csv`), il écrit dans un

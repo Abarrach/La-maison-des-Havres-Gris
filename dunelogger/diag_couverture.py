@@ -76,11 +76,9 @@ def sonder_europe(session):
     if disparus:
         print(f"  Dans la whitelist mais absents de l'API  : {len(disparus)}  {disparus}")
 
-    if not inconnus:
-        print("\n  → La whitelist est à jour : aucun joueur perdu de ce côté.")
-        return 0, 0
+    if inconnus:
+        print("\n  Ces serveurs existent et ne sont PAS collectés :")
 
-    print("\n  Ces serveurs existent et ne sont PAS collectés :")
     perdus = 0
     for b in inconnus:
         try:
@@ -92,8 +90,10 @@ def sonder_europe(session):
         print(f"    · {b.get('displayName', '?'):<24} {joueurs:>5} joueurs  ({nb_sietches} sietches)")
         time.sleep(DELAY_BETWEEN_CALLS)
 
-    # Le même calcul sur les serveurs connus, pour donner l'échelle : « 300 joueurs
-    # perdus » ne veut rien dire tant qu'on ne sait pas si le total est 3 000 ou 30 000.
+    # Le total est calculé MÊME quand la whitelist est à jour : c'est le seul chiffre
+    # comparable à un site tiers (dunestatus, dune.exchange) pris à la même minute, et
+    # c'est ce qui départage « mon collecteur rate des joueurs » de « l'Europe a
+    # simplement moins bougé ». Sans lui, « 0 perdu » ne prouverait rien.
     vus = 0
     for b in connus:
         try:
@@ -104,9 +104,18 @@ def sonder_europe(session):
         time.sleep(DELAY_BETWEEN_CALLS)
 
     total = vus + perdus
-    part = (perdus / total * 100) if total else 0
-    print(f"\n  Comptés : {vus}    Perdus : {perdus}    Réel : {total}")
-    print(f"  → la page sous-estime l'Europe de {part:.1f} %")
+    horodatage = time.strftime('%Y-%m-%d %H:%M:%SZ', time.gmtime())
+    print(f"\n  À {horodatage}")
+    print(f"  Comptés par le collecteur : {vus}")
+    if perdus:
+        part = (perdus / total * 100) if total else 0
+        print(f"  Perdus par la whitelist   : {perdus}")
+        print(f"  Total réel {REGION_ID}         : {total}   → sous-estimation de {part:.1f} %")
+    else:
+        print(f"  Total réel {REGION_ID}         : {total}   (whitelist à jour)")
+    print(f"\n  → Compare CE chiffre à « {REGION_ID} » sur dunestatus.com DANS LA MINUTE.")
+    print("    À faire à une heure de plateau (20h-22h heure locale), jamais au creux")
+    print("    de la nuit : la courbe y est si raide qu'une heure d'écart vaut un facteur 2.")
     return vus, perdus
 
 

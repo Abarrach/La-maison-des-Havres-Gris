@@ -1280,9 +1280,38 @@ un afflux, puisque les files d'attente grossissent. Ordre de grandeur relevé le
 dunestatus annonçait 4 131 joueurs en monde toutes régions confondues quand SteamDB affichait
 7 103 clients — deux relevés non simultanés, à prendre comme un ordre de grandeur.
 
+**Historique du ratio, lu dans le journal le 2026-09-21** — il raconte l'histoire mieux qu'un
+raisonnement :
+
+```
+2026-06-24  87/227     avant : l'API renvoyait TOUT (officiels + privés + dev)
+2026-07-05  87/94      serviceHostFilter=Official posé ce jour-là — pas une perte
+2026-07-30  87/95
+2026-09-01  87/96
+2026-09-19  87/97      une seule entrée nouvelle pendant l'afflux
+```
+
+Donc **trois entrées apparues depuis juillet**, pas dix mondes rouverts en catastrophe : les sept
+autres sont le dev/QA identifié à l'époque. À ~40 joueurs par monde au pic, le manque vaut **3 à 4 %**
+— réel et permanent, mais il n'explique PAS un écart de croissance de 1,6× contre 4×. Une première
+estimation à +11 % avait supposé, à tort, que les dix serveurs en trop étaient de vrais mondes.
+
+⚠ **Comparer à un site tiers ne veut rien dire à n'importe quelle heure.** Relevé du 2026-09-21 :
+la page affichait 301 joueurs à 05:00 UTC, dunestatus 930 pour l'Europe à 06:05 — sauf qu'à cette
+heure-là la courbe remonte de son creux en pente raide (192 à 04:00, 301 à 05:00). Une heure d'écart
+vaut un facteur deux. **La comparaison se fait à une heure de plateau (20 h-22 h locales) et à la
+minute près**, sinon elle ne prouve rien.
+
+En revanche elle déplace une hypothèse : **dunestatus mesure la même chose que le collecteur** (des
+joueurs présents dans des mondes, lus dans le navigateur de serveurs, avec des capacités « 22 / 1500 »),
+et non des clients Steam. Si l'écart se confirme à heure stable, ce n'est donc pas une différence de
+nature entre les deux métriques — c'est un défaut de couverture.
+
 `diag_couverture.py` répond en chiffres plutôt qu'en hypothèses : nombre de serveurs écartés en
 silence, **joueurs qu'ils portent**, part de sous-estimation, et (avec `--regions`) les noms de
-régions que l'API accepte. Elle importe la whitelist et la clé du collecteur au lieu de les recopier,
+régions que l'API accepte. Elle imprime **toujours** le total Europe, même quand la whitelist est à
+jour : c'est le seul chiffre comparable à dunestatus à la même minute, et sans lui « 0 perdu » ne
+prouverait rien. Elle importe la whitelist et la clé du collecteur au lieu de les recopier,
 n'écrit aucun CSV et ne modifie rien.
 
 ```bash

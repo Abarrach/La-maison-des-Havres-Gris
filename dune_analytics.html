@@ -309,15 +309,18 @@
                 <div class="stat-label">Pic de connexion — 3 derniers mois</div>
                 <div class="stat-value" id="kpi-peak-3m">0</div>
                 <div class="stat-sub" id="kpi-peak-3m-sub">-</div>
-                <div class="stat-sub" style="margin-top:6px; opacity:0.5;">Total joueurs connectés · tous mondes EU</div>
+                <div class="stat-sub" style="margin-top:6px; opacity:0.5;">Total joueurs connectés · mondes <strong>officiels</strong> EU</div>
             </div>
         </div>
 
         <div class="grid2">
             <div class="nouveau-composant grid-full">
                 <div class="nouveau-composant-titre">
-                    <span>Fluctuations de la Population Mondiale</span>
-                    <span style="font-size: 11px; color: var(--texte-beige); opacity: 0.6; text-transform: none; font-family: 'Segoe UI', sans-serif; letter-spacing: normal;">Total des joueurs connectés par heure</span>
+                    <span>Fluctuations de la Population des Mondes</span>
+                    <span style="font-size: 11px; color: var(--texte-beige); opacity: 0.6; text-transform: none; font-family: 'Segoe UI', sans-serif; letter-spacing: normal;">Mondes <strong>officiels</strong> européens · total des joueurs connectés par heure</span>
+                </div>
+                <div style="font-size: 11px; color: var(--texte-beige); opacity: 0.5; font-family: 'Segoe UI', sans-serif; line-height: 1.5; margin: -10px 0 14px;">
+                    Depuis la mise à jour <strong>1.5</strong> du 18/09/2026, environ la moitié des joueurs européens sont passés sur des <strong>serveurs privés</strong>, que ce relevé ne compte pas. Avant cette date, mondes officiels et population européenne totale se confondaient presque.
                 </div>
                 <div class="chart-wrap" style="height: 450px; position: relative;">
                     <div id="zoom-main" class="zoom-controls"></div>
@@ -334,7 +337,7 @@
 
             <div class="nouveau-composant">
                 <div class="nouveau-composant-titre">
-                    <span>Top 15 Mondes (Population Totale)</span>
+                    <span>Top 15 Mondes officiels (Population Totale)</span>
                 </div>
                 <div style="font-size: 11px; color: var(--texte-beige); opacity:0.6; margin-top:-10px; margin-bottom: 10px;">Clic = Isoler / Ctrl+Clic = Exclure</div>
                 <div class="chart-wrap tall" id="chart-servers"></div>
@@ -1595,7 +1598,7 @@
         }
         const uniformSeries = (globalView && hourlyTotalSeries.length)
                            || (worldView && worldHourly && worldHourly.has(selectedServer));
-        const legendName = selectedServer !== 'all' ? `Pop. ${selectedServer} — Total` : 'Pop. Mondiale — Total';
+        const legendName = selectedServer !== 'all' ? `Pop. ${selectedServer} — Total` : 'Mondes officiels EU — Total';
 
         const tsPlot = uniformSeries ? insertGapBreaks(timeSeries) : timeSeries;
         const traces = [{

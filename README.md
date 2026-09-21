@@ -185,6 +185,48 @@ Rapport autonome (HTML + Plotly) destiné à la guilde, documentant le regroupem
 - Synthèse rédigée + classement des mondes conservés par palier de population
 - Bouton « ← Retour aux Analytiques » vers `dune_analytics.html`
 
+#### ⚠ Ce que la page mesure VRAIMENT (2026-09-21)
+
+**Les mondes officiels européens, et rien d'autre.** Jusqu'au 17 septembre 2026 c'était sans
+conséquence — la mesure collait à la population européenne totale. Depuis la **mise à jour 1.5**
+(18/09/2026), qui a largement ouvert la personnalisation des serveurs auto-hébergés et loués, ce
+n'est plus vrai du tout :
+
+| Date | Page | dunestatus Europe | Rapport |
+|---|---|---|---|
+| 15 sept | ~2 200 | ~2 300 | **96 %** |
+| 20 sept 18:45 | 3 484 | 6 531 | **53 %** |
+| 21 sept 17:08 | 2 939 | 5 904 | **50 %** |
+
+```
+15 sept   Europe totale 2 300   officiels 2 200   privés    ~100
+20 sept   Europe totale 6 531   officiels 3 484   privés  ~3 047
+```
+
+Les mondes officiels ont fait ×1,6 sur la semaine ; les privés sont passés de quasi vides à **la
+moitié de la population européenne**. La page n'est pas fausse, son **périmètre a cessé d'être
+représentatif** — d'où la correction des libellés (« tous mondes EU » → « mondes **officiels** EU »,
+« Population Mondiale » → « Population des Mondes ») et la note datée sous le titre du graphe.
+
+**Décision prise : on ne collecte PAS les serveurs privés.** 280 mondes européens au lieu de 97, soit
+près de trois fois le temps de collecte et le volume de CSV (déjà 91 Mo parsés par le navigateur),
+pour une population qui n'intéresse pas la guilde. Le libellé suffit.
+
+Contre-vérification qui clôt le dossier : sur la semaine, **SteamDB fait ×3,8 et le total mondial de
+dunestatus ×3,9**. Les deux concordent, l'afflux est réel et mondial — seul le périmètre européen
+officiel a moins bougé.
+
+⚠ **Deux erreurs de diagnostic à ne pas refaire**, toutes deux nées d'un relevé pris au mauvais
+moment :
+- Un premier relevé à 05:00 UTC donnait « Europe 390 / 4 131 mondial », d'où la conclusion que le jeu
+  était massivement nord-américain. **Faux** : à l'heure de pointe européenne, l'Europe est la plus
+  grosse région (6 693 contre 5 597 pour l'Amérique du Nord le 20/09 à 19:10). Un relevé de nuit ne
+  dit rien d'une répartition.
+- Deux points pris le même jour montraient un rapport « stable » de 50-53 %, d'où la conclusion que
+  la forme de la courbe était juste à l'échelle près. **Faux aussi** : les deux points étaient APRÈS
+  la bascule. Sur la semaine le rapport passe de 96 % à 50 %. **Une série se lit sur sa durée, pas
+  sur deux points voisins.**
+
 ### Collecte de données (`dune_logger_all.py`)
 
 Script Python/Playwright tournant en cron toutes les heures sur le serveur. Scrape [gaming.tools/server-status](https://dune.gaming.tools/server-status) et alimente `dune_counts.csv`.

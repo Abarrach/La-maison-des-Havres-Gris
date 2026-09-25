@@ -159,7 +159,14 @@ foreach ($data['sorties'] ?? [] as $i => $s) {
     if ($now >= $f[0] && $now <= $f[1]) $encours[$i] = $s;
 }
 
-if (!$encours) { plog('Aucune sortie en cours — rien à relever.'); exit(0); }
+// En essai, on continue MÊME sans sortie ouverte : la première question à laquelle on
+// veut répondre est « le bot me voit-il dans le salon ? », et elle n'a rien à voir avec
+// l'existence d'une sortie. Exiger une sortie en cours obligerait à en créer une juste
+// pour vérifier une permission Discord.
+if (!$encours) {
+    if (!$essai) { plog('Aucune sortie en cours — rien à relever.'); exit(0); }
+    plog('Aucune sortie en cours — en essai, on vérifie quand même le salon.');
+}
 
 // Candidats : les membres de la guilde (visiteurs compris), à défaut les inscrits.
 $candidats = membres_guilde($guildId);
@@ -171,6 +178,11 @@ if (!$candidats) {
             if (!empty($su['id'])) $candidats[(string)$su['id']] = (string)($su['name'] ?? $su['id']);
         }
     }
+}
+if (!$candidats) {
+    plog('⚠️ Aucun candidat à interroger : ni liste de membres (intent « Server Members » ?), '
+       . 'ni inscrit dans une sortie en cours. Rien ne peut être relevé.');
+    exit($essai ? 0 : 1);
 }
 if (count($candidats) > MAX_CANDIDATS) {
     plog('⚠️ ' . count($candidats) . " candidats, tronqué à " . MAX_CANDIDATS . '.');

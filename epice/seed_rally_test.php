@@ -128,11 +128,18 @@ rewind($fp);
 $d = json_decode(stream_get_contents($fp), true);
 if (!is_array($d) || !isset($d['sorties'])) { flock($fp, LOCK_UN); fclose($fp); fwrite(STDERR, "JSON illisible\n"); exit(1); }
 
-// On retire d'abord les éventuelles sorties de test précédentes : relancer le script
-// doit remplacer, jamais empiler des doublons.
+// On ne retire QUE les sorties de test qu'on s'apprête à recréer. Retirer les deux à
+// chaque passage — ce que faisait la première version — supprimait la sortie de partage
+// dès qu'on demandait celle du soir. Une page restée ouverte dessus continuait d'afficher
+// ses données tout en répondant « Sortie introuvable » à l'enregistrement : le pire des
+// symptômes, puisque l'écran avait l'air juste.
+$aRetirer = $retirer ? [ID_PARTAGE, ID_PRESENCE] : array_values(array_filter([
+    $faitPartage ? ID_PARTAGE  : null,
+    $heuresMaint ? ID_PRESENCE : null,
+]));
 $avant = count($d['sorties']);
-$d['sorties'] = array_values(array_filter($d['sorties'], function ($s) {
-    return !in_array($s['id'] ?? '', [ID_PARTAGE, ID_PRESENCE], true);
+$d['sorties'] = array_values(array_filter($d['sorties'], function ($s) use ($aRetirer) {
+    return !in_array($s['id'] ?? '', $aRetirer, true);
 }));
 $retirees = $avant - count($d['sorties']);
 
@@ -162,7 +169,14 @@ if ($retirer) {
         echo "✅ « TEST — enregistrement des présences » ajoutée (fenêtre de $heuresMaint h, ouverte maintenant).\n";
     }
     echo "   Salon de publication : $canal\n";
-    if ($retirees) echo "   ($retirees sortie(s) de test précédente(s) remplacée(s))\n";
+    if ($retirees) echo "   ($retirees sortie de test remplacée)\n";
+    // Dire ce qui SURVIT : c'est la question qu'on se pose après coup, et y répondre ici
+    // évite d'aller relire le fichier pour s'en assurer.
+    foreach ($d['sorties'] as $autre) {
+        $id = $autre['id'] ?? '';
+        if (in_array($id, [ID_PARTAGE, ID_PRESENCE], true) && !in_array($id, $aRetirer, true))
+            echo "   (conservée telle quelle : $id)\n";
+    }
 }
 
 ftruncate($fp, 0); rewind($fp);

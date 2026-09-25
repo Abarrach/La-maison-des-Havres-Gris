@@ -560,7 +560,10 @@ switch ($action) {
             break;
         }
         unset($s);
-        if (!$trouve) out(false, [], 'Sortie introuvable');
+        // « Sortie introuvable » tout court envoie chercher au mauvais endroit : le cas
+        // courant n'est pas un identifiant erroné mais un onglet resté ouvert sur une
+        // sortie supprimée depuis, qui affiche donc des données parfaitement crédibles.
+        if (!$trouve) out(false, [], "Sortie introuvable — elle a peut-être été supprimée depuis l'ouverture de cette page. Recharge (Ctrl+F5) pour repartir de l'état réel.");
         write_data($d);
         $cible = null;
         foreach ($d['sorties'] as $s2) if (($s2['id'] ?? '') === $sid) $cible = $s2;

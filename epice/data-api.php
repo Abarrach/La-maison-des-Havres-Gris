@@ -12,7 +12,7 @@ $raw   = file_get_contents('php://input');
 $input = json_decode($raw, true) ?? [];
 
 // --- Contrôle d'accès serveur (basé sur la session du site, plus de token en dur) ---
-$organize_actions = ['list', 'open_sorties', 'new_soiree', 'close_soiree', 'reopen_sortie', 'save_assign', 'save_analyse', 'history', 'sortie_detail', 'delete_sortie', 'save_sop_content', 'role_stats'];
+$organize_actions = ['list', 'open_sorties', 'new_soiree', 'close_soiree', 'reopen_sortie', 'save_assign', 'save_analyse', 'history', 'sortie_detail', 'delete_sortie', 'save_sop_content', 'role_stats', 'save_presence', 'publish_shares'];
 $member_actions   = ['init', 'get_assign', 'my_debrief', 'save_debrief', 'public_history', 'public_sortie', 'me', 'my_activity', 'get_sop_content'];
 $admin_only       = ['get_orga', 'set_orga', 'activity_report'];
 if      (in_array($action, $admin_only, true))       epice_require_admin();
@@ -89,6 +89,113 @@ function active_sortie_id(array $d): string {
         if (($s['statut'] ?? '') === 'ouverte') return $s['id'] ?? '';
     }
     return '';
+}
+
+// ---- Partage de la récolte au prorata de la présence -------------------------
+// Un relevé toutes les 30 min dans le salon vocal ; présent = 1 point. La valeur d'un
+// point est le volume divisé par le total des points — ce qui rend la répartition
+// indifférente au nombre de participants, celui-ci pouvant varier d'une demi-heure à
+// l'autre sur une journée en relève.
+//
+// Cette fonction est le SEUL endroit où les parts sont calculées : l'écran d'admin et
+// le message Discord la partagent. Deux calculs séparés finiraient par se contredire,
+// et c'est précisément sur ce chiffre-là qu'on ne peut pas se permettre un doute.
+function parts_presence(array $s): array {
+    $p      = $s['presence'] ?? [];
+    $ticks  = is_array($p['ticks'] ?? null) ? $p['ticks'] : [];
+    $noms   = is_array($p['noms']  ?? null) ? $p['noms']  : [];
+    $volume = max(0, (int)($p['volume'] ?? 0));
+
+    $points = [];
+    foreach ($ticks as $ids) {
+        // array_unique : la présence est un booléen par demi-heure, pas un compteur.
+        // Le relevé et la sauvegarde dédoublonnent déjà, mais c'est ICI que le chiffre
+        // devient des ressources dans une poche — la fonction ne doit dépendre de la
+        // propreté de personne.
+        foreach (array_unique(array_map('strval', (array)$ids)) as $id) {
+            if ($id === '') continue;
+            $points[$id] = ($points[$id] ?? 0) + 1;
+        }
+    }
+    $total = array_sum($points);
+
+    $lignes = [];
+    foreach ($points as $id => $pts) {
+        // Arrondi à la centaine INFÉRIEURE : la petite raffinerie consomme par lots de
+        // 100, une part de 7 437 laisserait 37 unités inutilisables chez son
+        // propriétaire. Le reliquat retourne au pot commun.
+        $brut = $total > 0 ? ($volume * $pts / $total) : 0;
+        $lignes[] = [
+            'id'     => $id,
+            'nom'    => (string)($noms[$id] ?? $id),
+            'points' => $pts,
+            'part'   => (int)(floor($brut / 100) * 100),
+        ];
+    }
+    usort($lignes, function ($a, $b) {
+        return ($b['points'] <=> $a['points']) ?: strcasecmp($a['nom'], $b['nom']);
+    });
+
+    $distribue = 0;
+    foreach ($lignes as $l) $distribue += $l['part'];
+    return [
+        'lignes'       => $lignes,
+        'total_points' => $total,
+        'volume'       => $volume,
+        'par_point'    => $total > 0 ? round($volume / $total, 1) : 0,
+        'distribue'    => $distribue,
+        'reliquat'     => max(0, $volume - $distribue),
+        'nb_ticks'     => count($ticks),
+    ];
+}
+
+// Message Discord de répartition. Le bloc de code garde l'alignement des colonnes ;
+// un message Discord plafonne à 2000 caractères, d'où la troncature au-delà de 40 noms
+// (un message rejeté le serait EN ENTIER, cf. le tableau de couverture des rallys).
+function message_parts(array $s, array $r): string {
+    $nl    = chr(10);
+    $titre = trim((string)($s['titre'] ?? 'Sortie'));
+    $fmt   = function ($n) { return number_format($n, 0, ',', ' '); };
+
+    $t  = '🌾 **Partage de l’épice — ' . $titre . '**' . $nl;
+    $t .= trim(($s['date'] ?? '') . ' · ' . ($s['heure'] ?? ''), ' ·') . $nl . $nl;
+    $t .= 'Relevé automatique toutes les 30 minutes dans le salon vocal. Présent = 1 point.' . $nl . $nl;
+    $t .= 'Récolte : **' . $fmt($r['volume']) . '** · **' . $fmt($r['total_points']) . ' points** au total · '
+        . '**' . $fmt($r['par_point']) . '** par point' . $nl . $nl;
+
+    // Le pied est construit AVANT le tableau : son poids doit être retranché du budget.
+    $pied = '```' . $nl;
+    if ($r['reliquat'] > 0)
+        $pied .= '*Les parts sont arrondies à la centaine inférieure (le raffinage consomme par lots de 100). '
+               . 'Reliquat de ' . $fmt($r['reliquat']) . ' au pot commun.*' . $nl;
+    $pied .= '*Aucun prélèvement : ornis, roquettes et buggys restent à la charge de la guilde.*';
+
+    $t .= '```' . $nl;
+    $t .= str_pad('Joueur', 22) . str_pad('Points', 9, ' ', STR_PAD_LEFT) . str_pad('Part', 12, ' ', STR_PAD_LEFT) . $nl;
+    $t .= str_repeat('─', 43) . $nl;
+
+    // Troncature sur le BUDGET RÉEL, en octets, et non sur un nombre de lignes : un
+    // message Discord plafonne à 2000 caractères et il est rejeté EN ENTIER au-delà.
+    // Deux erreurs successives ici : d'abord une limite à 40 lignes (40 pseudos longs
+    // = 2100 octets), puis un budget fixe de 1750 qui ignorait le poids de l'en-tête
+    // et des caractères multi-octets (─ et … pèsent 3 octets chacun). Le budget se
+    // MESURE, il ne s'estime pas.
+    $budget = 1900 - strlen($t) - strlen($pied);
+    $n = 0;
+    foreach ($r['lignes'] as $l) {
+        // strlen() et non mb_strlen() : pas de mbstring sur ce serveur (cf. AGENTS.md).
+        // On coupe sur les octets, donc un pseudo accentué est tronqué un cheveu plus
+        // tôt — sans conséquence pour un alignement de colonnes.
+        $nom   = strlen($l['nom']) > 21 ? substr($l['nom'], 0, 20) . '…' : $l['nom'];
+        $ligne = str_pad($nom, 22) . str_pad((string)$l['points'], 9, ' ', STR_PAD_LEFT)
+               . str_pad($fmt($l['part']), 12, ' ', STR_PAD_LEFT) . $nl;
+        $queue = '… et ' . (count($r['lignes']) - $n) . ' autres, détail sur le site' . $nl;
+        if (strlen($ligne) + strlen($queue) > $budget) { $t .= $queue; break; }
+        $t .= $ligne;
+        $budget -= strlen($ligne);
+        $n++;
+    }
+    return $t . $pied;
 }
 
 // ---- Compos par créneau (rallys) --------------------------------------------
@@ -407,6 +514,84 @@ switch ($action) {
         unset($s);
         write_data($d);
         out(true, ['message' => 'Assignation enregistrée']);
+
+    // Corriger le relevé de présence et saisir le volume récolté.
+    // Le relevé automatique n'est qu'un point de départ : un visiteur de passage, un
+    // joueur resté en vocal sans jouer, une coupure — l'organisateur tranche. On écrase
+    // donc `ticks` avec ce que l'écran renvoie, sans fusion : la grille affichée FAIT foi.
+    case 'save_presence':
+        $d   = read_data();
+        $sid = trim($input['sid'] ?? '');
+        $trouve = false;
+        foreach ($d['sorties'] as &$s) {
+            if (($s['id'] ?? '') !== $sid) continue;
+            if (!epice_owns_sortie($s)) out(false, [], 'Réservé au créateur de la sortie.');
+            $p = is_array($s['presence'] ?? null) ? $s['presence'] : ['ticks' => [], 'noms' => []];
+            if (isset($input['ticks']) && is_array($input['ticks'])) {
+                $propre = [];
+                foreach ($input['ticks'] as $cle => $ids) {
+                    if (!is_array($ids)) continue;
+                    $ids = array_values(array_unique(array_map('strval', $ids)));
+                    if ($ids) $propre[(string)$cle] = $ids;   // un tick vidé disparaît
+                }
+                ksort($propre);
+                $p['ticks'] = $propre;
+            }
+            if (isset($input['volume'])) $p['volume'] = max(0, (int)$input['volume']);
+            $s['presence'] = $p;
+            $trouve = true;
+            break;
+        }
+        unset($s);
+        if (!$trouve) out(false, [], 'Sortie introuvable');
+        write_data($d);
+        $cible = null;
+        foreach ($d['sorties'] as $s2) if (($s2['id'] ?? '') === $sid) $cible = $s2;
+        out(true, ['parts' => parts_presence($cible ?: [])]);
+
+    // Publier la répartition sur Discord, dans le canal de la sortie.
+    case 'publish_shares':
+        $d   = read_data();
+        $sid = trim($input['sid'] ?? '');
+        $cible = null;
+        foreach ($d['sorties'] as $s2) if (($s2['id'] ?? '') === $sid) $cible = $s2;
+        if (!$cible) out(false, [], 'Sortie introuvable');
+        if (!epice_owns_sortie($cible)) out(false, [], 'Réservé au créateur de la sortie.');
+
+        $r = parts_presence($cible);
+        // Garde-fous : publier une répartition fausse est bien pire que ne rien publier.
+        if ($r['volume'] <= 0)       out(false, [], 'Saisis le volume récolté avant de publier.');
+        if ($r['total_points'] <= 0) out(false, [], 'Aucune présence relevée : rien à répartir.');
+
+        $cfgPath = __DIR__ . '/discord_sortie_config.php';
+        if (!file_exists($cfgPath)) out(false, [], 'Configuration du bot absente sur le serveur.');
+        $CFG  = require $cfgPath;
+        $chan = (string)(($cible['discord'] ?? [])['channel_id'] ?? '');
+        if ($chan === '')                 out(false, [], 'Cette sortie n a pas de canal Discord associé.');
+        if (empty($CFG['bot_token']))     out(false, [], 'Le bot n a pas de token configuré.');
+        if (!function_exists('curl_init')) out(false, [], 'cURL indisponible sur le serveur.');
+
+        $ch = curl_init('https://discord.com/api/v10/channels/' . $chan . '/messages');
+        curl_setopt_array($ch, [
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => json_encode(['content' => message_parts($cible, $r)], JSON_UNESCAPED_UNICODE),
+            CURLOPT_HTTPHEADER     => ['Authorization: Bot ' . $CFG['bot_token'], 'Content-Type: application/json'],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => 4,
+            CURLOPT_TIMEOUT        => 10,
+        ]);
+        $resp = curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($resp === false || $code < 200 || $code >= 300)
+            out(false, [], 'Discord a refusé le message (HTTP ' . $code . ').');
+
+        foreach ($d['sorties'] as &$s3) {
+            if (($s3['id'] ?? '') === $sid) { $s3['presence']['publie'] = date('c'); break; }
+        }
+        unset($s3);
+        write_data($d);
+        out(true, ['message' => 'Répartition publiée sur Discord.']);
 
     // Sauvegarder l'analyse IA de la soirée active (admin)
     case 'save_analyse':

@@ -218,6 +218,17 @@ Tous constatés en production ou en test, pas théoriques.
   et chaque compo ne doit vivre qu'à un endroit. `node epice/compos_creneaux.test.cjs`
   verrouille le modèle, y compris le fait qu'un client d'avant le déploiement, qui n'envoie
   que `assignation`, ne doit PAS effacer les relèves.
+- ⚠ **Le partage de la récolte se calcule à UN SEUL endroit** : `parts_presence()` dans
+  `epice/data-api.php`. L'écran d'admin et le message Discord le lisent de là, le navigateur
+  ne recalcule rien. C'est le seul chiffre du portail qui se traduit en ressources dans la
+  poche des joueurs — pas de second exemplaire, jamais. `php epice/parts_presence.test.php`.
+  Rappel de cadrage : un message Discord plafonne à **2000 caractères** et est rejeté EN
+  ENTIER au-delà ; le budget d'un tableau se MESURE (`1900 - strlen(en-tête) - strlen(pied)`),
+  il ne s'estime pas en nombre de lignes — `─` et `…` pèsent 3 octets chacun.
+- **Le relevé de présence** (`epice/rally_presence.php`, cron 30 min) interroge Discord
+  utilisateur par utilisateur : notre bot est un endpoint HTTP, il n'a pas de gateway, et
+  l'API REST n'expose pas la liste des occupants d'un salon vocal. Voir les visiteurs
+  non inscrits demande l'intent privilégié « Server Members ».
 - **La proposition automatique d'organisation** (`epice/raid-auto.js`, bouton de l'onglet
   Assignation) ne doit JAMAIS combler un poste critique par défaut : sans transporteur
   déclaré ni habituel, la case reste vide. Remplir ferait passer un créneau intenable pour

@@ -713,6 +713,38 @@ Une journée de 8 h n'a pas une composition, elle en a quatre : c'est le sens m�
 - ⚠ **Un client d'avant le déploiement ne détruit pas les relèves.** Une page laissée ouverte depuis la veille n'envoie que `assignation` ; `apply_compos()` met alors à jour le créneau 0 **sans toucher** à `assignations`. Sinon un onglet oublié effacerait la journée d'un organisateur.
 - **Côté joueur** (onglet Organisation) : une rangée de boutons de tranches, et un créneau non composé **hérite** du dernier composé avec la mention « Même disposition qu'à 08–10 » plutôt qu'un « non défini » trompeur. La **grille de disponibilités reste côté admin** — un joueur n'a pas à savoir qui a coché quelles heures (cf. la doctrine « pas de flicage »).
 - Vérifié sur banc : `node epice/compos_creneaux.test.cjs` — 9 assertions couvrant le rangement, la disparition des relèves retirées, le créneau vide non persisté, le vieux client inoffensif, la lecture par créneau, l'union des participants, la copie vers l'avant (et son indépendance : modifier la relève ne remonte pas sur l'original) et l'héritage côté joueur.
+##### Relevé de présence et partage de la récolte (2026-09-25, NON DÉPLOYÉ)
+
+Sur une sortie longue, la récolte ne se partage plus à parts égales : **un relevé toutes les 30 minutes dans le salon vocal, présent = 1 point**, et la récolte se divise par le total des points. La valeur d'un point est donc indifférente au nombre de participants — propriété nécessaire quand l'effectif change à chaque demi-heure, et c'est elle qu'on a promise à la guilde.
+
+- **`epice/rally_presence.php`** — cron toutes les 30 min. Pour chaque sortie **ouverte dont la fenêtre horaire couvre l'instant**, il note qui est dans le salon vocal et enregistre un tick (`presence.ticks["2026-09-26T08:30"] = [ids]`).
+- ⚠ **Pourquoi c'est si contourné** : notre bot est un endpoint HTTP d'interactions, **pas** un bot connecté à la gateway — aucun événement temps réel, donc impossible d'« écouter » les entrées/sorties du salon. Et Discord n'expose en REST que l'état vocal d'**un** utilisateur (`GET /guilds/{g}/voice-states/{u}`), jamais la liste des occupants d'un salon. Il faut donc une liste de candidats et les interroger un par un.
+- **Candidats** : les membres de la guilde (`GET /guilds/{g}/members`), ce qui couvre les **visiteurs** non inscrits — mais cela demande l'intent privilégié **« Server Members »**, à activer dans le portail développeur. À défaut, repli sur les inscrits de la sortie, et **l'échec est journalisé** : sinon on croirait relever tout le monde en ne voyant que les inscrits.
+- **Le fichier est relu SOUS VERROU** avant écriture : `debriefs.json` est partagé avec le site et le bot, réécrire la copie chargée trente secondes plus tôt effacerait une inscription arrivée entre-temps.
+- **Écran d'admin** (onglet Assignation, sous la grille des créneaux) : grille joueurs × demi-heures, **cliquable pour corriger**, bouton ✕ pour retirer un visiteur, saisie du volume, calcul, puis publication Discord. Colonne Points en 2ᵉ position et colonne Joueur en `position:sticky` — avec 16 demi-heures le tableau défile, et ce sont les deux colonnes qu'on ne doit jamais perdre.
+- ⚠ **Le navigateur ne calcule JAMAIS les parts.** Il envoie la grille corrigée, le serveur renvoie les parts (`parts_presence()` dans `data-api.php`). C'est le seul chiffre du portail qui se traduit en ressources dans une poche : il n'existe qu'à un endroit, et l'écran comme le message Discord le lisent de là. Un miroir JS aurait été le troisième du lot, après celui des créneaux.
+- **Parts arrondies à la centaine inférieure** (le raffinage consomme par lots de 100 ; une part de 7 437 laisse 37 unités mortes). Le reliquat retourne au pot commun, et il est affiché.
+- **Aucun prélèvement** : ornis, roquettes et buggys restent à la charge de la guilde, par dons ou sorties dédiées. Décision de l'organisateur.
+
+**Vérifié sur banc** — `php epice/parts_presence.test.php`, 25 assertions. Deux défauts trouvés là et invisibles à la relecture :
+- **Un joueur listé deux fois dans le même tick comptait double.** Le relevé et la sauvegarde dédoublonnent déjà, mais la fonction qui distribue des ressources ne doit dépendre de la propreté de personne.
+- **Le message Discord dépassait les 2000 caractères** avec 40 pseudos longs — et un message trop long est rejeté **en entier**. Première correction : plafond à 40 lignes (insuffisant). Deuxième : budget fixe de 1750 (insuffisant aussi, il ignorait le poids de l'en-tête et des caractères multi-octets, `─` et `…` pesant 3 octets). **Le budget se mesure, il ne s'estime pas** : `1900 - strlen(en-tête) - strlen(pied)`.
+
+La fenêtre horaire et le découpage en demi-heures sont vérifiés à part (12 assertions) : une journée de 8 h donne exactement 16 ticks, `08:29` tombe dans le tick `08:00`, une durée `6h30` finit à 02:30 le lendemain, et une date en texte libre (ancien format « Dimanche 28/06/26 21h ») rend `null` sans rien casser.
+
+**Mise en service** — trois préalables, dont deux hors du code :
+1. `rally_voice_channel_id` **et** `guild_id` renseignés dans `epice/discord_sortie_config.php` (`guild_id` était jusqu'ici facultatif : il ne l'est plus).
+2. L'intent **« Server Members »** activé dans le portail développeur, sans quoi seuls les inscrits sont vus.
+3. Le bot doit pouvoir **voir et rejoindre** le salon vocal (Discord exige la permission de connexion pour lire l'état vocal d'autrui).
+
+```bash
+php /srv/dune-map/epice/rally_presence.php --test   # n'écrit rien, affiche qui serait compté
+```
+
+```
+*/30 * * * *  php /srv/dune-map/epice/rally_presence.php >> /srv/dune-map/epice/data/rally_presence.log 2>&1
+```
+
 ##### Proposition automatique d'organisation (2026-09-20, NON DÉPLOYÉE)
 
 Composer une journée à la main, c'est quatre fois le même travail avec trois noms qui changent. Le bouton **✨ Proposition automatique** remplit **tous les créneaux d'un coup**, chacun avec les gens disponibles à cette heure-là. Moteur isolé et testable : `epice/raid-auto.js`.

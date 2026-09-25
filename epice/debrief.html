@@ -309,6 +309,12 @@
     .cren-grid th { font-size:.66rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--accent); background:var(--surface-2); }
     .cren-grid .cren-nom { text-align:left; color:var(--text); font-weight:600; }
     .cren-grid tbody tr:hover { background:var(--accent-glow); }
+    .cren-grid td.cren-clic { cursor:pointer; user-select:none; }
+    .cren-grid .cren-pts { color:var(--accent); }
+    /* 16 demi-heures font defiler le tableau : nom et points restent visibles. */
+    .cren-grid th.cren-nom, .cren-grid td.cren-nom { position:sticky; left:0; background:var(--surface); z-index:2; }
+    .cren-grid thead th.cren-nom { background:var(--surface-2); }
+    .cren-grid td.cren-clic:hover { background:var(--accent); color:#0A0800; }
     .cren-poste { color:var(--text-muted); font-size:.66rem; font-weight:400; margin-left:.45rem; }
     .cren-on { color:var(--accent); font-weight:700; }
     .cren-off { color:var(--text-faint); }
@@ -1954,6 +1960,13 @@ let currentCompos   = {};
 let currentCreneau  = 0;
 let creneauxEnregistres = new Set();   // créneaux déjà revenus du serveur (le reste = nouveau)
 
+// Relevé de présence d'une sortie (rempli par le cron epice/rally_presence.php) et
+// dernier calcul de parts RENVOYÉ PAR LE SERVEUR. Le navigateur ne recalcule jamais les
+// parts lui-même : c'est le seul chiffre du portail qui se traduit en ressources dans
+// une poche, il ne doit exister qu'à un endroit (parts_presence() dans data-api.php).
+let currentPresence = null;
+let currentParts    = null;
+
 // Libellés courts des postes. Défini ici et non dans rosterPop : la grille des créneaux
 // s'en sert aussi, et un catalogue en deux exemplaires finit toujours par diverger
 // (cf. le catalogue des jeux, qui existait en cinq copies).
@@ -2059,6 +2072,7 @@ async function loadAssignBuilder() {
     if (bar) bar.style.display = 'none';
     if (actions) actions.style.display = 'none';
     currentAssignSid = null; currentCompo = null; currentCompos = {}; currentCreneau = 0;
+    currentPresence = null; currentParts = null;
     box.innerHTML = '<div class="empty">Aucune sortie ouverte à assigner.<br>Crée une soirée (ou attends qu\'une te soit attribuée).<br><span style="font-size:.78rem">(les compos clôturées se consultent dans l\'Historique)</span></div>';
     return;
   }
@@ -2108,6 +2122,9 @@ async function loadAssignSortie(sid) {
     });
     currentCreneau = 0;
     currentCompo = currentCompos[0];
+    currentPresence = (data.sortie.presence && typeof data.sortie.presence === 'object')
+      ? JSON.parse(JSON.stringify(data.sortie.presence)) : null;
+    currentParts = null;
     renderAssignBuilder();
   } catch { box.innerHTML = '<div class="empty">Erreur de connexion.</div>'; }
 }
@@ -2270,6 +2287,152 @@ function renderCreneauxGrid() {
   return h;
 }
 
+// ============================================================
+// RELEVÉ DE PRÉSENCE ET PARTAGE DE LA RÉCOLTE
+// ============================================================
+// Le cron epice/rally_presence.php note toutes les 30 minutes qui se trouve dans le
+// salon vocal : un relevé = un point. Cet écran sert à CORRIGER ce relevé (un visiteur
+// de passage, quelqu'un resté connecté sans jouer, une coupure), à saisir le volume
+// récolté, puis à publier la répartition sur Discord.
+//
+// Le navigateur ne calcule RIEN : il envoie la grille corrigée, le serveur renvoie les
+// parts. Un calcul côté client serait un second exemplaire de la seule formule du
+// portail qui distribue des ressources — exactement le genre de duplication qu'on passe
+// son temps à traquer ailleurs.
+
+function ticksTries() {
+  return Object.keys((currentPresence && currentPresence.ticks) || {}).sort();
+}
+
+// Points de chacun, pour l'affichage et le tri SEULEMENT. La part, elle, vient du serveur.
+function pointsParJoueur() {
+  const pts = {};
+  const t = (currentPresence && currentPresence.ticks) || {};
+  Object.keys(t).forEach(k => {
+    new Set((t[k] || []).map(String)).forEach(id => { pts[id] = (pts[id] || 0) + 1; });
+  });
+  return pts;
+}
+
+function basculerPresence(id, cle) {
+  const t = currentPresence.ticks[cle] || [];
+  const i = t.map(String).indexOf(String(id));
+  if (i === -1) t.push(String(id)); else t.splice(i, 1);
+  currentPresence.ticks[cle] = t;
+  currentParts = null;                 // la grille a changé : le calcul affiché est périmé
+  renderAssignBuilder();
+}
+
+// Retire quelqu'un de TOUS les relevés — le cas du visiteur qui passait dire bonjour.
+async function retirerPresent(id) {
+  const nom = (currentPresence.noms || {})[id] || id;
+  if (!(await uiConfirm(`Retirer ${nom} de tout le relevé ? Ses points tombent à zéro.`,
+        { title: 'Retirer du partage', okLabel: 'Retirer', danger: true }))) return;
+  Object.keys(currentPresence.ticks).forEach(k => {
+    currentPresence.ticks[k] = (currentPresence.ticks[k] || []).filter(x => String(x) !== String(id));
+  });
+  currentParts = null;
+  renderAssignBuilder();
+}
+
+function majVolume(v) {
+  currentPresence.volume = Math.max(0, parseInt(v, 10) || 0);
+  currentParts = null;
+}
+
+async function calculerParts() {
+  const note = document.getElementById('presence-note');
+  note.textContent = 'Enregistrement…';
+  try {
+    const r = await apiPost('save_presence', {
+      sid: currentAssignSid,
+      ticks: currentPresence.ticks,
+      volume: currentPresence.volume || 0,
+    });
+    if (!r.ok) { note.textContent = 'Erreur : ' + r.error; return; }
+    currentParts = r.parts;
+    const msg = currentParts.volume > 0
+      ? `✓ Enregistré — ${currentParts.total_points} points, ${currentParts.par_point} par point.`
+      : '✓ Relevé enregistré. Saisis le volume récolté pour obtenir les parts.';
+    renderAssignBuilder();
+    document.getElementById('presence-note').textContent = msg;
+  } catch { note.textContent = 'Erreur de connexion.'; }
+}
+
+async function publierParts() {
+  if (!currentParts || !currentParts.volume) { uiAlert('Calcule les parts avant de publier.'); return; }
+  if (!(await uiConfirm('Publier la répartition dans le canal Discord de la sortie ? Le message part tel quel ; en cas d’erreur il faudra le supprimer sur Discord.',
+        { title: 'Publier la répartition', okLabel: 'Publier' }))) return;
+  const note = document.getElementById('presence-note');
+  note.textContent = 'Publication…';
+  try {
+    const r = await apiPost('publish_shares', { sid: currentAssignSid });
+    note.textContent = r.ok ? '✓ ' + r.message : 'Erreur : ' + r.error;
+    if (r.ok && currentPresence) currentPresence.publie = new Date().toISOString();
+  } catch { note.textContent = 'Erreur de connexion.'; }
+}
+
+function renderPresenceBlock() {
+  const cles = ticksTries();
+  if (!currentPresence || !cles.length) return '';
+
+  const noms = currentPresence.noms || {};
+  const pts  = pointsParJoueur();
+  // Quelqu'un retiré de tous les relevés reste dans `noms` : on ne l'affiche plus.
+  const gens = Object.keys(noms).filter(id => pts[id] > 0)
+    .sort((a, b) => (pts[b] - pts[a]) || String(noms[a]).localeCompare(String(noms[b]), 'fr'));
+  const heure = k => k.slice(11);   // « 2026-09-26T08:30 » → « 08:30 »
+
+  let h = `<div class="assign-group"><div class="assign-group-head">
+      <span class="assign-group-title">🌾 Présence et partage de la récolte</span>
+      ${currentPresence.publie ? '<span class="cren-barre-txt">déjà publié</span>' : ''}
+    </div>
+    <div class="assign-hint">Relevé automatique toutes les 30 minutes dans le salon vocal — un relevé présent = 1 point.
+    Clique une case pour corriger, ou retire quelqu'un qui n'a fait que passer. <strong>Rien n'est enregistré tant que tu n'as pas cliqué « Enregistrer et calculer ».</strong></div>
+    <div class="cren-wrap"><table class="cren-grid">
+    <thead><tr><th class="cren-nom">Joueur</th>`;
+  h += `<th>Points</th>`;
+  cles.forEach(k => { h += `<th title="${escAttr(k)}">${esc(heure(k))}</th>`; });
+  h += `<th></th></tr></thead><tbody>`;
+
+  gens.forEach(id => {
+    h += `<tr><td class="cren-nom">${esc(noms[id])}</td><td class="cren-pts"><strong>${pts[id]}</strong></td>`;
+    cles.forEach(k => {
+      const la = (currentPresence.ticks[k] || []).map(String).indexOf(String(id)) !== -1;
+      h += `<td class="${la ? 'cren-on' : 'cren-off'} cren-clic" onclick="basculerPresence('${escAttr(id)}','${escAttr(k)}')"
+              title="${la ? 'Présent' : 'Absent'} à ${escAttr(heure(k))} — cliquer pour corriger">${la ? '✓' : '·'}</td>`;
+    });
+    h += `<td><button class="btn-mini btn-mini-del" onclick="retirerPresent('${escAttr(id)}')" data-tip="Retirer du partage">✕</button></td></tr>`;
+  });
+
+  h += `</tbody></table></div>
+    <div class="cren-barre">
+      <span class="cren-barre-txt">Volume récolté (sable épicé)
+        <input type="number" min="0" step="100" class="roster-input" style="width:140px;margin-left:.5rem"
+               value="${currentPresence.volume || ''}" placeholder="ex. 100000" oninput="majVolume(this.value)"></span>
+      <span style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <button class="btn btn-outline" onclick="calculerParts()">💾 Enregistrer et calculer</button>
+        <button class="btn btn-accent" onclick="publierParts()" ${currentParts && currentParts.volume ? '' : 'disabled'}>📣 Publier sur Discord</button>
+      </span>
+    </div>
+    <div id="presence-note" style="font-size:.72rem;color:var(--text-faint);margin-top:.5rem"></div>`;
+
+  if (currentParts && currentParts.volume > 0) {
+    h += `<div class="assign-sub-head">Parts calculées</div>
+      <div class="assign-sub-hint">${currentParts.total_points} points au total · <strong>${currentParts.par_point}</strong> par point.
+      Parts arrondies à la centaine inférieure (le raffinage consomme par lots de 100)${
+        currentParts.reliquat > 0 ? ` ; il reste <strong>${currentParts.reliquat}</strong> au pot commun` : ''}.</div>
+      <div class="cren-wrap"><table class="cren-grid"><thead><tr>
+        <th class="cren-nom">Joueur</th><th>Points</th><th>Part</th></tr></thead><tbody>`;
+    currentParts.lignes.forEach(l => {
+      h += `<tr><td class="cren-nom">${esc(l.nom)}</td><td>${l.points}</td><td class="cren-on">${l.part}</td></tr>`;
+    });
+    h += `</tbody></table></div>`;
+  }
+
+  return h + `</div>`;
+}
+
 // Bascule le builder sur un autre créneau. Un créneau jamais ouvert est PRÉ-REMPLI par
 // copie du dernier créneau composé : une relève se règle en remplaçant deux ou trois
 // noms, pas en ressaisissant quatre fois la même compo pour une journée de 8 h.
@@ -2310,6 +2473,8 @@ function renderAssignBuilder() {
   // La grille des créneaux d'abord : sur un rally, « qui est là à quelle heure »
   // conditionne toutes les affectations en dessous. Vide (chaîne '') hors rally.
   h += renderCreneauxGrid();
+  // Puis le relevé de présence, s'il y en a un. Chaîne vide tant que le cron n'a rien noté.
+  h += renderPresenceBlock();
 
   // Commandement
   h += `<div class="assign-group">

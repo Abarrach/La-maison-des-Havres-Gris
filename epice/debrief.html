@@ -127,8 +127,8 @@
     .block-label, .assign-group-title { font-family:'Cinzel',serif !important; }
 
     /* Champs de saisie : barre d'accent dorée à gauche, vive au focus */
-    input[type="text"], input[type="password"], textarea, .pil-nom, .pil-pass, .roster-input { border-left:2px solid var(--accent-dim) !important; }
-    input[type="text"]:focus, input[type="password"]:focus, textarea:focus, .pil-nom:focus, .pil-pass:focus, .roster-input:focus { border-left-color:var(--accent) !important; }
+    input[type="text"], input[type="password"], input[type="number"], textarea, .pil-nom, .pil-pass, .roster-input, .champ-sombre { border-left:2px solid var(--accent-dim) !important; }
+    input[type="text"]:focus, input[type="password"]:focus, input[type="number"]:focus, textarea:focus, .pil-nom:focus, .pil-pass:focus, .roster-input:focus, .champ-sombre:focus { border-left-color:var(--accent) !important; }
 
     select {
       width:100%; background:var(--surface-2); border:1px solid var(--border); border-radius:2px;
@@ -204,7 +204,12 @@
     .btn:disabled { opacity:.3; cursor:not-allowed; }
     .btn-accent { background:var(--accent); border-color:var(--accent); color:#0A0800; }
     .btn-ghost  { background:transparent; border-color:var(--border); color:var(--text-muted); }
-    .btn-outline{ background:transparent; border-color:var(--accent-dim); color:var(--accent); }   /* action offerte : moins que l'or plein d'Enregistrer, plus qu'un ghost */
+    .btn-outline{ background:transparent; border-color:var(--accent-dim); color:var(--accent); }
+    /* Champ de saisie utilisable PARTOUT, y compris hors .assign-slot : sans ça il
+       retombe sur le blanc natif du navigateur, comme .btn le faisait. */
+    .champ-sombre, .roster-input { background:var(--surface-2); border:1px solid var(--border); border-radius:2px;
+      padding:.5rem .75rem; font-family:'Inter',sans-serif; font-size:.85rem; color:var(--text); outline:none; }
+    .champ-sombre:focus, .roster-input:focus { border-color:var(--accent-dim); }   /* action offerte : moins que l'or plein d'Enregistrer, plus qu'un ghost */
     .btn-danger { background:transparent; border-color:#6A2218; color:#C05040; }
 
     .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:.65rem; margin-bottom:1rem; }
@@ -303,7 +308,11 @@
     /* Grille joueurs x creneaux (rallys) : lue en diagonale, donc tout doit tenir
        sur une ligne par personne. Le scroller horizontal evite qu'une journee de
        10 h (5 colonnes) ne casse la mise en page sur telephone. */
-    .cren-wrap { overflow-x:auto; }
+    .cren-wrap { overflow-x:auto; scrollbar-width:thin; scrollbar-color:var(--accent-dim) var(--surface-2); }
+    .cren-wrap::-webkit-scrollbar { height:10px; }
+    .cren-wrap::-webkit-scrollbar-track { background:var(--surface-2); border-radius:2px; }
+    .cren-wrap::-webkit-scrollbar-thumb { background:var(--accent-dim); border-radius:2px; }
+    .cren-wrap::-webkit-scrollbar-thumb:hover { background:var(--accent); }
     .cren-grid { border-collapse:collapse; font-size:.75rem; min-width:100%; }
     .cren-grid th, .cren-grid td { border:1px solid var(--border); padding:.3rem .5rem; text-align:center; white-space:nowrap; }
     .cren-grid th { font-size:.66rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--accent); background:var(--surface-2); }
@@ -2408,7 +2417,7 @@ function renderPresenceBlock() {
   h += `</tbody></table></div>
     <div class="cren-barre">
       <span class="cren-barre-txt">Volume récolté (sable épicé)
-        <input type="number" min="0" step="100" class="roster-input" style="width:140px;margin-left:.5rem"
+        <input type="number" min="0" step="100" class="champ-sombre" style="width:150px;margin-left:.5rem"
                value="${currentPresence.volume || ''}" placeholder="ex. 100000" oninput="majVolume(this.value)"></span>
       <span style="display:flex;gap:.5rem;flex-wrap:wrap">
         <button class="btn btn-outline" onclick="calculerParts()">💾 Enregistrer et calculer</button>

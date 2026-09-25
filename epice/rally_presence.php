@@ -11,6 +11,11 @@
 // Essai à blanc (n'écrit RIEN, affiche qui serait compté) :
 //   php /srv/dune-map/epice/rally_presence.php --test
 //
+// Contrôle avant vol (n'appelle même pas Discord) : quelles sorties ouvertes le script
+// sait lire, et quand il relèvera dessus. À passer la VEILLE d'une sortie, pour ne pas
+// découvrir le lendemain qu'une date en texte libre la rendait invisible :
+//   php /srv/dune-map/epice/rally_presence.php --fenetres
+//
 // ------------------------------------------------------------
 //  POURQUOI C'EST FAIT COMME ÇA
 // ------------------------------------------------------------
@@ -40,7 +45,8 @@ const BLOC_MINUTES = 30;      // un point par demi-heure
 const MAX_CANDIDATS = 500;    // garde-fou : on n'interroge pas une guilde entière sans borne
 const PAUSE_US      = 25000;  // 25 ms entre deux appels (limite Discord ~50 req/s)
 
-$essai = in_array('--test', $argv ?? [], true);
+$essai    = in_array('--test', $argv ?? [], true);
+$fenetres = in_array('--fenetres', $argv ?? [], true);
 
 $CFG_PATH = __DIR__ . '/discord_sortie_config.php';
 if (!file_exists($CFG_PATH)) { fwrite(STDERR, "Config absente : $CFG_PATH\n"); exit(1); }
@@ -153,23 +159,25 @@ if ($guildId === '' || $channelId === '') {
 // traduit par « 0 présent » sans le moindre message, et on cherche du côté des
 // permissions ou de l'intent. Un identifiant Discord encode sa date de création : un
 // salon plus ancien que le serveur configuré ne peut pas lui appartenir.
+// …sauf en mode --fenetres, qui est une lecture du FICHIER : il doit rester utilisable
+// sans réseau et sans token, y compris depuis un poste qui n'a pas la configuration.
 $err  = null;
-$salon = discord_get("/channels/{$channelId}", $err);
-if (!is_array($salon)) {
+$salon = $fenetres ? true : discord_get("/channels/{$channelId}", $err);
+if ($salon !== true && !is_array($salon)) {
     plog("🧨 Salon {$channelId} illisible (" . ($err['code'] ?? '?') . ") — identifiant erroné, ou le bot n'est pas sur ce serveur.");
     exit(1);
 }
-if ((int)($salon['type'] ?? -1) !== 2) {
+if ($salon !== true && (int)($salon['type'] ?? -1) !== 2) {
     plog("🧨 « " . ($salon['name'] ?? '?') . " » n'est pas un salon VOCAL (type " . ($salon['type'] ?? '?') . ", il en faut 2).");
     exit(1);
 }
-if ((string)($salon['guild_id'] ?? '') !== $guildId) {
+if ($salon !== true && (string)($salon['guild_id'] ?? '') !== $guildId) {
     plog("🧨 Le salon « " . ($salon['name'] ?? '?') . " » appartient au serveur " . ($salon['guild_id'] ?? '?')
        . ", or on interroge l'état vocal sur " . $guildId . " : personne ne sera jamais trouvé."
        . " Corrige `rally_guild_id` (le serveur du salon) ou `rally_voice_channel_id`.");
     exit(1);
 }
-plog("Salon vocal « " . ($salon['name'] ?? '?') . " » sur le serveur {$guildId} — OK.");
+if ($salon !== true) plog("Salon vocal « " . ($salon['name'] ?? '?') . " » sur le serveur {$guildId} — OK.");
 
 if (!file_exists(DATA_FILE)) { plog('Aucun fichier de sorties.'); exit(0); }
 $data = json_decode(file_get_contents(DATA_FILE), true);
@@ -177,6 +185,36 @@ if (!is_array($data)) { fwrite(STDERR, "debriefs.json illisible\n"); exit(1); }
 
 $now  = new DateTime('now', new DateTimeZone('Europe/Paris'));
 $tick = cle_tick($now);
+
+// --- Contrôle avant vol ---------------------------------------------------
+// Une sortie dont la date est en texte libre (« Dimanche 28/06/26 21h », l'ancien
+// format) n'a pas de fenêtre exploitable : le relevé l'ignore, en silence. C'est la
+// panne qu'on ne veut pas découvrir le jour même, d'où ce listing à passer la veille.
+if ($fenetres) {
+    plog('Il est ' . $now->format('Y-m-d H:i') . ' — sorties OUVERTES :');
+    $vues = 0;
+    foreach ($data['sorties'] ?? [] as $s) {
+        if (($s['statut'] ?? '') !== 'ouverte') continue;
+        $vues++;
+        $titre = substr((string)($s['titre'] ?? '?'), 0, 34);
+        $f = fenetre_sortie($s);
+        if (!$f) {
+            plog(sprintf('  ✖ %-34s  ILLISIBLE (date="%s" heure="%s" duree="%s") — jamais relevée',
+                 $titre, $s['date'] ?? '', $s['heure'] ?? '', $s['duree'] ?? ''));
+            continue;
+        }
+        $etat = ($now >= $f[0] && $now <= $f[1]) ? 'EN COURS — relevée maintenant'
+              : ($now < $f[0] ? 'à venir' : 'terminée');
+        $nb = count($s['presence']['ticks'] ?? []);
+        plog(sprintf('  %s %-34s  %s → %s  %s%s',
+             ($now >= $f[0] && $now <= $f[1]) ? '▶' : ' ',
+             $titre, $f[0]->format('d/m H:i'), $f[1]->format('d/m H:i'), $etat,
+             $nb ? "  [{$nb} relevé(s) déjà enregistré(s)]" : ''));
+    }
+    if (!$vues) plog('  (aucune sortie ouverte)');
+    plog('Salon écouté : ' . $channelId . ' sur le serveur ' . $guildId);
+    exit(0);
+}
 
 // Quelles sorties sont en cours ? Plusieurs peuvent l'être (multi-sorties).
 $encours = [];

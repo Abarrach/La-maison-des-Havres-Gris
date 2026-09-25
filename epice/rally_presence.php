@@ -136,12 +136,40 @@ function cle_tick(DateTime $now): string {
 // ------------------------------------------------------------
 //  Programme
 // ------------------------------------------------------------
-$guildId   = (string)($CFG['guild_id'] ?? '');
+// Le serveur du RELEVÉ n'est pas forcément celui des commandes. On peut vouloir compter
+// les présences sur la vraie guilde tout en publiant sur un serveur de test : `guild_id`
+// sert aussi à enregistrer les commandes /sortie, le détourner poserait celles de v2 sur
+// la production. D'où un réglage à part, qui retombe sur `guild_id` quand il est vide.
+$guildId   = (string)($CFG['rally_guild_id'] ?? '');
+if ($guildId === '') $guildId = (string)($CFG['guild_id'] ?? '');
 $channelId = (string)($CFG['rally_voice_channel_id'] ?? '');
 if ($guildId === '' || $channelId === '') {
-    fwrite(STDERR, "guild_id et rally_voice_channel_id doivent être renseignés dans discord_sortie_config.php\n");
+    fwrite(STDERR, "rally_voice_channel_id et guild_id (ou rally_guild_id) doivent être renseignés dans discord_sortie_config.php\n");
     exit(1);
 }
+
+// Vérification du salon AVANT tout relevé. Sans elle, une erreur de configuration —
+// un salon appartenant à un autre serveur, un salon textuel pris pour un vocal — se
+// traduit par « 0 présent » sans le moindre message, et on cherche du côté des
+// permissions ou de l'intent. Un identifiant Discord encode sa date de création : un
+// salon plus ancien que le serveur configuré ne peut pas lui appartenir.
+$err  = null;
+$salon = discord_get("/channels/{$channelId}", $err);
+if (!is_array($salon)) {
+    plog("🧨 Salon {$channelId} illisible (" . ($err['code'] ?? '?') . ") — identifiant erroné, ou le bot n'est pas sur ce serveur.");
+    exit(1);
+}
+if ((int)($salon['type'] ?? -1) !== 2) {
+    plog("🧨 « " . ($salon['name'] ?? '?') . " » n'est pas un salon VOCAL (type " . ($salon['type'] ?? '?') . ", il en faut 2).");
+    exit(1);
+}
+if ((string)($salon['guild_id'] ?? '') !== $guildId) {
+    plog("🧨 Le salon « " . ($salon['name'] ?? '?') . " » appartient au serveur " . ($salon['guild_id'] ?? '?')
+       . ", or on interroge l'état vocal sur " . $guildId . " : personne ne sera jamais trouvé."
+       . " Corrige `rally_guild_id` (le serveur du salon) ou `rally_voice_channel_id`.");
+    exit(1);
+}
+plog("Salon vocal « " . ($salon['name'] ?? '?') . " » sur le serveur {$guildId} — OK.");
 
 if (!file_exists(DATA_FILE)) { plog('Aucun fichier de sorties.'); exit(0); }
 $data = json_decode(file_get_contents(DATA_FILE), true);

@@ -31,6 +31,14 @@ return [
     // Vide = aucun relevé de présence (le cron sort sans rien faire).
     'rally_voice_channel_id' => '', // ex : '1518329489862557919'
 
+    // Serveur où se trouve CE salon vocal, si ce n'est pas celui de `guild_id`.
+    // Cas d'usage : relever les présences sur la vraie guilde tout en publiant sur un
+    // serveur de test. On ne détourne pas `guild_id` pour ça — il sert aussi à
+    // enregistrer les commandes /sortie, et le changer les poserait sur le mauvais
+    // serveur. Le bot doit évidemment être MEMBRE des deux.
+    // Vide = on utilise `guild_id`.
+    'rally_guild_id' => '',
+
     // Salon où le bot postera les demandes de fabrication (skills.html → tab Commandes).
     // Renseigné = le site poste via le BOT (encart + boutons ✋/✅/↩️/🗑️ interactifs).
     // Vide      = fallback sur l'ancien webhook (discord_webhook.txt), sans boutons.

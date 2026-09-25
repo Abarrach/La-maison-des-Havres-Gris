@@ -319,6 +319,21 @@
     .cren-grid .cren-nom { text-align:left; color:var(--text); font-weight:600; }
     .cren-grid tbody tr:hover { background:var(--accent-glow); }
     .cren-grid td.cren-clic { cursor:pointer; user-select:none; }
+    /* Aide repliable. Préférée à une infobulle pour ce qui tient en plusieurs lignes :
+       une infobulle n'existe pas au survol sur téléphone, or l'organisateur fait
+       souvent ce calcul depuis son canapé, la sortie finie. */
+    .aide { border:1px solid var(--border); border-radius:2px; background:var(--surface-2); margin-bottom:.85rem; }
+    .aide > summary { cursor:pointer; list-style:none; padding:.5rem .8rem; font-size:.68rem; font-weight:700;
+                      letter-spacing:.08em; text-transform:uppercase; color:var(--accent); }
+    .aide > summary::-webkit-details-marker { display:none; }
+    .aide > summary::before { content:'▸ '; }
+    .aide[open] > summary::before { content:'▾ '; }
+    .aide > summary:hover { color:var(--text); }
+    .aide-corps { padding:0 .9rem .85rem; font-size:.74rem; color:var(--text-muted); line-height:1.65; }
+    .aide-corps strong { color:var(--text); }
+    .aide-corps ol, .aide-corps ul { margin:.35rem 0 .7rem 1.15rem; padding:0; }
+    .aide-corps li { margin-bottom:.3rem; }
+    .aide-titre { display:block; color:var(--accent); font-weight:700; margin:.7rem 0 .2rem; }
     .cren-grid .cren-pts { color:var(--accent); }
     /* 16 demi-heures font defiler le tableau : nom et points restent visibles. */
     .cren-grid th.cren-nom, .cren-grid td.cren-nom { position:sticky; left:0; background:var(--surface); z-index:2; }
@@ -2396,8 +2411,27 @@ function renderPresenceBlock() {
       <span class="assign-group-title">🌾 Présence et partage de la récolte</span>
       ${currentPresence.publie ? '<span class="cren-barre-txt">déjà publié</span>' : ''}
     </div>
-    <div class="assign-hint">Relevé automatique toutes les 30 minutes dans le salon vocal — un relevé présent = 1 point.
-    Clique une case pour corriger, ou retire quelqu'un qui n'a fait que passer. <strong>Rien n'est enregistré tant que tu n'as pas cliqué « Enregistrer et calculer ».</strong></div>
+    <details class="aide"><summary>Comment ça marche</summary><div class="aide-corps">
+      <span class="aide-titre">Pendant la sortie</span>
+      Le bot relève <strong>le salon vocal surveillé</strong> toutes les 30 minutes. Une présence relevée = <strong>1 point</strong>. Personne n'a rien à faire, mais il faut le dire au groupe :
+      <ul>
+        <li>on <strong>entre</strong> dans le salon en arrivant sur zone, on en <strong>sort</strong> en partant ;</li>
+        <li>rester connecté après avoir fini continue de marquer des points ;</li>
+        <li>à la fin, tout le monde remonte ailleurs, sinon le relevé continue.</li>
+      </ul>
+      <span class="aide-titre">Une fois la sortie terminée</span>
+      <ol>
+        <li><strong>Corrige la grille.</strong> Un clic sur une case ajoute ou retire la présence. La croix en fin de ligne retire quelqu'un de <em>tout</em> le relevé — le visiteur venu dire bonjour.</li>
+        <li><strong>Saisis le volume total</strong> récolté (sable épicé).</li>
+        <li><strong>Enregistrer et calculer</strong> : le partage s'affiche juste en dessous.</li>
+        <li><strong>Publier sur Discord</strong> : le tableau part dans le salon prévu. Relis avant, le message est définitif.</li>
+      </ol>
+      <span class="aide-titre">Le calcul</span>
+      Récolte ÷ total des points = <strong>la valeur d'un point</strong>. Chacun touche ses points × cette valeur.
+      Elle ne dépend donc <em>pas</em> du nombre de participants : venir une heure vaut toujours deux points, que vous soyez cinq ou vingt-cinq.
+      Les parts sont arrondies à la centaine inférieure — le raffinage consomme par lots de 100, et une part de 7 437 laisserait 37 unités inutilisables. Le reliquat retourne au pot commun.
+    </div></details>
+    <div class="assign-hint"><strong>Rien n'est enregistré tant que tu n'as pas cliqué « Enregistrer et calculer ».</strong></div>
     <div class="cren-wrap"><table class="cren-grid">
     <thead><tr><th class="cren-nom">Joueur</th>`;
   h += `<th>Points</th>`;

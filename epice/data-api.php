@@ -586,8 +586,12 @@ switch ($action) {
         $cfgPath = __DIR__ . '/discord_sortie_config.php';
         if (!file_exists($cfgPath)) out(false, [], 'Configuration du bot absente sur le serveur.');
         $CFG  = require $cfgPath;
-        $chan = (string)(($cible['discord'] ?? [])['channel_id'] ?? '');
-        if ($chan === '')                 out(false, [], 'Cette sortie n a pas de canal Discord associé.');
+        // Canal de publication : `partage_channel_id` d'abord, sinon celui où la sortie a
+        // été créée. Le partage n'a pas sa place dans le salon des commandes du bot —
+        // c'est une annonce à lire, pas une interaction — d'où le réglage dédié.
+        $chan = trim((string)($CFG['partage_channel_id'] ?? ''));
+        if ($chan === '') $chan = (string)(($cible['discord'] ?? [])['channel_id'] ?? '');
+        if ($chan === '') out(false, [], "Aucun canal de publication : renseigne `partage_channel_id` dans discord_sortie_config.php, ou crée la sortie depuis Discord.");
         if (empty($CFG['bot_token']))     out(false, [], 'Le bot n a pas de token configuré.');
         if (!function_exists('curl_init')) out(false, [], 'cURL indisponible sur le serveur.');
 

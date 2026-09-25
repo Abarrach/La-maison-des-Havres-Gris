@@ -37,6 +37,12 @@ return [
     // Clic droit sur le salon → Copier l'identifiant (mode dev activé).
     'commandes_channel_id' => '', // ex : '1518329489862557919'
 
+    // Salon où le site publie le PARTAGE DE LA RÉCOLTE (bouton « Publier sur Discord »
+    // de l'onglet Assignation). À mettre sur un salon de discussion, pas sur celui des
+    // commandes du bot : c'est une annonce que les joueurs relisent, pas une interaction.
+    // Vide = repli sur le salon où la sortie a été créée.
+    'partage_channel_id' => '', // ex : le salon « activités-discussion »
+
     // URL de base du site (sans slash final), pour les liens envoyés depuis Discord
     // (éphémère de /commande creer → "Ajouter des captures"). Utile pour distinguer
     // prod (racine) et dev (/v2). Vide = fallback sur https://havresgris.ddns.net.

@@ -170,9 +170,22 @@ function message_parts(array $s, array $r): string {
                . 'Reliquat de ' . $fmt($r['reliquat']) . ' au pot commun.*' . $nl;
     $pied .= '*Aucun prélèvement : ornis, roquettes et buggys restent à la charge de la guilde.*';
 
+    // ⚠ str_pad() compte des OCTETS. « Lorhelyne✨ » pèse trois octets de plus qu'il
+    // n'occupe de colonnes, et sa ligne se décalait. Sans mbstring (absente de ce
+    // serveur), on approche la largeur d'affichage en comptant les points de code :
+    // les octets de continuation UTF-8 (0x80-0xBF) ne sont pas des caractères.
+    // Limite assumée : un emoji est souvent rendu sur DEUX colonnes, donc une ligne
+    // qui en contient peut encore dériver d'un cran — au lieu de trois.
+    $larg = function ($x) { return strlen(preg_replace('/[\x80-\xBF]/', '', $x)); };
+    $padd = function ($x, $n) use ($larg) { $m = $n - $larg($x); return $x . ($m > 0 ? str_repeat(' ', $m) : ''); };
+    $padg = function ($x, $n) use ($larg) { $m = $n - $larg($x); return ($m > 0 ? str_repeat(' ', $m) : '') . $x; };
+
+    // Colonnes resserrées à 35 caractères : un bloc de code Discord ne se replie pas,
+    // il défile horizontalement. Sur téléphone, 43 caractères obligeaient déjà à
+    // faire glisser le tableau pour lire la colonne des parts.
     $t .= '```' . $nl;
-    $t .= str_pad('Joueur', 22) . str_pad('Points', 9, ' ', STR_PAD_LEFT) . str_pad('Part', 12, ' ', STR_PAD_LEFT) . $nl;
-    $t .= str_repeat('─', 43) . $nl;
+    $t .= $padd('Joueur', 18) . $padg('Points', 7) . $padg('Part', 10) . $nl;
+    $t .= str_repeat('-', 35) . $nl;
 
     // Troncature sur le BUDGET RÉEL, en octets, et non sur un nombre de lignes : un
     // message Discord plafonne à 2000 caractères et il est rejeté EN ENTIER au-delà.
@@ -186,9 +199,13 @@ function message_parts(array $s, array $r): string {
         // strlen() et non mb_strlen() : pas de mbstring sur ce serveur (cf. AGENTS.md).
         // On coupe sur les octets, donc un pseudo accentué est tronqué un cheveu plus
         // tôt — sans conséquence pour un alignement de colonnes.
-        $nom   = strlen($l['nom']) > 21 ? substr($l['nom'], 0, 20) . '…' : $l['nom'];
-        $ligne = str_pad($nom, 22) . str_pad((string)$l['points'], 9, ' ', STR_PAD_LEFT)
-               . str_pad($fmt($l['part']), 12, ' ', STR_PAD_LEFT) . $nl;
+        // Troncature sur les points de code, pas sur les octets : couper « Lorhelyne✨ »
+        // au milieu de son emoji produirait des octets invalides dans le message.
+        $nom = $l['nom'];
+        while ($larg($nom) > 17) $nom = preg_replace('/.$/us', '', $nom);
+        if ($nom !== $l['nom']) $nom .= '…';
+        $ligne = $padd($nom, 18) . $padg((string)$l['points'], 7)
+               . $padg($fmt($l['part']), 10) . $nl;
         $queue = '… et ' . (count($r['lignes']) - $n) . ' autres, détail sur le site' . $nl;
         if (strlen($ligne) + strlen($queue) > $budget) { $t .= $queue; break; }
         $t .= $ligne;

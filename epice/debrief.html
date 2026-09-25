@@ -2433,6 +2433,9 @@ function renderPresenceBlock() {
       ${currentPresence.publie ? '<span class="cren-barre-txt">déjà publié</span>' : ''}
     </div>
     <details class="aide"><summary>Comment ça marche</summary><div class="aide-corps">
+      <span class="aide-titre">Ce tableau n'apparaît pas tout de suite</span>
+      Le premier relevé a lieu <strong>dans la demi-heure qui suit l'heure de début prévue</strong> de la sortie — et seulement si quelqu'un se trouve déjà dans le salon vocal. Avant cela, ce bloc n'existe pas : c'est normal, il n'y a rien à afficher. Rien n'est relevé non plus après l'heure de fin ; si la sortie déborde, allonge sa durée sur Discord <em>avant</em> qu'elle ne se termine.
+
       <span class="aide-titre">Pendant la sortie</span>
       Le bot relève <strong>le salon vocal surveillé</strong> toutes les 30 minutes. Une présence relevée = <strong>1 point</strong>. Personne n'a rien à faire, mais il faut le dire au groupe :
       <ul>
@@ -2447,6 +2450,7 @@ function renderPresenceBlock() {
         <li><strong>Enregistrer et calculer</strong> : le partage s'affiche juste en dessous.</li>
         <li><strong>Publier sur Discord</strong> : le tableau part dans le salon prévu. Relis avant, le message est définitif.</li>
       </ol>
+      Pour suivre le remplissage en cours de journée, utilise <strong>⟳ Actualiser</strong> plutôt que de recharger la page : un rechargement revient sur la sortie du jour, pas forcément sur celle que tu regardais.
       <span class="aide-titre">Le calcul</span>
       Récolte ÷ total des points = <strong>la valeur d'un point</strong>. Chacun touche ses points × cette valeur.
       Elle ne dépend donc <em>pas</em> du nombre de participants : venir une heure vaut toujours deux points, que vous soyez cinq ou vingt-cinq.

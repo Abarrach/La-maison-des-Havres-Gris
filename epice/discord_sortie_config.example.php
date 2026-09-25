@@ -19,6 +19,18 @@ return [
     'bot_token'  => 'COLLE_TON_BOT_TOKEN_ICI',
     'guild_id'   => '', // ex : '123456789012345678' (Mode dev → clic droit serveur → Copier l'identifiant)
 
+    // Salon VOCAL où le relevé de présence compte les points (epice/rally_presence.php,
+    // cron toutes les 30 min). Clic droit sur le salon vocal → Copier l'identifiant.
+    // ⚠ `guild_id` ci-dessus devient OBLIGATOIRE dès que ce relevé tourne : il était
+    //   facultatif tant qu'il ne servait qu'à enregistrer la commande instantanément.
+    // ⚠ Le bot doit pouvoir VOIR et REJOINDRE ce salon : Discord exige la permission de
+    //   connexion pour lire l'état vocal d'un autre membre.
+    // ⚠ Pour compter aussi les VISITEURS (présents en vocal mais non inscrits à la sortie),
+    //   l'intent privilégié « Server Members » doit être activé dans le portail développeur.
+    //   Sans lui, seuls les inscrits sont vus — le script le journalise, il ne fait pas semblant.
+    // Vide = aucun relevé de présence (le cron sort sans rien faire).
+    'rally_voice_channel_id' => '', // ex : '1518329489862557919'
+
     // Salon où le bot postera les demandes de fabrication (skills.html → tab Commandes).
     // Renseigné = le site poste via le BOT (encart + boutons ✋/✅/↩️/🗑️ interactifs).
     // Vide      = fallback sur l'ancien webhook (discord_webhook.txt), sans boutons.

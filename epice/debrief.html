@@ -1990,6 +1990,10 @@ let creneauxEnregistres = new Set();   // créneaux déjà revenus du serveur (l
 // une poche, il ne doit exister qu'à un endroit (parts_presence() dans data-api.php).
 let currentPresence = null;
 let currentParts    = null;
+// Le relevé a-t-il été corrigé sans être enregistré ? Actualiser relit le serveur et
+// écrase l'écran : sans ce drapeau, un clic malheureux effacerait vingt corrections
+// faites à la main, en silence.
+let presenceModifiee = false;
 
 // Libellés courts des postes. Défini ici et non dans rosterPop : la grille des créneaux
 // s'en sert aussi, et un catalogue en deux exemplaires finit toujours par diverger
@@ -2149,6 +2153,7 @@ async function loadAssignSortie(sid) {
     currentPresence = (data.sortie.presence && typeof data.sortie.presence === 'object')
       ? JSON.parse(JSON.stringify(data.sortie.presence)) : null;
     currentParts = null;
+    presenceModifiee = false;
     renderAssignBuilder();
   } catch { box.innerHTML = '<div class="empty">Erreur de connexion.</div>'; }
 }
@@ -2344,6 +2349,7 @@ function basculerPresence(id, cle) {
   if (i === -1) t.push(String(id)); else t.splice(i, 1);
   currentPresence.ticks[cle] = t;
   currentParts = null;                 // la grille a changé : le calcul affiché est périmé
+  presenceModifiee = true;
   renderAssignBuilder();
 }
 
@@ -2356,12 +2362,26 @@ async function retirerPresent(id) {
     currentPresence.ticks[k] = (currentPresence.ticks[k] || []).filter(x => String(x) !== String(id));
   });
   currentParts = null;
+  presenceModifiee = true;
   renderAssignBuilder();
 }
 
 function majVolume(v) {
   currentPresence.volume = Math.max(0, parseInt(v, 10) || 0);
   currentParts = null;
+  presenceModifiee = true;
+}
+
+// Relit le relevé depuis le serveur SANS recharger la page. Recharger renverrait sur la
+// sortie « vedette » — au petit matin, le rally du jour et non celle qu'on regardait.
+async function actualiserPresence() {
+  if (!currentAssignSid) return;
+  if (presenceModifiee && !(await uiConfirm(
+        'Des corrections ne sont pas enregistrées. Recharger le relevé depuis le serveur les remplacera par la version enregistrée. Continuer ?',
+        { title: 'Actualiser le relevé', okLabel: 'Recharger', danger: true }))) return;
+  await loadAssignSortie(currentAssignSid);
+  const note = document.getElementById('presence-note');
+  if (note) note.textContent = 'Relevé actualisé à ' + new Date().toLocaleTimeString('fr-FR');
 }
 
 async function calculerParts() {
@@ -2375,6 +2395,7 @@ async function calculerParts() {
     });
     if (!r.ok) { note.textContent = 'Erreur : ' + r.error; return; }
     currentParts = r.parts;
+    presenceModifiee = false;
     const msg = currentParts.volume > 0
       ? `✓ Enregistré — ${currentParts.total_points} points, ${currentParts.par_point} par point.`
       : '✓ Relevé enregistré. Saisis le volume récolté pour obtenir les parts.';
@@ -2454,6 +2475,7 @@ function renderPresenceBlock() {
         <input type="number" min="0" step="100" class="champ-sombre" style="width:150px;margin-left:.5rem"
                value="${currentPresence.volume || ''}" placeholder="ex. 100000" oninput="majVolume(this.value)"></span>
       <span style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <button class="btn" onclick="actualiserPresence()" data-tip="Relire le relevé depuis le serveur, sans recharger la page">⟳ Actualiser</button>
         <button class="btn btn-outline" onclick="calculerParts()">💾 Enregistrer et calculer</button>
         <button class="btn btn-accent" onclick="publierParts()" ${currentParts && currentParts.volume ? '' : 'disabled'}>📣 Publier sur Discord</button>
       </span>

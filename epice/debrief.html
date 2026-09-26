@@ -335,6 +335,10 @@
     .aide-corps li { margin-bottom:.3rem; }
     .aide-titre { display:block; color:var(--accent); font-weight:700; margin:.7rem 0 .2rem; }
     .cren-grid .cren-pts { color:var(--accent); }
+    /* Tableau des parts : destiné à la capture d'écran, donc jamais de défilement.
+       Il tient en quatre colonnes ; la grille demi-heure par demi-heure, elle, défile. */
+    .parts-table { width:100%; }
+    .parts-table .cren-plage { color:var(--text-muted); font-weight:400; white-space:normal; }
     /* 16 demi-heures font defiler le tableau : nom et points restent visibles. */
     .cren-grid th.cren-nom, .cren-grid td.cren-nom { position:sticky; left:0; background:var(--surface); z-index:2; }
     .cren-grid thead th.cren-nom { background:var(--surface-2); }
@@ -2152,7 +2156,9 @@ async function loadAssignSortie(sid) {
     currentCompo = currentCompos[0];
     currentPresence = (data.sortie.presence && typeof data.sortie.presence === 'object')
       ? JSON.parse(JSON.stringify(data.sortie.presence)) : null;
-    currentParts = null;
+    // Calcul déjà enregistré : on l'affiche tel quel. Sans ça, chacun devait recliquer
+    // « Enregistrer et calculer » pour voir un résultat que quelqu'un avait déjà établi.
+    currentParts = data.parts || null;
     presenceModifiee = false;
     renderAssignBuilder();
   } catch { box.innerHTML = '<div class="empty">Erreur de connexion.</div>'; }
@@ -2487,16 +2493,22 @@ function renderPresenceBlock() {
     <div id="presence-note" style="font-size:.72rem;color:var(--text-faint);margin-top:.5rem"></div>`;
 
   if (currentParts && currentParts.volume > 0) {
+    const nb = n => Number(n).toLocaleString('fr-FR');
     h += `<div class="assign-sub-head">Parts calculées</div>
-      <div class="assign-sub-hint">${currentParts.total_points} points au total · <strong>${currentParts.par_point}</strong> par point.
+      <div class="assign-sub-hint">Récolte de <strong>${nb(currentParts.volume)}</strong> · ${currentParts.total_points} points au total · <strong>${nb(currentParts.par_point)}</strong> par point.
       Parts arrondies à la centaine inférieure (le raffinage consomme par lots de 100)${
-        currentParts.reliquat > 0 ? ` ; il reste <strong>${currentParts.reliquat}</strong> au pot commun` : ''}.</div>
-      <div class="cren-wrap"><table class="cren-grid"><thead><tr>
-        <th class="cren-nom">Joueur</th><th>Points</th><th>Part</th></tr></thead><tbody>`;
+        currentParts.reliquat > 0 ? ` ; il reste <strong>${nb(currentParts.reliquat)}</strong> au pot commun` : ''}.</div>
+      <table class="cren-grid parts-table"><thead><tr>
+        <th class="cren-nom">Joueur</th><th>Points</th><th>Part</th><th class="cren-nom">Présence</th></tr></thead><tbody>`;
     currentParts.lignes.forEach(l => {
-      h += `<tr><td class="cren-nom">${esc(l.nom)}</td><td>${l.points}</td><td class="cren-on">${l.part}</td></tr>`;
+      // Volontairement HORS de .cren-wrap : ce tableau-là doit tenir dans une capture
+      // d'écran sans barre de défilement, c'est lui qu'on poste pour justifier le partage.
+      // Quatre colonnes y suffisent — le détail demi-heure par demi-heure reste au-dessus,
+      // dans la grille corrigeable.
+      h += `<tr><td class="cren-nom">${esc(l.nom)}</td><td>${l.points}</td>
+            <td class="cren-on">${nb(l.part)}</td><td class="cren-nom cren-plage">${esc(l.plage || '')}</td></tr>`;
     });
-    h += `</tbody></table></div>`;
+    h += `</tbody></table>`;
   }
 
   return h + `</div>`;

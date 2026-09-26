@@ -227,11 +227,9 @@ function message_parts(array $s, array $r): string {
     // Colonnes resserrées à 35 caractères : un bloc de code Discord ne se replie pas,
     // il défile horizontalement. Sur téléphone, 43 caractères obligeaient déjà à
     // faire glisser le tableau pour lire la colonne des parts.
-    // Une colonne « Présence » de plus : c'est ce qui rend le partage vérifiable par
-    // celui qui le reçoit. Les points seuls ne répondent pas à « pourquoi j'en ai 12 ».
-    // Le tableau s'élargit et défile donc sur téléphone — arbitrage assumé : mieux vaut
-    // faire glisser un tableau que douter d'un chiffre.
-    $entete = $padd('Joueur', 16) . $padg('Pts', 5) . $padg('Part', 10) . '  ' . 'Présence';
+    $t .= '```' . $nl;
+    $t .= $padd('Joueur', 18) . $padg('Points', 7) . $padg('Part', 10) . $nl;
+    $t .= str_repeat('-', 35) . $nl;
 
     // Troncature sur le BUDGET RÉEL, en octets, et non sur un nombre de lignes : un
     // message Discord plafonne à 2000 caractères et il est rejeté EN ENTIER au-delà.
@@ -239,9 +237,8 @@ function message_parts(array $s, array $r): string {
     // = 2100 octets), puis un budget fixe de 1750 qui ignorait le poids de l'en-tête
     // et des caractères multi-octets (─ et … pèsent 3 octets chacun). Le budget se
     // MESURE, il ne s'estime pas.
-    $budget = 1900 - strlen($t) - strlen($pied) - strlen($entete) - 10;
-    $rangs  = [];
-    $n      = 0;
+    $budget = 1900 - strlen($t) - strlen($pied);
+    $n = 0;
     foreach ($r['lignes'] as $l) {
         // strlen() et non mb_strlen() : pas de mbstring sur ce serveur (cf. AGENTS.md).
         // On coupe sur les octets, donc un pseudo accentué est tronqué un cheveu plus
@@ -249,39 +246,16 @@ function message_parts(array $s, array $r): string {
         // Troncature sur les points de code, pas sur les octets : couper « Lorhelyne✨ »
         // au milieu de son emoji produirait des octets invalides dans le message.
         $nom = $l['nom'];
-        while ($larg($nom) > 15) $nom = preg_replace('/.$/us', '', $nom);
+        while ($larg($nom) > 17) $nom = preg_replace('/.$/us', '', $nom);
         if ($nom !== $l['nom']) $nom .= '…';
-        // On garde des périodes ENTIÈRES et on annonce celles qu'on laisse : couper la
-        // chaîne donnait « 10:00–10:30, 12:00–13:0… », qui tronque un horaire en plein
-        // milieu — ça n'apprend rien et ça inquiète. 24 caractères logent deux périodes
-        // complètes ; au-delà, « +2 » dit combien manquent, et la grille du site les a
-        // toutes. Le tableau ne s'élargit que les jours où quelqu'un est reparti puis
-        // revenu, puisque le filet suit la ligne la plus large réellement écrite.
-        $bouts = is_array($l['plages'] ?? null) ? $l['plages'] : array_filter([(string)($l['plage'] ?? '')]);
-        $pl = ''; $gardees = 0;
-        foreach ($bouts as $b) {
-            $essai = $pl === '' ? $b : $pl . ', ' . $b;
-            if ($gardees > 0 && $larg($essai) > 24) break;
-            $pl = $essai; $gardees++;
-        }
-        if ($gardees < count($bouts)) $pl .= ' +' . (count($bouts) - $gardees);
-        $ligne = rtrim($padd($nom, 16) . $padg((string)$l['points'], 5)
-               . $padg($fmt($l['part']), 10) . '  ' . $pl);
-        $queue = '… et ' . (count($r['lignes']) - $n) . ' autres, détail sur le site';
-        if (strlen($ligne) + strlen($queue) + 2 > $budget) { $rangs[] = $queue; break; }
-        $rangs[] = $ligne;
-        $budget -= strlen($ligne) + 1;
+        $ligne = $padd($nom, 18) . $padg((string)$l['points'], 7)
+               . $padg($fmt($l['part']), 10) . $nl;
+        $queue = '… et ' . (count($r['lignes']) - $n) . ' autres, détail sur le site' . $nl;
+        if (strlen($ligne) + strlen($queue) > $budget) { $t .= $queue; break; }
+        $t .= $ligne;
+        $budget -= strlen($ligne);
         $n++;
     }
-
-    // Le filet se règle sur la ligne la plus large RÉELLEMENT écrite. Une largeur en dur
-    // dessinait un trait de 52 caractères sous des lignes de 44 : le tableau paraissait
-    // plus large qu'il n'était, et défilait pour du vide.
-    $large = $larg($entete);
-    foreach ($rangs as $l) $large = max($large, $larg($l));
-
-    $t .= '```' . $nl . $entete . $nl . str_repeat('-', $large) . $nl
-        . implode($nl, $rangs) . $nl;
     return $t . $pied;
 }
 
@@ -520,7 +494,14 @@ switch ($action) {
         // sid) reste visible de tout organisateur (en-tête admin / synthèse retours).
         if ($sid !== '' && !epice_owns_sortie($sortie))
             out(false, [], 'Réservé au créateur de la sortie.');
-        out(true, ['sortie' => $sortie]);
+        // Le partage calculé est renvoyé AVEC la sortie. Il ne vivait jusqu'ici que dans
+        // le navigateur de celui qui avait cliqué « Enregistrer et calculer » : un autre
+        // organisateur qui ouvrait la page ne voyait rien et devait refaire le calcul
+        // chez lui pour lire le même résultat. Le volume étant enregistré, le calcul est
+        // déterministe — on le refait ici plutôt que de stocker un résultat qui pourrait
+        // diverger de la grille.
+        $parts = !empty($sortie['presence']['volume']) ? parts_presence($sortie) : null;
+        out(true, ['sortie' => $sortie, 'parts' => $parts]);
 
     // Sorties OUVERTES assignables : admin = toutes ; organisateur = uniquement les siennes.
     case 'open_sorties':

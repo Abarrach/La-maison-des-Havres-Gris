@@ -150,8 +150,11 @@ $l4  = null;
 foreach ($r4['lignes'] as $x) if ($x['nom'] === 'A') $l4 = $x;
 ok('quatre périodes reconnues',        $l4 && count($l4['plages']) === 4);
 ok('la chaîne complète les garde toutes', $l4['plage'] === '10:00–10:30, 12:00–12:30, 15:00–15:30, 18:00–18:30');
-ok('le message annonce ce qu il omet', strpos($m4, '+2') !== false);
-ok('aucun horaire coupé en deux',      !preg_match('/\d…/u', $m4));
+// Le message Discord, lui, NE porte PAS les plages : arbitrage de l'organisateur, le
+// détail est sur le site où il y a la largeur. On le vérifie, pour qu'un retour en
+// arrière involontaire se voie au banc plutôt qu'en production.
+ok('le message reste sans colonne Présence', strpos($m4, 'Présence') === false);
+ok('aucun horaire coupé en deux',            !preg_match('/\d…/u', $m4));
 
 // --- Le message Discord ---
 $s = sortie(['Sarazin' => 16, 'Abarrach' => 8, 'Karrel' => 2, 'Lohre' => 6], 64000);

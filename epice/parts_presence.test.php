@@ -93,7 +93,18 @@ $msg = message_parts($s, parts_presence($s));
 ok('le message tient dans les 2000 caractères de Discord', strlen($msg) < 2000);
 ok('il nomme la sortie',        strpos($msg, 'Rally test') !== false);
 ok('il donne la valeur du point', strpos($msg, 'par point') !== false);
-ok('il annonce zéro prélèvement', strpos($msg, 'Aucun prélèvement') !== false);
+// Le pied explicatif a été retiré à la demande de l'organisateur : la règle est
+// annoncée une fois à la guilde, pas répétée sous chaque partage. On le VÉRIFIE, pour
+// qu'un retour en arrière involontaire se voie.
+// Le pied explicatif a été retiré à la demande de l'organisateur : la règle est
+// annoncée une fois à la guilde, pas répétée sous chaque partage. Le reliquat, lui,
+// RESTE : sans lui, la somme des parts ne retombant pas sur la récolte ferait croire
+// à une erreur de calcul. On vérifie les deux, pour qu'un retour en arrière se voie.
+ok('pas de rappel de règle',    strpos($msg, 'Aucun prélèvement') === false
+                             && strpos($msg, 'arrondies à la centaine') === false);
+$avecReliquat = sortie(['A' => 1, 'B' => 1, 'C' => 1], 10000);   // 3 333,33 chacun -> 100 de reste
+ok('le reliquat est annoncé', strpos(message_parts($avecReliquat, parts_presence($avecReliquat)), 'Reliquat de 100') !== false);
+ok('rien à annoncer quand il n y a pas de reste', strpos($msg, 'Reliquat') === false || $r['reliquat'] > 0);
 ok('il liste les parts',        strpos($msg, '32 000') !== false);
 
 // 40 joueurs sur 16 demi-heures : le pire cas réaliste doit rester publiable.

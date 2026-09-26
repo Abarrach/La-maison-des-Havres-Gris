@@ -164,11 +164,13 @@ function message_parts(array $s, array $r): string {
         . '**' . $fmt($r['par_point']) . '** par point' . $nl . $nl;
 
     // Le pied est construit AVANT le tableau : son poids doit être retranché du budget.
-    $pied = '```' . $nl;
-    if ($r['reliquat'] > 0)
-        $pied .= '*Les parts sont arrondies à la centaine inférieure (le raffinage consomme par lots de 100). '
-               . 'Reliquat de ' . $fmt($r['reliquat']) . ' au pot commun.*' . $nl;
-    $pied .= '*Aucun prélèvement : ornis, roquettes et buggys restent à la charge de la guilde.*';
+    // Les deux phrases qui expliquaient l'arrondi et l'absence de prélèvement ont été
+    // retirées : la règle est annoncée une fois à la guilde, la répéter sous chaque
+    // partage n'apprend rien à personne. Le RELIQUAT, lui, reste — c'est un chiffre,
+    // pas un rappel, et son absence ferait croire à une erreur de calcul quand la somme
+    // des parts ne retombe pas sur la récolte.
+    $pied = '```';
+    if ($r['reliquat'] > 0) $pied .= $nl . '*Reliquat de ' . $fmt($r['reliquat']) . ' au pot commun.*';
 
     // ⚠ str_pad() compte des OCTETS. « Lorhelyne✨ » pèse trois octets de plus qu'il
     // n'occupe de colonnes, et sa ligne se décalait. Sans mbstring (absente de ce

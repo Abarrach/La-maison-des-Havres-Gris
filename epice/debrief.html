@@ -337,6 +337,13 @@
     .cren-grid .cren-pts { color:var(--accent); }
     /* Tableau des parts : destiné à la capture d'écran, donc jamais de défilement.
        Il tient en quatre colonnes ; la grille demi-heure par demi-heure, elle, défile. */
+    /* Grille resserrée : passé dix demi-heures, on réduit tout pour qu'une journée
+       entière tienne dans une capture d'écran sans barre de défilement. */
+    .cren-serre { width:100%; font-size:.7rem; }
+    .cren-serre th, .cren-serre td { padding:.28rem .18rem; }
+    .cren-serre .cren-nom { padding:.28rem .5rem; font-size:.72rem; }
+    .cren-serre th { font-size:.62rem; letter-spacing:0; }
+    .cren-serre .btn-mini { padding:.15rem .3rem; font-size:.58rem; }
     .parts-table { width:100%; }
     .parts-table .cren-plage { color:var(--text-muted); font-weight:400; white-space:normal; }
     /* 16 demi-heures font defiler le tableau : nom et points restent visibles. */
@@ -2434,6 +2441,23 @@ function renderPresenceBlock() {
     .sort((a, b) => (pts[b] - pts[a]) || String(noms[a]).localeCompare(String(noms[b]), 'fr'));
   const heure = k => k.slice(11);   // « 2026-09-26T08:30 » → « 08:30 »
 
+  // Une journée de rally fait jusqu'à 24 demi-heures. À « 10:00 » par colonne, le
+  // tableau déborde et se met à défiler — or c'est celui qu'on veut photographier pour
+  // justifier le partage, et une capture tronquée ne justifie rien.
+  // Au-delà de dix colonnes on resserre et on abrège : l'heure pleine porte son chiffre,
+  // la demie porte « ·30 ». La suite « 10 ·30 11 ·30 12 » se lit sans légende, et
+  // l'horaire complet reste au survol.
+  const serre  = cles.length > 10;
+  // « ·30 » n'est lisible que si l'heure pleine le précède IMMÉDIATEMENT. Après un trou
+  // — votre pause déjeuner — la colonne 14:30 arrivait derrière 11:30 et s'affichait
+  // « ·30 » sans que rien ne dise laquelle. Dans ce cas on réécrit l'heure.
+  const entete = (k, prec) => {
+    if (!serre) return heure(k);
+    const [hh, mm] = heure(k).split(':');
+    if (mm === '00') return String(parseInt(hh, 10));
+    return (prec && heure(prec).startsWith(hh + ':')) ? '·30' : parseInt(hh, 10) + '·30';
+  };
+
   let h = `<div class="assign-group"><div class="assign-group-head">
       <span class="assign-group-title">🌾 Présence et partage de la récolte</span>
       ${currentPresence.publie ? '<span class="cren-barre-txt">déjà publié</span>' : ''}
@@ -2463,10 +2487,10 @@ function renderPresenceBlock() {
       Les parts sont arrondies à la centaine inférieure — le raffinage consomme par lots de 100, et une part de 7 437 laisserait 37 unités inutilisables. Le reliquat retourne au pot commun.
     </div></details>
     <div class="assign-hint"><strong>Rien n'est enregistré tant que tu n'as pas cliqué « Enregistrer et calculer ».</strong></div>
-    <div class="cren-wrap"><table class="cren-grid">
+    <div class="cren-wrap"><table class="cren-grid${serre ? ' cren-serre' : ''}">
     <thead><tr><th class="cren-nom">Joueur</th>`;
   h += `<th>Points</th>`;
-  cles.forEach(k => { h += `<th title="${escAttr(k)}">${esc(heure(k))}</th>`; });
+  cles.forEach((k, i) => { h += `<th title="${escAttr(heure(k))}">${esc(entete(k, cles[i - 1]))}</th>`; });
   h += `<th></th></tr></thead><tbody>`;
 
   gens.forEach(id => {

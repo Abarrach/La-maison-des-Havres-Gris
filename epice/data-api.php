@@ -153,7 +153,7 @@ function parts_presence(array $s): array {
         $bouts[] = [$debut, $prec];
         $txt = [];
         foreach ($bouts as [$a, $b]) $txt[] = $heure($ordre[$a]) . ($a === $b ? '' : '–' . $heure($ordre[$b]));
-        return implode(', ', $txt);
+        return $txt;
     };
 
     $lignes = [];
@@ -167,7 +167,11 @@ function parts_presence(array $s): array {
             'nom'    => (string)($noms[$id] ?? $id),
             'points' => $pts,
             'part'   => (int)(floor($brut / 100) * 100),
-            'plage'  => $plage($id),
+            // `plages` est la LISTE des périodes, `plage` leur concaténation. L'affichage
+            // a besoin de la liste : tronquer la chaîne couperait un horaire en deux
+            // (« 12:00–13:0… »), là où il vaut mieux jeter une période entière et le dire.
+            'plages' => $plage($id),
+            'plage'  => implode(', ', $plage($id)),
         ];
     }
     usort($lignes, function ($a, $b) {
@@ -247,14 +251,20 @@ function message_parts(array $s, array $r): string {
         $nom = $l['nom'];
         while ($larg($nom) > 15) $nom = preg_replace('/.$/us', '', $nom);
         if ($nom !== $l['nom']) $nom .= '…';
-        // Une plage à rallonge (parti et revenu trois fois) est coupée : la ligne doit
-        // rester lisible, et le détail exact vit dans la grille du site.
-        $pl = (string)($l['plage'] ?? '');
-        // 24 caractères : de quoi loger DEUX périodes entières (« 10:00–10:30, 14:00–16:00 »).
-        // Couper à 19 tronquait la seconde en plein milieu — « 14:00… » n'apprend rien et
-        // inquiète plus qu'il n'informe. Le tableau ne s'élargit que les jours où quelqu'un
-        // est reparti puis revenu, puisque le filet suit la ligne la plus large.
-        if ($larg($pl) > 24) { while ($larg($pl) > 23) $pl = preg_replace('/.$/us', '', $pl); $pl .= '…'; }
+        // On garde des périodes ENTIÈRES et on annonce celles qu'on laisse : couper la
+        // chaîne donnait « 10:00–10:30, 12:00–13:0… », qui tronque un horaire en plein
+        // milieu — ça n'apprend rien et ça inquiète. 24 caractères logent deux périodes
+        // complètes ; au-delà, « +2 » dit combien manquent, et la grille du site les a
+        // toutes. Le tableau ne s'élargit que les jours où quelqu'un est reparti puis
+        // revenu, puisque le filet suit la ligne la plus large réellement écrite.
+        $bouts = is_array($l['plages'] ?? null) ? $l['plages'] : array_filter([(string)($l['plage'] ?? '')]);
+        $pl = ''; $gardees = 0;
+        foreach ($bouts as $b) {
+            $essai = $pl === '' ? $b : $pl . ', ' . $b;
+            if ($gardees > 0 && $larg($essai) > 24) break;
+            $pl = $essai; $gardees++;
+        }
+        if ($gardees < count($bouts)) $pl .= ' +' . (count($bouts) - $gardees);
         $ligne = rtrim($padd($nom, 16) . $padg((string)$l['points'], 5)
                . $padg($fmt($l['part']), 10) . '  ' . $pl);
         $queue = '… et ' . (count($r['lignes']) - $n) . ' autres, détail sur le site';

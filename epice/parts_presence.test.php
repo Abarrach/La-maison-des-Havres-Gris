@@ -127,6 +127,32 @@ ok('demi-heure vide pour TOUS -> pas de coupure', plageDe($r, 'A') === '12:00–
 $r = parts_presence(brut(['09:00' => ['A']]));
 ok('une seule demi-heure -> pas de tiret',  plageDe($r, 'A') === '09:00');
 
+// Quatre allers-retours : le message garde des périodes ENTIÈRES et annonce le reste.
+// L'assertion qui compte est la dernière : jamais d'horaire coupé au milieu, parce
+// qu'un « 13:0… » n'apprend rien et laisse croire à un bug.
+// ⚠ Il faut QUELQU'UN D'AUTRE dans les intervalles. Un premier jet ne mettait que A :
+// comme il figurait alors dans toutes les demi-heures enregistrées, il n'en ressortait
+// qu'une seule plage — la règle d'absorption des trous faisait exactement son travail,
+// et c'est le test qui était faux.
+$quatre = brut([
+    '10:00' => ['A', 'B'], '10:30' => ['A', 'B'],
+    '11:00' => ['B'],      '11:30' => ['B'],
+    '12:00' => ['A', 'B'], '12:30' => ['A', 'B'],
+    '13:00' => ['B'],
+    '15:00' => ['A', 'B'], '15:30' => ['A', 'B'],
+    '16:00' => ['B'],
+    '18:00' => ['A', 'B'], '18:30' => ['A', 'B'],
+], 40000);
+$r4  = parts_presence($quatre);
+$m4  = message_parts($quatre, $r4);
+// Les lignes sont triées par points : B en tête, A ensuite. On le cherche par son nom.
+$l4  = null;
+foreach ($r4['lignes'] as $x) if ($x['nom'] === 'A') $l4 = $x;
+ok('quatre périodes reconnues',        $l4 && count($l4['plages']) === 4);
+ok('la chaîne complète les garde toutes', $l4['plage'] === '10:00–10:30, 12:00–12:30, 15:00–15:30, 18:00–18:30');
+ok('le message annonce ce qu il omet', strpos($m4, '+2') !== false);
+ok('aucun horaire coupé en deux',      !preg_match('/\d…/u', $m4));
+
 // --- Le message Discord ---
 $s = sortie(['Sarazin' => 16, 'Abarrach' => 8, 'Karrel' => 2, 'Lohre' => 6], 64000);
 $msg = message_parts($s, parts_presence($s));

@@ -289,7 +289,11 @@ function sortie_type($stype): array { return SORTIE_TYPES[$stype] ?? SORTIE_TYPE
 
 // Durées proposées. Les VALEURS gardent le format historique ('2', '1h30') :
 // duree_to_hours() du script de purge et fmt_duree() les lisent déjà toutes.
-// ⚠ Un radio group accepte 2 à 10 options — on en a 6.
+// ⚠ Le RADIO GROUP (type 21) plafonne à 10 options — on en avait 9, et il en fallait
+//   deux de plus. D'où le passage en LISTE DÉROULANTE (type 3, 25 options) : même
+//   enveloppe, mêmes `options`, et modal_values() lit `values` dans les deux cas, donc
+//   le changement tient en un chiffre. On y perd les durées toutes visibles d'un coup —
+//   mais à onze, le radio devenait un mur de boutons.
 const DUREE_OPTIONS = [
     '1'    => '1 h',
     '1h30' => '1 h 30',
@@ -303,6 +307,8 @@ const DUREE_OPTIONS = [
     '6'    => 'Rally — 6 h (créneaux)',
     '8'    => 'Rally — journée, 8 h (créneaux)',
     '10'   => 'Rally — 10 h (créneaux)',
+    '12'   => 'Rally — 12 h (créneaux)',
+    '14'   => 'Rally — 14 h (créneaux)',
 ];
 
 // Durée minimale à partir de laquelle on découpe en créneaux, et taille d'un bloc.
@@ -631,11 +637,13 @@ function sortie_modal($customId, $title, $vals = []) {
             ),
 
             $enveloppe(
-                // Radio group (type 21) : toutes les durées visibles d'un coup, un seul clic.
+                // Liste déroulante (type 3) et non plus radio group (type 21) : celui-ci
+                // plafonne à 10 options, et la liste en compte onze depuis les rallys de
+                // 12 et 14 h. Structure identique, `values` lu de la même façon.
                 // Non obligatoire — une durée absente vaut 4 h pour la purge, et une sortie
                 // héritée dont la durée ne correspond à aucune option ne doit pas bloquer
                 // l'enregistrement d'une modification.
-                ['type' => 21, 'custom_id' => 'duree', 'required' => false,
+                ['type' => 3, 'custom_id' => 'duree', 'required' => false,
                  'options' => $options(DUREE_OPTIONS, $val('duree'))],
                 'Durée prévue', 'Activité automatiquement supprimée 4 h après la fin'
             ),

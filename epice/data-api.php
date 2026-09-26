@@ -607,8 +607,21 @@ switch ($action) {
         $resp = curl_exec($ch);
         $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
-        if ($resp === false || $code < 200 || $code >= 300)
-            out(false, [], 'Discord a refusé le message (HTTP ' . $code . ').');
+        if ($resp === false || $code < 200 || $code >= 300) {
+            // Discord DIT ce qui manque (« Missing Access » = le bot ne voit pas le salon,
+            // « Missing Permissions » = il le voit mais ne peut pas y écrire). Jeter ce
+            // texte pour n'afficher qu'un code obligeait à relancer la requête à la main
+            // depuis le serveur pour l'obtenir — c'est arrivé.
+            $j    = json_decode((string)$resp, true);
+            $quoi = trim((string)($j['message'] ?? ''));
+            $aide = '';
+            if (stripos($quoi, 'Missing Access') !== false)
+                $aide = " — le bot ne voit pas ce salon : accorde-lui « Voir le salon » et « Envoyer des messages » dessus.";
+            elseif (stripos($quoi, 'Missing Permissions') !== false)
+                $aide = " — le bot voit le salon mais ne peut pas y écrire : accorde-lui « Envoyer des messages ».";
+            out(false, [], 'Discord a refusé le message (HTTP ' . $code
+                . ($quoi !== '' ? ' : ' . $quoi : '') . ')' . $aide);
+        }
 
         foreach ($d['sorties'] as &$s3) {
             if (($s3['id'] ?? '') === $sid) { $s3['presence']['publie'] = date('c'); break; }

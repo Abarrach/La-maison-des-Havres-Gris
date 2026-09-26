@@ -87,6 +87,46 @@ $double = parts_presence(['presence' => [
 $pts = array_column($double['lignes'], 'points', 'nom');
 ok('un doublon dans un tick ne compte pas double', $pts['A'] === 1);
 
+// --- Les plages de présence -----------------------------------------------
+// Elles se fusionnent sur les demi-heures RÉELLEMENT relevées, pas sur l'horloge :
+// c'est toute la subtilité. Une demi-heure où le salon était vide n'existe pour
+// personne et ne doit donc couper la plage de personne.
+
+/** Ticks explicites : ['10:00' => ['A','B'], …]. */
+function brut(array $parHeure, int $volume = 0): array {
+    $ticks = []; $noms = [];
+    foreach ($parHeure as $h => $gens) {
+        $ticks['2026-09-26T' . $h] = $gens;
+        foreach ($gens as $g) $noms[$g] = $g;
+    }
+    return ['presence' => ['ticks' => $ticks, 'noms' => $noms, 'volume' => $volume]];
+}
+function plageDe(array $r, string $nom): string {
+    foreach ($r['lignes'] as $l) if ($l['nom'] === $nom) return (string)$l['plage'];
+    return '(absent)';
+}
+
+$r = parts_presence(brut([
+    '10:00' => ['A', 'B'],
+    '10:30' => ['A', 'B'],
+    '11:00' => ['A'],
+    '11:30' => ['A', 'B'],
+]));
+ok('présence continue -> une seule plage',  plageDe($r, 'A') === '10:00–11:30');
+ok('absence au milieu -> deux plages',      plageDe($r, 'B') === '10:00–10:30, 11:30');
+
+// Le cas du 26 septembre : personne entre 12:30 et 13:30, donc ces demi-heures ne
+// sont pas écrites. Elles ne doivent couper la plage de personne.
+$r = parts_presence(brut([
+    '12:00' => ['A'],
+    '14:00' => ['A'],
+    '14:30' => ['A'],
+]));
+ok('demi-heure vide pour TOUS -> pas de coupure', plageDe($r, 'A') === '12:00–14:30');
+
+$r = parts_presence(brut(['09:00' => ['A']]));
+ok('une seule demi-heure -> pas de tiret',  plageDe($r, 'A') === '09:00');
+
 // --- Le message Discord ---
 $s = sortie(['Sarazin' => 16, 'Abarrach' => 8, 'Karrel' => 2, 'Lohre' => 6], 64000);
 $msg = message_parts($s, parts_presence($s));

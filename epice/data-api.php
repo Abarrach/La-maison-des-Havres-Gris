@@ -106,6 +106,15 @@ function parts_presence(array $s): array {
     $noms   = is_array($p['noms']  ?? null) ? $p['noms']  : [];
     $volume = max(0, (int)($p['volume'] ?? 0));
 
+    // Les demi-heures RÉELLEMENT relevées, dans l'ordre. C'est sur cette liste — et non
+    // sur l'horloge — que les plages se fusionnent : une demi-heure où le salon était
+    // vide n'existe pour personne, elle ne doit donc pas couper toutes les lignes en
+    // deux. Une pause déjeuner de deux heures produirait sinon « 10:00–12:00,
+    // 14:00–19:30 » sur chaque joueur, pour une information qui n'en est pas une.
+    $ordre = array_keys($ticks);
+    sort($ordre);
+    $rang  = array_flip($ordre);
+
     $points = [];
     foreach ($ticks as $ids) {
         // array_unique : la présence est un booléen par demi-heure, pas un compteur.
@@ -119,6 +128,34 @@ function parts_presence(array $s): array {
     }
     $total = array_sum($points);
 
+    // Positions de chacun dans cette liste, pour en tirer les plages.
+    $ouSont = [];
+    foreach ($ticks as $cle => $ids) {
+        foreach (array_unique(array_map('strval', (array)$ids)) as $id) {
+            if ($id !== '' && isset($rang[$cle])) $ouSont[$id][] = $rang[$cle];
+        }
+    }
+
+    // « 10:00–19:30 », ou « 10:00–12:00, 16:00–19:30 » si la personne est repartie puis
+    // revenue. Ce sont les HEURES DE RELEVÉ, pas des horaires d'arrivée et de départ :
+    // afficher 20:00 pour un dernier relevé à 19:30 affirmerait une présence que
+    // personne n'a constatée.
+    $heure = function ($k) { return substr($k, 11); };
+    $plage = function ($id) use ($ouSont, $ordre, $heure) {
+        $pos = $ouSont[$id] ?? [];
+        if (!$pos) return '';
+        sort($pos);
+        $bouts = []; $debut = $pos[0]; $prec = $pos[0];
+        foreach (array_slice($pos, 1) as $i) {
+            if ($i !== $prec + 1) { $bouts[] = [$debut, $prec]; $debut = $i; }
+            $prec = $i;
+        }
+        $bouts[] = [$debut, $prec];
+        $txt = [];
+        foreach ($bouts as [$a, $b]) $txt[] = $heure($ordre[$a]) . ($a === $b ? '' : '–' . $heure($ordre[$b]));
+        return implode(', ', $txt);
+    };
+
     $lignes = [];
     foreach ($points as $id => $pts) {
         // Arrondi à la centaine INFÉRIEURE : la petite raffinerie consomme par lots de
@@ -130,6 +167,7 @@ function parts_presence(array $s): array {
             'nom'    => (string)($noms[$id] ?? $id),
             'points' => $pts,
             'part'   => (int)(floor($brut / 100) * 100),
+            'plage'  => $plage($id),
         ];
     }
     usort($lignes, function ($a, $b) {
@@ -185,9 +223,11 @@ function message_parts(array $s, array $r): string {
     // Colonnes resserrées à 35 caractères : un bloc de code Discord ne se replie pas,
     // il défile horizontalement. Sur téléphone, 43 caractères obligeaient déjà à
     // faire glisser le tableau pour lire la colonne des parts.
-    $t .= '```' . $nl;
-    $t .= $padd('Joueur', 18) . $padg('Points', 7) . $padg('Part', 10) . $nl;
-    $t .= str_repeat('-', 35) . $nl;
+    // Une colonne « Présence » de plus : c'est ce qui rend le partage vérifiable par
+    // celui qui le reçoit. Les points seuls ne répondent pas à « pourquoi j'en ai 12 ».
+    // Le tableau s'élargit et défile donc sur téléphone — arbitrage assumé : mieux vaut
+    // faire glisser un tableau que douter d'un chiffre.
+    $entete = $padd('Joueur', 16) . $padg('Pts', 5) . $padg('Part', 10) . '  ' . 'Présence';
 
     // Troncature sur le BUDGET RÉEL, en octets, et non sur un nombre de lignes : un
     // message Discord plafonne à 2000 caractères et il est rejeté EN ENTIER au-delà.
@@ -195,8 +235,9 @@ function message_parts(array $s, array $r): string {
     // = 2100 octets), puis un budget fixe de 1750 qui ignorait le poids de l'en-tête
     // et des caractères multi-octets (─ et … pèsent 3 octets chacun). Le budget se
     // MESURE, il ne s'estime pas.
-    $budget = 1900 - strlen($t) - strlen($pied);
-    $n = 0;
+    $budget = 1900 - strlen($t) - strlen($pied) - strlen($entete) - 10;
+    $rangs  = [];
+    $n      = 0;
     foreach ($r['lignes'] as $l) {
         // strlen() et non mb_strlen() : pas de mbstring sur ce serveur (cf. AGENTS.md).
         // On coupe sur les octets, donc un pseudo accentué est tronqué un cheveu plus
@@ -204,16 +245,33 @@ function message_parts(array $s, array $r): string {
         // Troncature sur les points de code, pas sur les octets : couper « Lorhelyne✨ »
         // au milieu de son emoji produirait des octets invalides dans le message.
         $nom = $l['nom'];
-        while ($larg($nom) > 17) $nom = preg_replace('/.$/us', '', $nom);
+        while ($larg($nom) > 15) $nom = preg_replace('/.$/us', '', $nom);
         if ($nom !== $l['nom']) $nom .= '…';
-        $ligne = $padd($nom, 18) . $padg((string)$l['points'], 7)
-               . $padg($fmt($l['part']), 10) . $nl;
-        $queue = '… et ' . (count($r['lignes']) - $n) . ' autres, détail sur le site' . $nl;
-        if (strlen($ligne) + strlen($queue) > $budget) { $t .= $queue; break; }
-        $t .= $ligne;
-        $budget -= strlen($ligne);
+        // Une plage à rallonge (parti et revenu trois fois) est coupée : la ligne doit
+        // rester lisible, et le détail exact vit dans la grille du site.
+        $pl = (string)($l['plage'] ?? '');
+        // 24 caractères : de quoi loger DEUX périodes entières (« 10:00–10:30, 14:00–16:00 »).
+        // Couper à 19 tronquait la seconde en plein milieu — « 14:00… » n'apprend rien et
+        // inquiète plus qu'il n'informe. Le tableau ne s'élargit que les jours où quelqu'un
+        // est reparti puis revenu, puisque le filet suit la ligne la plus large.
+        if ($larg($pl) > 24) { while ($larg($pl) > 23) $pl = preg_replace('/.$/us', '', $pl); $pl .= '…'; }
+        $ligne = rtrim($padd($nom, 16) . $padg((string)$l['points'], 5)
+               . $padg($fmt($l['part']), 10) . '  ' . $pl);
+        $queue = '… et ' . (count($r['lignes']) - $n) . ' autres, détail sur le site';
+        if (strlen($ligne) + strlen($queue) + 2 > $budget) { $rangs[] = $queue; break; }
+        $rangs[] = $ligne;
+        $budget -= strlen($ligne) + 1;
         $n++;
     }
+
+    // Le filet se règle sur la ligne la plus large RÉELLEMENT écrite. Une largeur en dur
+    // dessinait un trait de 52 caractères sous des lignes de 44 : le tableau paraissait
+    // plus large qu'il n'était, et défilait pour du vide.
+    $large = $larg($entete);
+    foreach ($rangs as $l) $large = max($large, $larg($l));
+
+    $t .= '```' . $nl . $entete . $nl . str_repeat('-', $large) . $nl
+        . implode($nl, $rangs) . $nl;
     return $t . $pied;
 }
 

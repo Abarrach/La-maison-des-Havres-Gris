@@ -16,6 +16,9 @@
 // découvrir le lendemain qu'une date en texte libre la rendait invisible :
 //   php /srv/dune-map/epice/rally_presence.php --fenetres
 //
+// Essai de l'alerte (envoie un MP de contrôle, ne relève rien) :
+//   php /srv/dune-map/epice/rally_presence.php --alerte-test
+//
 // ------------------------------------------------------------
 //  POURQUOI C'EST FAIT COMME ÇA
 // ------------------------------------------------------------
@@ -47,15 +50,95 @@ const PAUSE_US      = 25000;  // 25 ms entre deux appels (limite Discord ~50 req
 
 $essai    = in_array('--test', $argv ?? [], true);
 $fenetres = in_array('--fenetres', $argv ?? [], true);
+$essaiMp  = in_array('--alerte-test', $argv ?? [], true);
 
 $CFG_PATH = __DIR__ . '/discord_sortie_config.php';
 if (!file_exists($CFG_PATH)) { fwrite(STDERR, "Config absente : $CFG_PATH\n"); exit(1); }
 $CFG = require $CFG_PATH;
 
+
 define('DATA_FILE', __DIR__ . '/data/debriefs.json');
+
+// Une alerte qu'on n'a jamais vue arriver n'est pas une alerte : --alerte-test envoie un
+// MP de contrôle. On vérifie le réglage ici, avant tout le reste, pour ne pas laisser
+// croire à un échec d'envoi ce qui n'est qu'une configuration absente.
+if ($essaiMp && trim((string)($CFG['alerte_user_id'] ?? '')) === '') {
+    fwrite(STDERR, "alerte_user_id n'est pas renseigné dans discord_sortie_config.php
+");
+    exit(1);
+}
 
 function plog(string $m): void {
     echo '[' . date('Y-m-d H:i:s') . '] ' . $m . "\n";
+}
+
+// ------------------------------------------------------------
+//  Alerte à l'organisateur — en MESSAGE PRIVÉ
+// ------------------------------------------------------------
+// Le 2026-09-26, un 403 sur le salon d'écoute a été journalisé dix-huit fois entre 01:02
+// et 10:38 avant d'être vu. L'information existait ; personne ne lisait le fichier.
+//
+// En message privé et non dans un canal : les autres ne peuvent rien y faire, et une
+// alerte technique dans un salon de guilde se transforme en inquiétude ou en bruit.
+//
+// UNE FOIS par panne, pas une par passage : un marqueur retient la dernière cause
+// signalée. Une alerte répétée toutes les 30 minutes serait ignorée aussi sûrement
+// qu'un fichier journal — c'est la même erreur sous une autre forme.
+const ALERTE_FICHIER = __DIR__ . '/data/rally_alerte.json';
+const ALERTE_REPETER_H = 6;   // même cause toujours là après 6 h → on resignale
+
+function alerter(string $cause, string $texte): void {
+    global $CFG;
+    $uid = trim((string)($CFG['alerte_user_id'] ?? ''));
+    if ($uid === '' || empty($CFG['bot_token']) || !function_exists('curl_init')) return;
+
+    $etat = @json_decode((string)@file_get_contents(ALERTE_FICHIER), true) ?: [];
+    if (($etat['cause'] ?? '') === $cause && (time() - (int)($etat['ts'] ?? 0)) < ALERTE_REPETER_H * 3600) {
+        plog('(alerte déjà envoyée pour cette cause, pas de rappel)');
+        return;
+    }
+
+    $chan = null;
+    $ch = curl_init('https://discord.com/api/v10/users/@me/channels');
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => json_encode(['recipient_id' => $uid]),
+        CURLOPT_HTTPHEADER => ['Authorization: Bot ' . $CFG['bot_token'], 'Content-Type: application/json'],
+        CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 3, CURLOPT_TIMEOUT => 6,
+    ]);
+    $r = curl_exec($ch); $code = curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
+    if ($code >= 200 && $code < 300) $chan = (json_decode((string)$r, true)['id'] ?? null);
+    if (!$chan) { plog("(alerte non envoyée : ouverture du MP en échec, HTTP {$code})"); return; }
+
+    $ch = curl_init("https://discord.com/api/v10/channels/{$chan}/messages");
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => json_encode(['content' => $texte], JSON_UNESCAPED_UNICODE),
+        CURLOPT_HTTPHEADER => ['Authorization: Bot ' . $CFG['bot_token'], 'Content-Type: application/json'],
+        CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 3, CURLOPT_TIMEOUT => 6,
+    ]);
+    curl_exec($ch); $code = curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
+    if ($code < 200 || $code >= 300) { plog("(alerte non envoyée, HTTP {$code})"); return; }
+
+    @file_put_contents(ALERTE_FICHIER, json_encode(['cause' => $cause, 'ts' => time()]));
+    plog('📨 Alerte envoyée en MP.');
+}
+
+// Le relevé repart : on oublie la panne signalée, pour que sa prochaine occurrence
+// alerte à nouveau au lieu d'être étouffée par le marqueur.
+function alerte_resolue(): void {
+    if (!file_exists(ALERTE_FICHIER)) return;
+    @unlink(ALERTE_FICHIER);
+    plog('(panne précédente résolue)');
+}
+
+if ($essaiMp) {
+    alerter('essai-' . time(),
+        "✅ **Essai d'alerte du relevé de présence.**" . chr(10)
+      . "Si tu lis ce message, tu seras prévenu en cas de panne pendant une sortie." . chr(10)
+      . "*Envoyé depuis " . gethostname() . " le " . date('d/m/Y à H:i') . ".*");
+    @unlink(ALERTE_FICHIER);   // un essai ne doit pas masquer une vraie panne ensuite
+    exit(0);
 }
 
 // ------------------------------------------------------------
@@ -154,31 +237,6 @@ if ($guildId === '' || $channelId === '') {
     exit(1);
 }
 
-// Vérification du salon AVANT tout relevé. Sans elle, une erreur de configuration —
-// un salon appartenant à un autre serveur, un salon textuel pris pour un vocal — se
-// traduit par « 0 présent » sans le moindre message, et on cherche du côté des
-// permissions ou de l'intent. Un identifiant Discord encode sa date de création : un
-// salon plus ancien que le serveur configuré ne peut pas lui appartenir.
-// …sauf en mode --fenetres, qui est une lecture du FICHIER : il doit rester utilisable
-// sans réseau et sans token, y compris depuis un poste qui n'a pas la configuration.
-$err  = null;
-$salon = $fenetres ? true : discord_get("/channels/{$channelId}", $err);
-if ($salon !== true && !is_array($salon)) {
-    plog("🧨 Salon {$channelId} illisible (" . ($err['code'] ?? '?') . ") — identifiant erroné, ou le bot n'est pas sur ce serveur.");
-    exit(1);
-}
-if ($salon !== true && (int)($salon['type'] ?? -1) !== 2) {
-    plog("🧨 « " . ($salon['name'] ?? '?') . " » n'est pas un salon VOCAL (type " . ($salon['type'] ?? '?') . ", il en faut 2).");
-    exit(1);
-}
-if ($salon !== true && (string)($salon['guild_id'] ?? '') !== $guildId) {
-    plog("🧨 Le salon « " . ($salon['name'] ?? '?') . " » appartient au serveur " . ($salon['guild_id'] ?? '?')
-       . ", or on interroge l'état vocal sur " . $guildId . " : personne ne sera jamais trouvé."
-       . " Corrige `rally_guild_id` (le serveur du salon) ou `rally_voice_channel_id`.");
-    exit(1);
-}
-if ($salon !== true) plog("Salon vocal « " . ($salon['name'] ?? '?') . " » sur le serveur {$guildId} — OK.");
-
 if (!file_exists(DATA_FILE)) { plog('Aucun fichier de sorties.'); exit(0); }
 $data = json_decode(file_get_contents(DATA_FILE), true);
 if (!is_array($data)) { fwrite(STDERR, "debriefs.json illisible\n"); exit(1); }
@@ -234,6 +292,46 @@ if (!$encours) {
     plog('Aucune sortie en cours — en essai, on vérifie quand même le salon.');
 }
 
+// Vérification du salon. Elle vient APRÈS le tri des sorties, et pas avant : hors
+// fenêtre il n'y a rien à relever, donc rien à vérifier — inutile d'appeler Discord
+// toutes les 30 minutes de la nuit, et surtout inutile d'alerter pour une panne qui ne
+// fait perdre aucun point.
+// Sans elle, les trois erreurs possibles — identifiant erroné, salon textuel, salon
+// d'un autre serveur — donnent toutes le même « 0 présent » muet.
+$err   = null;
+$salon = $fenetres ? true : discord_get("/channels/{$channelId}", $err);
+$sortieEnCours = $encours ? reset($encours) : null;
+$titre = $sortieEnCours ? (string)($sortieEnCours['titre'] ?? '') : '';
+
+if ($salon !== true && !is_array($salon)) {
+    $m = "Salon {$channelId} illisible (HTTP " . ($err['code'] ?? '?') . ") — identifiant erroné, ou le bot n'a pas accès à ce salon.";
+    plog('🧨 ' . $m);
+    if ($encours) alerter('salon-illisible-' . ($err['code'] ?? '?'),
+        "🧨 **Le relevé de présence ne tourne pas.**" . chr(10)
+      . "Sortie en cours : « {$titre} »." . chr(10) . chr(10)
+      . $m . chr(10)
+      . "Un **403** est un droit, pas un identifiant : vérifie que le bot a « Voir le salon » et « Se connecter » sur le salon vocal." . chr(10)
+      . "Un **404** est un identifiant : vérifie `rally_voice_channel_id`." . chr(10) . chr(10)
+      . "*Aucun point n'est compté tant que ce n'est pas réglé. Les demi-heures manquées se rattrapent ensuite dans la grille.*");
+    exit(1);
+}
+if ($salon !== true && (int)($salon['type'] ?? -1) !== 2) {
+    $m = "« " . ($salon['name'] ?? '?') . " » n'est pas un salon VOCAL (type " . ($salon['type'] ?? '?') . ", il en faut 2).";
+    plog('🧨 ' . $m);
+    if ($encours) alerter('salon-pas-vocal', "🧨 **Le relevé de présence ne tourne pas.** " . $m);
+    exit(1);
+}
+if ($salon !== true && (string)($salon['guild_id'] ?? '') !== $guildId) {
+    $m = "Le salon « " . ($salon['name'] ?? '?') . " » appartient au serveur " . ($salon['guild_id'] ?? '?')
+       . ", or on interroge l'état vocal sur {$guildId} : personne ne sera jamais trouvé.";
+    plog('🧨 ' . $m);
+    if ($encours) alerter('salon-mauvais-serveur',
+        "🧨 **Le relevé de présence ne tourne pas.**" . chr(10) . $m . chr(10)
+      . "Corrige `rally_guild_id` (le serveur du salon) ou `rally_voice_channel_id`.");
+    exit(1);
+}
+if ($salon !== true) plog("Salon vocal « " . ($salon['name'] ?? '?') . " » sur le serveur {$guildId} — OK.");
+
 // Candidats : les membres de la guilde (visiteurs compris), à défaut les inscrits.
 $candidats = membres_guilde($guildId);
 $source    = 'membres de la guilde';
@@ -246,8 +344,13 @@ if (!$candidats) {
     }
 }
 if (!$candidats) {
-    plog('⚠️ Aucun candidat à interroger : ni liste de membres (intent « Server Members » ?), '
-       . 'ni inscrit dans une sortie en cours. Rien ne peut être relevé.');
+    $m = 'Aucun candidat à interroger : ni liste de membres, ni inscrit dans la sortie.';
+    plog('⚠️ ' . $m . ' Rien ne peut être relevé.');
+    if ($encours) alerter('aucun-candidat',
+        "🧨 **Le relevé de présence ne trouve personne à interroger.**" . chr(10)
+      . "Sortie en cours : « {$titre} »." . chr(10) . chr(10)
+      . $m . chr(10)
+      . "L'intent privilégié **« Server Members »** est-il toujours activé dans le portail développeur ?");
     exit($essai ? 0 : 1);
 }
 if (count($candidats) > MAX_CANDIDATS) {
@@ -319,3 +422,4 @@ flock($fp, LOCK_UN);
 fclose($fp);
 
 plog("✅ tick $tick enregistré sur $touche sortie(s).");
+alerte_resolue();

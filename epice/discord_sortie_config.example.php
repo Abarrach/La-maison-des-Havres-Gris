@@ -51,6 +51,16 @@ return [
     // Vide = repli sur le salon où la sortie a été créée.
     'partage_channel_id' => '', // ex : le salon « activités-discussion »
 
+    // Qui prévenir quand le RELEVÉ DE PRÉSENCE tombe en panne pendant une sortie.
+    // En message PRIVÉ, et à une seule personne : les autres ne peuvent rien y faire, et
+    // une alerte technique dans un salon de guilde n'y produit que du bruit.
+    // Une alerte par panne, pas une par passage — un rappel toutes les 30 minutes serait
+    // ignoré aussi sûrement qu'un fichier journal.
+    // Mode dev → clic droit sur ton pseudo → Copier l'identifiant.
+    // Vérifier une fois posé :  php epice/rally_presence.php --alerte-test
+    // Vide = aucune alerte (la panne reste dans data/rally_presence.log).
+    'alerte_user_id' => '', // ex : '289122662817726465'
+
     // URL de base du site (sans slash final), pour les liens envoyés depuis Discord
     // (éphémère de /commande creer → "Ajouter des captures"). Utile pour distinguer
     // prod (racine) et dev (/v2). Vide = fallback sur https://havresgris.ddns.net.

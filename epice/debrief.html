@@ -2355,6 +2355,36 @@ function pointsParJoueur() {
   return pts;
 }
 
+// « 2026-09-26T20:30 » → « 2026-09-26T21:00 ». Arithmétique en UTC alors que les clés
+// sont des heures LOCALES : on ne manipule ici qu'une étiquette, et passer par l'heure
+// locale du navigateur ferait intervenir son fuseau et ses changements d'heure dans un
+// calcul qui n'en a que faire.
+function demiHeureSuivante(cle) {
+  const [jour, hm] = cle.split('T');
+  const [h, m] = hm.split(':').map(Number);
+  const d = new Date(Date.UTC(+jour.slice(0, 4), +jour.slice(5, 7) - 1, +jour.slice(8, 10), h, m));
+  d.setUTCMinutes(d.getUTCMinutes() + 30);
+  const pad = n => String(n).padStart(2, '0');
+  return d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate())
+       + 'T' + pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes());
+}
+
+// Une sortie déborde toujours un peu. Plutôt que de la déclarer à rallonge par
+// précaution — le relevé s'arrête à l'heure de fin, pas à celle où les gens partent —
+// on ajoute des demi-heures après coup, en reprenant les présents de la dernière.
+// C'est le geste que l'organisateur faisait en ligne de commande jusqu'ici.
+function ajouterDemiHeure() {
+  const cles = ticksTries();
+  if (!cles.length) return;
+  const derniere = cles[cles.length - 1];
+  const suivante = demiHeureSuivante(derniere);
+  if (currentPresence.ticks[suivante]) return;   // déjà relevée par le cron
+  currentPresence.ticks[suivante] = (currentPresence.ticks[derniere] || []).slice();
+  currentParts = null;
+  presenceModifiee = true;
+  renderAssignBuilder();
+}
+
 function basculerPresence(id, cle) {
   const t = currentPresence.ticks[cle] || [];
   const i = t.map(String).indexOf(String(id));
@@ -2475,6 +2505,7 @@ function renderPresenceBlock() {
       <span class="aide-titre">Une fois la sortie terminée</span>
       <ol>
         <li><strong>Corrige la grille.</strong> Un clic sur une case ajoute ou retire la présence. La croix en fin de ligne retire quelqu'un de <em>tout</em> le relevé — le visiteur venu dire bonjour.</li>
+        <li><strong>La sortie a dépassé son horaire ?</strong> « ＋ Une demi-heure de plus » en ajoute une à la fin, avec les mêmes présents que la précédente ; décoche ensuite ceux qui étaient partis. Inutile donc de déclarer une sortie à rallonge par précaution. Une colonne entièrement décochée disparaît à l'enregistrement.</li>
         <li><strong>Saisis le volume total</strong> récolté (sable épicé).</li>
         <li><strong>Enregistrer et calculer</strong> : le partage s'affiche juste en dessous.</li>
         <li><strong>Publier sur Discord</strong> : le tableau part dans le salon prévu. Relis avant, le message est définitif.</li>
@@ -2503,6 +2534,11 @@ function renderPresenceBlock() {
   });
 
   h += `</tbody></table></div>
+    <div style="margin-top:.6rem;display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
+      <button class="btn-mini btn-mini-add" onclick="ajouterDemiHeure()"
+              data-tip="Ajoute une demi-heure après ${escAttr(heure(cles[cles.length - 1]))}, avec les mêmes présents">＋ Une demi-heure de plus</button>
+      <span class="cren-barre-txt">La sortie a débordé ? Ajoute autant de demi-heures que nécessaire, puis décoche ceux qui étaient déjà partis. Une colonne entièrement décochée disparaît à l'enregistrement.</span>
+    </div>
     <div class="cren-barre">
       <span class="cren-barre-txt">Volume récolté (sable épicé)
         <input type="number" min="0" step="100" class="champ-sombre" style="width:150px;margin-left:.5rem"

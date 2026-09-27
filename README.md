@@ -732,6 +732,20 @@ Sur une sortie longue, la récolte ne se partage plus à parts égales : **un re
 
 La fenêtre horaire et le découpage en demi-heures sont vérifiés à part (12 assertions) : une journée de 8 h donne exactement 16 ticks, `08:29` tombe dans le tick `08:00`, une durée `6h30` finit à 02:30 le lendemain, et une date en texte libre (ancien format « Dimanche 28/06/26 21h ») rend `null` sans rien casser.
 
+- **Une sortie qui déborde s'allonge APRÈS coup**, pas à la déclaration : le bouton
+  « ＋ Une demi-heure de plus » ajoute une colonne à la fin en reprenant les présents de la
+  précédente, puis on décoche ceux qui étaient partis. Une colonne entièrement décochée
+  disparaît à l'enregistrement, ce qui annule un ajout de trop.
+  ⚠ Des durées de 12 et 14 h ont été ajoutées puis **retirées** : déclarer une sortie à
+  rallonge par précaution allonge la grille des créneaux et les compos pour tout le monde,
+  alors que le débordement est l'exception. Le radio group de la durée retrouve donc ses
+  9 options — il plafonne à 10, et c'est ce plafond qui avait imposé un passage en liste
+  déroulante, désormais inutile.
+  ⚠ L'arithmétique de la demi-heure suivante se fait **en UTC** alors que les clés sont des
+  heures locales : on ne manipule qu'une étiquette, et passer par l'heure locale du
+  navigateur ferait intervenir son fuseau et ses changements d'heure dans un calcul qui n'en
+  a que faire. Vérifié sur les passages de minuit, de mois, d'année et d'heure d'hiver.
+
 **Mise en service** — trois préalables, dont deux hors du code :
 1. `rally_voice_channel_id` **et** `guild_id` renseignés dans `epice/discord_sortie_config.php` (`guild_id` était jusqu'ici facultatif : il ne l'est plus).
 2. L'intent **« Server Members »** activé dans le portail développeur, sans quoi seuls les inscrits sont vus.

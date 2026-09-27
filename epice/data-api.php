@@ -106,15 +106,6 @@ function parts_presence(array $s): array {
     $noms   = is_array($p['noms']  ?? null) ? $p['noms']  : [];
     $volume = max(0, (int)($p['volume'] ?? 0));
 
-    // Les demi-heures RÉELLEMENT relevées, dans l'ordre. C'est sur cette liste — et non
-    // sur l'horloge — que les plages se fusionnent : une demi-heure où le salon était
-    // vide n'existe pour personne, elle ne doit donc pas couper toutes les lignes en
-    // deux. Une pause déjeuner de deux heures produirait sinon « 10:00–12:00,
-    // 14:00–19:30 » sur chaque joueur, pour une information qui n'en est pas une.
-    $ordre = array_keys($ticks);
-    sort($ordre);
-    $rang  = array_flip($ordre);
-
     $points = [];
     foreach ($ticks as $ids) {
         // array_unique : la présence est un booléen par demi-heure, pas un compteur.
@@ -128,34 +119,11 @@ function parts_presence(array $s): array {
     }
     $total = array_sum($points);
 
-    // Positions de chacun dans cette liste, pour en tirer les plages.
-    $ouSont = [];
-    foreach ($ticks as $cle => $ids) {
-        foreach (array_unique(array_map('strval', (array)$ids)) as $id) {
-            if ($id !== '' && isset($rang[$cle])) $ouSont[$id][] = $rang[$cle];
-        }
-    }
-
-    // « 10:00–19:30 », ou « 10:00–12:00, 16:00–19:30 » si la personne est repartie puis
-    // revenue. Ce sont les HEURES DE RELEVÉ, pas des horaires d'arrivée et de départ :
-    // afficher 20:00 pour un dernier relevé à 19:30 affirmerait une présence que
-    // personne n'a constatée.
-    $heure = function ($k) { return substr($k, 11); };
-    $plage = function ($id) use ($ouSont, $ordre, $heure) {
-        $pos = $ouSont[$id] ?? [];
-        if (!$pos) return '';
-        sort($pos);
-        $bouts = []; $debut = $pos[0]; $prec = $pos[0];
-        foreach (array_slice($pos, 1) as $i) {
-            if ($i !== $prec + 1) { $bouts[] = [$debut, $prec]; $debut = $i; }
-            $prec = $i;
-        }
-        $bouts[] = [$debut, $prec];
-        $txt = [];
-        foreach ($bouts as [$a, $b]) $txt[] = $heure($ordre[$a]) . ($a === $b ? '' : '–' . $heure($ordre[$b]));
-        return $txt;
-    };
-
+    // Les plages de présence (« 10:00–19:30 ») ont été calculées ici un temps, pour une
+    // colonne du message Discord puis du tableau des parts. Les deux ont été retirées :
+    // la grille tenant désormais en entier dans une capture d'écran, on la copie telle
+    // quelle et le détail y est déjà, demi-heure par demi-heure. Du code qui ne nourrit
+    // plus rien coûte plus cher qu'il ne rapporte, même bien testé.
     $lignes = [];
     foreach ($points as $id => $pts) {
         // Arrondi à la centaine INFÉRIEURE : la petite raffinerie consomme par lots de
@@ -167,11 +135,6 @@ function parts_presence(array $s): array {
             'nom'    => (string)($noms[$id] ?? $id),
             'points' => $pts,
             'part'   => (int)(floor($brut / 100) * 100),
-            // `plages` est la LISTE des périodes, `plage` leur concaténation. L'affichage
-            // a besoin de la liste : tronquer la chaîne couperait un horaire en deux
-            // (« 12:00–13:0… »), là où il vaut mieux jeter une période entière et le dire.
-            'plages' => $plage($id),
-            'plage'  => implode(', ', $plage($id)),
         ];
     }
     usort($lignes, function ($a, $b) {

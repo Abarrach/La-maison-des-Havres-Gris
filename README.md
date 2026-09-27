@@ -636,7 +636,7 @@ Outil de **préparation, débrief et analyse** des sorties de récolte d'épice 
 
 #### Bot Sorties Discord (`epice/discord_sortie.php`)
 
-##### Rally — inscription par créneaux (2026-09-19, NON DÉPLOYÉ)
+##### Rally — inscription par créneaux (2026-09-19) — ✅ EN PROD
 
 > ⚠ **Le menu ne répondait pas, et le handler n'y était pour rien.** `discord_interactions.php` route les interactions vers les handlers via une **liste blanche de préfixes de `custom_id`** ; `creneaux:` n'y figurait pas, donc le dispatcher répondait **400** et `epice/discord_sortie.php` n'était jamais inclus. Symptôme trompeur : Discord affiche « n'a pas répondu à temps » et **le journal du handler reste vide**, ce qui envoie chercher un plantage là où aucun code n'a tourné. Deux corrections : le préfixe ajouté, et un **filet** qui route vers `sortie` tout `custom_id` finissant par un id de sortie (`/:sortie_\d+$/`), pour qu'un futur composant ne retombe jamais dans ce piège. Le diagnostic a coûté trois allers-retours parce que le `custom_id` n'était journalisé que pour les modals (type 5) — il l'est désormais pour les composants (type 3) avec les valeurs choisies.
 
@@ -701,7 +701,7 @@ Né d'un besoin concret : organiser une récolte d'épice de **8 h à 16 h** et 
 - **`POSTE_SHORT` a été hissé** hors de la fermeture `rosterPop` pour servir aux deux. Un catalogue en deux exemplaires finit toujours par diverger — celui des jeux en comptait cinq, et trois pannes silencieuses.
 - Vérifié sur banc (22 assertions) : découpage, couverture, tri, absents exclus, « peut-être » marqués, `○` partout pour un inscrit sans créneau, hors-rally vide, aucun inscrit. Rendu réel contrôlé au navigateur en 4 et 5 colonnes, et à 375 px de large (le tableau défile horizontalement dans `.cren-wrap` au lieu de casser la page).
 
-##### Une compo PAR CRÉNEAU (2026-09-19, NON DÉPLOYÉE)
+##### Une compo PAR CRÉNEAU (2026-09-19) — ✅ EN PROD
 
 Une journée de 8 h n'a pas une composition, elle en a quatre : c'est le sens même d'une relève. **On clique une tranche, on obtient la compo de cette tranche.**
 
@@ -713,7 +713,15 @@ Une journée de 8 h n'a pas une composition, elle en a quatre : c'est le sens m�
 - ⚠ **Un client d'avant le déploiement ne détruit pas les relèves.** Une page laissée ouverte depuis la veille n'envoie que `assignation` ; `apply_compos()` met alors à jour le créneau 0 **sans toucher** à `assignations`. Sinon un onglet oublié effacerait la journée d'un organisateur.
 - **Côté joueur** (onglet Organisation) : une rangée de boutons de tranches, et un créneau non composé **hérite** du dernier composé avec la mention « Même disposition qu'à 08–10 » plutôt qu'un « non défini » trompeur. La **grille de disponibilités reste côté admin** — un joueur n'a pas à savoir qui a coché quelles heures (cf. la doctrine « pas de flicage »).
 - Vérifié sur banc : `node epice/compos_creneaux.test.cjs` — 9 assertions couvrant le rangement, la disparition des relèves retirées, le créneau vide non persisté, le vieux client inoffensif, la lecture par créneau, l'union des participants, la copie vers l'avant (et son indépendance : modifier la relève ne remonte pas sur l'original) et l'héritage côté joueur.
-##### Relevé de présence et partage de la récolte (2026-09-25, NON DÉPLOYÉ)
+##### Relevé de présence et partage de la récolte (2026-09-25) — ✅ EN PROD
+
+> **Première vraie journée : le rally du 2026-09-26, 10 h → 20 h, 9 récoltants, 1 902 253 de sable partagés.**
+> Trois pannes, toutes de PERMISSIONS Discord, toutes réglées en cours de route :
+> - **Le salon écouté était le mauvais** (Général au lieu de DD farm) **et le bot n'y avait pas accès** — 403 journalisés toutes les 30 min depuis 01:02, découverts à 10:38. Deux demi-heures perdues, rattrapées à la main. Le relevé vérifie désormais le salon au démarrage et nomme la cause ; avant, les trois erreurs possibles (identifiant erroné, salon textuel, autre serveur) donnaient le même « 0 présent » muet.
+> - **La publication a échoué** sur *activités-discussion* : le bot ne voyait pas le salon (« Missing Access »). Le message d'erreur reprend maintenant ce que Discord répond.
+> - **Un trou de 12:30 à 13:30** qui n'en était pas un : le salon était vide à l'heure du déjeuner, et une demi-heure sans personne n'est pas écrite. C'est voulu — la remplir donnerait des points pour du temps que personne n'a passé. L'outil de rattrapage pose la question au lieu de crier à la panne.
+>
+> **Ce que la journée a appris** : une panne qui ne se signale que dans un fichier journal n'est pas signalée. L'alerte Discord en cas d'échec du relevé reste à faire, et elle aurait fait gagner huit heures.
 
 Sur une sortie longue, la récolte ne se partage plus à parts égales : **un relevé toutes les 30 minutes dans le salon vocal, présent = 1 point**, et la récolte se divise par le total des points. La valeur d'un point est donc indifférente au nombre de participants — propriété nécessaire quand l'effectif change à chaque demi-heure, et c'est elle qu'on a promise à la guilde.
 
@@ -759,7 +767,7 @@ php /srv/dune-map/epice/rally_presence.php --test   # n'écrit rien, affiche qui
 */30 * * * *  php /srv/dune-map/epice/rally_presence.php >> /srv/dune-map/epice/data/rally_presence.log 2>&1
 ```
 
-##### Proposition automatique d'organisation (2026-09-20, NON DÉPLOYÉE)
+##### Proposition automatique d'organisation (2026-09-20) — ✅ EN PROD
 
 Composer une journée à la main, c'est quatre fois le même travail avec trois noms qui changent. Le bouton **✨ Proposition automatique** remplit **tous les créneaux d'un coup**, chacun avec les gens disponibles à cette heure-là. Moteur isolé et testable : `epice/raid-auto.js`.
 

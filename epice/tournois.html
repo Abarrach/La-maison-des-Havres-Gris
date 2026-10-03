@@ -606,7 +606,14 @@
     if ($('saison-pub')) $('saison-pub').onclick = () => publierSaison(sa, cl, nbT, !enCours);
 
     if (!cl.length) {
-      $('saison-contenu').innerHTML = `<div class="empty">Aucun tournoi ${E.NIVEAUX[saisonNiveau].label.toLowerCase()} terminé dans cette saison.</div>`;
+      // Cause la plus fréquente d'un classement vide : un tournoi SANS DATE (les
+      // tournois repris de Challonge, notamment). Il ne compte dans aucune saison
+      // et rien ne le signalait ici — on le dit là où on cherche, avec le remède.
+      const orphelins = tous.filter(t => t.niveau === saisonNiveau && !E.saisonDe(t.date));
+      $('saison-contenu').innerHTML = `<div class="empty">Aucun tournoi ${E.NIVEAUX[saisonNiveau].label.toLowerCase()} terminé dans cette saison.`
+        + (orphelins.length ? `<br><br>${orphelins.length > 1 ? "Ces tournois n'ont" : "Ce tournoi n'a"} pas de date, donc ${orphelins.length > 1 ? 'ils ne comptent' : 'il ne compte'} dans aucune saison : `
+          + orphelins.map(t => `<a href="?t=${encodeURIComponent(t.id)}">${esc(t.nom)}</a>`).join(', ')
+          + `.<br>Ouvre-le et donne-lui sa date avec <strong>✎ Modifier</strong>.` : '') + '</div>';
       return;
     }
     const nb = {}; cl.forEach(c => nb[c.rang] = (nb[c.rang] || 0) + 1);

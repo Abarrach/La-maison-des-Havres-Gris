@@ -1223,10 +1223,11 @@
       try {
         SORTIES = (await api('sorties')).sorties;
         const opt = s => `<option value="${esc(s.id)}"${s.tournoi ? ' disabled' : ''}>${esc(s.titre || '(sans titre)')} — ${esc(dateFr(s.date, s.heure))} · ${s.presents} présent${s.presents > 1 ? 's' : ''}${s.tournoi ? ' (déjà un tournoi)' : ''}</option>`;
-        const tn = SORTIES.filter(s => s.niveau), autres = SORTIES.filter(s => !s.niveau);
+        // Le serveur ne renvoie que les sorties « Tournoi PvP » (3 dernières semaines).
+        const tn = SORTIES;
         $('f-sortie').innerHTML = '<option value="">— Aucune : joueurs ajoutés à la main —</option>'
-          + (tn.length ? `<optgroup label="Sorties « Tournoi PvP »">${tn.map(opt).join('')}</optgroup>` : '')
-          + (autres.length ? `<optgroup label="Autres sorties récentes">${autres.map(opt).join('')}</optgroup>` : '');
+          + (tn.length ? tn.map(opt).join('')
+                       : '<option value="" disabled>Aucune sortie « Tournoi PvP » ces 3 dernières semaines — crée-la sur Discord</option>');
         if (sortiePre && SORTIES.some(s => s.id === sortiePre && !s.tournoi)) { $('f-sortie').value = sortiePre; majSortie(); }
         else if (!sortiePre && tn.some(s => !s.tournoi)) { $('f-sortie').value = tn.find(s => !s.tournoi).id; majSortie(); }
       } catch (e) { $('f-sortie').innerHTML = '<option value="">— Aucune (sorties illisibles) —</option>'; }

@@ -286,25 +286,27 @@ switch ($action) {
         }
         tout(false, [], 'Tournoi introuvable.');
 
-    // Sorties Discord récentes auxquelles rattacher un tournoi. Les activités
-    // « Tournoi » d'abord ; les autres restent proposées (un tournoi improvisé
-    // pendant une soirée d'entraînement, par exemple).
+    // Sorties Discord récentes auxquelles rattacher un tournoi : UNIQUEMENT les
+    // activités « Tournoi PvP ». Les autres étaient proposées en second choix (pour
+    // un tournoi improvisé pendant une autre soirée) et noyaient la liste sous les
+    // soirées Landsraad et les chantiers — retiré à la demande de l'utilisateur.
+    // Un tournoi improvisé se monte sans sortie, joueurs ajoutés depuis les membres.
     case 'sorties':
         $lim = date('Y-m-d', strtotime('-21 days'));
         $deja = [];
         foreach (t_read()['tournois'] as $t) if (!empty($t['sortie_id'])) $deja[$t['sortie_id']] = $t['id'];
         $out = [];
         foreach (t_dstore() as $s) {
+            // array_key_exists et non isset() : isset() sur une constante est fatal.
+            if (!array_key_exists((string)($s['type'] ?? ''), TYPE_NIVEAU)) continue;
             if (($s['date'] ?? '') !== '' && $s['date'] < $lim) continue;
             $presents = 0;
             foreach ($s['signups'] ?? [] as $su) if (($su['statut'] ?? 'present') === 'present') $presents++;
             $out[] = ['id' => $s['id'], 'titre' => $s['titre'] ?? '', 'type' => $s['type'] ?? '',
-                      'niveau' => TYPE_NIVEAU[$s['type'] ?? ''] ?? '', 'date' => $s['date'] ?? '',
+                      'niveau' => TYPE_NIVEAU[$s['type']], 'date' => $s['date'] ?? '',
                       'heure' => $s['heure'] ?? '', 'presents' => $presents, 'tournoi' => $deja[$s['id']] ?? ''];
         }
-        usort($out, function ($a, $b) {
-            return (($b['niveau'] !== '') <=> ($a['niveau'] !== '')) ?: strcmp($b['date'] . $b['heure'], $a['date'] . $a['heure']);
-        });
+        usort($out, function ($a, $b) { return strcmp($b['date'] . $b['heure'], $a['date'] . $a['heure']); });
         tout(true, ['sorties' => $out]);
 
     case 'inscrits':

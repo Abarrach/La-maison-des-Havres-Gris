@@ -23,7 +23,7 @@ $action = $_GET['action'] ?? '';
 $input  = json_decode(file_get_contents('php://input'), true) ?? [];
 
 $member   = ['list', 'get'];
-$organize = ['sorties', 'inscrits', 'membres', 'create', 'save', 'publish', 'delete'];
+$organize = ['sorties', 'inscrits', 'membres', 'create', 'save', 'publish', 'publish_saison', 'delete'];
 if (in_array($action, $organize, true)) epice_require_organize();
 elseif (in_array($action, $member, true)) epice_require_login();
 else tout(false, [], 'Action inconnue.');
@@ -201,7 +201,68 @@ function t_resume(array $t): array {
         'nb_joueurs' => count($t['joueurs'] ?? []), 'podium' => $t['podium'] ?? [],
         'lots' => $t['lots'] ?? [], 'cree_par' => $t['cree_par'] ?? '', 'sortie_id' => $t['sortie_id'] ?? '',
         'termine_le' => $t['termine_le'] ?? '',
-    ];
+    ] + (($t['statut'] ?? '') === 'termine' ? [
+        // Le classement de saison se calcule dans la page, avec le moteur (aucune
+        // copie PHP des règles) : il lui faut donc l'arbre complet des tournois
+        // terminés. Quelques Ko par tournoi, pas de journal.
+        'joueurs'     => array_map(function ($j) { return ['id' => $j['id'], 'nom' => $j['nom'], 'discord_id' => $j['discord_id'] ?? '', 'seed' => $j['seed'] ?? 0]; }, $t['joueurs'] ?? []),
+        'resultats'   => $t['resultats'] ?? [],
+        'options'     => $t['options'] ?? [],
+        'ajustements' => $t['ajustements'] ?? (object)[],
+    ] : []);
+}
+
+// Corrections de points d'un organisateur : {idJoueur: {points, raison}}. La
+// raison est OBLIGATOIRE — une correction sans explication ressemble à une
+// triche, avec elle c'est un arbitrage. Le calcul d'origine reste affiché.
+function t_clean_ajustements($list, array $ids): array {
+    $out = [];
+    foreach (is_array($list) ? $list : [] as $pid => $a) {
+        if (!isset($ids[(string)$pid]) || !is_array($a)) continue;
+        $raison = t_cut($a['raison'] ?? '', 120);
+        if ($raison === '' || !is_numeric($a['points'] ?? null)) continue;
+        $out[(string)$pid] = ['points' => max(0, min(100, (int)$a['points'])), 'raison' => $raison];
+    }
+    return $out;
+}
+
+// Envoi d'un embed par le bot Sorties. Rend la main en cas de succès, répond
+// l'erreur à la page sinon, en relayant le motif donné par Discord : « Missing
+// Access » (salon invisible au bot) et « Missing Permissions » (visible mais pas
+// d'écriture) ne se règlent pas au même endroit, un code nu envoie chercher ailleurs.
+function t_discord_post(array $CFG, string $chan, array $embed): void {
+    $ch = curl_init('https://discord.com/api/v10/channels/' . $chan . '/messages');
+    curl_setopt_array($ch, [
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => json_encode(['embeds' => [$embed], 'allowed_mentions' => ['parse' => []]], JSON_UNESCAPED_UNICODE),
+        CURLOPT_HTTPHEADER     => ['Authorization: Bot ' . $CFG['bot_token'], 'Content-Type: application/json'],
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CONNECTTIMEOUT => 4,
+        CURLOPT_TIMEOUT        => 10,
+    ]);
+    $resp = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    if ($resp !== false && $code >= 200 && $code < 300) return;
+    $j = json_decode((string)$resp, true);
+    $quoiErr = trim((string)($j['message'] ?? ''));
+    $aide = stripos($quoiErr, 'Missing Access') !== false ? ' — le bot ne voit pas ce salon : accorde-lui « Voir le salon » et « Envoyer des messages ».'
+          : (stripos($quoiErr, 'Missing Permissions') !== false ? ' — le bot voit le salon mais ne peut pas y écrire (« Envoyer des messages », « Intégrer des liens »).' : '');
+    tout(false, [], 'Discord a refusé le message (HTTP ' . $code . ($quoiErr !== '' ? ' : ' . $quoiErr : '') . ')' . $aide);
+}
+
+// Configuration du bot + salon de publication des tournois.
+function t_bot(string $salonSecours = ''): array {
+    $cfgPath = __DIR__ . '/discord_sortie_config.php';
+    if (!file_exists($cfgPath)) tout(false, [], 'Configuration du bot absente sur le serveur.');
+    $CFG = require $cfgPath;
+    if (empty($CFG['bot_token']))      tout(false, [], 'Le bot n\'a pas de token configuré.');
+    if (!function_exists('curl_init')) tout(false, [], 'cURL indisponible sur le serveur.');
+    // Salon : réglage dédié → salon des partages → salon de secours (celui de la sortie).
+    $chan = trim((string)($CFG['tournoi_channel_id'] ?? '')) ?: trim((string)($CFG['partage_channel_id'] ?? '')) ?: $salonSecours;
+    if ($chan === '') tout(false, [], 'Aucun salon de publication : renseigne `tournoi_channel_id` dans discord_sortie_config.php.');
+    $base = rtrim(trim((string)($CFG['site_url'] ?? '')) ?: 'https://havresgris.ddns.net', '/');
+    return [$CFG, $chan, $base];
 }
 
 switch ($action) {
@@ -395,6 +456,9 @@ switch ($action) {
             // Revenir en préparation efface les scores : l'arbre va changer.
             $t['resultats'] = $statut === 'preparation' ? [] : t_clean_resultats($n['resultats'] ?? $t['resultats'], $ids);
             $t['podium']    = $statut === 'termine' ? t_clean_podium($n['podium'] ?? [], $ids) : [];
+            // Les corrections de points ne valent que pour un classement final ;
+            // revenir en préparation les efface avec les scores.
+            $t['ajustements'] = $statut === 'preparation' ? [] : t_clean_ajustements($n['ajustements'] ?? ($t['ajustements'] ?? []), $ids);
             if ($statut === 'termine' && !$t['podium']) throw new RuntimeException('Classement final manquant : le tournoi n\'est pas allé au bout.');
             if ($statut === 'termine' && $ancien !== 'termine') $t['termine_le'] = date('c');
             if ($statut !== 'termine') unset($t['termine_le']);
@@ -428,17 +492,7 @@ switch ($action) {
         if ($quoi === 'resultats' && ($t['statut'] !== 'termine' || !$t['podium'])) tout(false, [], 'Clôture le tournoi avant d\'en publier les résultats.');
         if ($quoi === 'lancement' && $t['statut'] === 'preparation') tout(false, [], 'Lance le tournoi avant de publier l\'arbre.');
 
-        $cfgPath = __DIR__ . '/discord_sortie_config.php';
-        if (!file_exists($cfgPath)) tout(false, [], 'Configuration du bot absente sur le serveur.');
-        $CFG = require $cfgPath;
-        if (empty($CFG['bot_token']))      tout(false, [], 'Le bot n\'a pas de token configuré.');
-        if (!function_exists('curl_init')) tout(false, [], 'cURL indisponible sur le serveur.');
-        // Salon : réglage dédié → salon des partages → salon où la sortie a été créée.
-        $chan = trim((string)($CFG['tournoi_channel_id'] ?? '')) ?: trim((string)($CFG['partage_channel_id'] ?? ''))
-             ?: (string)($t['sortie_channel_id'] ?? '');
-        if ($chan === '') tout(false, [], 'Aucun salon de publication : renseigne `tournoi_channel_id` dans discord_sortie_config.php, ou rattache le tournoi à une sortie Discord.');
-
-        $base = rtrim(trim((string)($CFG['site_url'] ?? '')) ?: 'https://havresgris.ddns.net', '/');
+        [$CFG, $chan, $base] = t_bot((string)($t['sortie_channel_id'] ?? ''));
         $lien = $base . '/epice/tournois.html?t=' . rawurlencode($t['id']);
         $esc  = function ($s) { return preg_replace('/([\\\\*_~`|>])/', '\\\\$1', (string)$s); };
         $niv  = NIVEAU_ICO[$t['niveau']] . ' ' . NIVEAU_LBL[$t['niveau']];
@@ -482,28 +536,7 @@ switch ($action) {
                                   . ($quand ? " · {$quand}" : '') . "\n[Voir l'arbre complet]({$lien})";
         }
 
-        $ch = curl_init('https://discord.com/api/v10/channels/' . $chan . '/messages');
-        curl_setopt_array($ch, [
-            CURLOPT_POST           => true,
-            CURLOPT_POSTFIELDS     => json_encode(['embeds' => [$embed], 'allowed_mentions' => ['parse' => []]], JSON_UNESCAPED_UNICODE),
-            CURLOPT_HTTPHEADER     => ['Authorization: Bot ' . $CFG['bot_token'], 'Content-Type: application/json'],
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_CONNECTTIMEOUT => 4,
-            CURLOPT_TIMEOUT        => 10,
-        ]);
-        $resp = curl_exec($ch);
-        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-        if ($resp === false || $code < 200 || $code >= 300) {
-            // Relayer le motif donné par Discord : « Missing Access » (salon invisible au
-            // bot) et « Missing Permissions » (visible mais pas d'écriture) ne se règlent
-            // pas au même endroit. Un code nu envoie chercher au mauvais endroit.
-            $j = json_decode((string)$resp, true);
-            $quoiErr = trim((string)($j['message'] ?? ''));
-            $aide = stripos($quoiErr, 'Missing Access') !== false ? ' — le bot ne voit pas ce salon : accorde-lui « Voir le salon » et « Envoyer des messages ».'
-                  : (stripos($quoiErr, 'Missing Permissions') !== false ? ' — le bot voit le salon mais ne peut pas y écrire (« Envoyer des messages », « Intégrer des liens »).' : '');
-            tout(false, [], 'Discord a refusé le message (HTTP ' . $code . ($quoiErr !== '' ? ' : ' . $quoiErr : '') . ')' . $aide);
-        }
+        t_discord_post($CFG, $chan, $embed);
         $t = t_mutate(function (&$d) use ($id, $quoi) {
             $i = t_index($d, $id);
             if ($i < 0) return null;
@@ -512,4 +545,28 @@ switch ($action) {
             return $d['tournois'][$i];
         });
         tout(true, ['tournoi' => $t]);
+
+    // Classement d'une saison pour un niveau. Les lignes sont calculées par la page
+    // (moteur unique) ; le serveur ne fait que les mettre en forme et les poster.
+    case 'publish_saison':
+        $niveau = in_array($input['niveau'] ?? '', NIVEAUX_T, true) ? $input['niveau'] : '';
+        $saison = t_cut($input['saison'] ?? '', 40);
+        if ($niveau === '' || $saison === '') tout(false, [], 'Saison ou niveau manquant.');
+        $lignes = [];
+        foreach (array_slice(is_array($input['lignes'] ?? null) ? $input['lignes'] : [], 0, 15) as $l) {
+            $l = t_cut($l, 110);
+            if ($l !== '') $lignes[] = $l;
+        }
+        if (!$lignes) tout(false, [], 'Classement vide : aucun tournoi terminé dans cette saison.');
+        [$CFG, $chan, $base] = t_bot();
+        $val = '';
+        foreach ($lignes as $l) { if (strlen($val) + strlen($l) > 3800) { $val .= '…'; break; } $val .= $l . "\n"; }
+        $finie = !empty($input['terminee']);
+        t_discord_post($CFG, $chan, [
+            'title'       => ($finie ? '🏆 Classement final' : '📊 Classement') . ' — saison ' . $saison . ' · ' . NIVEAU_ICO[$niveau] . ' ' . NIVEAU_LBL[$niveau],
+            'description' => $val . "\n" . t_cut($input['pied'] ?? '', 300) . "\n[Voir le classement complet](" . $base . '/epice/tournois.html?vue=saison&niveau=' . $niveau . ')',
+            'color'       => hexdec('D4A23B'),
+            'footer'      => ['text' => 'Points selon la place finale · 3 meilleurs résultats retenus · publié par ' . (epice_user() ?? '?')],
+        ]);
+        tout(true);
 }

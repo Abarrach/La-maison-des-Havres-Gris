@@ -193,4 +193,98 @@ test('numérotation : chaque match visible a un numéro unique', () => {
   assert.strictEqual(new Set(nums).size, nums.length);
 });
 
+// ------------------------------------------------------------------ points et saisons
+// Un tournoi terminé fabriqué vite : 4 joueurs en simple élimination, sans petite
+// finale, le premier nom gagne tout (donc rang 1, 2, 3 ex æquo, 3 ex æquo).
+function tournoiFini(id, date, niveau, noms, discord) {
+  const t = Object.assign(tournoi(noms, 'simple', { petiteFinale: false }), { id, nom: id, date, niveau, statut: 'termine' });
+  if (discord) t.joueurs.forEach((j, i) => { j.discord_id = discord[i] || ''; });
+  let garde = 0;
+  while (!E.resoudre(t).termine && garde++ < 20) {
+    const m = E.aJouer(E.resoudre(t))[0];
+    const rang = id => noms.indexOf(t.joueurs.find(j => j.id === id).nom);
+    joue(t, m.id, t.joueurs.find(j => j.id === (rang(m.a) < rang(m.b) ? m.a : m.b)).nom);
+  }
+  return t;
+}
+
+test('points : barème fixe selon la place, jamais selon les victoires', () => {
+  const t = tournoi(['Sarazin', 'LeFou', 'Neuroch', 'Bahlor', 'Hasashi', 'Fenros', 'Fenrir', 'Lorhelyne'], 'double');
+  for (const [m, w, s] of [['W1-1','Sarazin'],['W1-2','Bahlor'],['W1-3','Fenrir'],['W1-4','Fenros'],['W2-1','Bahlor'],['W2-2','Fenros'],
+    ['L1-1','Lorhelyne'],['L1-2','Neuroch'],['L2-1','Fenrir'],['L2-2','Neuroch'],['L3-1','Neuroch'],['W3-1','Fenros'],['L4-1','Neuroch'],['GF1','Fenros']]) joue(t, m, w, s);
+  const pts = Object.fromEntries(E.pointsTournoi(t).map(p => [p.nom, p.points]));
+  // Neuroch a autant de victoires que Fenros (4) mais finit 2ᵉ : il doit avoir moins.
+  assert.deepStrictEqual(pts, { Fenros: 5, Neuroch: 4, Bahlor: 3, Fenrir: 2, Sarazin: 1, Lorhelyne: 1, LeFou: 1, Hasashi: 1 });
+});
+
+test('points : ex æquo à égalité, ajustement d\'organisateur visible', () => {
+  const t = tournoiFini('T', '2026-10-05', 'debutant', ['A', 'B', 'C', 'D']);
+  const p = E.pointsTournoi(t);
+  assert.deepStrictEqual(p.map(x => x.rang + ':' + x.points), ['1:5', '2:4', '3:3', '3:3'], 'deux 3ᵉ ex æquo, 3 points chacun');
+  t.ajustements = { [p[3].id]: { points: 0, raison: 'Parti avant la fin' } };
+  const q = E.pointsTournoi(t).find(x => x.id === p[3].id);
+  assert.deepStrictEqual([q.points, q.auto, q.ajuste, q.raison], [0, 3, true, 'Parti avant la fin']);
+  assert.deepStrictEqual(E.pointsTournoi(Object.assign({}, t, { statut: 'en_cours', resultats: {} })), [], 'pas de points avant la fin');
+});
+
+test('saisons de deux mois, lues sur la date du tournoi', () => {
+  assert.strictEqual(E.saisonDe('2026-10-03').label, 'oct.–nov. 2026');
+  assert.strictEqual(E.saisonDe('2026-11-30').id, E.saisonDe('2026-10-01').id);
+  assert.strictEqual(E.saisonDe('2026-09-30').label, 'août–sept. 2026', 'septembre : saison précédente');
+  // déc.–janv. à cheval sur deux années : une seule saison, datée de décembre.
+  assert.strictEqual(E.saisonDe('2026-12-15').id, E.saisonDe('2027-01-20').id);
+  assert.deepStrictEqual([E.saisonDe('2027-01-20').label, E.saisonDe('2027-01-20').fin], ['déc. 2026–janv. 2027', '2027-01-31']);
+  assert.strictEqual(E.saisonDe('2027-03-10').fin, '2027-03-31');
+  assert.strictEqual(E.saisonDe('2028-02-10').fin, '2028-03-31');
+  assert.strictEqual(E.saisonDe(''), null, 'un tournoi sans date n\'est dans aucune saison');
+});
+
+test('classement de saison : 3 meilleurs résultats, niveaux séparés, titres pour départager', () => {
+  const s = '2026-10-05', id = E.saisonDe(s).id;
+  const T = [
+    // Neuroch : quatre fois 2ᵉ (4 pts) → seuls trois comptent = 12. Jamais vainqueur.
+    tournoiFini('t1', '2026-10-05', 'expert', ['Fenros', 'Neuroch', 'X', 'Y']),
+    tournoiFini('t2', '2026-10-12', 'expert', ['Bahlor', 'Neuroch', 'X', 'Y']),
+    tournoiFini('t3', '2026-10-19', 'expert', ['Bahlor', 'Neuroch', 'X', 'Y']),
+    tournoiFini('t4', '2026-10-26', 'expert', ['Sarazin', 'Neuroch', 'X', 'Y']),
+    // Hors niveau et hors saison : ne doivent rien changer.
+    tournoiFini('d1', '2026-10-05', 'debutant', ['Neuroch', 'Z', 'W', 'V']),
+    tournoiFini('old', '2026-09-20', 'expert', ['Neuroch', 'X', 'Y', 'Z']),
+  ];
+  const cl = E.classementSaison(T, id, 'expert');
+  const ligne = nom => cl.find(c => c.nom === nom);
+  assert.strictEqual(ligne('Neuroch').points, 12, '3 meilleurs sur 4 : 4+4+4');
+  assert.strictEqual(ligne('Neuroch').resultats.filter(r => !r.compte).length, 1, 'un résultat écarté, mais montré');
+  assert.strictEqual(ligne('Bahlor').points, 10);
+  assert.strictEqual(ligne('Neuroch').rang, 1, 'le plus régulier mène la saison sans avoir gagné');
+  assert.strictEqual(ligne('Neuroch').titres, 0);
+  assert.strictEqual(ligne('Bahlor').titres, 2);
+  // X et Y : 3ᵉ ex æquo partout → 3 pts × 3 = 9, à égalité parfaite : rang partagé.
+  assert.strictEqual(ligne('X').rang, ligne('Y').rang);
+  // Fenros et Sarazin : 5 pts chacun, 1 titre chacun → rang partagé aussi.
+  assert.strictEqual(ligne('Fenros').rang, ligne('Sarazin').rang);
+  assert.ok(!cl.some(c => c.nom === 'Z'), 'le débutant Z n\'apparaît pas chez les vétérans');
+});
+
+test('identité : même identifiant Discord = même joueur, malgré un changement de pseudo', () => {
+  const id = E.saisonDe('2026-10-05').id;
+  const T = [tournoiFini('a', '2026-10-05', 'expert', ['Lohre', 'B', 'C', 'D'], ['42']),
+             tournoiFini('b', '2026-10-06', 'expert', ['Lorhelyne✨', 'B', 'C', 'D'], ['42'])];
+  const cl = E.classementSaison(T, id, 'expert');
+  const l = cl.find(c => c.cle === 'd:42');
+  assert.deepStrictEqual([l.points, l.titres, l.nom], [10, 2, 'Lorhelyne✨'], 'cumulé, sous le nom le plus récent');
+});
+
+test('conseil de montée : positif seulement, lu sur les 3 derniers tournois du niveau', () => {
+  const T = [tournoiFini('d1', '2026-10-01', 'debutant', ['Shean', 'Frya', 'A', 'B']),
+             tournoiFini('d2', '2026-10-08', 'debutant', ['Frya', 'Shean', 'A', 'B'])];
+  const cle = nom => E.cleJoueur({ nom });
+  assert.strictEqual(E.conseilMontee(T, cle('Shean'), 'debutant').niveau, 'pret', 'une victoire suffit');
+  assert.strictEqual(E.conseilMontee(T, cle('A'), 'debutant').niveau, 'pret', 'deux podiums (3ᵉ ex æquo) aussi');
+  const solo = [tournoiFini('d3', '2026-10-01', 'debutant', ['Q', 'R', 'S', 'T', 'U', 'V', 'W', 'Z'])];
+  assert.strictEqual(E.conseilMontee(solo, cle('R'), 'debutant').niveau, 'progression', 'un seul podium');
+  assert.strictEqual(E.conseilMontee(solo, cle('Z'), 'debutant'), null, 'rien à dire : on ne décourage personne');
+  assert.strictEqual(E.conseilMontee(T, cle('Shean'), 'expert'), null, 'pas de niveau au-dessus des vétérans');
+});
+
 console.log((process.exitCode ? '✖ ' : '✔ ') + ok + ' test(s) réussi(s)');

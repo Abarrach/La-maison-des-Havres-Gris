@@ -243,6 +243,10 @@ Tous constatés en production ou en test, pas théoriques.
   clôture. Ne pas écrire de miroir PHP « pour valider côté serveur » : c'est exactement la
   double implémentation des rallys. Toucher au moteur → `node epice/tournoi-engine.test.cjs`
   (rejoue un vrai tournoi Challonge et doit en retrouver le podium exact).
+- **Points et saisons sont aussi dans le moteur** (`pointsTournoi`, `classementSaison`,
+  `conseilMontee`) : l'API ne fait que renvoyer l'arbre des tournois terminés. Les points
+  viennent de la PLACE, jamais des victoires (décision prise avec les joueurs, à ne pas
+  « simplifier »). Les saisons commencent les mois PAIRS (oct.–nov.…), pas en janvier.
 - **Un résultat stocke les deux joueurs qu'il opposait**, et c'est voulu : après une correction
   en amont, un résultat dont l'affiche a changé est ignoré puis purgé. Ne pas « simplifier » en
   ne gardant que le vainqueur, on perdrait l'invalidation automatique.

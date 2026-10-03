@@ -350,11 +350,159 @@
     return out;
   }
 
+  // =====================================================================
+  //  POINTS ET SAISONS
+  //
+  //  Décisions de l'utilisateur (2026-10), après discussion avec les joueurs :
+  //   - les points viennent de la PLACE FINALE, jamais des matchs gagnés : en
+  //     double élimination, le rescapé des perdants gagne autant de matchs que le
+  //     champion (Veteran : Neuroch 4 victoires = Fenros 4 victoires, 2ᵉ et 1ᵉʳ) ;
+  //   - barème FIXE, les ex æquo prennent les points de leur rang ;
+  //   - saisons de DEUX MOIS, par niveau ;
+  //   - seuls les 3 MEILLEURS résultats d'un joueur comptent dans la saison :
+  //     sinon on finit premier en étant simplement présent partout.
+  //  Un vainqueur de tournoi peut donc ne pas mener la saison — c'est voulu, d'où
+  //  les TITRES affichés à part et utilisés pour départager les égalités.
+  // =====================================================================
+  var BAREME = { 1: 5, 2: 4, 3: 3, 4: 2 };
+  var POINTS_PARTICIPATION = 1;
+  var MEILLEURS_RESULTATS = 3;
+  var MOIS_COURTS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+
+  function pointsDuRang(rang) { return rang == null ? 0 : (BAREME[rang] != null ? BAREME[rang] : POINTS_PARTICIPATION); }
+
+  // Identité d'un joueur d'un tournoi à l'autre : l'identifiant Discord quand on
+  // l'a (il survit à un changement de pseudo), sinon le nom sans casse ni accents.
+  function sansAccents(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim(); }
+  function cleJoueur(j) { return j && j.discord_id ? 'd:' + j.discord_id : 'n:' + sansAccents(j && j.nom); }
+
+  // Points de chaque joueur d'un tournoi TERMINÉ. Un ajustement d'organisateur
+  // (t.ajustements[idJoueur] = {points, raison}) remplace le calcul, qui reste
+  // fourni (`auto`) pour l'afficher au survol : une correction se voit toujours.
+  function pointsTournoi(t, res) {
+    res = res || resoudre(t);
+    if (!res.termine) return [];
+    var aj = t.ajustements || {};
+    return classement(t, res).map(function (c) {
+      var j = res.joueurs.filter(function (x) { return x.id === c.id; })[0];
+      var auto = pointsDuRang(c.rang), a = aj[c.id];
+      var ajuste = !!a && a.points != null;
+      return { id: c.id, cle: cleJoueur(j), nom: c.nom, rang: c.rang, auto: auto,
+               points: ajuste ? a.points : auto, ajuste: ajuste, raison: ajuste ? (a.raison || '') : '' };
+    });
+  }
+
+  // Saisons de deux mois commençant les mois PAIRS : oct.–nov., déc.–janv.,
+  // févr.–mars… Calées ainsi pour que la première démarre au lancement des
+  // tournois (octobre 2026) au lieu de s'arrêter quatre semaines plus tard, ce
+  // qu'aurait donné le découpage janv.–févr. / … / sept.–oct.
+  // L'appartenance se lit sur la DATE DU TOURNOI, pas sur sa création : un tournoi
+  // préparé fin novembre pour le 2 décembre compte dans la saison de décembre.
+  // déc.–janv. est à cheval sur deux années : elle prend l'année de décembre.
+  function saisonDe(date) {
+    var m = /^(\d{4})-(\d{2})-\d{2}$/.exec(date || '');
+    if (!m) return null;
+    var an = +m[1], mois = +m[2];                     // 1..12
+    var debut = mois % 2 === 0 ? mois : mois - 1;      // mois pair de départ
+    if (debut === 0) { debut = 12; an--; }             // janvier → saison de décembre
+    var finAn = debut === 12 ? an + 1 : an, finMois = debut === 12 ? 1 : debut + 1;
+    var fin = new Date(Date.UTC(finAn, finMois, 0));    // dernier jour du 2ᵉ mois
+    return {
+      id: an + '-' + String(debut).padStart(2, '0'),
+      label: MOIS_COURTS[debut - 1] + (finAn !== an ? ' ' + an : '') + '–' + MOIS_COURTS[finMois - 1] + ' ' + finAn,
+      debut: an + '-' + String(debut).padStart(2, '0') + '-01',
+      fin: fin.toISOString().slice(0, 10)
+    };
+  }
+
+  // Classement d'une saison pour UN niveau (on ne mélange jamais les niveaux : un
+  // podium chez les débutants ne vaut pas un podium chez les vétérans).
+  // `tournois` : tournois complets (joueurs, résultats, format…), tous niveaux.
+  function classementSaison(tournois, saisonId, niveau, meilleurs) {
+    meilleurs = meilleurs || MEILLEURS_RESULTATS;
+    var parCle = {};
+    tournois.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; }).forEach(function (t) {
+      if (t.statut !== 'termine' || t.niveau !== niveau) return;
+      var s = saisonDe(t.date);
+      if (!s || s.id !== saisonId) return;
+      pointsTournoi(t).forEach(function (p) {
+        var r = parCle[p.cle] || (parCle[p.cle] = { cle: p.cle, nom: p.nom, resultats: [], titres: 0, podiums: 0 });
+        r.nom = p.nom;      // le nom le plus récent l'emporte (tournois parcourus par date croissante)
+        r.resultats.push({ tournoi: t.id, nomTournoi: t.nom, date: t.date, rang: p.rang, points: p.points, ajuste: p.ajuste });
+        if (p.rang === 1) r.titres++;
+        if (p.rang != null && p.rang <= 3) r.podiums++;
+      });
+    });
+    var lignes = Object.keys(parCle).map(function (k) {
+      var r = parCle[k];
+      // Les meilleurs résultats d'abord ; à points égaux, le plus récent est gardé.
+      var tri = r.resultats.slice().sort(function (a, b) { return (b.points - a.points) || (a.date < b.date ? 1 : -1); });
+      tri.forEach(function (x, i) { x.compte = i < meilleurs; });
+      r.points = tri.filter(function (x) { return x.compte; }).reduce(function (s, x) { return s + x.points; }, 0);
+      r.resultats.sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+      return r;
+    });
+    // Départage : points, puis titres, puis podiums. Au-delà, rang partagé —
+    // comme pour les ex æquo d'un tournoi, on n'invente pas d'ordre.
+    lignes.sort(function (a, b) { return (b.points - a.points) || (b.titres - a.titres) || (b.podiums - a.podiums) || a.nom.localeCompare(b.nom); });
+    lignes.forEach(function (r, i) {
+      var p = lignes[i - 1];
+      r.rang = p && p.points === r.points && p.titres === r.titres && p.podiums === r.podiums ? p.rang : i + 1;
+    });
+    return lignes;
+  }
+
+  // Saisons où au moins un tournoi est terminé, plus la saison du jour : la
+  // saison en cours apparaît même vide, pour qu'on sache qu'elle a commencé.
+  function saisons(tournois, aujourdhui) {
+    var vus = {}, out = [];
+    function ajoute(s) { if (s && !vus[s.id]) { vus[s.id] = true; out.push(s); } }
+    ajoute(saisonDe(aujourdhui));
+    tournois.forEach(function (t) { if (t.statut === 'termine') ajoute(saisonDe(t.date)); });
+    return out.sort(function (a, b) { return a.debut < b.debut ? 1 : -1; });
+  }
+
+  // Conseil de montée de niveau, au survol. Les joueurs CHOISISSENT leur niveau :
+  // ceci n'est qu'un avis, toujours positif — on dit « tu peux tenter plus haut »,
+  // jamais « redescends ». Lu sur les 3 derniers tournois du joueur À CE NIVEAU,
+  // toutes saisons confondues (une saison qui commence n'efface pas la forme).
+  var NIVEAU_SUIVANT = { debutant: 'intermediaire', intermediaire: 'expert' };
+  function conseilMontee(tournois, cle, niveau) {
+    var suivant = NIVEAU_SUIVANT[niveau];
+    if (!suivant) return null;
+    var derniers = [];
+    tournois.filter(function (t) { return t.statut === 'termine' && t.niveau === niveau && t.date; })
+      .sort(function (a, b) { return a.date < b.date ? 1 : -1; })
+      .forEach(function (t) {
+        if (derniers.length >= 3) return;
+        var p = pointsTournoi(t).filter(function (x) { return x.cle === cle; })[0];
+        if (p) derniers.push({ nom: t.nom, rang: p.rang });
+      });
+    var titres = derniers.filter(function (d) { return d.rang === 1; }).length;
+    var podiums = derniers.filter(function (d) { return d.rang != null && d.rang <= 3; }).length;
+    var detail = derniers.map(function (d) { return (d.rang === 1 ? '1ᵉʳ' : d.rang + 'ᵉ') + ' — ' + d.nom; }).join('\n');
+    var cible = NIVEAUX[suivant].label;
+    if (titres >= 1 || podiums >= 2) {
+      return { niveau: 'pret', vers: suivant,
+               texte: 'Prêt à tenter les ' + cible + ' : ' + (titres ? titres + ' victoire' + (titres > 1 ? 's' : '') : podiums + ' podiums')
+                    + ' sur ses ' + derniers.length + ' derniers tournois ' + NIVEAUX[niveau].label + '.\n' + detail };
+    }
+    if (podiums === 1) {
+      return { niveau: 'progression', vers: suivant,
+               texte: 'En progression : 1 podium sur ses ' + derniers.length + ' derniers tournois ' + NIVEAUX[niveau].label
+                    + '. Un deuxième, ou une victoire, et les ' + cible + ' lui tendent les bras.\n' + detail };
+    }
+    return null;
+  }
+
   return {
     FORMATS: FORMATS, NIVEAUX: NIVEAUX,
     ordreTetes: ordreTetes, structure: structure, resoudre: resoudre,
     classement: classement, podium: podium, libelleTour: libelleTour,
     libelleSource: libelleSource, aJouer: aJouer, resultatsValides: resultatsValides,
-    toursPerdants: toursPerdants
+    toursPerdants: toursPerdants,
+    BAREME: BAREME, POINTS_PARTICIPATION: POINTS_PARTICIPATION, MEILLEURS_RESULTATS: MEILLEURS_RESULTATS,
+    pointsDuRang: pointsDuRang, cleJoueur: cleJoueur, pointsTournoi: pointsTournoi,
+    saisonDe: saisonDe, saisons: saisons, classementSaison: classementSaison, conseilMontee: conseilMontee
   };
 });

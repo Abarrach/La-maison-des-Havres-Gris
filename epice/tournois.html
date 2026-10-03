@@ -167,6 +167,19 @@
     .pl .ico:disabled { opacity:.25; cursor:default; }
     .note { font-size:.74rem; color:var(--text-muted); line-height:1.6; margin-top:.6rem; }
 
+    /* SAISON */
+    .saison-barre { display:flex; gap:.75rem; flex-wrap:wrap; align-items:center; margin-bottom:1rem; }
+    .saison-barre select { width:auto; min-width:220px; }
+    .badge-montee { display:inline-flex; align-items:center; gap:.2rem; margin-left:.45rem; font-size:.6rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; padding:.12rem .4rem; border-radius:2px; cursor:help; vertical-align:middle; }
+    .badge-montee.pret { color:#7CD08A; border:1px solid #2E5A36; background:rgba(42,106,58,.15); }
+    .badge-montee.progression { color:#E0B860; border:1px solid #6A5020; background:rgba(200,146,16,.08); }
+    .pts { font-weight:700; color:var(--text); cursor:help; border-bottom:1px dotted var(--text-faint); }
+    .pts.ajuste { color:#E0B860; }
+    .tbl .ico-aj { background:none; border:1px solid transparent; color:var(--text-muted); cursor:pointer; border-radius:2px; padding:0 .3rem; margin-left:.3rem; }
+    .tbl .ico-aj:hover { border-color:var(--border); color:var(--text); }
+    .dlg-body .aj-grid { display:grid; grid-template-columns:90px 1fr; gap:.5rem; margin-top:.8rem; }
+    .dlg-body .aj-grid input { margin-top:0; }
+
     /* JOURNAL */
     .jr { display:flex; gap:.8rem; padding:.45rem 0; border-bottom:1px solid rgba(60,44,20,.5); font-size:.8rem; }
     .jr-ts { color:var(--text-muted); white-space:nowrap; font-size:.72rem; min-width:118px; }
@@ -244,6 +257,7 @@
   <div class="nav-tabs">
     <button class="nav-tab active" data-view="liste">Tournois</button>
     <button class="nav-tab" data-view="historique">Historique</button>
+    <button class="nav-tab" data-view="saison">Saison</button>
     <button class="nav-tab" data-view="palmares">Palmarès</button>
   </div>
 </nav>
@@ -273,8 +287,22 @@
   </section>
 
   <!-- ===== PALMARÈS ===== -->
+  <!-- ===== SAISON ===== -->
+  <section id="view-saison" class="view">
+    <div class="t-head">
+      <div>
+        <h1 class="page">Classement de la saison</h1>
+        <p class="page-sub" id="saison-base"></p>
+      </div>
+      <div class="actions" id="saison-actions"></div>
+    </div>
+    <div class="rule"></div>
+    <div class="saison-barre"><select id="saison-choix" aria-label="Saison"></select><div class="filters" id="saison-niveaux" style="margin:0"></div></div>
+    <div id="saison-contenu"></div>
+  </section>
+
   <section id="view-palmares" class="view">
-    <h1 class="page">Palmarès</h1>
+    <h1 class="page">Palmarès — Hall of Fame</h1>
     <p class="page-sub" id="palm-base"></p>
     <div class="rule"></div>
     <div class="filters" id="palm-filtres"></div>
@@ -364,7 +392,7 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="tournoi-engine.js?v=tournois-2"></script>
+<script src="tournoi-engine.js?v=tournois-3"></script>
 <script>
 (function () {
   'use strict';
@@ -505,6 +533,7 @@
     brancherCartes($('histo-contenu'));
 
     renderPalmares();
+    renderSaison();
   }
 
   // Palmarès : médailles cumulées, PAR NIVEAU de préférence — un podium chez les
@@ -526,6 +555,69 @@
     $('palm-contenu').innerHTML = rows.length ? `<table class="tbl"><thead><tr><th>Combattant</th><th class="num">🥇</th><th class="num">🥈</th><th class="num">🥉</th><th class="num">Podiums</th></tr></thead><tbody>
       ${rows.map(r => `<tr><td>${esc(r.nom)}</td><td class="num">${r[1] || '·'}</td><td class="num">${r[2] || '·'}</td><td class="num">${r[3] || '·'}</td><td class="num">${r[1] + r[2] + r[3]}</td></tr>`).join('')}
     </tbody></table>` : '<div class="empty">Le palmarès se remplira avec les premiers tournois clôturés.</div>';
+  }
+
+  // ---------------------------------------------------------------- saison
+  //  Tout le calcul est dans le moteur (classementSaison, conseilMontee) : la page
+  //  ne fait qu'afficher. Les niveaux ne se mélangent jamais, d'où l'absence d'un
+  //  filtre « tous niveaux » ici, contrairement à l'historique.
+  let saisonId = null, saisonNiveau = null;
+  const RANG_TXT = r => r === 1 ? '1ᵉʳ' : r + 'ᵉ';
+  function renderSaison() {
+    const tous = LISTE.filter(t => t.statut === 'termine');
+    const auj = new Date().toISOString().slice(0, 10);
+    const liste = E.saisons(tous, auj);
+    if (!saisonId || !liste.some(x => x.id === saisonId)) saisonId = liste[0].id;
+    const sa = liste.find(x => x.id === saisonId);
+    const enCours = auj <= sa.fin;
+    $('saison-choix').innerHTML = liste.map(x => `<option value="${x.id}"${x.id === saisonId ? ' selected' : ''}>Saison ${esc(x.label)}${auj >= x.debut && auj <= x.fin ? ' (en cours)' : ''}</option>`).join('');
+    $('saison-choix').onchange = () => { saisonId = $('saison-choix').value; saisonNiveau = null; renderSaison(); };
+
+    // Niveau par défaut : le premier qui a des résultats dans la saison.
+    const niveaux = Object.keys(E.NIVEAUX);
+    if (!saisonNiveau) saisonNiveau = niveaux.find(n => E.classementSaison(tous, saisonId, n).length) || niveaux[0];
+    $('saison-niveaux').innerHTML = niveaux.map(n => `<span class="chip${n === saisonNiveau ? ' on' : ''}" data-k="${n}">${E.NIVEAUX[n].icon} ${E.NIVEAUX[n].label}</span>`).join('');
+    $('saison-niveaux').querySelectorAll('.chip').forEach(c => c.onclick = () => { saisonNiveau = c.dataset.k; renderSaison(); });
+
+    const b = E.BAREME;
+    $('saison-base').innerHTML = `Saison de deux mois, du ${esc(dateFr(sa.debut))} au ${esc(dateFr(sa.fin))}${enCours ? '' : ' — <strong>terminée</strong>'}. `
+      + `Points selon la <strong>place finale</strong> de chaque tournoi : <span style="white-space:nowrap">1ᵉʳ ${b[1]} · 2ᵉ ${b[2]} · 3ᵉ ${b[3]} · 4ᵉ ${b[4]} · les autres ${E.POINTS_PARTICIPATION}</span> (les ex æquo prennent les points de leur rang). `
+      + `Seuls les <strong>${E.MEILLEURS_RESULTATS} meilleurs résultats</strong> de chacun comptent. Égalité : le plus de tournois gagnés, puis de podiums.`;
+
+    const cl = E.classementSaison(tous, saisonId, saisonNiveau);
+    const nbT = tous.filter(t => t.niveau === saisonNiveau && E.saisonDe(t.date) && E.saisonDe(t.date).id === saisonId).length;
+    const sansDate = tous.filter(t => !E.saisonDe(t.date)).length;
+    $('saison-actions').innerHTML = PEUT_GERER && cl.length ? `<button class="btn" id="saison-pub">📣 Publier ce classement sur Discord</button>` : '';
+    if ($('saison-pub')) $('saison-pub').onclick = () => publierSaison(sa, cl, nbT, !enCours);
+
+    if (!cl.length) {
+      $('saison-contenu').innerHTML = `<div class="empty">Aucun tournoi ${E.NIVEAUX[saisonNiveau].label.toLowerCase()} terminé dans cette saison.</div>`;
+      return;
+    }
+    const nb = {}; cl.forEach(c => nb[c.rang] = (nb[c.rang] || 0) + 1);
+    $('saison-contenu').innerHTML = `<table class="tbl"><thead><tr><th class="num">Rang</th><th>Combattant</th><th class="num">Points</th><th class="num" data-tip="Tournois remportés dans la saison">🏆 Titres</th><th class="num" data-tip="Places dans les 3 premiers">Podiums</th></tr></thead><tbody>
+      ${cl.map(c => {
+        const detail = c.resultats.map(r => (r.compte ? '' : '(non retenu) ') + RANG_TXT(r.rang) + ' — ' + r.nomTournoi + ' : ' + r.points + ' pt' + (r.points > 1 ? 's' : '') + (r.ajuste ? ' ✎' : '')).join('\n');
+        const cs = E.conseilMontee(tous, c.cle, saisonNiveau);
+        const badge = cs ? `<span class="badge-montee ${cs.niveau}" data-tip="${esc(cs.texte)}">${cs.niveau === 'pret' ? '⬆ Prêt à monter' : '↗ En progression'}</span>` : '';
+        return `<tr><td class="num"><span class="rang-${c.rang}">${RANG_TXT(c.rang)}</span>${nb[c.rang] > 1 ? ' <span style="color:var(--text-muted);font-size:.7rem">ex æquo</span>' : ''}</td>
+          <td>${MED[c.rang] ? MED[c.rang].ico + ' ' : ''}${esc(c.nom)}${badge}</td>
+          <td class="num"><span class="pts" data-tip="${esc(detail)}">${c.points}</span></td>
+          <td class="num">${c.titres || '·'}</td><td class="num">${c.podiums || '·'}</td></tr>`;
+      }).join('')}
+    </tbody></table>
+    <p class="note">${nbT} tournoi${nbT > 1 ? 's' : ''} ${E.NIVEAUX[saisonNiveau].label.toLowerCase()} terminé${nbT > 1 ? 's' : ''} dans la saison. Survole les points pour voir le détail, et un badge pour le conseil de montée : les joueurs choisissent leur niveau, ce n'est qu'un avis, basé sur leurs 3 derniers tournois à ce niveau (une victoire ou deux podiums : prêt à monter).${sansDate ? ` ${sansDate} tournoi${sansDate > 1 ? 's' : ''} sans date n'entre${sansDate > 1 ? 'nt' : ''} dans aucune saison.` : ''}</p>`;
+  }
+
+  async function publierSaison(sa, cl, nbT, terminee) {
+    const niv = E.NIVEAUX[saisonNiveau];
+    if (!await duneDialog({ titre: 'Publier le classement ?', confirm: '📣 Publier', html: `Classement <strong>${esc(niv.label)}</strong> de la saison ${esc(sa.label)}${terminee ? ' (classement final)' : ' (provisoire, la saison est en cours)'}, top ${Math.min(10, cl.length)}.` })) return;
+    const lignes = cl.slice(0, 10).map(c => `${MED[c.rang] ? MED[c.rang].ico : '**' + RANG_TXT(c.rang) + '**'} **${c.nom}** — ${c.points} pt${c.points > 1 ? 's' : ''}${c.titres ? ' · ' + c.titres + ' titre' + (c.titres > 1 ? 's' : '') : ''}`);
+    try {
+      await api('publish_saison', { niveau: saisonNiveau, saison: sa.label, lignes, terminee,
+        pied: `${nbT} tournoi${nbT > 1 ? 's' : ''} joué${nbT > 1 ? 's' : ''}${terminee ? ' — bravo à tous !' : ', la saison continue jusqu\'au ' + dateFr(sa.fin) + '.'}` });
+      toast('Classement publié sur Discord ✔');
+    } catch (e) { toast(e.message, true); }
   }
 
   // ---------------------------------------------------------------- détail
@@ -553,6 +645,7 @@
         <dt>Format</dt><dd>${esc(fmt)}${opt.bestOf > 1 ? ` · ${(opt.bestOf + 1) / 2} manches gagnantes` : ''}</dd>
         <dt>Date</dt><dd>${esc(dateFr(T.date, T.heure)) || '—'}</dd>
         <dt>Organisé par</dt><dd>${esc(T.cree_par || '—')}</dd>
+        <dt>Saison</dt><dd>${E.saisonDe(T.date) ? esc(E.saisonDe(T.date).label) : '<span style="color:var(--text-muted)">aucune (tournoi sans date)</span>'}</dd>
         ${T.description ? `<div class="t-desc">${esc(T.description)}</div>` : ''}
       </dl>`;
 
@@ -938,10 +1031,42 @@
     const rangTxt = c => c.rang == null ? '<span class="chip st-en_cours">En lice</span>' : `<span class="rang-${c.rang}">${c.rang}${c.rang === 1 ? 'ᵉʳ' : 'ᵉ'}</span>`;
     // Rang partagé : on l'écrit « 5ᵉ ex æquo » plutôt que d'inventer un départage.
     const nb = {}; cl.forEach(c => { if (c.rang != null) nb[c.rang] = (nb[c.rang] || 0) + 1; });
-    el.innerHTML = `<table class="tbl"><thead><tr><th class="num">Rang</th><th>Combattant</th><th class="num">Victoires</th><th class="num">Défaites</th></tr></thead><tbody>
-      ${cl.map(c => `<tr><td class="num">${rangTxt(c)}${c.rang != null && nb[c.rang] > 1 ? ' <span style="color:var(--text-muted);font-size:.7rem">ex æquo</span>' : ''}</td><td>${MED[c.rang] ? MED[c.rang].ico + ' ' : ''}${esc(c.nom)}</td><td class="num">${c.v}</td><td class="num">${c.d}</td></tr>`).join('')}
+    // Points de saison : seulement une fois le tournoi clôturé (classement figé).
+    const fini = T.statut === 'termine';
+    const pts = {}; if (fini) E.pointsTournoi(T, RES).forEach(p => pts[p.id] = p);
+    const cellPts = c => {
+      const p = pts[c.id]; if (!p) return '';
+      const tip = p.ajuste ? `Corrigé par un organisateur : ${p.raison}\nCalcul automatique : ${p.auto}` : `Calcul automatique : ${RANG_TXT(p.rang)} → ${p.auto}`;
+      return `<td class="num"><span class="pts${p.ajuste ? ' ajuste' : ''}" data-tip="${esc(tip)}">${p.points}${p.ajuste ? ' ✎' : ''}</span>`
+        + (PEUT_GERER ? `<button class="ico-aj" data-aj="${esc(c.id)}" data-tip="Corriger les points">✎</button>` : '') + '</td>';
+    };
+    el.innerHTML = `<table class="tbl"><thead><tr><th class="num">Rang</th><th>Combattant</th><th class="num">Victoires</th><th class="num">Défaites</th>${fini ? '<th class="num">Points</th>' : ''}</tr></thead><tbody>
+      ${cl.map(c => `<tr><td class="num">${rangTxt(c)}${c.rang != null && nb[c.rang] > 1 ? ' <span style="color:var(--text-muted);font-size:.7rem">ex æquo</span>' : ''}</td><td>${MED[c.rang] ? MED[c.rang].ico + ' ' : ''}${esc(c.nom)}</td><td class="num">${c.v}</td><td class="num">${c.d}</td>${fini ? cellPts(c) : ''}</tr>`).join('')}
     </tbody></table>
-    <p class="note">Victoires et défaites comptent les matchs réellement disputés (un tour passé sans adversaire ne compte pas). Les joueurs éliminés au même tour partagent leur rang : rien ne les départage, on n'invente pas d'ordre.${T.format === 'double' ? ' En double élimination, il faut deux défaites pour être éliminé.' : ''}</p>`;
+    <p class="note">Victoires et défaites comptent les matchs réellement disputés (un tour passé sans adversaire ne compte pas). Les joueurs éliminés au même tour partagent leur rang : rien ne les départage, on n'invente pas d'ordre.${T.format === 'double' ? ' En double élimination, il faut deux défaites pour être éliminé.' : ''}${fini ? ` Les <strong>points</strong> comptent pour le classement de la saison : ils viennent de la place finale (<span style="white-space:nowrap">1ᵉʳ ${E.BAREME[1]} · 2ᵉ ${E.BAREME[2]} · 3ᵉ ${E.BAREME[3]} · 4ᵉ ${E.BAREME[4]} · les autres ${E.POINTS_PARTICIPATION}</span>), jamais du nombre de matchs gagnés.` : ' Les points de saison seront attribués à la clôture.'}</p>`;
+    el.querySelectorAll('button[data-aj]').forEach(b => b.onclick = () => ajusterPoints(pts[b.dataset.aj]));
+  }
+
+  // Correction de points : raison obligatoire (elle s'affiche au survol et part
+  // au Journal), et un champ vidé rend la main au calcul automatique.
+  async function ajusterPoints(p) {
+    if (!p) return;
+    const ok = await duneDialog({ titre: 'Corriger les points', confirm: 'Enregistrer',
+      html: `<strong>${esc(p.nom)}</strong> — ${RANG_TXT(p.rang)}, calcul automatique : <strong>${p.auto}</strong> point${p.auto > 1 ? 's' : ''}.
+        <div class="aj-grid"><input type="number" id="aj-pts" min="0" max="100" value="${p.ajuste ? p.points : ''}" placeholder="${p.auto}"><input type="text" id="aj-raison" maxlength="120" value="${esc(p.raison)}" placeholder="Raison (obligatoire)"></div>
+        <p class="note" style="margin-top:.5rem">Laisse les points vides pour revenir au calcul automatique.</p>` });
+    if (!ok) return;
+    const v = $('aj-pts').value.trim(), raison = $('aj-raison').value.trim();
+    const aj = Object.assign({}, T.ajustements || {});
+    if (v === '') {
+      if (!p.ajuste) return;
+      delete aj[p.id];
+      await sauver({ ajustements: aj }, `Points de ${p.nom} : retour au calcul automatique (${p.auto})`);
+      return;
+    }
+    if (!raison) { toast('Indique la raison de la correction.', true); return; }
+    aj[p.id] = { points: Math.max(0, Math.min(100, parseInt(v, 10) || 0)), raison };
+    await sauver({ ajustements: aj }, `Points de ${p.nom} : ${p.auto} → ${aj[p.id].points} (${raison})`);
   }
 
   // ---------------------------------------------------------------- journal
@@ -1032,6 +1157,10 @@
     await chargerListe();
     const q = new URLSearchParams(location.search);
     if (q.get('t')) { ouvrir(q.get('t')); return; }
+    if (q.get('vue') === 'saison') {                                  // lien de l'annonce Discord
+      if (E.NIVEAUX[q.get('niveau')]) { saisonNiveau = q.get('niveau'); renderSaison(); }
+      showView('saison'); return;
+    }
     if (q.get('sortie')) {
       // Lien posé sur l'encart Discord : le tournoi de cette sortie, ou sa création.
       const ok = await ouvrir(null, q.get('sortie'));

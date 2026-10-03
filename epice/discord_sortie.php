@@ -229,8 +229,21 @@ const SORTIE_TYPES = [
                      'sub' => 'l_concours', 'desc' => 'Speed farm des donjons de la map monde'],
 
     // --- PvP › Entraînement
+    //  Trois niveaux, comme les tournois (demande de la GM, 2026-10). Mêmes rôles de
+    //  combat (POSTES_PVP) et mêmes icônes que les tournois du même niveau.
+    //  'banniere' => 'pvp_train' : ils reprennent l'image de l'ancien entraînement
+    //  (sortietrainpvp.jpg) tant qu'on ne leur en a pas déclaré une à eux.
+    'pvp_train_deb'=>['label' => 'Entraînement PvP — Débutants', 'icon' => '🌱', 'site' => false, 'postes' => 'pvp',
+                     'sub' => 'p_train', 'banniere' => 'pvp_train', 'desc' => 'Les bases du combat air/sol, sans pression'],
+    'pvp_train_int'=>['label' => 'Entraînement PvP — Intermédiaires', 'icon' => '⚔️', 'site' => false, 'postes' => 'pvp',
+                     'sub' => 'p_train', 'banniere' => 'pvp_train', 'desc' => 'On connaît son rôle, on travaille la coordination'],
+    'pvp_train_vet'=>['label' => 'Entraînement PvP — Vétérans', 'icon' => '🔥', 'site' => false, 'postes' => 'pvp',
+                     'sub' => 'p_train', 'banniere' => 'pvp_train', 'desc' => 'Pour les combattants aguerris, au rythme soutenu'],
+    //  L'ancien entraînement unique : RETIRÉ du sélecteur ('retire'), mais PAS supprimé.
+    //  Sa clé est stockée dans les sorties passées (historique, Mon Compte) et les
+    //  encarts déjà publiés s'en servent pour retrouver leurs postes et leurs boutons.
     'pvp_train'  => ['label' => 'Entraînement PvP air/sol', 'icon' => '⚔️', 'site' => false, 'postes' => 'pvp',
-                     'sub' => 'p_train', 'desc' => 'Inscription par rôle de combat'],
+                     'sub' => 'p_train', 'retire' => true, 'desc' => 'Inscription par rôle de combat'],
 
     // --- PvP › Chasse & embuscade
     'pvp_hunt'   => ['label' => 'Chasse PvP', 'icon' => '🎯', 'site' => false, 'postes' => false,
@@ -738,13 +751,19 @@ function ecran_2_utile(string $cat): bool {
 // on sait avant de cliquer si une piste est fournie ou quasi vide.
 function nb_activites_sub(string $sub): int {
     $n = 0;
-    foreach (SORTIE_TYPES as $id => $t) { if (sortie_sub($id) === $sub) $n++; }
+    foreach (SORTIE_TYPES as $id => $t) { if (sortie_proposee($id) && sortie_sub($id) === $sub) $n++; }
     return $n;
 }
 function nb_activites_cat(string $cat): int {
     $n = 0;
-    foreach (SORTIE_TYPES as $id => $t) { if (sortie_cat($id) === $cat) $n++; }
+    foreach (SORTIE_TYPES as $id => $t) { if (sortie_proposee($id) && sortie_cat($id) === $cat) $n++; }
     return $n;
+}
+// Une activité 'retire' reste connue (encarts publiés, historique) mais n'est plus
+// proposée à la création. C'est la seule façon de « remplacer » une activité sans
+// renommer sa clé, ce qui est interdit (cf. l'avertissement sur SORTIE_TYPES).
+function sortie_proposee(string $id): bool {
+    return empty(SORTIE_TYPES[$id]['retire']);
 }
 
 // Sous-catégories d'une famille, dans l'ordre de déclaration.
@@ -811,7 +830,7 @@ function build_activity_picker(string $sub): array {
     $tete = ['type' => 10, 'content' => "### {$s['icon']} {$s['label']}\n{$s['desc']}"];
 
     $ids = [];
-    foreach (SORTIE_TYPES as $id => $t) { if (sortie_sub($id) === $sub) $ids[] = $id; }
+    foreach (SORTIE_TYPES as $id => $t) { if (sortie_proposee($id) && sortie_sub($id) === $sub) $ids[] = $id; }
 
     if (!$ids) {
         return ['components' => [['type' => 17, 'components' => [
@@ -1883,7 +1902,7 @@ function build_sortie_message($sortie) {
     // renseigné », donc traité comme absent.
     global $CFG;
     $banner = '';
-    foreach ([$stype, BANNIERE_DEFAUT_TYPE] as $cle) {
+    foreach (array_filter([$stype, $t['banniere'] ?? '', BANNIERE_DEFAUT_TYPE]) as $cle) {
         $banner = trim((string)($CFG['banners'][$cle] ?? ''));
         if ($banner !== '') break;
     }

@@ -97,7 +97,7 @@ return [
         'labo'      => '',
         'farm'      => '',
         'landsraad' => '',
-        'pvp_train' => '',
+        'pvp_train' => '',  // reprise aussi par les 3 entraînements par niveau (pvp_train_deb/_int/_vet) s'ils n'ont pas la leur
         'pvp_hunt'  => '',
         'base_dd'   => '',
         'guilde'    => '',

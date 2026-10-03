@@ -148,7 +148,16 @@
 
     /* JOUEURS */
     .pl-add { display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:.9rem; }
-    .pl-add input { flex:1; min-width:200px; }
+    .pl-add .ac { position:relative; flex:1; min-width:200px; }
+    .ac-pop { position:absolute; left:0; right:0; top:calc(100% + 2px); z-index:40; background:var(--surface-2); border:1px solid var(--accent-dim); border-radius:2px; max-height:300px; overflow-y:auto; box-shadow:0 10px 30px rgba(0,0,0,.55); display:none; }
+    .ac-pop.on { display:block; }
+    .ac-it { display:flex; align-items:baseline; gap:.5rem; padding:.45rem .7rem; font-size:.84rem; cursor:pointer; }
+    .ac-it .ps { color:var(--text-muted); font-size:.72rem; }
+    .ac-it.sel, .ac-it:hover { background:var(--accent-glow); }
+    .ac-it.libre { color:var(--text-muted); font-style:italic; border-top:1px solid var(--border); }
+    .ac-etat { font-size:.72rem; color:var(--text-muted); margin:-.5rem 0 .9rem; }
+    .ac-etat.err { color:#E09080; }
+    .ac-etat a { cursor:pointer; }
     .pl-list { display:flex; flex-direction:column; gap:.3rem; }
     .pl { display:flex; align-items:center; gap:.6rem; background:var(--surface); border:1px solid var(--border); border-radius:2px; padding:.45rem .7rem; font-size:.84rem; }
     .pl-seed { width:28px; text-align:center; font-weight:700; color:var(--accent); font-size:.78rem; }
@@ -730,7 +739,8 @@
     const prep = T.statut === 'preparation' && PEUT_GERER;
     let h = '';
     if (prep) {
-      h += `<div class="pl-add"><input type="text" id="pl-nouveau" maxlength="200" placeholder="Pseudo d'un joueur non inscrit (plusieurs : séparés par des virgules)"><button class="btn primary" id="pl-ajout">＋ Ajouter</button></div>
+      h += `<div class="pl-add"><div class="ac"><input type="text" id="pl-nouveau" maxlength="200" autocomplete="off" placeholder="Chercher un membre du Discord, ou taper un nom libre"><div class="ac-pop" id="ac-pop"></div></div><button class="btn primary" id="pl-ajout">＋ Ajouter</button></div>
+        <div class="ac-etat" id="ac-etat"></div>
         <div class="actions" style="margin-bottom:1rem">
           ${T.sortie_id ? '<button class="btn" id="pl-sync">⟳ Importer les nouveaux inscrits Discord</button><label class="check"><input type="checkbox" id="pl-maybe"> avec les « peut-être »</label>' : ''}
           <button class="btn" id="pl-melange" ${T.joueurs.length < 2 ? 'disabled' : ''}>🎲 Tirer les têtes de série au sort</button>
@@ -740,7 +750,7 @@
     h += '<div class="pl-list">' + T.joueurs.map((j, i) => `<div class="pl">
         <span class="pl-seed" data-tip="Tête de série n° ${i + 1}">${i + 1}</span>
         <span class="pl-nm">${esc(j.nom)}</span>
-        <span class="chip">${j.source === 'discord' ? 'Inscrit Discord' : 'Ajouté à la main'}</span>
+        <span class="chip">${SOURCE_LBL[j.source] || SOURCE_LBL.manuel}</span>
         ${PEUT_GERER && T.statut !== 'termine' ? `<button class="ico" data-act="ren" data-i="${i}" data-tip="Renommer">✎</button>` : ''}
         ${prep ? `<button class="ico" data-act="up" data-i="${i}" ${i === 0 ? 'disabled' : ''} data-tip="Monter">▲</button>
           <button class="ico" data-act="down" data-i="${i}" ${i === T.joueurs.length - 1 ? 'disabled' : ''} data-tip="Descendre">▼</button>
@@ -758,7 +768,7 @@
       if (!neufs.length) { toast('Déjà dans la liste.', true); return; }
       majJoueurs(T.joueurs.concat(neufs.map(n => ({ id: nouvelId(), nom: n, source: 'manuel' }))), 'Ajouté à la main : ' + neufs.join(', '));
     };
-    if ($('pl-ajout')) { $('pl-ajout').onclick = add; $('pl-nouveau').onkeydown = e => { if (e.key === 'Enter') add(); }; }
+    if ($('pl-ajout')) { $('pl-ajout').onclick = add; brancherSuggestions(majJoueurs, add); }
     if ($('pl-melange')) $('pl-melange').onclick = () => {
       const l = T.joueurs.slice();
       for (let i = l.length - 1; i > 0; i--) { const r = Math.floor(Math.random() * (i + 1)); [l[i], l[r]] = [l[r], l[i]]; }
@@ -785,6 +795,77 @@
         l[i] = Object.assign({}, j, { nom: n }); majJoueurs(l, `${j.nom} renommé en ${n}`);
       }
     });
+  }
+  const SOURCE_LBL = { discord: 'Inscrit à la sortie', membre: 'Membre Discord', manuel: 'Ajouté à la main' };
+
+  // ---- Suggestions : tous les membres du serveur Discord ----------------------
+  //  Pour pouvoir ajouter un ancien qui n'a jamais touché au site ni au bot. La
+  //  liste vient du serveur (bot Sorties), chargée une fois par visite. Si Discord
+  //  la refuse, on le dit sous le champ et la saisie libre reste possible.
+  let MEMBRES = null, MEMBRES_ERR = '', membresEnCours = null;
+  const sansAccent = s => String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  function chargerMembres(frais) {
+    if (membresEnCours && !frais) return membresEnCours;
+    membresEnCours = api('membres', null, frais ? { frais: 1 } : {})
+      .then(j => { MEMBRES = j.membres; MEMBRES_ERR = ''; })
+      .catch(e => { MEMBRES = []; MEMBRES_ERR = e.message; });
+    return membresEnCours;
+  }
+  function etatMembres() {
+    const el = $('ac-etat'); if (!el) return;
+    if (MEMBRES === null) { el.className = 'ac-etat'; el.textContent = 'Chargement des membres du Discord…'; return; }
+    el.className = 'ac-etat' + (MEMBRES_ERR ? ' err' : '');
+    el.innerHTML = MEMBRES_ERR ? esc(MEMBRES_ERR) + ' — la saisie libre reste possible.'
+      : `${MEMBRES.length} membres du Discord proposés pendant la frappe. <a id="ac-frais">Actualiser</a>`;
+    if ($('ac-frais')) $('ac-frais').onclick = () => { MEMBRES = null; etatMembres(); chargerMembres(true).then(etatMembres); };
+  }
+  function brancherSuggestions(majJoueurs, addLibre) {
+    const inp = $('pl-nouveau'), pop = $('ac-pop');
+    let items = [], sel = -1;
+    etatMembres();
+    chargerMembres().then(etatMembres);
+    if (renderJoueurs.refocus) { renderJoueurs.refocus = false; inp.focus(); }
+
+    const ajouterMembre = m => {
+      renderJoueurs.refocus = true;
+      majJoueurs(T.joueurs.concat([{ id: nouvelId(), nom: m.nom, discord_id: m.discord_id, source: 'membre' }]), 'Membre Discord ajouté : ' + m.nom);
+    };
+    function dessiner() {
+      const q = sansAccent(inp.value.trim());
+      if (!q || q.includes(',') || !MEMBRES) { pop.classList.remove('on'); items = []; return; }
+      const ids = new Set(T.joueurs.map(j => j.discord_id).filter(Boolean)), noms = new Set(T.joueurs.map(j => j.nom.toLowerCase()));
+      const libres = MEMBRES.filter(m => !ids.has(m.discord_id) && !noms.has(m.nom.toLowerCase()));
+      const trouve = libres.map(m => {
+        const n = sansAccent(m.nom), p = sansAccent(m.pseudo);
+        const r = n.startsWith(q) ? 0 : p.startsWith(q) ? 1 : (n.includes(q) || p.includes(q)) ? 2 : -1;
+        return { m, r };
+      }).filter(x => x.r >= 0).sort((a, b) => a.r - b.r).slice(0, 12).map(x => x.m);
+      items = trouve.map(m => ({ m })).concat([{ libre: inp.value.trim() }]);
+      sel = trouve.length ? 0 : -1;
+      pop.innerHTML = items.map((it, i) => it.libre
+        ? `<div class="ac-it libre" data-i="${i}">＋ Ajouter « ${esc(it.libre)} » hors Discord</div>`
+        : `<div class="ac-it" data-i="${i}"><span>${esc(it.m.nom)}</span>${it.m.pseudo && it.m.pseudo.toLowerCase() !== it.m.nom.toLowerCase() ? `<span class="ps">@${esc(it.m.pseudo)}</span>` : ''}</div>`).join('');
+      surligner(); pop.classList.add('on');
+      pop.querySelectorAll('.ac-it').forEach(d => d.onmousedown = e => { e.preventDefault(); choisir(+d.dataset.i); });
+    }
+    function surligner() { pop.querySelectorAll('.ac-it').forEach((d, i) => d.classList.toggle('sel', i === sel)); }
+    function choisir(i) {
+      const it = items[i]; pop.classList.remove('on');
+      if (!it) return addLibre();
+      if (it.libre) { renderJoueurs.refocus = true; return addLibre(); }
+      ajouterMembre(it.m);
+    }
+    inp.addEventListener('input', dessiner);
+    inp.addEventListener('focus', dessiner);
+    inp.addEventListener('blur', () => setTimeout(() => pop.classList.remove('on'), 120));
+    inp.addEventListener('keydown', e => {
+      const ouvert = pop.classList.contains('on') && items.length;
+      if (e.key === 'ArrowDown' && ouvert) { e.preventDefault(); sel = (sel + 1) % items.length; surligner(); }
+      else if (e.key === 'ArrowUp' && ouvert) { e.preventDefault(); sel = (sel - 1 + items.length) % items.length; surligner(); }
+      else if (e.key === 'Escape') { pop.classList.remove('on'); e.stopPropagation(); }
+      else if (e.key === 'Enter') { e.preventDefault(); if (ouvert && sel >= 0) choisir(sel); else { renderJoueurs.refocus = true; addLibre(); } }
+    });
+    if (MEMBRES === null) chargerMembres().then(() => { if (document.activeElement === inp) dessiner(); });
   }
   const nouvelId = () => 'j' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 

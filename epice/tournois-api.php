@@ -23,7 +23,7 @@ $action = $_GET['action'] ?? '';
 $input  = json_decode(file_get_contents('php://input'), true) ?? [];
 
 $member   = ['list', 'get'];
-$organize = ['sorties', 'inscrits', 'create', 'save', 'publish', 'delete'];
+$organize = ['sorties', 'inscrits', 'membres', 'create', 'save', 'publish', 'delete'];
 if (in_array($action, $organize, true)) epice_require_organize();
 elseif (in_array($action, $member, true)) epice_require_login();
 else tout(false, [], 'Action inconnue.');
@@ -140,7 +140,9 @@ function t_clean_joueurs($list): array {
             'id'         => $id,
             'nom'        => $nom,
             'discord_id' => preg_replace('/\D/', '', (string)($j['discord_id'] ?? '')),
-            'source'     => ($j['source'] ?? '') === 'discord' ? 'discord' : 'manuel',
+            // discord = inscrit à la sortie ; membre = choisi dans la liste des membres
+            // du serveur Discord ; manuel = nom tapé librement (invité hors Discord).
+            'source'     => in_array($j['source'] ?? '', ['discord', 'membre'], true) ? $j['source'] : 'manuel',
             'seed'       => count($out) + 1, // la position dans la liste fait foi
         ];
         if (count($out) >= MAX_JOUEURS) break;
@@ -247,6 +249,58 @@ switch ($action) {
         $s = t_sortie((string)($_GET['sortie'] ?? ''));
         if (!$s) tout(false, [], "Sortie Discord introuvable (supprimée, ou purgée après la fin : ses inscrits ne sont plus lisibles).");
         tout(true, ['inscrits' => t_inscrits($s)]);
+
+    // Tous les membres du serveur Discord de la guilde, pour pouvoir ajouter un
+    // ancien qui n'a jamais touché ni au site ni au bot. Demande l'intent privilégié
+    // « Server Members » (le même que le relevé de présence) : sans lui, Discord
+    // répond 403 et on le DIT, au lieu de renvoyer une liste vide trompeuse.
+    // Cache d'une heure : la liste bouge peu, et la page la redemande à chaque ouverture.
+    case 'membres':
+        $cache = __DIR__ . '/data/tournois_membres_cache.json';
+        if (empty($_GET['frais']) && file_exists($cache) && filemtime($cache) > time() - 3600) {
+            $c = json_decode((string)file_get_contents($cache), true);
+            if (is_array($c)) tout(true, ['membres' => $c, 'cache' => true]);
+        }
+        $cfgPath = __DIR__ . '/discord_sortie_config.php';
+        if (!file_exists($cfgPath)) tout(false, [], 'Configuration du bot absente sur le serveur.');
+        $CFG = require $cfgPath;
+        // Le serveur de la GUILDE : celui du login Discord d'abord (c'est la vraie guilde
+        // par construction — on y vérifie l'appartenance de chaque membre), puis ceux du bot.
+        // `guild_id` du bot peut désigner un serveur de test.
+        $oauth = dirname(__DIR__) . '/discord_oauth_config.php';
+        $OA = file_exists($oauth) ? (require $oauth) : [];
+        $guild = trim((string)($OA['guild_id'] ?? '')) ?: trim((string)($CFG['rally_guild_id'] ?? '')) ?: trim((string)($CFG['guild_id'] ?? ''));
+        $token = trim((string)($CFG['bot_token'] ?? ''));
+        if ($guild === '' || $token === '') tout(false, [], 'Identifiant du serveur Discord ou token du bot manquant dans la configuration.');
+        if (!function_exists('curl_init')) tout(false, [], 'cURL indisponible sur le serveur.');
+        $membres = []; $after = '';
+        for ($page = 0; $page < 5; $page++) {      // 5 000 membres : largement au-delà d'une guilde
+            $ch = curl_init("https://discord.com/api/v10/guilds/{$guild}/members?limit=1000" . ($after !== '' ? "&after={$after}" : ''));
+            curl_setopt_array($ch, [CURLOPT_HTTPHEADER => ['Authorization: Bot ' . $token], CURLOPT_RETURNTRANSFER => true,
+                                    CURLOPT_CONNECTTIMEOUT => 4, CURLOPT_TIMEOUT => 10]);
+            $resp = curl_exec($ch); $code = curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
+            $lot = json_decode((string)$resp, true);
+            if ($code < 200 || $code >= 300 || !is_array($lot)) {
+                $msg = is_array($lot) ? trim((string)($lot['message'] ?? '')) : '';
+                if ($code === 403 || stripos($msg, 'intent') !== false)
+                    tout(false, [], "Discord refuse la liste des membres (HTTP {$code}" . ($msg ? " : {$msg}" : '') . ") — active l'intent « Server Members » du bot dans le portail développeur (Bot → Privileged Gateway Intents).");
+                tout(false, [], "Liste des membres indisponible (HTTP {$code}" . ($msg ? " : {$msg}" : '') . ').');
+            }
+            foreach ($lot as $m) {
+                $u = $m['user'] ?? [];
+                if (!empty($u['bot']) || empty($u['id'])) continue;
+                $after = (string)$u['id'];
+                // Le surnom du serveur d'abord : c'est le nom sous lequel la guilde se connaît.
+                $nom = t_cut($m['nick'] ?? '', 40) ?: t_cut($u['global_name'] ?? '', 40) ?: t_cut($u['username'] ?? '', 40);
+                if ($nom === '') continue;
+                $membres[] = ['discord_id' => (string)$u['id'], 'nom' => $nom, 'pseudo' => (string)($u['username'] ?? '')];
+            }
+            if (count($lot) < 1000) break;
+        }
+        usort($membres, function ($a, $b) { return strcasecmp($a['nom'], $b['nom']); });
+        @file_put_contents($cache, json_encode($membres, JSON_UNESCAPED_UNICODE));
+        @chmod($cache, 0664);
+        tout(true, ['membres' => $membres, 'cache' => false]);
 
     case 'create':
         $nom = t_cut($input['nom'] ?? '', 80);

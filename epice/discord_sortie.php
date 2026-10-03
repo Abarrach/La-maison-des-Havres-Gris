@@ -129,7 +129,7 @@ function postes_selectable($stype): array {
 //  build_cat_picker() ouvre une seconde ligne.
 const SORTIE_CATEGORIES = [
     'ludique' => ['label' => 'Ludique', 'icon' => '🎲', 'desc' => 'Courses, défis, énigmes, concours'],
-    'pvp'     => ['label' => 'PvP',     'icon' => '⚔️', 'desc' => 'Entraînements, chasses, embuscades'],
+    'pvp'     => ['label' => 'PvP',     'icon' => '⚔️', 'desc' => 'Entraînements, chasses, tournois'],
     'farm'    => ['label' => 'Farm',    'icon' => '🔁', 'desc' => 'Épice, donjons, ressources, collection'],
     'guilde'  => ['label' => 'Guilde',  'icon' => '🏛️', 'desc' => 'Construction, Landsraad, progression'],
     // Le fourre-tout est une famille de PLEIN DROIT, et non une sous-catégorie enfouie :
@@ -152,6 +152,7 @@ const SORTIE_SOUS_CATEGORIES = [
     // PvP
     'p_train'    => ['cat' => 'pvp',    'label' => 'Entraînement',        'icon' => '🥋', 'desc' => 'S\'exercer entre nous'],
     'p_chasse'   => ['cat' => 'pvp',    'label' => 'Chasse & embuscade',  'icon' => '🎯', 'desc' => 'Traquer, piéger, piller'],
+    'p_tournoi'  => ['cat' => 'pvp',    'label' => 'Tournois',            'icon' => '🏆', 'desc' => 'Arbre, scores et podium sur le site'],
     // Farm
     'f_epice'    => ['cat' => 'farm',   'label' => 'Épice',            'icon' => '🏜️', 'desc' => 'La récolte, et rien d\'autre'],
     'f_donjon'   => ['cat' => 'farm',   'label' => 'Donjons & labos',  'icon' => '🧪', 'desc' => 'Explorer, apprendre'],
@@ -236,6 +237,18 @@ const SORTIE_TYPES = [
                      'sub' => 'p_chasse', 'desc' => 'Traque et pillage dans le Deep Desert'],
     'embuscade'  => ['label' => 'Embuscade', 'icon' => '🪤', 'site' => false, 'postes' => false,
                      'sub' => 'p_chasse', 'desc' => 'Vieux transporteur ou moisso laissés en appât'],
+
+    // --- PvP › Tournois
+    //  RSVP simple : les présents deviennent les joueurs du tournoi, importés par
+    //  l'organisateur sur epice/tournois.html (arbre, scores, podium, lots).
+    //  'tournoi' = niveau, relu par tournois-api.php (TYPE_NIVEAU) et par le bouton
+    //  « Arbre du tournoi » de l'encart.
+    'tournoi_deb'=> ['label' => 'Tournoi PvP — Débutants', 'icon' => '🌱', 'site' => false, 'postes' => false,
+                     'sub' => 'p_tournoi', 'tournoi' => 'debutant', 'desc' => 'Pour se lancer en duel, sans pression'],
+    'tournoi_int'=> ['label' => 'Tournoi PvP — Intermédiaires', 'icon' => '⚔️', 'site' => false, 'postes' => false,
+                     'sub' => 'p_tournoi', 'tournoi' => 'intermediaire', 'desc' => 'On connaît son build, on veut se mesurer'],
+    'tournoi_exp'=> ['label' => 'Tournoi PvP — Experts', 'icon' => '🔥', 'site' => false, 'postes' => false,
+                     'sub' => 'p_tournoi', 'tournoi' => 'expert', 'desc' => 'Les meilleurs duellistes de la guilde'],
 
     // --- Farm › Épice
     'epice'      => ['label' => 'Épice', 'icon' => '🏜️', 'site' => true, 'postes' => 'epice',
@@ -1718,6 +1731,10 @@ function build_sortie_message($sortie) {
     $nb = 0;
     foreach ($signups as $su) { if ($st($su) === 'present') $nb++; }
     $desc .= "👥 **{$nb}** inscrit" . ($nb > 1 ? 's' : '');
+    if (!empty(sortie_type($sortie['type'] ?? 'epice')['tournoi'])) {
+        $desc .= "
+🏆 Les présents deviennent les combattants : arbre, scores et lots sur le site (bouton ci-dessous).";
+    }
     if (($sortie['type'] ?? 'epice') === 'epice') {
         $desc .= "\n🏗️ **Base avancée (si prévue)** : 1 constructeur pilote de buggy + 1 pilote de buggy *(buggys roquettes à fournir)*. Sous-fief disponible requis pour le constructeur.";
     }
@@ -1922,10 +1939,20 @@ function build_sortie_message($sortie) {
 
     // Rangée gestion : Modifier / Supprimer (boutons visibles par tous, mais
     // n'agissent QUE pour le créateur — Discord ne sait pas masquer par utilisateur).
-    $components[] = ['type' => 1, 'components' => [
+    $gestion = [
         ['type' => 2, 'style' => 2, 'label' => 'Modifier',  'emoji' => ['name' => '✏️'], 'custom_id' => "edit:{$sid}"],
         ['type' => 2, 'style' => 4, 'label' => 'Supprimer', 'emoji' => ['name' => '🗑️'], 'custom_id' => "del:{$sid}"],
-    ]];
+    ];
+    // Tournoi : lien vers l'arbre sur le site. Bouton LIEN (style 5) : il n'émet
+    // aucune interaction, donc rien à déclarer dans la liste blanche de
+    // discord_interactions.php. La page retrouve le tournoi par l'id de la sortie,
+    // ou propose à l'organisateur de le créer s'il n'existe pas encore.
+    if (!empty($t['tournoi'])) {
+        $base = trim((string)($CFG['site_url'] ?? '')) ?: 'https://havresgris.ddns.net';
+        array_unshift($gestion, ['type' => 2, 'style' => 5, 'label' => 'Arbre du tournoi', 'emoji' => ['name' => '🏆'],
+                                 'url' => rtrim($base, '/') . '/epice/tournois.html?sortie=' . rawurlencode($sid)]);
+    }
+    $components[] = ['type' => 1, 'components' => $gestion];
 
     return ['embeds' => [$embed], 'components' => $components];
 }

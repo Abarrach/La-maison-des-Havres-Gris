@@ -237,6 +237,16 @@ Tous constatés en production ou en test, pas théoriques.
   pseudos exacts envoyés par le client — c'est ce qui évite une seconde normalisation
   `Lorhelyne✨` ↔ `Lorhelyne` à garder d'accord.
 
+### Tournois PvP
+- **L'arbre n'est calculé qu'à un endroit : `epice/tournoi-engine.js`, côté navigateur.**
+  `tournois-api.php` stocke joueurs et résultats bruts, plus le podium envoyé par la page à la
+  clôture. Ne pas écrire de miroir PHP « pour valider côté serveur » : c'est exactement la
+  double implémentation des rallys. Toucher au moteur → `node epice/tournoi-engine.test.cjs`
+  (rejoue un vrai tournoi Challonge et doit en retrouver le podium exact).
+- **Un résultat stocke les deux joueurs qu'il opposait**, et c'est voulu : après une correction
+  en amont, un résultat dont l'affiche a changé est ignoré puis purgé. Ne pas « simplifier » en
+  ne gardant que le vainqueur, on perdrait l'invalidation automatique.
+
 ### Mini-jeux et scores
 - **Un plafond `max_score` trop bas fait disparaître un record en silence** : la
   soumission sort avant enregistrement ET avant notification. C'est mécaniquement le

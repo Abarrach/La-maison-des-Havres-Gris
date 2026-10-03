@@ -51,6 +51,12 @@ return [
     // Vide = repli sur le salon où la sortie a été créée.
     'partage_channel_id' => '', // ex : le salon « activités-discussion »
 
+    // Salon où la page Tournois PvP (epice/tournois.html) annonce le lancement d'un
+    // tournoi et publie ses vainqueurs. Vide = repli sur `partage_channel_id`, puis
+    // sur le salon de la sortie Discord rattachée au tournoi.
+    // Le bot y a besoin de « Voir le salon », « Envoyer des messages » et « Intégrer des liens ».
+    'tournoi_channel_id' => '',
+
     // Qui prévenir quand le RELEVÉ DE PRÉSENCE tombe en panne pendant une sortie.
     // En message PRIVÉ, et à une seule personne : les autres ne peuvent rien y faire, et
     // une alerte technique dans un salon de guilde n'y produit que du bruit.

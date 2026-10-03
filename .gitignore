@@ -55,6 +55,8 @@ epice/data/sop_content.json
 epice/data/discord_sortie.log
 # Sorties Discord non-épice (Labo/Farm/Landsraad) — runtime, recréé par discord_sortie.php
 epice/data/discord_sorties.json
+# Tournois PvP (arbres, scores, podiums) — runtime, recréé par tournois-api.php
+epice/data/tournois.json
 
 # Meshes du jeu extraits via FModel (lourd ~357Mo + assets Funcom) — déploiement WinSCP séparé
 models/

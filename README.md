@@ -855,6 +855,28 @@ Créer une sortie épice **directement depuis Discord** et gérer les inscriptio
 
 ---
 
+### Tournois PvP (`epice/tournois.html`) — 🆕 2026-10, PAS ENCORE DÉPLOYÉ
+
+Organisation de tournois en duel façon **Challonge**, entièrement sur le site. Trois activités ajoutées au bot Sorties, dans une nouvelle sous-catégorie **PvP › Tournois** : `tournoi_deb` (🌱 Débutants), `tournoi_int` (⚔️ Intermédiaires), `tournoi_exp` (🔥 Experts). Inscription par RSVP simple (Présent / Peut-être / Absent) ; l'encart porte un **bouton-lien « 🏆 Arbre du tournoi »** vers `tournois.html?sortie=<id>`.
+
+- **Parcours** : sortie « Tournoi PvP » sur Discord → les joueurs cliquent Présent → l'organisateur ouvre l'arbre (bouton de l'encart ou « Nouveau tournoi ») → les présents sont importés (« peut-être » en option) → ajouts **à la main** des non-inscrits, ordre des têtes de série (▲▼ ou tirage au sort) → **Lancer** (liste figée) → saisie des scores au clic sur un match → bandeau « dernier match joué » → **Clôturer** (podium figé) → **Publier les vainqueurs sur Discord**. « Annoncer sur Discord » poste les matchs à jouer maintenant et le lien vers l'arbre.
+- **Formats** : **double élimination** (tableau des perdants, grande finale avec **revanche** si le finaliste des perdants gagne — ou finale unique, au choix) et **simple élimination** (petite finale pour la 3ᵉ place, optionnelle). Manches par match : 1, BO3, BO5 (indicatif, le score saisi = manches gagnées). Nombre de joueurs quelconque (2 à 128) : les **exemptions** tombent sur les meilleures têtes de série, placement standard 1-8 / 4-5 / 2-7 / 3-6.
+- **Onglets du tournoi** : Arbre (survol d'un joueur = tout son parcours s'allume), Joueurs, Classement (rang, V/D ; **ex æquo assumés** pour les éliminés d'un même tour — rien ne les départage, on n'invente pas d'ordre), Journal (qui a saisi quoi, quand). Onglets de la page : Tournois (en cours / en préparation / derniers résultats), **Historique** (filtrable par niveau), **Palmarès** (médailles cumulées, filtrable par niveau — la base de calcul est écrite au-dessus du tableau).
+- **Lots** pour les 3 premières places : saisis à la création ou après, affichés sur le podium et dans l'annonce Discord.
+- **Droits** : consultation = tout membre connecté ; création, scores, publication = **organisateurs** (`epice_can_organize()`, même liste que l'Activité Guilde) ; suppression = admin ou créateur. Tuile `tournois` dans `pages.js` → visibilité réglable depuis Mon Compte.
+
+**Architecture — le moteur est UNIQUE et côté navigateur.** `epice/tournoi-engine.js` (module pur, sans DOM) déduit l'arbre du nombre de joueurs, du format et des options ; **l'arbre ne se stocke pas**. Seuls les résultats sont stockés, chacun avec les **deux joueurs qu'il opposait** : si une correction en amont change l'affiche d'un match, son ancien résultat ne correspond plus et tombe tout seul — aucun effacement en cascade à écrire, donc aucun à rater. `epice/tournois-api.php` **ne recalcule rien** : il stocke joueurs, résultats et le podium envoyé par la page à la clôture, et c'est ce podium que l'annonce publie. Pas de miroir PHP, volontairement (cf. le double découpage des rallys et son test de parité). Banc d'essai : **`node epice/tournoi-engine.test.cjs`** — rejoue le tournoi « Veteran » de Challonge (8 joueurs, double élimination) et doit retrouver son podium exact (Fenros 4-0, Neuroch 4-2, Bahlor 2-2), puis mène au bout tous les effectifs de 2 à 17 dans les deux formats.
+
+- **Stockage** : `epice/data/tournois.json` (**gitignoré**, protégé par le `deny` nginx de `epice/data/`). Écriture en **lecture-modification-écriture sous un seul verrou**, plus un **numéro de version** : deux organisateurs saisissant en même temps ne s'écrasent pas, le second est invité à recharger.
+- **Garde-fous serveur** : liste des joueurs figée après le lancement (renommer reste possible), format modifiable seulement en préparation, retour en préparation = résultats effacés (l'arbre va changer), clôture refusée sans podium.
+- **Les inscrits sont COPIÉS dans le tournoi** à l'import : la sortie Discord peut être supprimée ou purgée ensuite, le tournoi garde ses joueurs. Corollaire : « Importer les nouveaux inscrits » ne marche que tant que la sortie existe.
+- **Publication** : par le bot Sorties (`bot_token` de `epice/discord_sortie_config.php`), dans `tournoi_channel_id` → `partage_channel_id` → salon de la sortie rattachée. Le motif de refus Discord est relayé tel quel (« Missing Access » ≠ « Missing Permissions »).
+- **Bouton-lien sur l'encart** : un bouton de style 5 (URL) n'émet **aucune interaction**, donc rien à ajouter à la liste blanche de `discord_interactions.php`. Pas de re-`register` non plus : la commande `/sortie` n'a pas d'option, le sélecteur lit `SORTIE_TYPES`.
+
+**Déploiement** (dans `/v2` d'abord) : `epice/tournoi-engine.js` **avant** `epice/tournois.html` (la page meurt sans le moteur), `epice/tournois-api.php`, `epice/discord_sortie.php`, `pages.js`, `account.html` (libellés des 3 activités). Vérifier que `epice/data/` est inscriptible par `www-data`. Optionnel : `tournoi_channel_id` dans la config, et une image `tournois.jpg` à la racine pour la tuile (repli `intro.jpg` sans elle), bannières `sortietournoi_*.jpg` à déclarer dans `banners` (repli sur la bannière par défaut).
+
+---
+
 ### Registre des plans de la guilde (`plans_api.php`) — ✅ EN LIGNE SUR `/v2`, PAS EN PROD
 
 > **État au 2026-08-10** — lots 1 et 2 livrés, déployés sur `/v2` et **testés fonctionnels** (page de partage + commande Discord `/plan` sur le serveur de test, via l'app « DuneMap Dev »). **Rien n'est en production.**

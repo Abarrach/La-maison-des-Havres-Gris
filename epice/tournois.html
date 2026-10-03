@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tournois PvP — Maison des Havres Gris</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:#0B0805; --surface:#181008; --surface-2:#221508; --surface-3:#2C1C0C; --border:#3C2C14;
+      --accent:#C89210; --accent-dim:#7A5A0A; --accent-glow:rgba(200,146,16,0.14);
+      --text:#E8DEC8; --text-muted:#8A7A5A; --text-faint:#4A3E28;
+      --red:#8A3228; --green:#2A6A3A;
+      --gold:#D4A23B; --silver:#A9B1BC; --bronze:#B4693A;
+    }
+    html { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; }
+    body {
+      min-height:100vh; padding-bottom:4rem;
+      background:
+        radial-gradient(ellipse 90% 60% at 20% 20%,rgba(120,70,10,.18) 0%,transparent 55%),
+        radial-gradient(ellipse 70% 50% at 80% 90%,rgba(80,40,5,.22) 0%,transparent 50%),
+        var(--bg);
+    }
+    button { font-family:inherit; }
+    a { color:var(--accent); }
+
+    /* NAV — même gabarit que l'Activité Guilde */
+    .nav { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.75rem; padding:.85rem 1.75rem; border-bottom:1px solid var(--border); background:rgba(11,8,5,.9); backdrop-filter:blur(6px); position:sticky; top:0; z-index:50; }
+    .nav-brand { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
+    .guild-name { font-family:'Cinzel',serif; font-size:.75rem; letter-spacing:.3em; text-transform:uppercase; color:var(--accent); font-weight:600; }
+    .nav-div { width:1px; height:18px; background:var(--border); }
+    .nav-sub { font-size:.68rem; letter-spacing:.2em; text-transform:uppercase; color:var(--text-muted); }
+    .nav-tabs { display:flex; gap:.5rem; flex-wrap:wrap; }
+    .nav-tab { padding:.45rem 1rem; border-radius:2px; font-size:.65rem; font-weight:700; cursor:pointer; border:1px solid var(--border); background:transparent; color:var(--text-muted); transition:all .15s; letter-spacing:.12em; text-transform:uppercase; text-decoration:none; }
+    .nav-tab.active { background:var(--accent); border-color:var(--accent); color:#0A0800; }
+    .nav-tab:hover:not(.active) { border-color:var(--accent-dim); color:var(--text); }
+
+    .wrap { max-width:1280px; margin:0 auto; padding:1.75rem 1.25rem 0; }
+    .view { display:none; } .view.active { display:block; }
+    h1.page { font-family:'Cinzel',serif; font-size:1.6rem; font-weight:700; color:var(--text); letter-spacing:.04em; }
+    .page-sub { color:var(--text-muted); font-size:.82rem; margin-top:.35rem; line-height:1.55; max-width:760px; }
+    .rule { width:64px; height:3px; background:var(--accent); margin:.8rem 0 1.4rem; }
+    .section-title { font-size:.65rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); margin:1.6rem 0 .75rem; }
+    .empty { color:var(--text-muted); font-size:.85rem; padding:1.5rem; text-align:center; background:var(--surface); border:1px dashed var(--border); border-radius:2px; line-height:1.7; }
+
+    /* BOUTONS */
+    .btn { display:inline-flex; align-items:center; gap:.45rem; padding:.55rem 1rem; border-radius:2px; border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-size:.72rem; font-weight:600; letter-spacing:.06em; cursor:pointer; transition:all .15s; }
+    .btn:hover { border-color:var(--accent-dim); }
+    .btn.primary { background:var(--accent); border-color:var(--accent); color:#0A0800; }
+    .btn.primary:hover { filter:brightness(1.1); }
+    .btn.danger { border-color:#5a2a20; color:#E09080; }
+    .btn.danger:hover { background:#3a1810; }
+    .btn.small { padding:.3rem .6rem; font-size:.66rem; }
+    .btn:disabled { opacity:.45; cursor:not-allowed; }
+    .actions { display:flex; gap:.5rem; flex-wrap:wrap; align-items:center; }
+
+    /* PUCES */
+    .chip { display:inline-flex; align-items:center; gap:.3rem; font-size:.62rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:.22rem .55rem; border-radius:2px; border:1px solid var(--border); color:var(--text-muted); background:var(--surface-2); white-space:nowrap; }
+    .chip.niv-debutant { color:#9CCB8A; border-color:#3E5A30; }
+    .chip.niv-intermediaire { color:#E0B860; border-color:#6A5020; }
+    .chip.niv-expert { color:#F08A60; border-color:#6A3420; }
+    .chip.st-preparation { color:#9AB0D0; border-color:#34465E; }
+    .chip.st-en_cours { color:#7CD08A; border-color:#2E5A36; }
+    .chip.st-termine { color:var(--text-muted); }
+    .filters { display:flex; gap:.4rem; flex-wrap:wrap; margin-bottom:1rem; }
+    .filters .chip { cursor:pointer; padding:.38rem .75rem; }
+    .filters .chip.on { background:var(--accent); color:#0A0800; border-color:var(--accent); }
+
+    /* CARTES DE TOURNOI */
+    .cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:.75rem; }
+    .tcard { background:var(--surface); border:1px solid var(--border); border-radius:2px; padding:1rem 1.1rem; cursor:pointer; transition:border-color .15s, transform .15s; display:flex; flex-direction:column; gap:.55rem; }
+    .tcard:hover { border-color:var(--accent-dim); transform:translateY(-1px); }
+    .tcard-top { display:flex; gap:.4rem; flex-wrap:wrap; }
+    .tcard-name { font-family:'Cinzel',serif; font-size:1.05rem; font-weight:600; }
+    .tcard-meta { font-size:.74rem; color:var(--text-muted); }
+    .tcard-podium { display:flex; flex-direction:column; gap:.2rem; font-size:.8rem; border-top:1px solid var(--border); padding-top:.55rem; }
+    .tcard-podium .lot { color:var(--text-muted); font-size:.72rem; }
+
+    /* EN-TÊTE DE TOURNOI */
+    .t-head { display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap; align-items:flex-start; }
+    .t-title { display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; }
+    .t-title h1 { font-family:'Cinzel',serif; font-size:2rem; font-weight:700; letter-spacing:.02em; }
+    .t-info { background:var(--surface); border:1px solid var(--border); border-radius:2px; padding:1.1rem 1.4rem; display:grid; grid-template-columns:max-content 1fr; gap:.45rem 1.5rem; font-size:.85rem; margin-top:1rem; }
+    .t-info dt { color:var(--text-muted); }
+    .t-info dd { color:var(--text); }
+    .t-desc { grid-column:1/-1; color:var(--text-muted); font-size:.8rem; border-top:1px solid var(--border); padding-top:.6rem; white-space:pre-line; }
+    .back { font-size:.72rem; color:var(--text-muted); cursor:pointer; background:none; border:none; letter-spacing:.08em; text-transform:uppercase; margin-bottom:.9rem; }
+    .back:hover { color:var(--accent); }
+
+    /* PODIUM */
+    .podium { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:.75rem; margin-top:1rem; }
+    .pod { background:var(--surface); border:1px solid var(--border); border-top:3px solid var(--c); border-radius:2px; padding:.9rem 1rem; display:flex; gap:.85rem; align-items:center; }
+    .pod-medal { width:46px; height:46px; flex-shrink:0; border-radius:50%; display:grid; place-items:center; font-family:'Cinzel',serif; font-weight:700; font-size:.78rem; color:#1a1007; background:radial-gradient(circle at 35% 30%, #fff8 0%, var(--c) 45%, #0006 120%); box-shadow:0 0 0 2px #0008, 0 0 14px color-mix(in srgb, var(--c) 40%, transparent); }
+    .pod-name { font-family:'Cinzel',serif; font-weight:700; font-size:1.05rem; }
+    .pod-rec { font-size:.75rem; color:var(--text-muted); margin-top:.1rem; }
+    .pod-lot { font-size:.75rem; color:var(--text); margin-top:.35rem; }
+    .pod.vide .pod-name { color:var(--text-faint); font-style:italic; font-family:'Inter',sans-serif; font-weight:400; font-size:.85rem; }
+
+    /* BANDEAU D'ACTION */
+    .banner { margin-top:1rem; padding:.85rem 1.1rem; border:1px solid var(--accent-dim); background:var(--accent-glow); border-radius:2px; display:flex; justify-content:space-between; gap:.75rem; align-items:center; flex-wrap:wrap; font-size:.84rem; }
+    .orga-bar { margin-top:1rem; padding:.75rem 1rem; background:var(--surface); border:1px solid var(--border); border-radius:2px; }
+    .orga-bar .lbl { font-size:.6rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--text-muted); margin-bottom:.55rem; }
+
+    /* SOUS-ONGLETS */
+    .subtabs { display:flex; gap:0; border-bottom:1px solid var(--border); margin-top:1.4rem; flex-wrap:wrap; }
+    .subtab { padding:.65rem 1.1rem; font-size:.75rem; font-weight:600; color:var(--text-muted); background:none; border:none; border-bottom:2px solid transparent; cursor:pointer; letter-spacing:.04em; }
+    .subtab.active { color:var(--text); border-bottom-color:var(--accent); }
+    .subtab:hover:not(.active) { color:var(--text); }
+    .subview { display:none; padding-top:1.1rem; } .subview.active { display:block; }
+
+    /* ARBRE */
+    .bk-scroll { overflow-x:auto; padding-bottom:.75rem; }
+    .bk-sec { position:relative; margin-bottom:1.4rem; }
+    .bk-heads { position:relative; height:28px; margin-bottom:10px; }
+    .bk-head { position:absolute; top:0; height:28px; display:flex; align-items:center; justify-content:center; background:var(--surface-2); border:1px solid var(--border); font-size:.68rem; font-weight:700; letter-spacing:.04em; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:0 .4rem; }
+    .bk-body { position:relative; }
+    .bk-body svg { position:absolute; inset:0; pointer-events:none; overflow:visible; }
+    .bk-body svg path { fill:none; stroke:#5A4626; stroke-width:1.5; }
+    .m { position:absolute; display:flex; background:var(--surface-2); border:1px solid var(--border); border-radius:2px; font-size:.76rem; transition:border-color .12s, box-shadow .12s; }
+    .m.cliquable { cursor:pointer; }
+    .m.cliquable:hover { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent-dim); }
+    .m.pret { border-color:var(--accent-dim); }
+    .m-num { width:22px; flex-shrink:0; display:grid; place-items:center; font-size:.6rem; color:var(--text-muted); border-right:1px solid var(--border); background:var(--surface); }
+    .m-rows { flex:1; min-width:0; display:flex; flex-direction:column; }
+    .m-row { display:flex; align-items:center; height:24px; min-width:0; }
+    .m-row + .m-row { border-top:1px solid var(--border); }
+    .m-seed { width:20px; flex-shrink:0; text-align:center; font-size:.6rem; color:var(--text-muted); }
+    .m-nm { flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding-right:.3rem; }
+    .m-nm.src { color:var(--text-faint); font-style:italic; font-size:.68rem; }
+    .m-sc { width:28px; flex-shrink:0; height:100%; display:grid; place-items:center; font-weight:700; background:var(--surface-3); color:var(--text-muted); }
+    .m-row.win .m-sc { background:var(--accent); color:#0A0800; }
+    .m-row.win .m-nm { font-weight:600; }
+    .m-row.lose .m-nm { color:var(--text-muted); }
+    .m-row.hl { background:rgba(200,146,16,.18); }
+    .bk-legend { font-size:.72rem; color:var(--text-muted); margin-bottom:.8rem; line-height:1.6; }
+
+    /* TABLEAUX */
+    table.tbl { width:100%; border-collapse:collapse; font-size:.82rem; background:var(--surface); border:1px solid var(--border); }
+    .tbl th { text-align:left; font-size:.6rem; letter-spacing:.12em; text-transform:uppercase; color:var(--text-muted); font-weight:700; padding:.6rem .8rem; border-bottom:1px solid var(--border); background:var(--surface-2); }
+    .tbl td { padding:.55rem .8rem; border-bottom:1px solid rgba(60,44,20,.5); }
+    .tbl tr:last-child td { border-bottom:none; }
+    .tbl .num { text-align:center; width:1%; white-space:nowrap; }
+    .rang-1 { color:var(--gold); font-weight:700; } .rang-2 { color:var(--silver); font-weight:700; } .rang-3 { color:var(--bronze); font-weight:700; }
+
+    /* JOUEURS */
+    .pl-add { display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:.9rem; }
+    .pl-add input { flex:1; min-width:200px; }
+    .pl-list { display:flex; flex-direction:column; gap:.3rem; }
+    .pl { display:flex; align-items:center; gap:.6rem; background:var(--surface); border:1px solid var(--border); border-radius:2px; padding:.45rem .7rem; font-size:.84rem; }
+    .pl-seed { width:28px; text-align:center; font-weight:700; color:var(--accent); font-size:.78rem; }
+    .pl-nm { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .pl .ico { background:none; border:1px solid transparent; color:var(--text-muted); cursor:pointer; width:28px; height:26px; border-radius:2px; font-size:.8rem; }
+    .pl .ico:hover { border-color:var(--border); color:var(--text); }
+    .pl .ico:disabled { opacity:.25; cursor:default; }
+    .note { font-size:.74rem; color:var(--text-muted); line-height:1.6; margin-top:.6rem; }
+
+    /* JOURNAL */
+    .jr { display:flex; gap:.8rem; padding:.45rem 0; border-bottom:1px solid rgba(60,44,20,.5); font-size:.8rem; }
+    .jr-ts { color:var(--text-muted); white-space:nowrap; font-size:.72rem; min-width:118px; }
+    .jr-par { color:var(--accent); white-space:nowrap; }
+
+    /* FORMULAIRES */
+    input[type=text], input[type=number], input[type=date], input[type=time], select, textarea {
+      width:100%; background:var(--surface-2); border:1px solid var(--border); border-radius:2px; color:var(--text); font-family:inherit; font-size:.85rem; padding:.55rem .7rem; outline:none; border-left:2px solid var(--accent-dim);
+    }
+    input:focus, select:focus, textarea:focus { border-color:var(--accent-dim); border-left-color:var(--accent); }
+    input[type=date], input[type=time] { color-scheme:dark; }
+    textarea { resize:vertical; min-height:64px; }
+    label.f { display:block; font-size:.62rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--text-muted); margin-bottom:.35rem; }
+    .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:.8rem; }
+    .grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:.8rem; }
+    .fgroup { margin-bottom:.9rem; }
+    .check { display:flex; align-items:center; gap:.5rem; font-size:.8rem; color:var(--text); cursor:pointer; }
+    .check input { accent-color:var(--accent); width:15px; height:15px; }
+
+    /* MODALE */
+    .modal-bg { position:fixed; inset:0; background:rgba(0,0,0,.72); display:none; align-items:flex-start; justify-content:center; z-index:100; padding:5vh 16px; overflow-y:auto; }
+    .modal-bg.on { display:flex; }
+    .modal { background:var(--surface); border:1px solid var(--accent-dim); border-radius:2px; width:100%; max-width:560px; padding:1.4rem 1.5rem; box-shadow:0 20px 60px rgba(0,0,0,.6); }
+    .modal h2 { font-family:'Cinzel',serif; font-size:1.15rem; margin-bottom:1rem; }
+    .modal-foot { display:flex; justify-content:space-between; gap:.5rem; margin-top:1.2rem; flex-wrap:wrap; }
+    .score-grid { display:grid; grid-template-columns:1fr 90px auto; gap:.6rem; align-items:center; }
+    .score-grid .who { font-weight:600; font-size:.95rem; overflow:hidden; text-overflow:ellipsis; }
+    .score-grid input { text-align:center; font-size:1.1rem; font-weight:700; }
+    .win-btn { padding:.5rem .7rem; border:1px solid var(--border); background:var(--surface-2); color:var(--text-muted); border-radius:2px; cursor:pointer; font-size:.7rem; font-weight:700; letter-spacing:.06em; white-space:nowrap; }
+    .win-btn.on { background:var(--accent); border-color:var(--accent); color:#0A0800; }
+
+    .toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--surface-2); border:1px solid var(--accent-dim); color:var(--text); padding:.7rem 1.2rem; border-radius:2px; font-size:.82rem; opacity:0; transition:all .2s; z-index:200; max-width:calc(100vw - 32px); pointer-events:none; }
+    .toast.on { opacity:1; transform:translateX(-50%) translateY(0); }
+    .toast.err { border-color:#8A3228; color:#F0B0A0; }
+
+    @media (max-width: 640px) {
+      .nav { padding:.75rem 16px; }
+      .wrap { padding:1.25rem 16px 0; }
+      .t-title h1 { font-size:1.45rem; }
+      .grid2, .grid3 { grid-template-columns:1fr; }
+      .t-info { grid-template-columns:1fr; gap:.15rem; }
+      .t-info dd { margin-bottom:.4rem; }
+      .score-grid { grid-template-columns:1fr 70px; }
+      .score-grid .win-btn { grid-column:1/-1; }
+    }
+  </style>
+</head>
+<body>
+<script src="../auth-guard.js"></script>
+<script src="../dune-tip.js" defer></script>
+<script src="../page-guard.js" data-page="tournois" data-root="../"></script>
+
+<nav class="nav">
+  <div class="nav-brand">
+    <a href="../menu.html" class="nav-tab">← Portail</a>
+    <div class="nav-div"></div>
+    <span class="guild-name">Havres Gris</span>
+    <div class="nav-div"></div>
+    <span class="nav-sub">Tournois PvP</span>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" data-view="liste">Tournois</button>
+    <button class="nav-tab" data-view="historique">Historique</button>
+    <button class="nav-tab" data-view="palmares">Palmarès</button>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <!-- ===== LISTE ===== -->
+  <section id="view-liste" class="view active">
+    <div class="t-head">
+      <div>
+        <h1 class="page">Tournois PvP</h1>
+        <p class="page-sub">Débutants, intermédiaires, experts : les inscrits de la sortie Discord deviennent les combattants, l'arbre se remplit au fil des scores, et le podium part sur Discord à la fin.</p>
+      </div>
+      <div class="actions" id="liste-actions"></div>
+    </div>
+    <div class="rule"></div>
+    <div id="liste-contenu"><div class="empty">Chargement…</div></div>
+  </section>
+
+  <!-- ===== HISTORIQUE ===== -->
+  <section id="view-historique" class="view">
+    <h1 class="page">Historique</h1>
+    <p class="page-sub">Tous les tournois clôturés, du plus récent au plus ancien.</p>
+    <div class="rule"></div>
+    <div class="filters" id="histo-filtres"></div>
+    <div id="histo-contenu"></div>
+  </section>
+
+  <!-- ===== PALMARÈS ===== -->
+  <section id="view-palmares" class="view">
+    <h1 class="page">Palmarès</h1>
+    <p class="page-sub" id="palm-base"></p>
+    <div class="rule"></div>
+    <div class="filters" id="palm-filtres"></div>
+    <div id="palm-contenu"></div>
+  </section>
+
+  <!-- ===== DÉTAIL D'UN TOURNOI ===== -->
+  <section id="view-detail" class="view">
+    <button class="back" id="btn-back">← Tous les tournois</button>
+    <div id="detail-tete"></div>
+    <div class="subtabs" id="subtabs">
+      <button class="subtab active" data-sub="arbre">Arbre</button>
+      <button class="subtab" data-sub="joueurs">Joueurs</button>
+      <button class="subtab" data-sub="classement">Classement</button>
+      <button class="subtab" data-sub="journal">Journal</button>
+    </div>
+    <div class="subview active" id="sub-arbre"></div>
+    <div class="subview" id="sub-joueurs"></div>
+    <div class="subview" id="sub-classement"></div>
+    <div class="subview" id="sub-journal"></div>
+  </section>
+</div>
+
+<!-- Modale : création / modification -->
+<div class="modal-bg" id="modal-form">
+  <div class="modal">
+    <h2 id="form-titre">Nouveau tournoi</h2>
+    <div class="fgroup" id="f-sortie-grp">
+      <label class="f" for="f-sortie">Sortie Discord liée</label>
+      <select id="f-sortie"></select>
+      <label class="check" style="margin-top:.5rem"><input type="checkbox" id="f-maybe"> Inclure aussi les « peut-être »</label>
+    </div>
+    <div class="fgroup"><label class="f" for="f-nom">Nom du tournoi</label><input type="text" id="f-nom" maxlength="80" placeholder="ex. Coupe du Sietch — saison 1"></div>
+    <div class="grid2">
+      <div class="fgroup"><label class="f" for="f-niveau">Niveau</label>
+        <select id="f-niveau"><option value="debutant">🌱 Débutants</option><option value="intermediaire" selected>⚔️ Intermédiaires</option><option value="expert">🔥 Experts</option></select></div>
+      <div class="fgroup"><label class="f" for="f-format">Format</label>
+        <select id="f-format"><option value="double">Double élimination</option><option value="simple">Simple élimination</option></select></div>
+    </div>
+    <div class="grid2">
+      <div class="fgroup" id="f-gf-grp"><label class="f" for="f-gf">Grande finale</label>
+        <select id="f-gf"><option value="revanche">Revanche si le finaliste des perdants gagne</option><option value="unique">Un seul match</option></select></div>
+      <div class="fgroup" id="f-pf-grp"><label class="f">&nbsp;</label>
+        <label class="check"><input type="checkbox" id="f-pf" checked> Petite finale (3ᵉ place)</label></div>
+      <div class="fgroup"><label class="f" for="f-bo">Manches par match</label>
+        <select id="f-bo"><option value="1">1 manche</option><option value="3">2 manches gagnantes (BO3)</option><option value="5">3 manches gagnantes (BO5)</option></select></div>
+    </div>
+    <div class="grid2">
+      <div class="fgroup"><label class="f" for="f-date">Date</label><input type="date" id="f-date"></div>
+      <div class="fgroup"><label class="f" for="f-heure">Heure</label><input type="time" id="f-heure"></div>
+    </div>
+    <div class="fgroup"><label class="f" for="f-desc">Règles, consignes</label><textarea id="f-desc" maxlength="500" placeholder="Arène, équipement autorisé, règles particulières…"></textarea></div>
+    <label class="f">Lots</label>
+    <div class="grid3">
+      <input type="text" id="f-lot1" maxlength="120" placeholder="🥇 1ʳᵉ place">
+      <input type="text" id="f-lot2" maxlength="120" placeholder="🥈 2ᵉ place">
+      <input type="text" id="f-lot3" maxlength="120" placeholder="🥉 3ᵉ place">
+    </div>
+    <p class="note" id="f-note"></p>
+    <div class="modal-foot">
+      <button class="btn" data-close>Annuler</button>
+      <button class="btn primary" id="f-ok">Créer le tournoi</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modale : saisie d'un score -->
+<div class="modal-bg" id="modal-score">
+  <div class="modal">
+    <h2 id="sc-titre">Match</h2>
+    <div class="score-grid">
+      <div class="who" id="sc-n1"></div><input type="number" id="sc-s1" min="0" max="999" inputmode="numeric"><button class="win-btn" id="sc-w1">🏆 Vainqueur</button>
+      <div class="who" id="sc-n2"></div><input type="number" id="sc-s2" min="0" max="999" inputmode="numeric"><button class="win-btn" id="sc-w2">🏆 Vainqueur</button>
+    </div>
+    <label class="check" style="margin-top:1rem"><input type="checkbox" id="sc-ff"> Victoire par forfait</label>
+    <p class="note" id="sc-note"></p>
+    <div class="modal-foot">
+      <button class="btn danger" id="sc-clear">Effacer le résultat</button>
+      <div class="actions"><button class="btn" data-close>Annuler</button><button class="btn primary" id="sc-ok">Enregistrer</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="tournoi-engine.js?v=tournois-1"></script>
+<script>
+(function () {
+  'use strict';
+  const E = window.TournoiEngine;
+  const API = 'tournois-api.php';
+  const MED = { 1: { ico: '🥇', c: 'var(--gold)', txt: '1ER' }, 2: { ico: '🥈', c: 'var(--silver)', txt: '2E' }, 3: { ico: '🥉', c: 'var(--bronze)', txt: '3E' } };
+  const STATUT_LBL = { preparation: 'En préparation', en_cours: 'En cours', termine: 'Terminé' };
+
+  let LISTE = [], PEUT_GERER = false, ADMIN = false;
+  let T = null, PEUT_SUPPR = false, RES = null;
+  let filtreHisto = '', filtrePalm = '';
+
+  // ---------------------------------------------------------------- outils
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  function toast(msg, err) {
+    const t = $('toast'); t.textContent = msg; t.className = 'toast on' + (err ? ' err' : '');
+    clearTimeout(toast._t); toast._t = setTimeout(() => t.className = 'toast' + (err ? ' err' : ''), err ? 6000 : 2600);
+  }
+  async function api(action, body, params) {
+    const q = new URLSearchParams(Object.assign({ action }, params || {}));
+    const r = await fetch(API + '?' + q, body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {});
+    let j; try { j = await r.json(); } catch (e) { throw new Error('Réponse serveur illisible (HTTP ' + r.status + ')'); }
+    if (!j.ok) throw new Error(j.error || 'Erreur');
+    return j;
+  }
+  function dateFr(d, h) {
+    if (!d) return '';
+    const x = new Date(d + 'T12:00:00');
+    const s = x.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+    return s + (h ? ' à ' + h : '');
+  }
+  const nivChip = n => `<span class="chip niv-${n}">${E.NIVEAUX[n] ? E.NIVEAUX[n].icon + ' ' + E.NIVEAUX[n].label : esc(n)}</span>`;
+  const stChip = s => `<span class="chip st-${s}">${STATUT_LBL[s] || s}</span>`;
+  const nomDe = id => { const j = T && T.joueurs.find(x => x.id === id); return j ? j.nom : '?'; };
+  const seedDe = id => { const i = T ? T.joueurs.findIndex(x => x.id === id) : -1; return i < 0 ? '' : i + 1; };
+  function closeModals() { document.querySelectorAll('.modal-bg').forEach(m => m.classList.remove('on')); }
+  document.querySelectorAll('[data-close]').forEach(b => b.onclick = closeModals);
+  document.querySelectorAll('.modal-bg').forEach(m => m.addEventListener('mousedown', e => { if (e.target === m) closeModals(); }));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModals(); });
+
+  // ---------------------------------------------------------------- navigation
+  function showView(v) {
+    document.querySelectorAll('.view').forEach(x => x.classList.toggle('active', x.id === 'view-' + v));
+    document.querySelectorAll('.nav-tab[data-view]').forEach(x => x.classList.toggle('active', x.dataset.view === v));
+    window.scrollTo(0, 0);
+  }
+  document.querySelectorAll('.nav-tab[data-view]').forEach(b => b.onclick = () => {
+    history.replaceState(null, '', location.pathname);
+    // Recharger, pas seulement redessiner : une clôture faite dans la vue détail
+    // doit apparaître tout de suite dans l'historique et le palmarès.
+    T = null; showView(b.dataset.view); chargerListe();
+  });
+  $('btn-back').onclick = () => { history.replaceState(null, '', location.pathname); T = null; showView('liste'); chargerListe(); };
+  document.querySelectorAll('.subtab').forEach(b => b.onclick = () => montrerSub(b.dataset.sub));
+  function montrerSub(s) {
+    document.querySelectorAll('.subtab').forEach(x => x.classList.toggle('active', x.dataset.sub === s));
+    document.querySelectorAll('.subview').forEach(x => x.classList.toggle('active', x.id === 'sub-' + s));
+  }
+
+  // ---------------------------------------------------------------- listes
+  async function chargerListe() {
+    try {
+      const j = await api('list');
+      LISTE = j.tournois; PEUT_GERER = j.peut_gerer; ADMIN = j.admin;
+      renderListes();
+    } catch (e) { $('liste-contenu').innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+  }
+
+  function carte(t) {
+    const pod = (t.podium || []).map(p => `<div>${MED[p.rang] ? MED[p.rang].ico : '🏅'} <strong>${esc(p.nom)}</strong>${t.lots && t.lots[p.rang] ? ` <span class="lot">· 🎁 ${esc(t.lots[p.rang])}</span>` : ''}</div>`).join('');
+    return `<div class="tcard" data-t="${esc(t.id)}">
+      <div class="tcard-top">${nivChip(t.niveau)}${stChip(t.statut)}</div>
+      <div class="tcard-name">${esc(t.nom)}</div>
+      <div class="tcard-meta">${esc(dateFr(t.date, t.heure))} · ${t.nb_joueurs} joueur${t.nb_joueurs > 1 ? 's' : ''} · ${esc(E.FORMATS[t.format] || t.format)}</div>
+      ${pod ? `<div class="tcard-podium">${pod}</div>` : ''}
+    </div>`;
+  }
+  function brancherCartes(root) { root.querySelectorAll('.tcard').forEach(c => c.onclick = () => ouvrir(c.dataset.t)); }
+
+  function filtres(el, courant, set) {
+    el.innerHTML = [['', 'Tous niveaux']].concat(Object.keys(E.NIVEAUX).map(k => [k, E.NIVEAUX[k].icon + ' ' + E.NIVEAUX[k].label]))
+      .map(([k, l]) => `<span class="chip${k === courant ? ' on' : ''}" data-k="${k}">${l}</span>`).join('');
+    el.querySelectorAll('.chip').forEach(c => c.onclick = () => { set(c.dataset.k); renderListes(); });
+  }
+
+  function renderListes() {
+    $('liste-actions').innerHTML = PEUT_GERER ? '<button class="btn primary" id="btn-new">＋ Nouveau tournoi</button>' : '';
+    if ($('btn-new')) $('btn-new').onclick = () => ouvrirForm(null);
+
+    const actifs = LISTE.filter(t => t.statut !== 'termine');
+    const recents = LISTE.filter(t => t.statut === 'termine').slice(0, 3);
+    let h = '';
+    const enCours = actifs.filter(t => t.statut === 'en_cours'), prep = actifs.filter(t => t.statut === 'preparation');
+    if (enCours.length) h += `<div class="section-title">En cours</div><div class="cards">${enCours.map(carte).join('')}</div>`;
+    if (prep.length) h += `<div class="section-title">En préparation</div><div class="cards">${prep.map(carte).join('')}</div>`;
+    if (!actifs.length) h += `<div class="empty">Aucun tournoi en cours.${PEUT_GERER ? '<br>Crée une sortie « Tournoi PvP » sur Discord pour recueillir les inscriptions, puis « Nouveau tournoi » ici pour monter l\'arbre.' : ''}</div>`;
+    if (recents.length) h += `<div class="section-title">Derniers résultats</div><div class="cards">${recents.map(carte).join('')}</div>`;
+    $('liste-contenu').innerHTML = h; brancherCartes($('liste-contenu'));
+
+    filtres($('histo-filtres'), filtreHisto, k => filtreHisto = k);
+    const histo = LISTE.filter(t => t.statut === 'termine' && (!filtreHisto || t.niveau === filtreHisto));
+    $('histo-contenu').innerHTML = histo.length ? `<div class="cards">${histo.map(carte).join('')}</div>` : '<div class="empty">Aucun tournoi clôturé pour l\'instant.</div>';
+    brancherCartes($('histo-contenu'));
+
+    renderPalmares();
+  }
+
+  // Palmarès : médailles cumulées, PAR NIVEAU de préférence — un podium chez les
+  // débutants ne vaut pas un podium chez les experts, on ne les mélange que si on
+  // le demande (« Tous niveaux »), et la base est rappelée au-dessus du tableau.
+  function renderPalmares() {
+    filtres($('palm-filtres'), filtrePalm, k => filtrePalm = k);
+    const clos = LISTE.filter(t => t.statut === 'termine' && (!filtrePalm || t.niveau === filtrePalm));
+    $('palm-base').textContent = `Médailles cumulées sur ${clos.length} tournoi${clos.length > 1 ? 's' : ''} clôturé${clos.length > 1 ? 's' : ''}`
+      + (filtrePalm ? ` de niveau ${E.NIVEAUX[filtrePalm].label.toLowerCase()}` : ', tous niveaux confondus — filtre par niveau pour comparer ce qui est comparable')
+      + '. Deux demi-finalistes ex æquo en simple élimination reçoivent chacun le bronze.';
+    const acc = {};
+    clos.forEach(t => (t.podium || []).forEach(p => {
+      const k = p.nom.trim().toLowerCase();
+      acc[k] = acc[k] || { nom: p.nom, 1: 0, 2: 0, 3: 0 };
+      acc[k][p.rang]++;
+    }));
+    const rows = Object.values(acc).sort((a, b) => (b[1] - a[1]) || (b[2] - a[2]) || (b[3] - a[3]) || a.nom.localeCompare(b.nom));
+    $('palm-contenu').innerHTML = rows.length ? `<table class="tbl"><thead><tr><th>Combattant</th><th class="num">🥇</th><th class="num">🥈</th><th class="num">🥉</th><th class="num">Podiums</th></tr></thead><tbody>
+      ${rows.map(r => `<tr><td>${esc(r.nom)}</td><td class="num">${r[1] || '·'}</td><td class="num">${r[2] || '·'}</td><td class="num">${r[3] || '·'}</td><td class="num">${r[1] + r[2] + r[3]}</td></tr>`).join('')}
+    </tbody></table>` : '<div class="empty">Le palmarès se remplira avec les premiers tournois clôturés.</div>';
+  }
+
+  // ---------------------------------------------------------------- détail
+  async function ouvrir(id, parSortie) {
+    try {
+      const j = await api('get', null, parSortie ? { sortie: parSortie } : { id });
+      T = j.tournoi; PEUT_GERER = j.peut_gerer; PEUT_SUPPR = j.peut_supprimer;
+      history.replaceState(null, '', location.pathname + '?t=' + encodeURIComponent(T.id));
+      showView('detail'); montrerSub(T.statut === 'preparation' ? 'joueurs' : 'arbre'); renderDetail();
+      return true;
+    } catch (e) { if (!parSortie) toast(e.message, true); return false; }
+  }
+
+  function renderDetail() {
+    RES = E.resoudre(T);
+    renderTete(); renderArbre(); renderJoueurs(); renderClassement(); renderJournal();
+  }
+
+  function renderTete() {
+    const opt = T.options || {};
+    const fmt = (E.FORMATS[T.format] || T.format) + (T.format === 'double' ? (opt.grandeFinale === 'unique' ? ' · finale sur un match' : ' · revanche possible en finale') : (opt.petiteFinale ? ' · petite finale' : ''));
+    let h = `<div class="t-head"><div class="t-title"><h1>${esc(T.nom)}</h1>${nivChip(T.niveau)}${stChip(T.statut)}</div></div>
+      <dl class="t-info">
+        <dt>Joueurs</dt><dd>${T.joueurs.length}</dd>
+        <dt>Format</dt><dd>${esc(fmt)}${opt.bestOf > 1 ? ` · ${(opt.bestOf + 1) / 2} manches gagnantes` : ''}</dd>
+        <dt>Date</dt><dd>${esc(dateFr(T.date, T.heure)) || '—'}</dd>
+        <dt>Organisé par</dt><dd>${esc(T.cree_par || '—')}</dd>
+        ${T.description ? `<div class="t-desc">${esc(T.description)}</div>` : ''}
+      </dl>`;
+
+    // Podium : affiché dès qu'il y a des lots (pour donner envie) ou des résultats.
+    const pod = T.statut === 'termine' ? T.podium : [];
+    const lots = T.lots || {};
+    if (pod.length || lots[1] || lots[2] || lots[3]) {
+      h += `<div class="section-title">${pod.length ? 'Résultats' : 'Lots en jeu'}</div><div class="podium">`;
+      [1, 2, 3].forEach(r => {
+        const qui = pod.filter(p => p.rang === r);
+        if (!qui.length && !lots[r] && pod.length) return;
+        const m = MED[r];
+        h += `<div class="pod${qui.length ? '' : ' vide'}" style="--c:${m.c}"><div class="pod-medal">${m.txt}</div><div style="min-width:0">
+          <div class="pod-name">${qui.length ? qui.map(p => esc(p.nom)).join(' · ') : 'À conquérir'}</div>
+          ${qui.length ? `<div class="pod-rec">${qui.map(p => p.v + ' V – ' + p.d + ' D').join(' · ')}</div>` : ''}
+          ${lots[r] ? `<div class="pod-lot">🎁 ${esc(lots[r])}</div>` : ''}</div></div>`;
+      });
+      h += '</div>';
+    }
+
+    if (T.statut === 'en_cours' && RES.termine && PEUT_GERER) {
+      const champ = nomDe(RES.champion);
+      h += `<div class="banner"><span>🏆 Le dernier match est joué : <strong>${esc(champ)}</strong> remporte le tournoi. Clôture pour figer le classement et pouvoir publier les vainqueurs.</span><button class="btn primary" id="act-cloturer">Clôturer le tournoi</button></div>`;
+    }
+    if (PEUT_GERER) h += `<div class="orga-bar"><div class="lbl">Organisation</div><div class="actions">${boutonsOrga()}</div></div>`;
+    $('detail-tete').innerHTML = h;
+    brancherOrga();
+  }
+
+  function boutonsOrga() {
+    const b = [];
+    const pub = T.publie || {};
+    if (T.statut === 'preparation') {
+      b.push(`<button class="btn primary" id="act-lancer"${T.joueurs.length < 2 ? ' disabled data-tip="Il faut au moins deux joueurs"' : ''}>▶ Lancer le tournoi</button>`);
+    }
+    if (T.statut === 'en_cours') {
+      b.push(`<button class="btn" id="act-annonce" data-tip="Poste sur Discord les matchs à jouer maintenant et le lien vers l'arbre">📣 Annoncer sur Discord${pub.lancement ? ' (à nouveau)' : ''}</button>`);
+      b.push(`<button class="btn" id="act-prep">↩ Revenir en préparation</button>`);
+    }
+    if (T.statut === 'termine') {
+      b.push(`<button class="btn primary" id="act-publier">🏆 Publier les vainqueurs sur Discord${pub.resultats ? ' (à nouveau)' : ''}</button>`);
+      b.push(`<button class="btn" id="act-rouvrir">↩ Rouvrir</button>`);
+    }
+    b.push(`<button class="btn" id="act-modifier">✎ Modifier</button>`);
+    if (PEUT_SUPPR) b.push(`<button class="btn danger" id="act-suppr">🗑 Supprimer</button>`);
+    return b.join('');
+  }
+
+  function brancherOrga() {
+    const on = (id, fn) => { if ($(id)) $(id).onclick = fn; };
+    on('act-lancer', async () => {
+      if (!confirm(`Lancer le tournoi avec ${T.joueurs.length} joueurs ? La liste et l'ordre des têtes de série seront figés.`)) return;
+      if (await sauver({ statut: 'en_cours' }, 'Tournoi lancé (' + T.joueurs.length + ' joueurs)')) {
+        montrerSub('arbre');
+        if (confirm('Tournoi lancé. Annoncer les premiers matchs sur Discord maintenant ?')) publier('lancement');
+      }
+    });
+    on('act-annonce', () => publier('lancement'));
+    on('act-publier', () => publier('resultats'));
+    on('act-prep', async () => {
+      const n = Object.keys(T.resultats || {}).length;
+      if (!confirm(n ? `Revenir en préparation EFFACE les ${n} résultat(s) déjà saisis. Continuer ?` : 'Revenir en préparation pour modifier les joueurs ?')) return;
+      if (await sauver({ statut: 'preparation', resultats: {} }, 'Retour en préparation' + (n ? ` (${n} résultats effacés)` : ''))) montrerSub('joueurs');
+    });
+    on('act-cloturer', async () => {
+      const pod = E.podium(T, RES);
+      if (await sauver({ statut: 'termine', podium: pod }, 'Tournoi clôturé — vainqueur : ' + nomDe(RES.champion))) {
+        if (confirm('Tournoi clôturé. Publier les vainqueurs sur Discord maintenant ?')) publier('resultats');
+      }
+    });
+    on('act-rouvrir', () => sauver({ statut: 'en_cours', podium: [] }, 'Tournoi rouvert'));
+    on('act-modifier', () => ouvrirForm(T));
+    on('act-suppr', async () => {
+      if (!confirm(`Supprimer définitivement « ${T.nom} » ? Son arbre, ses résultats et son journal disparaîtront de l'historique.`)) return;
+      try { await api('delete', { id: T.id }); toast('Tournoi supprimé'); T = null; history.replaceState(null, '', location.pathname); showView('liste'); chargerListe(); }
+      catch (e) { toast(e.message, true); }
+    });
+  }
+
+  // Sauvegarde : on part de l'état courant, on applique la modification, et on
+  // envoie aussi les résultats purgés de leurs orphelins (un résultat dont
+  // l'affiche a changé suite à une correction en amont ne vaut plus rien).
+  async function sauver(patch, journal) {
+    const n = Object.assign(JSON.parse(JSON.stringify(T)), patch);
+    if (n.statut !== 'preparation') n.resultats = E.resultatsValides(n);
+    try {
+      const j = await api('save', { id: T.id, version: T.version, tournoi: n, journal });
+      T = j.tournoi; renderDetail(); toast('Enregistré');
+      return true;
+    } catch (e) { toast(e.message, true); return false; }
+  }
+
+  async function publier(quoi) {
+    const body = { id: T.id, quoi };
+    if (quoi === 'lancement') {
+      // Les affiches sont calculées ici : le serveur ne connaît pas l'arbre.
+      const res = E.resoudre(T);
+      body.lignes = E.aJouer(res).map(m => `**Match ${m.num}** · ${nomDe(m.a)} ⚔️ ${nomDe(m.b)}`);
+      if (!body.lignes.length) { toast('Aucun match à jouer en ce moment.', true); return; }
+    }
+    try { const j = await api('publish', body); if (j.tournoi) { T = j.tournoi; renderDetail(); } toast('Publié sur Discord ✔'); }
+    catch (e) { toast(e.message, true); }
+  }
+
+  // ---------------------------------------------------------------- arbre
+  const COLW = 196, GAP = 34, ROWH = 24, MH = ROWH * 2 + 1, SLOT = 62;
+
+  function renderArbre() {
+    const el = $('sub-arbre');
+    if (T.joueurs.length < 2) { el.innerHTML = '<div class="empty">Il faut au moins deux joueurs pour dessiner l\'arbre. Ajoute-les dans l\'onglet <strong>Joueurs</strong>.</div>'; return; }
+    const st = RES.structure, k = st.k, S = st.taille;
+    const visible = m => m && m.statut !== 'exempt' && m.statut !== 'inutile';
+    const pos = {};
+    const wH = (S / 2) * SLOT;
+    let colsW = k, hW = wH;
+    RES.ordre.forEach(id => {
+      const m = RES.matchs[id];
+      if (m.bracket === 'W') pos[id] = { sec: 'W', col: m.round - 1, cy: (2 * m.index - 1) * Math.pow(2, m.round - 1) * SLOT / 2 };
+      else if (m.bracket === 'GF') { pos[id] = { sec: 'W', col: k - 1 + m.round, cy: pos['W' + k + '-1'].cy }; colsW = Math.max(colsW, k + m.round); }
+      else if (m.bracket === 'P') { pos[id] = { sec: 'W', col: k - 1, cy: wH + SLOT * .9 }; hW = wH + SLOT * 1.5; }
+      else pos[id] = { sec: 'L', col: m.round - 1, cy: (2 * m.index - 1) * Math.pow(2, Math.ceil(m.round / 2) - 1) * SLOT / 2 };
+    });
+    // La revanche n'a pas lieu d'être : on retire sa colonne.
+    if (RES.matchs.GF2 && !visible(RES.matchs.GF2) && RES.matchs.GF2.statut === 'inutile') colsW = Math.min(colsW, k + 1);
+
+    const cliquable = m => PEUT_GERER && T.statut === 'en_cours' && (m.statut === 'pret' || m.statut === 'joue');
+    function ligne(m, side) {
+      const id = m[side], src = m.src[side];
+      if (id === undefined || id === null) return `<div class="m-row"><span class="m-seed"></span><span class="m-nm src">${esc(E.libelleSource(src, RES))}</span><span class="m-sc"></span></div>`;
+      const sc = side === 'a' ? m.s1 : m.s2;
+      const cls = m.statut === 'joue' ? (m.vainqueur === id ? ' win' : ' lose') : '';
+      const affSc = m.statut === 'joue' ? (m.forfait && m.vainqueur !== id ? 'F' : (sc == null ? (m.vainqueur === id ? '✓' : '') : sc)) : '';
+      return `<div class="m-row${cls}" data-p="${esc(id)}"><span class="m-seed">${seedDe(id)}</span><span class="m-nm">${esc(nomDe(id))}</span><span class="m-sc">${affSc}</span></div>`;
+    }
+    function section(sec, cols, hauteur, titre) {
+      let heads = '', boxes = '', paths = '';
+      for (let c = 0; c < cols; c++) {
+        let lbl = '';
+        if (sec === 'W') lbl = c < k ? E.libelleTour('W', c + 1, st) : E.libelleTour('GF', c - k + 1, st);
+        else lbl = E.libelleTour('L', c + 1, st);
+        if (sec === 'W' && c === k && RES.matchs.GF2 && RES.matchs.GF2.statut === 'attente' && RES.matchs.GF1.statut !== 'joue') lbl = 'Grande finale';
+        heads += `<div class="bk-head" style="left:${c * (COLW + GAP)}px;width:${COLW}px">${esc(lbl)}</div>`;
+      }
+      RES.ordre.forEach(id => {
+        const m = RES.matchs[id], p = pos[id];
+        if (p.sec !== sec || !visible(m) || p.col >= cols) return;
+        const x = p.col * (COLW + GAP), y = p.cy - MH / 2;
+        const tip = m.id === 'GF2' ? ' data-tip="Revanche : le finaliste venu des perdants a gagné la grande finale, les deux joueurs ont chacun une défaite"' : (m.bracket === 'P' ? ' data-tip="Petite finale : match pour la 3ᵉ place"' : '');
+        boxes += `<div class="m ${m.statut}${cliquable(m) ? ' cliquable' : ''}" data-m="${m.id}" style="left:${x}px;top:${y}px;width:${COLW}px;height:${MH}px"${tip}>
+          <div class="m-num">${m.num || ''}</div><div class="m-rows">${ligne(m, 'a')}${ligne(m, 'b')}</div></div>`;
+        // Traits de liaison : seulement entre matchs de la même section (le
+        // passage des battus chez les perdants n'est pas tracé, comme sur Challonge).
+        ['a', 'b'].forEach((side, si) => {
+          const s = m.src[side]; const from = s && s.win;
+          if (!from || !pos[from] || pos[from].sec !== sec || !visible(RES.matchs[from])) return;
+          const q = pos[from];
+          const x1 = q.col * (COLW + GAP) + COLW, y1 = q.cy, x2 = x, y2 = y + ROWH / 2 + si * (ROWH + 1), xm = x1 + GAP / 2;
+          paths += `<path d="M${x1} ${y1} H${xm} V${y2} H${x2}"/>`;
+        });
+      });
+      const w = cols * (COLW + GAP) - GAP;
+      return `<div class="bk-sec">${titre ? `<div class="section-title" style="margin-top:0">${titre}</div>` : ''}
+        <div class="bk-heads" style="width:${w}px">${heads}</div>
+        <div class="bk-body" style="width:${w}px;height:${hauteur}px"><svg width="${w}" height="${hauteur}">${paths}</svg>${boxes}</div></div>`;
+    }
+
+    let h = '';
+    const rest = E.aJouer(RES);
+    if (T.statut === 'preparation') h += '<div class="banner"><span>Aperçu : l\'arbre suit l\'ordre des têtes de série de l\'onglet <strong>Joueurs</strong>. Il sera figé au lancement.</span></div><div style="height:1rem"></div>';
+    else if (PEUT_GERER && T.statut === 'en_cours') h += `<p class="bk-legend">Clique sur un match pour saisir son résultat${rest.length ? ` — <strong>${rest.length}</strong> à jouer maintenant` : ''}. Un résultat se corrige à tout moment : les matchs qui en dépendaient se libèrent d'eux-mêmes.</p>`;
+    h += '<div class="bk-scroll">';
+    h += section('W', colsW, hW, st.format === 'double' ? 'Tableau principal' : '');
+    if (st.format === 'double' && k >= 2) {
+      const hL = (S / 4) * SLOT;
+      h += section('L', 2 * (k - 1), hL, 'Tableau des perdants');
+    }
+    h += '</div>';
+    el.innerHTML = h;
+
+    el.querySelectorAll('.m.cliquable').forEach(b => b.onclick = () => ouvrirScore(b.dataset.m));
+    // Survol d'un joueur : tout son parcours s'allume.
+    el.querySelectorAll('.m-row[data-p]').forEach(r => {
+      r.onmouseenter = () => el.querySelectorAll(`.m-row[data-p="${CSS.escape(r.dataset.p)}"]`).forEach(x => x.classList.add('hl'));
+      r.onmouseleave = () => el.querySelectorAll('.m-row.hl').forEach(x => x.classList.remove('hl'));
+    });
+  }
+
+  // ---------------------------------------------------------------- saisie d'un score
+  let SC = null;
+  function ouvrirScore(mid) {
+    const m = RES.matchs[mid]; if (!m) return;
+    SC = { m, w: m.statut === 'joue' ? m.vainqueur : null };
+    $('sc-titre').textContent = `Match ${m.num} · ${E.libelleTour(m.bracket, m.round, RES.structure)}`;
+    $('sc-n1').textContent = nomDe(m.a); $('sc-n2').textContent = nomDe(m.b);
+    $('sc-s1').value = m.statut === 'joue' && m.s1 != null ? m.s1 : '';
+    $('sc-s2').value = m.statut === 'joue' && m.s2 != null ? m.s2 : '';
+    $('sc-ff').checked = !!m.forfait;
+    $('sc-clear').style.visibility = m.statut === 'joue' ? 'visible' : 'hidden';
+    const bo = (T.options || {}).bestOf || 1;
+    $('sc-note').textContent = (bo > 1 ? `Match en ${(bo + 1) / 2} manches gagnantes : saisis le nombre de manches gagnées. ` : 'Le score est facultatif : désigner le vainqueur suffit. ')
+      + (m.statut === 'joue' ? 'Modifier ce résultat peut changer la suite de l\'arbre : les matchs déjà joués qui en dépendaient seront remis à jouer.' : '');
+    majWin(); $('modal-score').classList.add('on');
+    setTimeout(() => $('sc-s1').focus(), 50);
+  }
+  function majWin() {
+    $('sc-w1').classList.toggle('on', SC.w === SC.m.a);
+    $('sc-w2').classList.toggle('on', SC.w === SC.m.b);
+  }
+  $('sc-w1').onclick = () => { SC.w = SC.m.a; majWin(); };
+  $('sc-w2').onclick = () => { SC.w = SC.m.b; majWin(); };
+  ['sc-s1', 'sc-s2'].forEach(id => $(id).addEventListener('input', () => {
+    const a = $('sc-s1').value, b = $('sc-s2').value;
+    if (a !== '' && b !== '' && +a !== +b) { SC.w = +a > +b ? SC.m.a : SC.m.b; majWin(); }
+  }));
+  $('sc-ok').onclick = async () => {
+    if (!SC.w) { toast('Désigne le vainqueur.', true); return; }
+    const m = SC.m, s1 = $('sc-s1').value, s2 = $('sc-s2').value;
+    const r = Object.assign({}, T.resultats);
+    r[m.id] = { p1: m.a, p2: m.b, w: SC.w, s1: s1 === '' ? null : +s1, s2: s2 === '' ? null : +s2, forfait: $('sc-ff').checked };
+    const sc = s1 !== '' && s2 !== '' ? ` ${s1}–${s2}` : '';
+    const txt = `Match ${m.num} : ${nomDe(SC.w)} bat ${nomDe(SC.w === m.a ? m.b : m.a)}${sc}${$('sc-ff').checked ? ' (forfait)' : ''}`;
+    closeModals();
+    await sauver({ resultats: r }, (m.statut === 'joue' ? 'Correction — ' : '') + txt);
+  };
+  $('sc-clear').onclick = async () => {
+    const m = SC.m; const r = Object.assign({}, T.resultats); delete r[m.id];
+    closeModals();
+    await sauver({ resultats: r }, `Match ${m.num} : résultat effacé`);
+  };
+
+  // ---------------------------------------------------------------- joueurs
+  function renderJoueurs() {
+    const el = $('sub-joueurs');
+    const prep = T.statut === 'preparation' && PEUT_GERER;
+    let h = '';
+    if (prep) {
+      h += `<div class="pl-add"><input type="text" id="pl-nouveau" maxlength="200" placeholder="Pseudo d'un joueur non inscrit (plusieurs : séparés par des virgules)"><button class="btn primary" id="pl-ajout">＋ Ajouter</button></div>
+        <div class="actions" style="margin-bottom:1rem">
+          ${T.sortie_id ? '<button class="btn" id="pl-sync">⟳ Importer les nouveaux inscrits Discord</button><label class="check"><input type="checkbox" id="pl-maybe"> avec les « peut-être »</label>' : ''}
+          <button class="btn" id="pl-melange" ${T.joueurs.length < 2 ? 'disabled' : ''}>🎲 Tirer les têtes de série au sort</button>
+        </div>`;
+    }
+    if (!T.joueurs.length) h += '<div class="empty">Aucun joueur pour l\'instant.</div>';
+    h += '<div class="pl-list">' + T.joueurs.map((j, i) => `<div class="pl">
+        <span class="pl-seed" data-tip="Tête de série n° ${i + 1}">${i + 1}</span>
+        <span class="pl-nm">${esc(j.nom)}</span>
+        <span class="chip">${j.source === 'discord' ? 'Inscrit Discord' : 'Ajouté à la main'}</span>
+        ${PEUT_GERER && T.statut !== 'termine' ? `<button class="ico" data-act="ren" data-i="${i}" data-tip="Renommer">✎</button>` : ''}
+        ${prep ? `<button class="ico" data-act="up" data-i="${i}" ${i === 0 ? 'disabled' : ''} data-tip="Monter">▲</button>
+          <button class="ico" data-act="down" data-i="${i}" ${i === T.joueurs.length - 1 ? 'disabled' : ''} data-tip="Descendre">▼</button>
+          <button class="ico" data-act="del" data-i="${i}" data-tip="Retirer du tournoi">✕</button>` : ''}
+      </div>`).join('') + '</div>';
+    h += `<p class="note">L'ordre de la liste est l'ordre des têtes de série : le n° 1 et le n° 2 ne peuvent se rencontrer qu'en finale, et quand le nombre de joueurs n'est pas une puissance de deux, ce sont les mieux placés qui passent le premier tour sans jouer.${T.statut !== 'preparation' ? ' La liste est figée depuis le lancement (renommer reste possible).' : ''}</p>`;
+    el.innerHTML = h;
+
+    const majJoueurs = (liste, journal) => sauver({ joueurs: liste.map((j, i) => Object.assign({}, j, { seed: i + 1 })) }, journal);
+    const add = () => {
+      const noms = $('pl-nouveau').value.split(',').map(s => s.trim()).filter(Boolean);
+      if (!noms.length) return;
+      const vus = new Set(T.joueurs.map(j => j.nom.toLowerCase()));
+      const neufs = noms.filter(n => !vus.has(n.toLowerCase()) && (vus.add(n.toLowerCase()), true));
+      if (!neufs.length) { toast('Déjà dans la liste.', true); return; }
+      majJoueurs(T.joueurs.concat(neufs.map(n => ({ id: nouvelId(), nom: n, source: 'manuel' }))), 'Ajouté à la main : ' + neufs.join(', '));
+    };
+    if ($('pl-ajout')) { $('pl-ajout').onclick = add; $('pl-nouveau').onkeydown = e => { if (e.key === 'Enter') add(); }; }
+    if ($('pl-melange')) $('pl-melange').onclick = () => {
+      const l = T.joueurs.slice();
+      for (let i = l.length - 1; i > 0; i--) { const r = Math.floor(Math.random() * (i + 1)); [l[i], l[r]] = [l[r], l[i]]; }
+      majJoueurs(l, 'Têtes de série tirées au sort');
+    };
+    if ($('pl-sync')) $('pl-sync').onclick = async () => {
+      try {
+        const j = await api('inscrits', null, { sortie: T.sortie_id });
+        const avecMaybe = $('pl-maybe').checked;
+        const ids = new Set(T.joueurs.map(x => x.discord_id).filter(Boolean)), noms = new Set(T.joueurs.map(x => x.nom.toLowerCase()));
+        const neufs = j.inscrits.filter(p => (p.statut === 'present' || avecMaybe) && !(p.discord_id && ids.has(p.discord_id)) && !noms.has(p.nom.toLowerCase()));
+        if (!neufs.length) { toast('Aucun nouvel inscrit.'); return; }
+        majJoueurs(T.joueurs.concat(neufs.map(p => ({ id: nouvelId(), nom: p.nom, discord_id: p.discord_id, source: 'discord' }))), 'Inscrits Discord importés : ' + neufs.map(p => p.nom).join(', '));
+      } catch (e) { toast(e.message, true); }
+    };
+    el.querySelectorAll('button[data-act]').forEach(b => b.onclick = () => {
+      const i = +b.dataset.i, l = T.joueurs.slice(), j = l[i];
+      if (b.dataset.act === 'up')   { [l[i - 1], l[i]] = [l[i], l[i - 1]]; majJoueurs(l, `${j.nom} remonte en tête de série n° ${i}`); }
+      if (b.dataset.act === 'down') { [l[i + 1], l[i]] = [l[i], l[i + 1]]; majJoueurs(l, `${j.nom} descend en tête de série n° ${i + 2}`); }
+      if (b.dataset.act === 'del')  { if (!confirm(`Retirer ${j.nom} du tournoi ?`)) return; l.splice(i, 1); majJoueurs(l, 'Retiré : ' + j.nom); }
+      if (b.dataset.act === 'ren')  {
+        const n = (prompt('Nouveau nom pour ' + j.nom, j.nom) || '').trim();
+        if (!n || n === j.nom) return;
+        l[i] = Object.assign({}, j, { nom: n }); majJoueurs(l, `${j.nom} renommé en ${n}`);
+      }
+    });
+  }
+  const nouvelId = () => 'j' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+  // ---------------------------------------------------------------- classement
+  function renderClassement() {
+    const el = $('sub-classement');
+    if (T.statut === 'preparation') { el.innerHTML = '<div class="empty">Le classement apparaîtra une fois le tournoi lancé.</div>'; return; }
+    const cl = E.classement(T, RES);
+    const rangTxt = c => c.rang == null ? '<span class="chip st-en_cours">En lice</span>' : `<span class="rang-${c.rang}">${c.rang}${c.rang === 1 ? 'ᵉʳ' : 'ᵉ'}</span>`;
+    // Rang partagé : on l'écrit « 5ᵉ ex æquo » plutôt que d'inventer un départage.
+    const nb = {}; cl.forEach(c => { if (c.rang != null) nb[c.rang] = (nb[c.rang] || 0) + 1; });
+    el.innerHTML = `<table class="tbl"><thead><tr><th class="num">Rang</th><th>Combattant</th><th class="num">Victoires</th><th class="num">Défaites</th></tr></thead><tbody>
+      ${cl.map(c => `<tr><td class="num">${rangTxt(c)}${c.rang != null && nb[c.rang] > 1 ? ' <span style="color:var(--text-muted);font-size:.7rem">ex æquo</span>' : ''}</td><td>${MED[c.rang] ? MED[c.rang].ico + ' ' : ''}${esc(c.nom)}</td><td class="num">${c.v}</td><td class="num">${c.d}</td></tr>`).join('')}
+    </tbody></table>
+    <p class="note">Victoires et défaites comptent les matchs réellement disputés (un tour passé sans adversaire ne compte pas). Les joueurs éliminés au même tour partagent leur rang : rien ne les départage, on n'invente pas d'ordre.${T.format === 'double' ? ' En double élimination, il faut deux défaites pour être éliminé.' : ''}</p>`;
+  }
+
+  // ---------------------------------------------------------------- journal
+  function renderJournal() {
+    const j = (T.journal || []).slice().reverse();
+    $('sub-journal').innerHTML = j.length ? j.map(e => `<div class="jr"><span class="jr-ts">${esc(new Date(e.ts).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))}</span><span class="jr-par">${esc(e.par)}</span><span>${esc(e.texte)}</span></div>`).join('')
+      : '<div class="empty">Rien pour l\'instant.</div>';
+    document.querySelector('.subtab[data-sub="journal"]').textContent = `Journal (${(T.journal || []).length})`;
+  }
+
+  // ---------------------------------------------------------------- formulaire
+  let FORM_T = null, SORTIES = [];
+  const NIV_TYPE = { tournoi_deb: 'debutant', tournoi_int: 'intermediaire', tournoi_exp: 'expert' };
+  async function ouvrirForm(t, sortiePre) {
+    FORM_T = t;
+    $('form-titre').textContent = t ? 'Modifier le tournoi' : 'Nouveau tournoi';
+    $('f-ok').textContent = t ? 'Enregistrer' : 'Créer le tournoi';
+    $('f-sortie-grp').style.display = t ? 'none' : '';
+    $('f-nom').value = t ? t.nom : '';
+    $('f-niveau').value = t ? t.niveau : 'intermediaire';
+    $('f-format').value = t ? t.format : 'double';
+    const o = (t && t.options) || {};
+    $('f-gf').value = o.grandeFinale === 'unique' ? 'unique' : 'revanche';
+    $('f-pf').checked = o.petiteFinale !== false;
+    $('f-bo').value = String(o.bestOf || 1);
+    $('f-date').value = t ? t.date : new Date().toISOString().slice(0, 10);
+    $('f-heure').value = t ? (t.heure || '') : '21:00';
+    $('f-desc').value = t ? (t.description || '') : '';
+    ['1', '2', '3'].forEach(r => $('f-lot' + r).value = t && t.lots ? (t.lots[r] || '') : '');
+    const verrou = t && t.statut !== 'preparation';
+    ['f-format', 'f-gf', 'f-pf'].forEach(id => $(id).disabled = !!verrou);
+    $('f-note').textContent = verrou ? 'Le format est figé depuis le lancement : il définit l\'arbre.' : '';
+    majFormat();
+    if (!t) {
+      $('f-sortie').innerHTML = '<option value="">Chargement des sorties…</option>';
+      try {
+        SORTIES = (await api('sorties')).sorties;
+        const opt = s => `<option value="${esc(s.id)}"${s.tournoi ? ' disabled' : ''}>${esc(s.titre || '(sans titre)')} — ${esc(dateFr(s.date, s.heure))} · ${s.presents} présent${s.presents > 1 ? 's' : ''}${s.tournoi ? ' (déjà un tournoi)' : ''}</option>`;
+        const tn = SORTIES.filter(s => s.niveau), autres = SORTIES.filter(s => !s.niveau);
+        $('f-sortie').innerHTML = '<option value="">— Aucune : joueurs ajoutés à la main —</option>'
+          + (tn.length ? `<optgroup label="Sorties « Tournoi PvP »">${tn.map(opt).join('')}</optgroup>` : '')
+          + (autres.length ? `<optgroup label="Autres sorties récentes">${autres.map(opt).join('')}</optgroup>` : '');
+        if (sortiePre && SORTIES.some(s => s.id === sortiePre && !s.tournoi)) { $('f-sortie').value = sortiePre; majSortie(); }
+        else if (!sortiePre && tn.some(s => !s.tournoi)) { $('f-sortie').value = tn.find(s => !s.tournoi).id; majSortie(); }
+      } catch (e) { $('f-sortie').innerHTML = '<option value="">— Aucune (sorties illisibles) —</option>'; }
+    }
+    $('modal-form').classList.add('on');
+  }
+  function majFormat() {
+    const d = $('f-format').value === 'double';
+    $('f-gf-grp').style.display = d ? '' : 'none';
+    $('f-pf-grp').style.display = d ? 'none' : '';
+  }
+  function majSortie() {
+    const s = SORTIES.find(x => x.id === $('f-sortie').value);
+    if (!s) return;
+    if (!$('f-nom').value || FORM_T === null) $('f-nom').value = s.titre || '';
+    if (s.niveau) $('f-niveau').value = s.niveau;
+    if (s.date) $('f-date').value = s.date;
+    if (s.heure) $('f-heure').value = s.heure;
+  }
+  $('f-format').onchange = majFormat;
+  $('f-sortie').onchange = majSortie;
+  $('f-ok').onclick = async () => {
+    const v = {
+      nom: $('f-nom').value.trim(), niveau: $('f-niveau').value, format: $('f-format').value,
+      options: { grandeFinale: $('f-gf').value, petiteFinale: $('f-pf').checked, bestOf: +$('f-bo').value },
+      date: $('f-date').value, heure: $('f-heure').value, description: $('f-desc').value.trim(),
+      lots: { 1: $('f-lot1').value.trim(), 2: $('f-lot2').value.trim(), 3: $('f-lot3').value.trim() }
+    };
+    if (!v.nom) { toast('Donne un nom au tournoi.', true); return; }
+    if (FORM_T) {
+      if (FORM_T.statut !== 'preparation') { delete v.format; delete v.options; v.options = Object.assign({}, FORM_T.options, { bestOf: +$('f-bo').value }); }
+      closeModals();
+      await sauver(v, 'Informations du tournoi modifiées');
+      return;
+    }
+    v.sortie_id = $('f-sortie').value; v.avec_peut_etre = $('f-maybe').checked;
+    try {
+      const j = await api('create', v);
+      closeModals(); toast('Tournoi créé');
+      LISTE.unshift(j.tournoi); ouvrir(j.tournoi.id);
+    } catch (e) { toast(e.message, true); }
+  };
+
+  // ---------------------------------------------------------------- démarrage
+  (async function init() {
+    await chargerListe();
+    const q = new URLSearchParams(location.search);
+    if (q.get('t')) { ouvrir(q.get('t')); return; }
+    if (q.get('sortie')) {
+      // Lien posé sur l'encart Discord : le tournoi de cette sortie, ou sa création.
+      const ok = await ouvrir(null, q.get('sortie'));
+      if (!ok) {
+        if (PEUT_GERER) ouvrirForm(null, q.get('sortie'));
+        else toast('L\'arbre de ce tournoi n\'est pas encore monté — reviens après la clôture des inscriptions.');
+      }
+    }
+  })();
+})();
+</script>
+</body>
+</html>

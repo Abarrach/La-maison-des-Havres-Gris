@@ -495,7 +495,41 @@
     return null;
   }
 
+  // Ordre des têtes de série d'après les résultats, pour faire passer les meilleurs
+  // le 1ᵉʳ tour (les exemptions vont aux premières têtes de série) et les répartir
+  // dans l'arbre. Critères, au même niveau que le tournoi : points de la saison du
+  // tournoi, puis titres de la saison, puis médailles de toujours (or, argent,
+  // bronze). Sans aucun résultat : on garde l'ordre actuel, après les classés.
+  function ordreParResultats(tournois, t) {
+    var autres = tournois.filter(function (x) { return x.id !== t.id; });
+    var s = saisonDe(t.date), saison = {};
+    if (s) classementSaison(autres, s.id, t.niveau).forEach(function (r) { saison[r.cle] = r; });
+    var med = {};
+    autres.filter(function (x) { return x.statut === 'termine' && x.niveau === t.niveau; }).forEach(function (x) {
+      pointsTournoi(x).forEach(function (p) {
+        if (p.rang == null || p.rang > 3) return;
+        var m = med[p.cle] || (med[p.cle] = [0, 0, 0, 0]);
+        m[p.rang]++;
+      });
+    });
+    function score(j) {
+      var k = cleJoueur(j), r = saison[k], m = med[k] || [0, 0, 0, 0];
+      return [r ? r.points : 0, r ? r.titres : 0, m[1], m[2], m[3]];
+    }
+    return (t.joueurs || []).map(function (j, i) { return { j: j, i: i, s: score(j) }; })
+      .sort(function (a, b) {
+        for (var x = 0; x < 5; x++) if (b.s[x] !== a.s[x]) return b.s[x] - a.s[x];
+        return a.i - b.i;
+      })
+      .map(function (x) { return x.j; });
+  }
+
+  // Combien de joueurs passent le 1ᵉʳ tour sans jouer : les places vides de l'arbre.
+  // Ce sont toujours les premières têtes de série (cf. ordreTetes).
+  function nbExemptes(n) { return n < 2 ? 0 : Math.max(2, puissance2(n)) - n; }
+
   return {
+    ordreParResultats: ordreParResultats, nbExemptes: nbExemptes,
     FORMATS: FORMATS, NIVEAUX: NIVEAUX,
     ordreTetes: ordreTetes, structure: structure, resoudre: resoudre,
     classement: classement, podium: podium, libelleTour: libelleTour,

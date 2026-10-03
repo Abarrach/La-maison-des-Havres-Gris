@@ -287,4 +287,26 @@ test('conseil de montée : positif seulement, lu sur les 3 derniers tournois du 
   assert.strictEqual(E.conseilMontee(T, cle('Shean'), 'expert'), null, 'pas de niveau au-dessus des vétérans');
 });
 
+test('exemptions : toujours les premières têtes de série, autant que de places vides', () => {
+  assert.deepStrictEqual([2, 3, 4, 5, 6, 7, 8, 9, 16].map(E.nbExemptes), [0, 1, 0, 3, 2, 1, 0, 7, 0]);
+  for (const n of [3, 5, 6, 7, 9, 12]) {
+    const res = E.resoudre(tournoi(Array.from({ length: n }, (_, i) => 'J' + (i + 1)), 'double'));
+    const exemptes = res.ordre.map(id => res.matchs[id]).filter(m => m.bracket === 'W' && m.round === 1 && m.statut === 'exempt')
+      .map(m => res.joueurs.findIndex(j => j.id === (m.a || m.b)) + 1).sort((a, b) => a - b);
+    assert.deepStrictEqual(exemptes, Array.from({ length: E.nbExemptes(n) }, (_, i) => i + 1), n + ' joueurs');
+  }
+});
+
+test('têtes de série selon les résultats : saison, titres, médailles, puis ordre actuel', () => {
+  const T = [tournoiFini('a', '2026-10-05', 'expert', ['Fenros', 'Neuroch', 'Bahlor', 'Fenrir']),
+             tournoiFini('b', '2026-10-12', 'expert', ['Neuroch', 'Fenros', 'Bahlor', 'Fenrir']),
+             tournoiFini('c', '2026-10-06', 'debutant', ['Shean', 'X', 'Y', 'Z'])];
+  const nouveau = Object.assign(tournoi(['Nouveau1', 'Shean', 'Bahlor', 'Neuroch', 'Nouveau2', 'Fenros'], 'double'),
+                                { id: 'n', date: '2026-10-20', niveau: 'expert', statut: 'preparation' });
+  const ordre = E.ordreParResultats(T, nouveau).map(j => j.nom);
+  // Fenros et Neuroch : 9 pts et 1 titre chacun ; départagés par l'ordre actuel (Neuroch avant Fenros).
+  // Bahlor : 3ᵉ ex æquo deux fois (6 pts). Shean n'a de résultats que chez les débutants : il compte pour rien ici.
+  assert.deepStrictEqual(ordre, ['Neuroch', 'Fenros', 'Bahlor', 'Nouveau1', 'Shean', 'Nouveau2']);
+});
+
 console.log((process.exitCode ? '✖ ' : '✔ ') + ok + ' test(s) réussi(s)');

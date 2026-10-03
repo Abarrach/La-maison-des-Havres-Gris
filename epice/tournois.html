@@ -161,6 +161,11 @@
     .complet { display:flex; justify-content:space-between; align-items:center; gap:.75rem; flex-wrap:wrap; padding:.6rem .9rem; margin-bottom:1rem; border:1px solid var(--border); border-left:3px solid var(--accent-dim); background:var(--surface); font-size:.8rem; color:var(--text-muted); }
     .complet strong { color:var(--text); }
     .complet.ok { border-left-color:#2E5A36; }
+    .complet .actions { gap:.4rem; }
+    .pl.exempt { border-left:3px solid var(--accent-dim); }
+    .exo { display:flex; align-items:center; gap:.35rem; font-size:.66rem; color:var(--text-muted); cursor:pointer; white-space:nowrap; }
+    .exo input { accent-color:var(--accent); width:14px; height:14px; }
+    .pl.exempt .exo { color:var(--accent); }
     .dlg .cand { display:flex; flex-direction:column; gap:.2rem; margin-top:.4rem; max-height:260px; overflow-y:auto; }
     .dlg .cand label { display:flex; align-items:center; gap:.5rem; padding:.3rem .4rem; border-radius:2px; cursor:pointer; color:var(--text); }
     .dlg .cand label:hover { background:var(--accent-glow); }
@@ -928,25 +933,35 @@
           <button class="btn" id="pl-melange" ${T.joueurs.length < 2 ? 'disabled' : ''}>🎲 Tirer les têtes de série au sort</button>
         </div>`;
     }
+    // Places vides de l'arbre = joueurs qui passent le 1ᵉʳ tour sans jouer : toujours
+    // les premières têtes de série. Plutôt que de contraindre le nombre de joueurs
+    // (personne ne reste sur le banc parce qu'on est 6) ou de remplir avec des absents
+    // (forfaits), on montre QUI passe et on laisse choisir : en général les meilleurs,
+    // pour que les autres jouent un match de plus.
+    const vides = prep ? E.nbExemptes(T.joueurs.length) : 0;
     if (prep && T.joueurs.length >= 2) {
-      // Places vides de l'arbre = joueurs qualifiés d'office au 2ᵉ tour (Bahlor :
-      // « il faut 4, 8 ou 16 joueurs »). On le dit AVANT le lancement, avec le remède.
-      const n = T.joueurs.length, cible = Math.max(4, Math.pow(2, Math.ceil(Math.log2(n)))), vides = cible - n;
+      const n = T.joueurs.length, cible = n + vides;
+      const noms = T.joueurs.slice(0, vides).map(j => '<strong>' + esc(j.nom) + '</strong>');
+      const liste = noms.length > 1 ? noms.slice(0, -1).join(', ') + ' et ' + noms[noms.length - 1] : noms[0];
       h += vides
-        ? `<div class="complet"><span><strong>${n} joueurs</strong> : ${vides} ${vides > 1 ? 'passeront' : 'passera'} le 1ᵉʳ tour sans jouer (${vides > 1 ? 'les ' + vides + ' premières têtes' : 'la première tête'} de série). Il manque <strong>${vides}</strong> joueur${vides > 1 ? 's' : ''} pour un tableau complet de ${cible}.</span><button class="btn small" id="pl-completer">＋ Compléter à ${cible}</button></div>`
-        : `<div class="complet ok"><span>✓ <strong>${n} joueurs</strong> : tableau complet, personne ne passe le 1ᵉʳ tour sans jouer.</span></div>`;
+        ? `<div class="complet"><span>${n} joueurs pour un arbre de ${cible} : ${liste} ${vides > 1 ? 'passeront' : 'passera'} le 1ᵉʳ tour sans jouer. Coche « passe le 1ᵉʳ tour » pour choisir qui, ou laisse le site le décider d'après les résultats.</span>
+            <span class="actions"><button class="btn small primary" id="pl-classer" data-tip="Têtes de série rangées d'après les points de la saison puis les médailles, à ce niveau : les meilleurs passent le 1ᵉʳ tour et sont répartis dans l'arbre pour ne pas se croiser trop tôt.">🏅 Classer selon les résultats</button>
+            <button class="btn small" id="pl-completer" data-tip="Pour des retardataires bien présents : propose les « peut-être » de la sortie et les habitués du niveau. Un absent offrirait une victoire par forfait.">＋ Compléter à ${cible}</button></span></div>`
+        : `<div class="complet ok"><span>✓ <strong>${n} joueurs</strong> : tableau complet, tout le monde joue dès le 1ᵉʳ tour.</span>
+            <span class="actions"><button class="btn small" id="pl-classer" data-tip="Têtes de série rangées d'après les points de la saison puis les médailles, à ce niveau : les meilleurs sont répartis dans l'arbre pour ne pas se croiser trop tôt.">🏅 Classer selon les résultats</button></span></div>`;
     }
     if (!T.joueurs.length) h += '<div class="empty">Aucun joueur pour l\'instant.</div>';
-    h += '<div class="pl-list">' + T.joueurs.map((j, i) => `<div class="pl">
+    h += '<div class="pl-list">' + T.joueurs.map((j, i) => `<div class="pl${i < vides ? ' exempt' : ''}">
         <span class="pl-seed" data-tip="Tête de série n° ${i + 1}">${i + 1}</span>
         <span class="pl-nm">${esc(j.nom)}</span>
+        ${vides ? `<label class="exo" data-tip="${i < vides ? 'Passe le 1ᵉʳ tour sans jouer. Décocher le fait jouer ce tour, à la place du premier non exempté.' : 'Cocher : passe le 1ᵉʳ tour sans jouer, à la place du dernier exempté.'}"><input type="checkbox" data-exo="${i}"${i < vides ? ' checked' : ''}> passe le 1ᵉʳ tour</label>` : ''}
         <span class="chip">${SOURCE_LBL[j.source] || SOURCE_LBL.manuel}</span>
         ${PEUT_GERER && T.statut !== 'termine' ? `<button class="ico" data-act="ren" data-i="${i}" data-tip="Renommer">✎</button>` : ''}
         ${prep ? `<button class="ico" data-act="up" data-i="${i}" ${i === 0 ? 'disabled' : ''} data-tip="Monter">▲</button>
           <button class="ico" data-act="down" data-i="${i}" ${i === T.joueurs.length - 1 ? 'disabled' : ''} data-tip="Descendre">▼</button>
           <button class="ico" data-act="del" data-i="${i}" data-tip="Retirer du tournoi">✕</button>` : ''}
       </div>`).join('') + '</div>';
-    h += `<p class="note">L'ordre de la liste est l'ordre des têtes de série : le n° 1 et le n° 2 ne peuvent se rencontrer qu'en finale, et quand le nombre de joueurs n'est pas une puissance de deux, ce sont les mieux placés qui passent le premier tour sans jouer.${T.statut !== 'preparation' ? ' La liste est figée depuis le lancement (renommer reste possible).' : ''}</p>`;
+    h += `<p class="note">L'ordre de la liste est l'ordre des têtes de série : le n° 1 et le n° 2 ne peuvent se rencontrer qu'en finale, et quand le nombre de joueurs n'est pas 4, 8 ou 16, ce sont les mieux placés qui passent le premier tour sans jouer.${T.statut !== 'preparation' ? ' La liste est figée depuis le lancement (renommer reste possible).' : ''}</p>`;
     el.innerHTML = h;
 
     const majJoueurs = (liste, journal) => sauver({ joueurs: liste.map((j, i) => Object.assign({}, j, { seed: i + 1 })) }, journal);
@@ -960,6 +975,23 @@
     };
     if ($('pl-ajout')) { $('pl-ajout').onclick = add; brancherSuggestions(majJoueurs, add); }
     if ($('pl-completer')) $('pl-completer').onclick = () => completer(majJoueurs);
+    if ($('pl-classer')) $('pl-classer').onclick = () => {
+      const ordre = E.ordreParResultats(LISTE, T);
+      if (ordre.every((j, i) => j.id === T.joueurs[i].id)) { toast('Déjà dans l\'ordre des résultats.'); return; }
+      const v = E.nbExemptes(ordre.length);
+      majJoueurs(ordre, 'Têtes de série classées selon les résultats' + (v ? ' — passent le 1er tour : ' + ordre.slice(0, v).map(j => j.nom).join(', ') : ''));
+    };
+    // Coche « passe le 1er tour » : un ÉCHANGE, pour que le nombre d'exemptés reste
+    // juste. Cocher fait entrer le joueur à la place du dernier exempté ; décocher
+    // fait sortir le joueur au profit du premier non exempté.
+    el.querySelectorAll('input[data-exo]').forEach(c => c.onchange = () => {
+      const i = +c.dataset.exo, l = T.joueurs.slice();
+      const autre = c.checked ? vides - 1 : vides;
+      if (autre < 0 || autre >= l.length) return;
+      [l[i], l[autre]] = [l[autre], l[i]];
+      const entre = c.checked ? l[autre] : l[i], sort = c.checked ? l[i] : l[autre];
+      majJoueurs(l, `${entre.nom} passe le 1er tour à la place de ${sort.nom}`);
+    });
     if ($('pl-melange')) $('pl-melange').onclick = () => {
       const l = T.joueurs.slice();
       for (let i = l.length - 1; i > 0; i--) { const r = Math.floor(Math.random() * (i + 1)); [l[i], l[r]] = [l[r], l[i]]; }
@@ -998,7 +1030,7 @@
   //   2. les habitués des tournois de CE niveau qui ne sont pas inscrits (à cocher
   //      si on les sait présents) — les plus récents d'abord.
   async function completer(majJoueurs) {
-    const n = T.joueurs.length, cible = Math.max(4, Math.pow(2, Math.ceil(Math.log2(n)))), besoin = cible - n;
+    const n = T.joueurs.length, besoin = E.nbExemptes(n), cible = n + besoin;
     const deja = new Set(T.joueurs.map(j => E.cleJoueur(j)));
     const nomsDeja = new Set(T.joueurs.map(j => j.nom.toLowerCase()));
     const libre = c => !deja.has(E.cleJoueur(c)) && !nomsDeja.has(c.nom.toLowerCase());

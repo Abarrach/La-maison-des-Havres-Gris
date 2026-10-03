@@ -29,7 +29,7 @@ elseif (in_array($action, $member, true)) epice_require_login();
 else tout(false, [], 'Action inconnue.');
 
 const NIVEAUX_T  = ['debutant', 'intermediaire', 'expert'];
-const NIVEAU_LBL = ['debutant' => 'Débutants', 'intermediaire' => 'Intermédiaires', 'expert' => 'Experts'];
+const NIVEAU_LBL = ['debutant' => 'Débutants', 'intermediaire' => 'Intermédiaires', 'expert' => 'Vétérans'];
 const NIVEAU_ICO = ['debutant' => '🌱', 'intermediaire' => '⚔️', 'expert' => '🔥'];
 const STATUTS_T  = ['preparation', 'en_cours', 'termine'];
 const MAX_JOUEURS = 128;

@@ -33,7 +33,7 @@
   var NIVEAUX = {
     debutant:      { label: 'Débutants',      icon: '🌱' },
     intermediaire: { label: 'Intermédiaires', icon: '⚔️' },
-    expert:        { label: 'Experts',        icon: '🔥' }
+    expert:        { label: 'Vétérans',       icon: '🔥' }  // clé `expert` conservée, libellé adouci
   };
 
   function puissance2(n) { var s = 1; while (s < n) s *= 2; return s; }

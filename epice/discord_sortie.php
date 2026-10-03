@@ -243,12 +243,14 @@ const SORTIE_TYPES = [
     //  l'organisateur sur epice/tournois.html (arbre, scores, podium, lots).
     //  'tournoi' = niveau, relu par tournois-api.php (TYPE_NIVEAU) et par le bouton
     //  « Arbre du tournoi » de l'encart.
+    //  Le niveau `expert` s'AFFICHE « Vétérans » (moins intimidant, demande de
+    //  l'utilisateur) : seul le libellé a changé, clés et valeurs stockées restent.
     'tournoi_deb'=> ['label' => 'Tournoi PvP — Débutants', 'icon' => '🌱', 'site' => false, 'postes' => false,
                      'sub' => 'p_tournoi', 'tournoi' => 'debutant', 'desc' => 'Pour se lancer en duel, sans pression'],
     'tournoi_int'=> ['label' => 'Tournoi PvP — Intermédiaires', 'icon' => '⚔️', 'site' => false, 'postes' => false,
                      'sub' => 'p_tournoi', 'tournoi' => 'intermediaire', 'desc' => 'On connaît son build, on veut se mesurer'],
-    'tournoi_exp'=> ['label' => 'Tournoi PvP — Experts', 'icon' => '🔥', 'site' => false, 'postes' => false,
-                     'sub' => 'p_tournoi', 'tournoi' => 'expert', 'desc' => 'Les meilleurs duellistes de la guilde'],
+    'tournoi_exp'=> ['label' => 'Tournoi PvP — Vétérans', 'icon' => '🔥', 'site' => false, 'postes' => false,
+                     'sub' => 'p_tournoi', 'tournoi' => 'expert', 'desc' => 'Pour les duellistes aguerris'],
 
     // --- Farm › Épice
     'epice'      => ['label' => 'Épice', 'icon' => '🏜️', 'site' => true, 'postes' => 'epice',

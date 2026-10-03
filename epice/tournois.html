@@ -241,7 +241,7 @@
     <div class="t-head">
       <div>
         <h1 class="page">Tournois PvP</h1>
-        <p class="page-sub">Débutants, intermédiaires, experts : les inscrits de la sortie Discord deviennent les combattants, l'arbre se remplit au fil des scores, et le podium part sur Discord à la fin.</p>
+        <p class="page-sub">Débutants, intermédiaires, vétérans : les inscrits de la sortie Discord deviennent les combattants, l'arbre se remplit au fil des scores, et le podium part sur Discord à la fin.</p>
       </div>
       <div class="actions" id="liste-actions"></div>
     </div>
@@ -296,7 +296,7 @@
     <div class="fgroup"><label class="f" for="f-nom">Nom du tournoi</label><input type="text" id="f-nom" maxlength="80" placeholder="ex. Coupe du Sietch — saison 1"></div>
     <div class="grid2">
       <div class="fgroup"><label class="f" for="f-niveau">Niveau</label>
-        <select id="f-niveau"><option value="debutant">🌱 Débutants</option><option value="intermediaire" selected>⚔️ Intermédiaires</option><option value="expert">🔥 Experts</option></select></div>
+        <select id="f-niveau"><option value="debutant">🌱 Débutants</option><option value="intermediaire" selected>⚔️ Intermédiaires</option><option value="expert">🔥 Vétérans</option></select></div>
       <div class="fgroup"><label class="f" for="f-format">Format</label>
         <select id="f-format"><option value="double">Double élimination</option><option value="simple">Simple élimination</option></select></div>
     </div>
@@ -456,7 +456,7 @@
   }
 
   // Palmarès : médailles cumulées, PAR NIVEAU de préférence — un podium chez les
-  // débutants ne vaut pas un podium chez les experts, on ne les mélange que si on
+  // débutants ne vaut pas un podium chez les vétérans, on ne les mélange que si on
   // le demande (« Tous niveaux »), et la base est rappelée au-dessus du tableau.
   function renderPalmares() {
     filtres($('palm-filtres'), filtrePalm, k => filtrePalm = k);

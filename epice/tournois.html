@@ -158,6 +158,15 @@
     .ac-etat { font-size:.72rem; color:var(--text-muted); margin:-.5rem 0 .9rem; }
     .ac-etat.err { color:#E09080; }
     .ac-etat a { cursor:pointer; }
+    .complet { display:flex; justify-content:space-between; align-items:center; gap:.75rem; flex-wrap:wrap; padding:.6rem .9rem; margin-bottom:1rem; border:1px solid var(--border); border-left:3px solid var(--accent-dim); background:var(--surface); font-size:.8rem; color:var(--text-muted); }
+    .complet strong { color:var(--text); }
+    .complet.ok { border-left-color:#2E5A36; }
+    .dlg .cand { display:flex; flex-direction:column; gap:.2rem; margin-top:.4rem; max-height:260px; overflow-y:auto; }
+    .dlg .cand label { display:flex; align-items:center; gap:.5rem; padding:.3rem .4rem; border-radius:2px; cursor:pointer; color:var(--text); }
+    .dlg .cand label:hover { background:var(--accent-glow); }
+    .dlg .cand input { accent-color:var(--accent); width:15px; height:15px; }
+    .dlg .cand .src { margin-left:auto; font-size:.68rem; color:var(--text-muted); }
+    .dlg .cand-titre { font-size:.6rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); margin-top:.8rem; }
     .pl-list { display:flex; flex-direction:column; gap:.3rem; }
     .pl { display:flex; align-items:center; gap:.6rem; background:var(--surface); border:1px solid var(--border); border-radius:2px; padding:.45rem .7rem; font-size:.84rem; }
     .pl-seed { width:28px; text-align:center; font-weight:700; color:var(--accent); font-size:.78rem; }
@@ -919,6 +928,14 @@
           <button class="btn" id="pl-melange" ${T.joueurs.length < 2 ? 'disabled' : ''}>🎲 Tirer les têtes de série au sort</button>
         </div>`;
     }
+    if (prep && T.joueurs.length >= 2) {
+      // Places vides de l'arbre = joueurs qualifiés d'office au 2ᵉ tour (Bahlor :
+      // « il faut 4, 8 ou 16 joueurs »). On le dit AVANT le lancement, avec le remède.
+      const n = T.joueurs.length, cible = Math.max(4, Math.pow(2, Math.ceil(Math.log2(n)))), vides = cible - n;
+      h += vides
+        ? `<div class="complet"><span><strong>${n} joueurs</strong> : ${vides} ${vides > 1 ? 'passeront' : 'passera'} le 1ᵉʳ tour sans jouer (${vides > 1 ? 'les ' + vides + ' premières têtes' : 'la première tête'} de série). Il manque <strong>${vides}</strong> joueur${vides > 1 ? 's' : ''} pour un tableau complet de ${cible}.</span><button class="btn small" id="pl-completer">＋ Compléter à ${cible}</button></div>`
+        : `<div class="complet ok"><span>✓ <strong>${n} joueurs</strong> : tableau complet, personne ne passe le 1ᵉʳ tour sans jouer.</span></div>`;
+    }
     if (!T.joueurs.length) h += '<div class="empty">Aucun joueur pour l\'instant.</div>';
     h += '<div class="pl-list">' + T.joueurs.map((j, i) => `<div class="pl">
         <span class="pl-seed" data-tip="Tête de série n° ${i + 1}">${i + 1}</span>
@@ -942,6 +959,7 @@
       majJoueurs(T.joueurs.concat(neufs.map(n => ({ id: nouvelId(), nom: n, source: 'manuel' }))), 'Ajouté à la main : ' + neufs.join(', '));
     };
     if ($('pl-ajout')) { $('pl-ajout').onclick = add; brancherSuggestions(majJoueurs, add); }
+    if ($('pl-completer')) $('pl-completer').onclick = () => completer(majJoueurs);
     if ($('pl-melange')) $('pl-melange').onclick = () => {
       const l = T.joueurs.slice();
       for (let i = l.length - 1; i > 0; i--) { const r = Math.floor(Math.random() * (i + 1)); [l[i], l[r]] = [l[r], l[i]]; }
@@ -972,6 +990,52 @@
       }
     });
   }
+  // ---- Compléter le tableau ---------------------------------------------------
+  //  On NE remplit PAS au hasard avec des membres du Discord : un joueur ajouté qui
+  //  ne vient pas donne une victoire par forfait à son adversaire, pire qu'un tour
+  //  passé sans jouer. On PROPOSE les plus probables, l'organisateur coche :
+  //   1. les « peut-être » de la sortie (cochés d'office : ils ont dit leur intérêt) ;
+  //   2. les habitués des tournois de CE niveau qui ne sont pas inscrits (à cocher
+  //      si on les sait présents) — les plus récents d'abord.
+  async function completer(majJoueurs) {
+    const n = T.joueurs.length, cible = Math.max(4, Math.pow(2, Math.ceil(Math.log2(n)))), besoin = cible - n;
+    const deja = new Set(T.joueurs.map(j => E.cleJoueur(j)));
+    const nomsDeja = new Set(T.joueurs.map(j => j.nom.toLowerCase()));
+    const libre = c => !deja.has(E.cleJoueur(c)) && !nomsDeja.has(c.nom.toLowerCase());
+    let maybes = [];
+    if (T.sortie_id) {
+      try { maybes = (await api('inscrits', null, { sortie: T.sortie_id })).inscrits.filter(p => p.statut === 'maybe' && libre(p)); }
+      catch (e) { /* sortie purgée : on se contente des habitués */ }
+    }
+    const habitues = [], vus = new Set(maybes.map(m => E.cleJoueur(m)));
+    LISTE.filter(t => t.statut === 'termine' && t.niveau === T.niveau && t.id !== T.id)
+      .sort((a, b) => (a.date < b.date ? 1 : -1))
+      .forEach(t => (t.joueurs || []).forEach(j => {
+        const k = E.cleJoueur(j);
+        if (vus.has(k) || !libre(j)) return;
+        vus.add(k); habitues.push({ nom: j.nom, discord_id: j.discord_id || '', dernier: t.date });
+      }));
+    const niv = E.NIVEAUX[T.niveau].label.toLowerCase();
+    if (!maybes.length && !habitues.length) {
+      await duneDialog({ titre: `Compléter à ${cible}`, confirm: 'Compris', annuler: '',
+        html: `Personne à proposer : aucun « peut-être » sur la sortie, et pas d'habitué des tournois ${esc(niv)} hors de la liste.<br>Ajoute des membres avec le champ de recherche, ou lance tel quel : ${besoin} joueur${besoin > 1 ? 's' : ''} passer${besoin > 1 ? 'ont' : 'a'} le 1ᵉʳ tour sans jouer.` });
+      return;
+    }
+    let i = 0;
+    const ligne = (c, coche, src) => `<label><input type="checkbox" data-c="${i++}"${coche ? ' checked' : ''}> ${esc(c.nom)}<span class="src">${src}</span></label>`;
+    const cands = maybes.map(m => ({ c: m, source: 'discord' })).concat(habitues.map(h => ({ c: h, source: 'membre' })));
+    let html = `Il manque <strong>${besoin}</strong> joueur${besoin > 1 ? 's' : ''} pour un tableau de ${cible}. Coche ceux qui sont là :`;
+    if (maybes.length) html += `<div class="cand-titre">« Peut-être » sur la sortie</div><div class="cand">${maybes.map((m, k) => ligne(m, k < besoin, 'peut-être')).join('')}</div>`;
+    if (habitues.length) html += `<div class="cand-titre">Habitués des tournois ${esc(niv)}</div><div class="cand">${habitues.slice(0, 20).map(h => ligne(h, false, 'dernier : ' + esc(dateFr(h.dernier).replace(/^\S+ /, '')))).join('')}</div>`;
+    html += `<p class="note" style="margin-top:.6rem">Ne coche que des joueurs présents : un absent offrirait une victoire par forfait à son adversaire. Tu peux en ajouter plus (ou moins) que ${besoin}.</p>`;
+    if (!await duneDialog({ titre: `Compléter à ${cible}`, confirm: 'Ajouter les joueurs cochés', html })) return;
+    const choisis = [...document.querySelectorAll('#dlg-body input[data-c]:checked')].map(x => cands[+x.dataset.c]);
+    if (!choisis.length) return;
+    renderJoueurs.refocus = false;
+    majJoueurs(T.joueurs.concat(choisis.map(({ c, source }) => ({ id: nouvelId(), nom: c.nom, discord_id: c.discord_id || '', source }))),
+      `Tableau complété (${n} → ${n + choisis.length}) : ` + choisis.map(x => x.c.nom).join(', '));
+  }
+
   const SOURCE_LBL = { discord: 'Inscrit à la sortie', membre: 'Membre Discord', manuel: 'Ajouté à la main' };
 
   // ---- Suggestions : tous les membres du serveur Discord ----------------------

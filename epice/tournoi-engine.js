@@ -182,13 +182,19 @@
         }
       }
 
-      if (e.a === undefined || e.b === undefined) return;     // en attente
-      if (e.a === null || e.b === null) {                       // exemption
+      // Exemption : dès qu'une case est vide pour de bon, le match n'aura jamais
+      // lieu, même si l'autre joueur n'est pas encore connu. Le reconnaître tout de
+      // suite (et non après le tour précédent) permet de masquer ces matchs dès le
+      // départ — chez les perdants, un tour entier peut n'être fait que de ça.
+      // Le vainqueur reste alors « inconnu » et se résoudra au calcul suivant :
+      // l'arbre est recalculé de zéro à chaque fois.
+      if (e.a === null || e.b === null) {
         e.statut = 'exempt';
         e.vainqueur = e.a === null ? e.b : e.a;
         e.perdant = null;
         return;
       }
+      if (e.a === undefined || e.b === undefined) return;     // en attente
       e.num = ++num;
       var r = resultats[m.id];
       if (r && ((r.p1 === e.a && r.p2 === e.b) || (r.p1 === e.b && r.p2 === e.a))
@@ -281,12 +287,27 @@
       .map(function (s) { return { rang: s.rang, id: s.id, nom: s.nom, v: s.v, d: s.d }; });
   }
 
-  function libelleTour(bracket, round, st) {
+  // Tours du tableau des perdants qui contiennent au moins un vrai match. Avec un
+  // effectif qui n'est pas une puissance de deux, des tours entiers ne sont faits
+  // que d'exemptions : Challonge les fait disparaître et renumérote, on fait pareil
+  // (sinon une colonne vide s'intercale et « tour 2 » devient le premier joué).
+  function toursPerdants(res) {
+    var tours = [];
+    res.ordre.forEach(function (id) {
+      var m = res.matchs[id];
+      if (m.bracket === 'L' && m.statut !== 'exempt' && tours.indexOf(m.round) < 0) tours.push(m.round);
+    });
+    return tours.sort(function (a, b) { return a - b; });
+  }
+
+  function libelleTour(bracket, round, st, res) {
     if (bracket === 'GF') return round === 1 ? 'Grande finale' : 'Revanche';
     if (bracket === 'P')  return 'Petite finale';
     if (bracket === 'L') {
       var dernier = 2 * (st.k - 1);
-      return round === dernier ? 'Finale des perdants' : 'Perdants — tour ' + round;
+      if (round === dernier) return 'Finale des perdants';
+      var rang = res ? toursPerdants(res).indexOf(round) + 1 : round;
+      return 'Perdants — tour ' + (rang || round);
     }
     var d = st.k - round;
     if (d === 0) return st.format === 'double' ? 'Finale des gagnants' : 'Finale';
@@ -300,6 +321,11 @@
     if (!src) return '';
     if (src.seed != null) return 'Exempt';
     var m = res.matchs[src.win || src.lose || src.same];
+    // Match d'exemption : on remonte au joueur qui le traverse.
+    if (m && m.statut === 'exempt') {
+      if (src.lose) return 'Exempt';
+      return libelleSource(m.a === null ? m.src.b : m.src.a, res);
+    }
     if (!m || m.num == null) return src.lose ? 'Exempt' : '—';
     if (src.win)  return 'Vainqueur du match ' + m.num;
     if (src.lose) return 'Perdant du match ' + m.num;
@@ -328,6 +354,7 @@
     FORMATS: FORMATS, NIVEAUX: NIVEAUX,
     ordreTetes: ordreTetes, structure: structure, resoudre: resoudre,
     classement: classement, podium: podium, libelleTour: libelleTour,
-    libelleSource: libelleSource, aJouer: aJouer, resultatsValides: resultatsValides
+    libelleSource: libelleSource, aJouer: aJouer, resultatsValides: resultatsValides,
+    toursPerdants: toursPerdants
   };
 });

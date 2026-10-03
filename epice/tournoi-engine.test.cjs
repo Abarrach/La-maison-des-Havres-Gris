@@ -71,6 +71,39 @@ test('tournoi Veteran (Challonge) : podium et bilans', () => {
   assert.strictEqual(rang('LeFou'), 7);   assert.strictEqual(rang('Hasashi'), 7);
 });
 
+test('tournoi des nouveaux (Challonge) : 6 joueurs, exemptions et tour vide chez les perdants', () => {
+  const t = tournoi(['Shean', 'Haokun', 'Frya', 'Orcote', 'Merlin', 'Militarus'], 'double');
+  let res = E.resoudre(t);
+  // Le premier tour des perdants n'est fait que d'exemptions, et ça se sait AVANT de jouer.
+  assert.strictEqual(res.matchs['L1-1'].statut, 'exempt');
+  assert.strictEqual(res.matchs['L1-2'].statut, 'exempt');
+  assert.deepStrictEqual(E.toursPerdants(res), [2, 3, 4]);
+  assert.strictEqual(E.libelleTour('L', 2, res.structure, res), 'Perdants — tour 1');
+  assert.strictEqual(E.libelleSource(res.matchs['L2-1'].src.a, res), 'Perdant du match ' + res.matchs['W1-2'].num);
+
+  joue(t, 'W1-2', 'Merlin'); joue(t, 'W1-4', 'Militarus');
+  joue(t, 'W2-1', 'Shean');  joue(t, 'W2-2', 'Militarus');
+  res = E.resoudre(t);
+  const affiche = id => [res.matchs[id].a, res.matchs[id].b].map(x => t.joueurs.find(j => j.id === x).nom).sort();
+  // Mêmes affiches que la « Manche des perdants 1 » de Challonge.
+  assert.deepStrictEqual(affiche('L2-1'), ['Haokun', 'Orcote']);
+  assert.deepStrictEqual(affiche('L2-2'), ['Frya', 'Merlin']);
+  joue(t, 'L2-1', 'Haokun'); joue(t, 'L2-2', 'Frya');
+  joue(t, 'L3-1', 'Frya');
+  joue(t, 'W3-1', 'Shean');
+  joue(t, 'L4-1', 'Frya');
+  joue(t, 'GF1', 'Shean');
+  res = E.resoudre(t);
+  assert.ok(res.termine);
+  assert.deepStrictEqual(E.podium(t, res).map(p => [p.rang, p.nom, p.v + '-' + p.d]),
+    [[1, 'Shean', '3-0'], [2, 'Frya', '3-2'], [3, 'Militarus', '2-2']]);
+  const cl = E.classement(t, res), rang = nom => cl.find(c => c.nom === nom).rang;
+  assert.strictEqual(rang('Haokun'), 4);
+  assert.strictEqual(rang('Orcote'), 5); assert.strictEqual(rang('Merlin'), 5);
+  // Challonge numérote 10 matchs joués : un tour passé sans adversaire n'en est pas un.
+  assert.strictEqual(res.ordre.filter(id => res.matchs[id].statut === 'joue').length, 10);
+});
+
 test('revanche jouée quand le finaliste des perdants gagne la grande finale', () => {
   const t = tournoi(['A', 'B', 'C', 'D'], 'double');
   joue(t, 'W1-1', 'A'); joue(t, 'W1-2', 'B'); joue(t, 'W2-1', 'A');

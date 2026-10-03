@@ -110,7 +110,10 @@
     .subview { display:none; padding-top:1.1rem; } .subview.active { display:block; }
 
     /* ARBRE */
-    .bk-scroll { overflow-x:auto; padding-bottom:.75rem; }
+    .bk-scroll { overflow-x:auto; padding-bottom:.75rem; scrollbar-color:var(--accent-dim) var(--surface); }
+    .bk-scroll::-webkit-scrollbar { height:10px; }
+    .bk-scroll::-webkit-scrollbar-track { background:var(--surface); }
+    .bk-scroll::-webkit-scrollbar-thumb { background:var(--accent-dim); border-radius:2px; }
     .bk-sec { position:relative; margin-bottom:1.4rem; }
     .bk-heads { position:relative; height:28px; margin-bottom:10px; }
     .bk-head { position:absolute; top:0; height:28px; display:flex; align-items:center; justify-content:center; background:var(--surface-2); border:1px solid var(--border); font-size:.68rem; font-weight:700; letter-spacing:.04em; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:0 .4rem; }
@@ -334,7 +337,7 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="tournoi-engine.js?v=tournois-1"></script>
+<script src="tournoi-engine.js?v=tournois-2"></script>
 <script>
 (function () {
   'use strict';
@@ -603,13 +606,15 @@
     const visible = m => m && m.statut !== 'exempt' && m.statut !== 'inutile';
     const pos = {};
     const wH = (S / 2) * SLOT;
+    // Colonnes des perdants : seulement les tours qui contiennent un vrai match.
+    const toursL = E.toursPerdants(RES);
     let colsW = k, hW = wH;
     RES.ordre.forEach(id => {
       const m = RES.matchs[id];
       if (m.bracket === 'W') pos[id] = { sec: 'W', col: m.round - 1, cy: (2 * m.index - 1) * Math.pow(2, m.round - 1) * SLOT / 2 };
       else if (m.bracket === 'GF') { pos[id] = { sec: 'W', col: k - 1 + m.round, cy: pos['W' + k + '-1'].cy }; colsW = Math.max(colsW, k + m.round); }
       else if (m.bracket === 'P') { pos[id] = { sec: 'W', col: k - 1, cy: wH + SLOT * .9 }; hW = wH + SLOT * 1.5; }
-      else pos[id] = { sec: 'L', col: m.round - 1, cy: (2 * m.index - 1) * Math.pow(2, Math.ceil(m.round / 2) - 1) * SLOT / 2 };
+      else pos[id] = { sec: 'L', col: toursL.indexOf(m.round), cy: (2 * m.index - 1) * Math.pow(2, Math.ceil(m.round / 2) - 1) * SLOT / 2 };
     });
     // La revanche n'a pas lieu d'être : on retire sa colonne.
     if (RES.matchs.GF2 && !visible(RES.matchs.GF2) && RES.matchs.GF2.statut === 'inutile') colsW = Math.min(colsW, k + 1);
@@ -628,13 +633,13 @@
       for (let c = 0; c < cols; c++) {
         let lbl = '';
         if (sec === 'W') lbl = c < k ? E.libelleTour('W', c + 1, st) : E.libelleTour('GF', c - k + 1, st);
-        else lbl = E.libelleTour('L', c + 1, st);
+        else lbl = E.libelleTour('L', toursL[c], st, RES);
         if (sec === 'W' && c === k && RES.matchs.GF2 && RES.matchs.GF2.statut === 'attente' && RES.matchs.GF1.statut !== 'joue') lbl = 'Grande finale';
         heads += `<div class="bk-head" style="left:${c * (COLW + GAP)}px;width:${COLW}px">${esc(lbl)}</div>`;
       }
       RES.ordre.forEach(id => {
         const m = RES.matchs[id], p = pos[id];
-        if (p.sec !== sec || !visible(m) || p.col >= cols) return;
+        if (p.sec !== sec || !visible(m) || p.col < 0 || p.col >= cols) return;
         const x = p.col * (COLW + GAP), y = p.cy - MH / 2;
         const tip = m.id === 'GF2' ? ' data-tip="Revanche : le finaliste venu des perdants a gagné la grande finale, les deux joueurs ont chacun une défaite"' : (m.bracket === 'P' ? ' data-tip="Petite finale : match pour la 3ᵉ place"' : '');
         boxes += `<div class="m ${m.statut}${cliquable(m) ? ' cliquable' : ''}" data-m="${m.id}" style="left:${x}px;top:${y}px;width:${COLW}px;height:${MH}px"${tip}>
@@ -663,7 +668,7 @@
     h += section('W', colsW, hW, st.format === 'double' ? 'Tableau principal' : '');
     if (st.format === 'double' && k >= 2) {
       const hL = (S / 4) * SLOT;
-      h += section('L', 2 * (k - 1), hL, 'Tableau des perdants');
+      if (toursL.length) h += section('L', toursL.length, hL, 'Tableau des perdants');
     }
     h += '</div>';
     el.innerHTML = h;
@@ -681,7 +686,7 @@
   function ouvrirScore(mid) {
     const m = RES.matchs[mid]; if (!m) return;
     SC = { m, w: m.statut === 'joue' ? m.vainqueur : null };
-    $('sc-titre').textContent = `Match ${m.num} · ${E.libelleTour(m.bracket, m.round, RES.structure)}`;
+    $('sc-titre').textContent = `Match ${m.num} · ${E.libelleTour(m.bracket, m.round, RES.structure, RES)}`;
     $('sc-n1').textContent = nomDe(m.a); $('sc-n2').textContent = nomDe(m.b);
     $('sc-s1').value = m.statut === 'joue' && m.s1 != null ? m.s1 : '';
     $('sc-s2').value = m.statut === 'joue' && m.s2 != null ? m.s2 : '';

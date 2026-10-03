@@ -57,6 +57,15 @@ return [
     // Le bot y a besoin de « Voir le salon », « Envoyer des messages » et « Intégrer des liens ».
     'tournoi_channel_id' => '',
 
+    // Serveur dont la page Tournois propose les MEMBRES à l'ajout d'un joueur.
+    // Vide (cas de la PRODUCTION) = la vraie guilde, lue dans discord_oauth_config.php.
+    // À renseigner sur /v2 : le bot de test n'est pas sur la vraie guilde, Discord
+    // répondrait 404 « Unknown Guild ». Mettre l'identifiant du Discord de test.
+    // ⚠ Ne pas toucher au guild_id de discord_oauth_config.php pour ça : la connexion
+    //   au site vérifie l'appartenance des membres sur ce serveur-là.
+    // Le bot doit avoir l'intent « Server Members » (portail développeur → Bot).
+    'membres_guild_id' => '',
+
     // Qui prévenir quand le RELEVÉ DE PRÉSENCE tombe en panne pendant une sortie.
     // En message PRIVÉ, et à une seule personne : les autres ne peuvent rien y faire, et
     // une alerte technique dans un salon de guilde n'y produit que du bruit.

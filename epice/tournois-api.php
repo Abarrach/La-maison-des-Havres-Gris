@@ -265,12 +265,17 @@ switch ($action) {
         $cfgPath = __DIR__ . '/discord_sortie_config.php';
         if (!file_exists($cfgPath)) tout(false, [], 'Configuration du bot absente sur le serveur.');
         $CFG = require $cfgPath;
-        // Le serveur de la GUILDE : celui du login Discord d'abord (c'est la vraie guilde
-        // par construction — on y vérifie l'appartenance de chaque membre), puis ceux du bot.
-        // `guild_id` du bot peut désigner un serveur de test.
+        // Quel serveur lister :
+        //  1. `membres_guild_id` du bot, s'il est renseigné — sert sur /v2, où le bot de
+        //     dev n'est pas sur la vraie guilde (Discord répond 404 « Unknown Guild ») ;
+        //  2. sinon le serveur du login Discord : la vraie guilde par construction, on y
+        //     vérifie l'appartenance de chaque membre connecté ;
+        //  3. sinon ceux du bot (`guild_id` peut désigner un serveur de test).
+        // ⚠ Ne jamais régler ça en touchant au guild_id du login : la connexion au site en dépend.
         $oauth = dirname(__DIR__) . '/discord_oauth_config.php';
         $OA = file_exists($oauth) ? (require $oauth) : [];
-        $guild = trim((string)($OA['guild_id'] ?? '')) ?: trim((string)($CFG['rally_guild_id'] ?? '')) ?: trim((string)($CFG['guild_id'] ?? ''));
+        $guild = trim((string)($CFG['membres_guild_id'] ?? '')) ?: trim((string)($OA['guild_id'] ?? ''))
+              ?: trim((string)($CFG['rally_guild_id'] ?? '')) ?: trim((string)($CFG['guild_id'] ?? ''));
         $token = trim((string)($CFG['bot_token'] ?? ''));
         if ($guild === '' || $token === '') tout(false, [], 'Identifiant du serveur Discord ou token du bot manquant dans la configuration.');
         if (!function_exists('curl_init')) tout(false, [], 'cURL indisponible sur le serveur.');
@@ -283,6 +288,8 @@ switch ($action) {
             $lot = json_decode((string)$resp, true);
             if ($code < 200 || $code >= 300 || !is_array($lot)) {
                 $msg = is_array($lot) ? trim((string)($lot['message'] ?? '')) : '';
+                if ($code === 404 || stripos($msg, 'Unknown Guild') !== false)
+                    tout(false, [], "Discord ne connaît pas ce serveur pour ce bot (HTTP {$code}" . ($msg ? " : {$msg}" : '') . ") — le bot n'est pas membre du serveur {$guild}. Sur /v2, renseigne `membres_guild_id` (le serveur où le bot de test est invité) dans discord_sortie_config.php.");
                 if ($code === 403 || stripos($msg, 'intent') !== false)
                     tout(false, [], "Discord refuse la liste des membres (HTTP {$code}" . ($msg ? " : {$msg}" : '') . ") — active l'intent « Server Members » du bot dans le portail développeur (Bot → Privileged Gateway Intents).");
                 tout(false, [], "Liste des membres indisponible (HTTP {$code}" . ($msg ? " : {$msg}" : '') . ').');

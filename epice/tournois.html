@@ -198,6 +198,19 @@
     .win-btn { padding:.5rem .7rem; border:1px solid var(--border); background:var(--surface-2); color:var(--text-muted); border-radius:2px; cursor:pointer; font-size:.7rem; font-weight:700; letter-spacing:.06em; white-space:nowrap; }
     .win-btn.on { background:var(--accent); border-color:var(--accent); color:#0A0800; }
 
+    /* FENÊTRE DE CONFIRMATION — remplace confirm()/prompt(), hors thème et collés en haut de l'écran */
+    .dlg-bg { position:fixed; inset:0; background:rgba(0,0,0,.72); display:none; align-items:center; justify-content:center; z-index:300; padding:16px; }
+    .dlg-bg.on { display:flex; }
+    .dlg { background:var(--surface); border:1px solid var(--accent-dim); border-top:3px solid var(--accent); border-radius:2px; width:100%; max-width:440px; padding:1.4rem 1.5rem 1.2rem; box-shadow:0 20px 60px rgba(0,0,0,.7); animation:dlgIn .14s ease-out; }
+    .dlg.danger { border-top-color:#B04A38; }
+    @keyframes dlgIn { from { opacity:0; transform:translateY(8px) scale(.98); } to { opacity:1; transform:none; } }
+    .dlg h3 { font-family:'Cinzel',serif; font-size:1.05rem; font-weight:700; margin-bottom:.7rem; color:var(--text); }
+    .dlg-body { font-size:.86rem; color:var(--text-muted); line-height:1.6; }
+    .dlg-body strong { color:var(--text); }
+    .dlg-body .alerte { color:#E09080; }
+    .dlg-body input { margin-top:.8rem; }
+    .dlg-foot { display:flex; justify-content:flex-end; gap:.5rem; margin-top:1.2rem; flex-wrap:wrap; }
+
     .toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(20px); background:var(--surface-2); border:1px solid var(--accent-dim); color:var(--text); padding:.7rem 1.2rem; border-radius:2px; font-size:.82rem; opacity:0; transition:all .2s; z-index:200; max-width:calc(100vw - 32px); pointer-events:none; }
     .toast.on { opacity:1; transform:translateX(-50%) translateY(0); }
     .toast.err { border-color:#8A3228; color:#F0B0A0; }
@@ -344,6 +357,10 @@
   </div>
 </div>
 
+<div class="dlg-bg" id="dlg-bg"><div class="dlg" id="dlg" role="dialog" aria-modal="true" aria-labelledby="dlg-titre">
+  <h3 id="dlg-titre"></h3><div class="dlg-body" id="dlg-body"></div><div class="dlg-foot" id="dlg-foot"></div>
+</div></div>
+
 <div class="toast" id="toast"></div>
 
 <script src="tournoi-engine.js?v=tournois-2"></script>
@@ -383,6 +400,40 @@
   const stChip = s => `<span class="chip st-${s}">${STATUT_LBL[s] || s}</span>`;
   const nomDe = id => { const j = T && T.joueurs.find(x => x.id === id); return j ? j.nom : '?'; };
   const seedDe = id => { const i = T ? T.joueurs.findIndex(x => x.id === id) : -1; return i < 0 ? '' : i + 1; };
+  // Fenêtre maison, même interface que duneDialog() de Mon Compte. Promesse :
+  //   confirmation → true / false ; avec `saisie` → le texte saisi, ou null si annulé.
+  //   duneDialog({ titre, html, confirm: 'Lancer', danger, saisie: 'valeur initiale' })
+  // `html` est injecté tel quel : échapper (esc) toute valeur venue des données.
+  // Entrée valide, SAUF sur une action destructrice (danger) : on n'efface pas un
+  // tournoi par réflexe de clavier. Échap et clic sur le fond annulent.
+  function duneDialog({ titre, html, confirm = 'OK', annuler = 'Annuler', danger = false, saisie = null }) {
+    return new Promise(resolve => {
+      const bg = $('dlg-bg');
+      $('dlg').className = 'dlg' + (danger ? ' danger' : '');
+      $('dlg-titre').textContent = titre;
+      $('dlg-body').innerHTML = html + (saisie !== null ? '<input type="text" id="dlg-saisie" maxlength="40">' : '');
+      const champ = $('dlg-saisie');
+      if (champ) champ.value = saisie;
+      const foot = $('dlg-foot'); foot.innerHTML = '';
+      const fin = v => { bg.classList.remove('on'); document.removeEventListener('keydown', clavier, true); bg.onmousedown = null; resolve(v); };
+      const valider = () => fin(champ ? champ.value.trim() : true);
+      const abandon = () => fin(champ ? null : false);
+      const bAnnul = document.createElement('button'); bAnnul.className = 'btn'; bAnnul.textContent = annuler; bAnnul.onclick = abandon;
+      const bOk = document.createElement('button'); bOk.className = 'btn ' + (danger ? 'danger' : 'primary'); bOk.textContent = confirm; bOk.onclick = valider;
+      if (annuler) foot.appendChild(bAnnul);
+      foot.appendChild(bOk);
+      // Capture : la fenêtre passe avant les raccourcis de la page (Échap des modales).
+      function clavier(e) {
+        if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); abandon(); }
+        else if (e.key === 'Enter' && (!danger || champ)) { e.preventDefault(); e.stopPropagation(); valider(); }
+      }
+      document.addEventListener('keydown', clavier, true);
+      bg.onmousedown = e => { if (e.target === bg) abandon(); };
+      bg.classList.add('on');
+      if (champ) { champ.focus(); champ.select(); } else (danger ? bAnnul : bOk).focus();
+    });
+  }
+
   function closeModals() { document.querySelectorAll('.modal-bg').forEach(m => m.classList.remove('on')); }
   document.querySelectorAll('[data-close]').forEach(b => b.onclick = closeModals);
   document.querySelectorAll('.modal-bg').forEach(m => m.addEventListener('mousedown', e => { if (e.target === m) closeModals(); }));
@@ -552,29 +603,35 @@
   function brancherOrga() {
     const on = (id, fn) => { if ($(id)) $(id).onclick = fn; };
     on('act-lancer', async () => {
-      if (!confirm(`Lancer le tournoi avec ${T.joueurs.length} joueurs ? La liste et l'ordre des têtes de série seront figés.`)) return;
+      if (!await duneDialog({ titre: 'Lancer le tournoi ?', confirm: '▶ Lancer',
+        html: `<strong>${T.joueurs.length} joueurs</strong> en ${esc((E.FORMATS[T.format] || T.format).toLowerCase())}.<br>La liste et l'ordre des têtes de série seront figés. Tu pourras revenir en préparation, mais les scores saisis seraient alors effacés.` })) return;
       if (await sauver({ statut: 'en_cours' }, 'Tournoi lancé (' + T.joueurs.length + ' joueurs)')) {
         montrerSub('arbre');
-        if (confirm('Tournoi lancé. Annoncer les premiers matchs sur Discord maintenant ?')) publier('lancement');
+        if (await duneDialog({ titre: 'Tournoi lancé', confirm: '📣 Annoncer', annuler: 'Plus tard',
+          html: "Annoncer les premiers matchs sur Discord maintenant, avec le lien vers l'arbre ?" })) publier('lancement');
       }
     });
     on('act-annonce', () => publier('lancement'));
     on('act-publier', () => publier('resultats'));
     on('act-prep', async () => {
       const n = Object.keys(T.resultats || {}).length;
-      if (!confirm(n ? `Revenir en préparation EFFACE les ${n} résultat(s) déjà saisis. Continuer ?` : 'Revenir en préparation pour modifier les joueurs ?')) return;
+      if (!await duneDialog({ titre: 'Revenir en préparation ?', confirm: n ? 'Effacer et revenir' : '↩ Revenir', danger: n > 0,
+        html: n ? `<span class="alerte">Les <strong>${n} résultat${n > 1 ? 's' : ''}</strong> déjà saisi${n > 1 ? 's' : ''} seront effacés</span> : l'arbre peut changer avec la liste des joueurs.`
+                : 'La liste des joueurs et les têtes de série redeviennent modifiables.' })) return;
       if (await sauver({ statut: 'preparation', resultats: {} }, 'Retour en préparation' + (n ? ` (${n} résultats effacés)` : ''))) montrerSub('joueurs');
     });
     on('act-cloturer', async () => {
       const pod = E.podium(T, RES);
       if (await sauver({ statut: 'termine', podium: pod }, 'Tournoi clôturé — vainqueur : ' + nomDe(RES.champion))) {
-        if (confirm('Tournoi clôturé. Publier les vainqueurs sur Discord maintenant ?')) publier('resultats');
+        if (await duneDialog({ titre: 'Tournoi clôturé 🏆', confirm: '🏆 Publier', annuler: 'Plus tard',
+          html: 'Publier le podium et les lots sur Discord maintenant ?' })) publier('resultats');
       }
     });
     on('act-rouvrir', () => sauver({ statut: 'en_cours', podium: [] }, 'Tournoi rouvert'));
     on('act-modifier', () => ouvrirForm(T));
     on('act-suppr', async () => {
-      if (!confirm(`Supprimer définitivement « ${T.nom} » ? Son arbre, ses résultats et son journal disparaîtront de l'historique.`)) return;
+      if (!await duneDialog({ titre: 'Supprimer le tournoi ?', confirm: '🗑 Supprimer', danger: true,
+        html: `<strong>« ${esc(T.nom)} »</strong> sera supprimé définitivement : son arbre, ses résultats et son journal disparaîtront de l'historique.` })) return;
       try { await api('delete', { id: T.id }); toast('Tournoi supprimé'); T = null; history.replaceState(null, '', location.pathname); showView('liste'); chargerListe(); }
       catch (e) { toast(e.message, true); }
     });
@@ -784,13 +841,16 @@
         majJoueurs(T.joueurs.concat(neufs.map(p => ({ id: nouvelId(), nom: p.nom, discord_id: p.discord_id, source: 'discord' }))), 'Inscrits Discord importés : ' + neufs.map(p => p.nom).join(', '));
       } catch (e) { toast(e.message, true); }
     };
-    el.querySelectorAll('button[data-act]').forEach(b => b.onclick = () => {
+    el.querySelectorAll('button[data-act]').forEach(b => b.onclick = async () => {
       const i = +b.dataset.i, l = T.joueurs.slice(), j = l[i];
       if (b.dataset.act === 'up')   { [l[i - 1], l[i]] = [l[i], l[i - 1]]; majJoueurs(l, `${j.nom} remonte en tête de série n° ${i}`); }
       if (b.dataset.act === 'down') { [l[i + 1], l[i]] = [l[i], l[i + 1]]; majJoueurs(l, `${j.nom} descend en tête de série n° ${i + 2}`); }
-      if (b.dataset.act === 'del')  { if (!confirm(`Retirer ${j.nom} du tournoi ?`)) return; l.splice(i, 1); majJoueurs(l, 'Retiré : ' + j.nom); }
+      if (b.dataset.act === 'del')  {
+        if (!await duneDialog({ titre: 'Retirer ce joueur ?', confirm: 'Retirer', danger: true, html: `<strong>${esc(j.nom)}</strong> ne fera plus partie du tournoi.` })) return;
+        l.splice(i, 1); majJoueurs(l, 'Retiré : ' + j.nom);
+      }
       if (b.dataset.act === 'ren')  {
-        const n = (prompt('Nouveau nom pour ' + j.nom, j.nom) || '').trim();
+        const n = (await duneDialog({ titre: 'Renommer', confirm: 'Renommer', html: `Nouveau nom pour <strong>${esc(j.nom)}</strong> :`, saisie: j.nom }) || '').trim();
         if (!n || n === j.nom) return;
         l[i] = Object.assign({}, j, { nom: n }); majJoueurs(l, `${j.nom} renommé en ${n}`);
       }

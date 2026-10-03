@@ -536,25 +536,40 @@
     renderSaison();
   }
 
-  // Palmarès : médailles cumulées, PAR NIVEAU de préférence — un podium chez les
-  // débutants ne vaut pas un podium chez les vétérans, on ne les mélange que si on
-  // le demande (« Tous niveaux »), et la base est rappelée au-dessus du tableau.
+  // Palmarès (Hall of Fame) : médailles cumulées de toujours, UN TABLEAU PAR NIVEAU.
+  // Il a existé une vue « tous niveaux confondus » : deux victoires chez les
+  // débutants y passaient devant deux victoires chez les vétérans. On ne compare
+  // que ce qui est comparable — « Tous niveaux » juxtapose donc les trois
+  // classements au lieu de les additionner. Vétérans d'abord.
+  const ORDRE_PALM = ['expert', 'intermediaire', 'debutant'];
   function renderPalmares() {
     filtres($('palm-filtres'), filtrePalm, k => filtrePalm = k);
-    const clos = LISTE.filter(t => t.statut === 'termine' && (!filtrePalm || t.niveau === filtrePalm));
-    $('palm-base').textContent = `Médailles cumulées sur ${clos.length} tournoi${clos.length > 1 ? 's' : ''} clôturé${clos.length > 1 ? 's' : ''}`
-      + (filtrePalm ? ` de niveau ${E.NIVEAUX[filtrePalm].label.toLowerCase()}` : ', tous niveaux confondus — filtre par niveau pour comparer ce qui est comparable')
-      + '. Deux demi-finalistes ex æquo en simple élimination reçoivent chacun le bronze.';
-    const acc = {};
-    clos.forEach(t => (t.podium || []).forEach(p => {
-      const k = p.nom.trim().toLowerCase();
-      acc[k] = acc[k] || { nom: p.nom, 1: 0, 2: 0, 3: 0 };
-      acc[k][p.rang]++;
-    }));
-    const rows = Object.values(acc).sort((a, b) => (b[1] - a[1]) || (b[2] - a[2]) || (b[3] - a[3]) || a.nom.localeCompare(b.nom));
-    $('palm-contenu').innerHTML = rows.length ? `<table class="tbl"><thead><tr><th>Combattant</th><th class="num">🥇</th><th class="num">🥈</th><th class="num">🥉</th><th class="num">Podiums</th></tr></thead><tbody>
-      ${rows.map(r => `<tr><td>${esc(r.nom)}</td><td class="num">${r[1] || '·'}</td><td class="num">${r[2] || '·'}</td><td class="num">${r[3] || '·'}</td><td class="num">${r[1] + r[2] + r[3]}</td></tr>`).join('')}
-    </tbody></table>` : '<div class="empty">Le palmarès se remplira avec les premiers tournois clôturés.</div>';
+    const niveaux = filtrePalm ? [filtrePalm] : ORDRE_PALM;
+    const clos = LISTE.filter(t => t.statut === 'termine');
+    $('palm-base').textContent = 'Médailles cumulées de tous les tournois clôturés, toutes saisons confondues, '
+      + (filtrePalm ? `de niveau ${E.NIVEAUX[filtrePalm].label.toLowerCase()}.` : 'avec un classement séparé par niveau : une médaille chez les débutants ne vaut pas une médaille chez les vétérans.')
+      + ' Deux demi-finalistes ex æquo en simple élimination reçoivent chacun le bronze.';
+    const sections = niveaux.map(n => {
+      const ts = clos.filter(t => t.niveau === n);
+      const acc = {};
+      ts.forEach(t => (t.podium || []).forEach(p => {
+        // Même identité que le classement de saison : l'identifiant Discord quand
+        // on l'a, sinon le nom — un changement de pseudo ne coupe pas le palmarès.
+        const j = (t.joueurs || []).find(x => x.id === p.id);
+        const k = E.cleJoueur(j || { nom: p.nom });
+        acc[k] = acc[k] || { nom: p.nom, 1: 0, 2: 0, 3: 0 };
+        acc[k].nom = p.nom;
+        acc[k][p.rang]++;
+      }));
+      const rows = Object.values(acc).sort((a, b) => (b[1] - a[1]) || (b[2] - a[2]) || (b[3] - a[3]) || a.nom.localeCompare(b.nom));
+      if (!rows.length && !filtrePalm) return '';
+      const titre = `<div class="section-title">${E.NIVEAUX[n].icon} ${E.NIVEAUX[n].label} <span style="color:var(--text-muted);font-weight:400;letter-spacing:0;text-transform:none">· ${ts.length} tournoi${ts.length > 1 ? 's' : ''}</span></div>`;
+      if (!rows.length) return titre + `<div class="empty">Aucun tournoi ${E.NIVEAUX[n].label.toLowerCase()} clôturé pour l'instant.</div>`;
+      return titre + `<table class="tbl"><thead><tr><th>Combattant</th><th class="num">🥇</th><th class="num">🥈</th><th class="num">🥉</th><th class="num">Podiums</th></tr></thead><tbody>
+        ${rows.map(r => `<tr><td>${esc(r.nom)}</td><td class="num">${r[1] || '·'}</td><td class="num">${r[2] || '·'}</td><td class="num">${r[3] || '·'}</td><td class="num">${r[1] + r[2] + r[3]}</td></tr>`).join('')}
+      </tbody></table>`;
+    }).join('');
+    $('palm-contenu').innerHTML = sections || '<div class="empty">Le palmarès se remplira avec les premiers tournois clôturés.</div>';
   }
 
   // ---------------------------------------------------------------- saison
@@ -1157,6 +1172,7 @@
     await chargerListe();
     const q = new URLSearchParams(location.search);
     if (q.get('t')) { ouvrir(q.get('t')); return; }
+    if (q.get('vue') === 'palmares' || q.get('vue') === 'historique') { showView(q.get('vue')); return; }
     if (q.get('vue') === 'saison') {                                  // lien de l'annonce Discord
       if (E.NIVEAUX[q.get('niveau')]) { saisonNiveau = q.get('niveau'); renderSaison(); }
       showView('saison'); return;

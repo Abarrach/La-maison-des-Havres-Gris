@@ -177,10 +177,11 @@ function t_clean_podium($list, array $ids): array {
 
 function t_clean_options($o, string $format): array {
     $o = is_array($o) ? $o : [];
+    $bo = (int)($o['bestOf'] ?? 1);   // lu une fois : relire $o['bestOf'] après le ?? plantait si la clé manquait
     return [
         'grandeFinale' => ($o['grandeFinale'] ?? '') === 'unique' ? 'unique' : 'revanche',
         'petiteFinale' => $format === 'simple' ? ($o['petiteFinale'] ?? true) !== false : false,
-        'bestOf'       => in_array((int)($o['bestOf'] ?? 1), [1, 3, 5], true) ? (int)$o['bestOf'] : 1,
+        'bestOf'       => in_array($bo, [1, 3, 5], true) ? $bo : 1,
     ];
 }
 

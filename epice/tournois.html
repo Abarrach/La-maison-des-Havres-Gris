@@ -421,7 +421,7 @@
     return `<div class="tcard" data-t="${esc(t.id)}">
       <div class="tcard-top">${nivChip(t.niveau)}${stChip(t.statut)}</div>
       <div class="tcard-name">${esc(t.nom)}</div>
-      <div class="tcard-meta">${esc(dateFr(t.date, t.heure))} · ${t.nb_joueurs} joueur${t.nb_joueurs > 1 ? 's' : ''} · ${esc(E.FORMATS[t.format] || t.format)}</div>
+      <div class="tcard-meta">${esc([dateFr(t.date, t.heure), t.nb_joueurs + ' joueur' + (t.nb_joueurs > 1 ? 's' : ''), E.FORMATS[t.format] || t.format].filter(Boolean).join(' · '))}</div>
       ${pod ? `<div class="tcard-podium">${pod}</div>` : ''}
     </div>`;
   }

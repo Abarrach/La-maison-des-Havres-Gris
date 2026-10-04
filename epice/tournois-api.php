@@ -511,7 +511,8 @@ switch ($action) {
                 if ($l !== '') $lignes[] = $l;
             }
             $desc = "⚔️ **" . count($t['joueurs']) . " combattants** · {$fmt}" . ($quand ? " · 📅 {$quand}" : '')
-                  . ($t['options']['bestOf'] > 1 ? ' · matchs en ' . $t['options']['bestOf'] . ' manches gagnantes' : '');
+                  // BO3 = 2 manches gagnantes, BO5 = 3 : l'annonce disait « 3 manches gagnantes » pour un BO3.
+                  . ($t['options']['bestOf'] > 1 ? ' · matchs en BO' . $t['options']['bestOf'] . ' (' . intdiv($t['options']['bestOf'] + 1, 2) . ' manches gagnantes)' : '');
             if ($t['description'] !== '') $desc = $esc($t['description']) . "\n\n" . $desc;
             $lots = [];
             foreach (['1' => '🥇', '2' => '🥈', '3' => '🥉'] as $r => $ico) if (($t['lots'][$r] ?? '') !== '') $lots[] = "{$ico} " . $esc($t['lots'][$r]);

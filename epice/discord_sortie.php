@@ -256,14 +256,16 @@ const SORTIE_TYPES = [
     //  l'organisateur sur epice/tournois.html (arbre, scores, podium, lots).
     //  'tournoi' = niveau, relu par tournois-api.php (TYPE_NIVEAU) et par le bouton
     //  « Arbre du tournoi » de l'encart.
+    //  'image' = bannière fournie AVEC le code (epice/img/), commune aux trois niveaux :
+    //  rien à déclarer dans la config, ni en /v2 ni en prod (cf. build_sortie_message).
     //  Le niveau `expert` s'AFFICHE « Vétérans » (moins intimidant, demande de
     //  l'utilisateur) : seul le libellé a changé, clés et valeurs stockées restent.
     'tournoi_deb'=> ['label' => 'Tournoi PvP — Débutants', 'icon' => '🌱', 'site' => false, 'postes' => false,
-                     'sub' => 'p_tournoi', 'tournoi' => 'debutant', 'desc' => 'Pour se lancer en duel, sans pression'],
+                     'sub' => 'p_tournoi', 'tournoi' => 'debutant', 'image' => 'sortietournoispvp.jpg', 'desc' => 'Pour se lancer en duel, sans pression'],
     'tournoi_int'=> ['label' => 'Tournoi PvP — Intermédiaires', 'icon' => '⚔️', 'site' => false, 'postes' => false,
-                     'sub' => 'p_tournoi', 'tournoi' => 'intermediaire', 'desc' => 'On connaît son build, on veut se mesurer'],
+                     'sub' => 'p_tournoi', 'tournoi' => 'intermediaire', 'image' => 'sortietournoispvp.jpg', 'desc' => 'On connaît son build, on veut se mesurer'],
     'tournoi_exp'=> ['label' => 'Tournoi PvP — Vétérans', 'icon' => '🔥', 'site' => false, 'postes' => false,
-                     'sub' => 'p_tournoi', 'tournoi' => 'expert', 'desc' => 'Pour les duellistes aguerris'],
+                     'sub' => 'p_tournoi', 'tournoi' => 'expert', 'image' => 'sortietournoispvp.jpg', 'desc' => 'Pour les duellistes aguerris'],
 
     // --- Farm › Épice
     'epice'      => ['label' => 'Épice', 'icon' => '🏜️', 'site' => true, 'postes' => 'epice',
@@ -1901,20 +1903,22 @@ function build_sortie_message($sortie) {
     // configuré, tandis que les types sans entrée du tout l'obtenaient. Vide = « pas
     // renseigné », donc traité comme absent.
     global $CFG;
+    // `site_url` distingue prod (racine) et test (/v2) ; vide = prod, ce qui rend
+    // l'image visible depuis /v2 aussi. Renseigner site_url sur '.../v2' fait
+    // chercher le fichier dans /v2/epice/img/ — il doit alors y être déposé.
+    $base = rtrim(trim((string)($CFG['site_url'] ?? '')) ?: 'https://havresgris.ddns.net', '/');
     $banner = '';
-    foreach (array_filter([$stype, $t['banniere'] ?? '', BANNIERE_DEFAUT_TYPE]) as $cle) {
+    // 1. config : la bannière du type, puis celle de l'activité dont il hérite ;
+    foreach (array_filter([$stype, $t['banniere'] ?? '']) as $cle) {
         $banner = trim((string)($CFG['banners'][$cle] ?? ''));
         if ($banner !== '') break;
     }
+    // 2. l'image livrée avec le code pour cette activité ('image', dans epice/img/) ;
+    if ($banner === '' && !empty($t['image'])) $banner = $base . '/epice/img/' . rawurlencode($t['image']);
+    // 3. les replis génériques : Activité Guilde, banner_url, fichier par défaut.
+    if ($banner === '') $banner = trim((string)($CFG['banners'][BANNIERE_DEFAUT_TYPE] ?? ''));
     if ($banner === '') $banner = trim((string)($CFG['banner_url'] ?? ''));
-    if ($banner === '') {
-        // `site_url` distingue prod (racine) et test (/v2) ; vide = prod, ce qui rend
-        // l'image visible depuis /v2 aussi. Renseigner site_url sur '.../v2' fait
-        // chercher le fichier dans /v2/epice/img/ — il doit alors y être déposé.
-        $base = trim((string)($CFG['site_url'] ?? ''));
-        if ($base === '') $base = 'https://havresgris.ddns.net';
-        $banner = rtrim($base, '/') . BANNIERE_DEFAUT_FICHIER;
-    }
+    if ($banner === '') $banner = $base . BANNIERE_DEFAUT_FICHIER;
     if ($banner !== '') $embed['image'] = ['url' => $banner];
 
     $sid = $sortie['id'];

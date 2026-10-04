@@ -501,7 +501,8 @@ switch ($action) {
         $fmt  = $t['format'] === 'double' ? 'Double élimination' : 'Simple élimination';
         $quand = $t['date'] ? date('d/m/Y', strtotime($t['date'])) . ($t['heure'] ? ' à ' . $t['heure'] : '') : '';
 
-        $embed = ['color' => hexdec('D4A23B'), 'url' => $lien,
+        // Même bannière que l'encart de la sortie (epice/img/sortietournoispvp.jpg).
+        $embed = ['color' => hexdec('D4A23B'), 'url' => $lien, 'image' => ['url' => $base . '/epice/img/sortietournoispvp.jpg'],
                   'footer' => ['text' => 'Tournoi PvP · ' . $niv . ' · organisé par ' . ($t['cree_par'] ?: '?')]];
         if ($quoi === 'lancement') {
             $lignes = [];

@@ -57,6 +57,12 @@ return [
     // Le bot y a besoin de « Voir le salon », « Envoyer des messages » et « Intégrer des liens ».
     'tournoi_channel_id' => '',
 
+    // Salon où « Havres Gris Stories » (bd/aventures.html) annonce chaque BD validée
+    // et chaque histoire flash publiée — une seule fois par histoire, sans ping.
+    // Vide = repli sur `partage_channel_id`. Mêmes droits que pour les tournois :
+    // « Voir le salon », « Envoyer des messages », « Intégrer des liens ».
+    'stories_channel_id' => '',
+
     // Serveur dont la page Tournois propose les MEMBRES à l'ajout d'un joueur.
     // Vide (cas de la PRODUCTION) = la vraie guilde, lue dans discord_oauth_config.php.
     // À renseigner sur /v2 : le bot de test n'est pas sur la vraie guilde, Discord

@@ -70,3 +70,7 @@ stuff_cache_skills.json
 stuff_cache/
 # Cache de noms d'items (intermédiaire build, régénéré par build_stuff_snapshot.js)
 stuff_names.json
+# BD « Havres Gris Stories » (bd/bd_api.php) — épisodes et planches envoyés
+# depuis le site : DONNÉE VIVANTE, ne jamais l'écraser ni la supprimer au déploiement.
+bd/data/
+bd/pages/

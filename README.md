@@ -1069,6 +1069,168 @@ Mini-jeux de guilde entre membres, avec records et classements. Tuile dédiée d
 
 ---
 
+### Havres Gris Stories — BD de guilde (`bd/aventures.html`) — ❌ PAS DÉPLOYÉ
+Nos soirées racontées en planches de BD (générées par IA), ajoutées au fil de l'eau et lues dans
+un lecteur intégré. Tuile « Havres Gris Stories » (clé `aventures`) dans `pages.js` (donc pilotable depuis Mon Compte > Gestion
+des pages : la mettre « en travaux » le temps de poser le premier épisode).
+
+- **Une histoire** = titre, sous-titre, date de la soirée, personnages (servent de filtre), récit
+  (le post Discord d'origine, affiché à côté des planches) et ses planches dans l'ordre de lecture.
+  La première planche sert de couverture, l'auteur est crédité (« Racontée par … »). Numérotation
+  « Épisode N » calculée sur les seules histoires **publiées**, dans l'ordre des dates de soirée :
+  une histoire en cours ne décale jamais ce que voient les joueurs.
+- **Tout joueur raconte, seuls les admins valident** (décidé avec l'utilisateur le 2026-10-17 :
+  pas de liste de modérateurs, admins uniquement). Circuit :
+  `brouillon` (privé, auteur seul) → **Soumettre** → `soumis` (auteur + admins, texte verrouillé ;
+  l'auteur peut **annuler la soumission**) → admin **Publier** → `publie`. L'admin peut aussi
+  **Renvoyer avec un motif obligatoire** : retour en brouillon, motif affiché à l'auteur dans
+  « Mes histoires » et en tête de l'éditeur ; il s'efface à la soumission suivante. Depuis
+  `publie`, le même bouton s'appelle « Dépublier… ».
+  - Une histoire **publiée est verrouillée pour son auteur** (ni texte, ni planches, ni
+    suppression) : seuls les admins la retouchent. L'auteur supprime librement tant qu'elle
+    n'est pas publiée.
+  - Un admin **ne voit pas les brouillons des autres** (seulement les soumis) : une histoire
+    renvoyée disparaît donc de sa vue jusqu'à la nouvelle soumission. C'est voulu — un brouillon
+    est privé.
+  - **3 histoires en cours** maximum par joueur (brouillon ou en attente), admins exemptés :
+    tout le monde peut désormais envoyer des fichiers sur le serveur.
+  - Retour à l'auteur **uniquement sur le site** (statut + motif) : jamais de message privé
+    Discord (doctrine guilde).
+  - Les transitions ont chacune leur action (`soumettre`, `retirer`, `publier`, `renvoyer`) ;
+    `save` ne touche **jamais** au statut. Les droits sont vérifiés côté serveur sur la session
+    (`$_SESSION['role']`), jamais sur un champ envoyé par la page.
+- **Onglets** : Bibliothèque (BD publiées, filtre par personnage), **⚡ Flash** (voir plus bas),
+  **Mes histoires** (BD et flash de l'auteur avec leur statut : Brouillon / À revoir / En attente /
+  Épisode N / ⚡ Flash), **À valider** (admins, la plus ancienne soumission en premier, « Examiner »).
+- **Histoires flash** (ajoutées le 2026-10-17) : **1 image = 1 histoire**, pour un moment de soirée
+  sans monter une BD. Même fichier et même API que les BD (`type: "flash"`, une seule entrée dans
+  `pages`), mais des règles à part, décidées avec l'utilisateur :
+  - **Fiche complète obligatoire** : image, titre, description, date du moment, lieu/activité.
+    Personnages facultatifs (un paysage sans joueur existe). Pas de longueur minimale pour la
+    description. Le bouton « Publier » reste grisé et une liste ✔/✖ dit ce qui manque ; **le
+    serveur refait la vérification** (`flash_save`) et répond « Fiche incomplète : il manque … ».
+  - **Publication directe**, sans validation. Un admin peut **dépublier avec un motif**
+    (bouton dans la visionneuse, même action `renvoyer` que les BD) ; l'auteur voit « À revoir »
+    dans Mes histoires et republie après correction, sans avoir à renvoyer l'image.
+  - L'auteur garde la main sur sa flash (modifier, remplacer l'image — l'ancienne est effacée du
+    disque —, supprimer). Une flash **ne compte ni dans la numérotation des épisodes**, ni dans
+    la limite de 3 histoires en cours, ni dans « À valider ».
+  - **Une seule voie d'écriture** : `flash_save` (multipart : titre, description, date, lieu,
+    personnages « a, b », page + thumb). Les actions BD (`save`, `upload`, `soumettre`…)
+    refusent une flash, pour qu'aucune ne se retrouve sans image ou en attente d'une validation
+    qui n'existe pas.
+  - **Lieux** = constante `BD_LIEUX` de `bd_api.php`, renvoyée par `list` : la page ne garde
+    aucune copie de la liste. Ajouter un lieu = une ligne côté PHP.
+  - **Galerie** en mosaïque (colonnes CSS, image entière ; hauteur plancher de 160 px recadrée
+    pour les panoramas extrêmes), filtres par lieu et par personnage. **Visionneuse** : image en
+    grand + fiche, ← → / balayage, « Copier le lien » (`bd/aventures.html#flash=<id>`, à coller
+    sur Discord). Vignettes de 640 px de large (contre 360 pour les planches BD).
+- **Alerte des admins** : action `a_valider` → `{count}` (0 pour un non-admin). Elle alimente le
+  compteur de l'onglet ET une **pastille rouge sur la tuile du menu**, via un mécanisme générique :
+  champ facultatif `badge` d'une entrée de `pages.js` (URL renvoyant `{ok, count}`), lu par
+  `menu.html` pour les admins seulement. Une erreur sur cet appel ne casse jamais le menu.
+- **Flux d'écriture** : « Nouvelle histoire » → « Créer le brouillon » → glisser les planches
+  (plusieurs à la fois, triées par nom de fichier en ordre naturel : `page2` avant `page10`) →
+  réordonner (glisser-déposer ou ◀ ▶) → « Soumettre à validation » (un admin publie
+  directement). Le serveur refuse de soumettre ou publier une histoire sans planche, et de
+  retirer la dernière planche d'une histoire publiée ou soumise.
+- **Séries** (2026-10-17) — structure : la **Saga des Havres Gris** (tout ce qui est publié,
+  numérotation globale « Épisode N ») contient des **séries** (arcs : « Le Sable Rose »…) dont
+  les histoires sont des **parties**. Décisions de l'utilisateur : tout joueur peut lancer une
+  série ET écrire la suite de n'importe quelle série ; bibliothèque restée chronologique avec
+  **badge** « 📚 Série · Partie N » et **filtre par série** ; **pas de thèmes** pour l'instant.
+  - Registre `series` dans `albums.json` (`{id, nom, cree_par, cree_le}`), l'histoire pointe par
+    `serie`. Choix dans l'éditeur BD et la fiche flash : Aucune / série existante / « ＋ Nouvelle
+    série… » (nom libre, 80 car.).
+  - **Partie N = rang parmi les BD publiées de la série, par date de soirée**, calculé à la
+    lecture (`bd_view`), jamais stocké : une suite racontée en retard se range seule, un
+    brouillon ne décale rien. Une flash rattachée est « coulisses » (pas de numéro de partie).
+  - **Anti-doublon** : un nom identique à casse et espaces près REJOINT la série existante.
+    ⚠ Les **accents ne sont pas neutralisés** (pas de mbstring/intl sur le serveur) :
+    « Operation » et « Opération » font deux séries → c'est le rôle de « Fusionner ».
+  - **Visibilité** : un joueur ne voit une série qu'à travers une histoire qu'il voit (publiée,
+    ou la sienne) — le nom tapé dans le brouillon d'un autre reste privé, et un id forcé est
+    refusé (« Série introuvable »). Les **admins voient toutes les séries** : sans ça, ils ne
+    pouvaient pas ranger l'histoire qu'ils valident dans une série qui n'existait encore que
+    dans des brouillons (trouvé en test). En aperçu joueur, l'admin retombe sur la vue joueur.
+  - **Admins** : barre sous les filtres quand une série est sélectionnée → Renommer (refusé si
+    le nom appartient à une autre série : il faut fusionner) / Fusionner dans… (`serie_fusionner`
+    déplace les histoires et supprime la source).
+  - **Lecteur** : filtre série = ordre de lecture (partie 1 d'abord) ; carte de fin « Suite ·
+    Série · Partie N+1 » proposée AVANT l'épisode suivant de la saga ; récit « Partie 1 sur 3 ».
+    **Annonce Discord** : « 📖 Nouvel épisode — Épisode 5 · Le Sable Rose, partie 2 » /
+    « ⚡ Nouvelle histoire flash · Le Sable Rose (coulisses) ».
+- **Annonce Discord à la publication** (2026-10-17) : chaque BD **validée** par un admin et
+  chaque flash **publiée** est annoncée par le bot Sorties — encart avec titre (« 📖 Nouvel
+  épisode — Épisode N » / « ⚡ Nouvelle histoire flash »), début du récit coupé sur un mot,
+  auteur, date, lieu, personnages, **image en grand** (couverture ou image flash, PAR URL
+  publique) et lien direct `#ep=` / `#flash=`. Décisions : **une seule annonce par histoire**
+  (drapeau `annonce_le` : corriger, dépublier puis republier ne repostent rien), **aucun ping**
+  (`allowed_mentions: parse []`), BD **et** flash annoncées.
+  - Code dans `bd/bd_discord.php` (fonctions seules, aucun effet à l'inclusion) : l'embed se
+    construit et se vérifie en CLI sans rien envoyer à Discord.
+  - Salon : `stories_channel_id` dans `epice/discord_sortie_config.php`, repli sur
+    `partage_channel_id`. L'URL du site vient de `site_url` (donc `/v2` en test).
+  - **Un refus de Discord ne bloque jamais la publication** : l'API renvoie `annonce_erreur`, la
+    page l'affiche (« ⚠ Annonce Discord non envoyée : … », avec l'aide « Missing Access » /
+    « Missing Permissions » reprise des tournois).
+  - Bouton admin **« 📣 Annoncer sur Discord »** (éditeur BD + visionneuse flash) tant qu'une
+    histoire publiée n'a jamais été annoncée : rattrapage d'un échec, et annonce des histoires
+    publiées AVANT cette fonction (le Sable Rose au lancement).
+- **Lecteur** : page par page (clic sur les bords, ← →, balayage au doigt), **zoom** à la largeur
+  pour lire les bulles (Z — marche aussi en lecture continue : 1 100 px → pleine largeur, 200 %
+  sur téléphone, en gardant la planche en cours sous les yeux), **lecture continue** façon webtoon (C, choix mémorisé), panneau du
+  **récit** (R), plein écran (F), bande de vignettes, carte de fin avec l'épisode suivant.
+  Progression mémorisée par lecteur (`localStorage`, badge « Reprendre p. 2 » / « Lu ✓ » /
+  « Nouveau » 14 jours). **Liens directs** `bd/aventures.html#ep=<id>&p=<page>` : à coller sur
+  Discord pour envoyer quelqu'un sur une planche précise.
+- **Taille des planches — le piège nginx** : sans directive, nginx plafonne le corps d'une requête
+  à **1 Mo** (`client_max_body_size`) et répond 413 **avant** PHP, donc sans rien dans les journaux
+  PHP. Le navigateur envoie donc **une planche par requête** et réduit toute image de plus de 880 Ko
+  (WebP, JPEG si le navigateur ne sait pas encoder le WebP ; côté long ≤ 2 600 px). Mesuré : un PNG de
+  25,7 Mo en 3183×4500 part en WebP 1839×2600 de 682 Ko + vignette de 59 Ko. Une planche déjà
+  légère (les pages IA de ~450 Ko en 1061×1500) part **telle quelle**, sans recompression. Si un
+  413 apparaît quand même, la page l'affiche en clair : relever `client_max_body_size` (ex. `8m`).
+- **Sécurité des envois** : type vérifié par la signature réelle (`getimagesize`), pas par
+  l'extension ni le type déclaré ; JPEG / PNG / WebP uniquement ; 12 Mo max ; noms de fichiers et
+  identifiants générés par le serveur (un id d'épisode hors `[a-z0-9_]` est refusé avant tout chemin).
+- **Stockage** : `bd/data/albums.json` (écriture sous un seul verrou, même motif que
+  `tournois-api.php`) et `bd/pages/<épisode>/<id>.<ext>` + `<id>_t.<ext>` (vignette). Les planches
+  sont servies en statique et donc **publiques par URL** (noms aléatoires) : c'est voulu, une future
+  annonce Discord devra pouvoir les afficher (doctrine « images par URL »).
+
+> [!IMPORTANT]
+> **Déploiement** : envoyer `bd/aventures.html`, `bd/bd_api.php`, `bd/bd_discord.php`,
+> `bd/aventures.jpg`, `pages.js` et `menu.html` (pastille des admins). **`bd_discord.php` est une
+> dépendance dure** : absent, `bd_api.php` meurt au `require_once` et toute la page tombe.
+> Annonces : ajouter `'stories_channel_id' => '<id du salon>'` dans
+> `epice/discord_sortie_config.php` (fichier du serveur, gitignoré) ; sans lui, repli sur
+> `partage_channel_id`.
+>
+> **Piège « aperçu joueur »** : le bouton 👁 d'`auth-guard.js` ne change que le rôle AFFICHÉ
+> (`localStorage.role = "user"`, `previewPlayer = "1"`) ; la session PHP reste admin. Une page qui
+> demande ses droits au serveur (ici `est_admin`, `peut_modifier`) montre donc l'interface admin
+> en plein aperçu — l'onglet « À valider » apparaissait. Remède : la page appelle
+> `list&apercu=1` quand `previewPlayer` vaut 1, et l'API calcule CETTE lecture comme pour un joueur
+> (`$BD_APERCU`, lu par `bd_admin()`). Seule `list` le pose : aucune écriture n'est affectée.
+> À reproduire sur toute future page dont l'affichage dépend d'une réponse serveur.
+>
+> **Piège CSS rencontré** : un bloc stylé `display: grid` (le panneau « Dépublier » des admins)
+> restait visible malgré l'attribut `hidden` — l'auteur d'une règle CSS l'emporte sur le style par
+> défaut du navigateur. La page force donc `[hidden] { display: none !important; }`. Ne pas
+> retirer cette règle : sans elle, des boutons d'admin s'affichent chez les joueurs.
+> `bd/bd_api.php` a besoin de `epice/auth_epice.php`, déjà en prod. Puis créer les deux dossiers de
+> données, inscriptibles par PHP **et** par le compte `dune` :
+> ```
+> mkdir -p bd/data bd/pages && sudo chown dune:www-data bd/data bd/pages && sudo chmod 2775 bd/data bd/pages
+> ```
+> Le `umask(0002)` de l'API donne ensuite des fichiers 664 / dossiers 775 qui héritent du groupe.
+> Recommandé (pas indispensable, rien de secret dedans) : ajouter `location ^~ /bd/data/ { deny all; }`
+> (et `/v2/bd/data/`) à côté de ceux d'`epice/data/`. **Ne jamais écraser `bd/data/` ni `bd/pages/`**
+> lors d'un redéploiement : ce sont les épisodes de la guilde.
+
+---
+
 ### Mon Compte (`account.html`)
 - **Widget compte joueur** présent dans toutes les pages : cercle avatar + pseudo, clic → page compte
 - Avatar personnalisable : grille de presets + upload personnel (redimensionné 200×200 px côté serveur via PHP GD, crop centré automatique)
@@ -1192,6 +1354,13 @@ DuneMap/
 │   ├── discord_probe.php  # Sonde diagnostic (sodium/cURL/config) — à supprimer après
 │   ├── discord_sortie_config.example.php # Gabarit (bot_token) — config hors Git
 │   └── data/             # debriefs.json + organizers.json (runtime, hors Git)
+│
+├── bd/                   # « Havres Gris Stories » — BD de guilde
+│   ├── aventures.html    # Bibliothèque + éditeur des planches + lecteur BD
+│   ├── bd_api.php        # Épisodes et planches (droits = ceux des organisateurs épice)
+│   ├── aventures.jpg     # Vignette de la tuile du menu
+│   ├── data/             # albums.json (runtime, hors Git)
+│   └── pages/            # Planches envoyées depuis le site (runtime, hors Git)
 │
 ├── avatars/              # Avatars presets + uploads joueurs (préfixe u_pseudo_)
 ├── uploads/              # Images des demandes de craft

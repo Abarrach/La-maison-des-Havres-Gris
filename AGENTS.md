@@ -78,6 +78,7 @@ se répartir par **domaine**, pas par tâche :
 | Auth / comptes / admin | `discord_oauth.php`, `save.php`, `account*.{html,php}`, `page-guard.js`, `auth-guard.js` |
 | Optimiseur / plans | `optimiseur.html`, `plans*.{html,js,php}`, `stuff_*.json` |
 | Épice (sorties, débrief) | `epice/**` |
+| BD de guilde | `bd/**` (session via `epice/auth_epice.php` ; validation = admins) |
 
 `README.md` est touché par tout le monde : **écrire dans sa propre section**, ne pas
 réorganiser le fichier.

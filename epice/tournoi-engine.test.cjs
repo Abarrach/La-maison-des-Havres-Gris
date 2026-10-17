@@ -309,4 +309,100 @@ test('têtes de série selon les résultats : saison, titres, médailles, puis o
   assert.deepStrictEqual(ordre, ['Neuroch', 'Fenros', 'Bahlor', 'Nouveau1', 'Shean', 'Nouveau2']);
 });
 
+// ------------------------------------------------------------------ équipes
+// Générateur pseudo-aléatoire reproductible : un test rouge doit le rester.
+function alea(graine) { let s = graine >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
+const forceDe = (joueurs, id) => joueurs.find(j => j.id === id).force;
+const sommeForce = (joueurs, eq) => eq.membres.reduce((s, id) => s + E.valeurForce(forceDe(joueurs, id)), 0);
+
+test('équipes : les Forts sont séparés et les équipes se valent', () => {
+  // La demande de Neuroch : « que Bahlor et Fenros ne soient pas dans la même équipe ».
+  const J = [['Bahlor', 'F'], ['Fenros', 'F'], ['Neuroch', 'M'], ['Sarazin', 'M'], ['Shean', 'N'], ['Frya', 'N']]
+    .map(([nom, force]) => ({ id: nom, force }));
+  for (let g = 1; g <= 30; g++) {
+    const c = E.composerEquipes(J, 2, { alea: alea(g) });
+    assert.strictEqual(c.equipes.length, 3); assert.deepStrictEqual(c.remplacants, []);
+    assert.ok(!c.equipes.some(e => e.membres.includes('Bahlor') && e.membres.includes('Fenros')), 'graine ' + g + ' : Bahlor et Fenros ensemble');
+    assert.strictEqual(c.ecart, 0, 'un fort + un novice, deux moyens : écart nul possible');
+    c.equipes.forEach(e => assert.strictEqual(e.force, sommeForce(J, e)));
+  }
+});
+
+test('équipes : remplaçants quand le compte n\'est pas rond, et autre tirage différent', () => {
+  const J = Array.from({ length: 9 }, (_, i) => ({ id: 'p' + i, force: ['F', 'M', 'N'][i % 3] }));
+  const c = E.composerEquipes(J, 2, { alea: alea(7) });
+  assert.strictEqual(c.equipes.length, 4);
+  assert.deepStrictEqual(c.remplacants, ['p8'], '9 joueurs en 2v2 : le dernier inscrit est remplaçant');
+  const tous = c.equipes.flatMap(e => e.membres).concat(c.remplacants).sort();
+  assert.deepStrictEqual(tous, J.map(j => j.id).sort(), 'chacun une seule fois');
+  assert.ok(c.alternatives > 1, 'plusieurs compositions équivalentes');
+  const sig = E.signatureEquipes(c.equipes.map(e => e.membres));
+  const d = E.composerEquipes(J, 2, { alea: alea(8), eviter: sig });
+  assert.notStrictEqual(E.signatureEquipes(d.equipes.map(e => e.membres)), sig, '« Autre tirage » change la composition');
+  assert.strictEqual(d.ecart, c.ecart, 'sans perdre en équilibre');
+  assert.strictEqual(E.composerEquipes(J.slice(0, 3), 2), null, 'moins de deux équipes : rien à composer');
+});
+
+test('équipes : le banc ne dépend jamais de la force', () => {
+  // Constaté au banc d'essai : laissé à l'équilibrage, le banc recevait un Fort
+  // (Fenros, le champion) parce que ça rendait les quatre équipes parfaitement égales.
+  const J = [['Bahlor', 'F'], ['Fenros', 'F'], ['Neuroch', 'F'], ['Sarazin', 'M'], ['Lorhelyne', 'M'],
+             ['Shean', 'M'], ['Frya', 'N'], ['Militarus', 'N'], ['Nouveau', null]].map(([id, force]) => ({ id, force }));
+  for (let g = 1; g <= 20; g++) assert.deepStrictEqual(E.composerEquipes(J, 2, { alea: alea(g) }).remplacants, ['Nouveau']);
+  // Remplaçant déjà désigné par l'organisateur (et en bon nombre) : on le garde.
+  assert.deepStrictEqual(E.composerEquipes(J, 2, { alea: alea(1), remplacants: ['Shean'] }).remplacants, ['Shean']);
+  // Mauvais nombre (la liste a changé depuis) : retour aux derniers inscrits.
+  assert.deepStrictEqual(E.composerEquipes(J, 2, { alea: alea(1), remplacants: ['Shean', 'Frya'] }).remplacants, ['Nouveau']);
+  const c = E.composerEquipes(J, 2, { alea: alea(5) });
+  assert.ok(!c.equipes.some(e => e.membres.filter(id => J.find(j => j.id === id).force === 'F').length > 1), 'trois Forts dans trois équipes');
+});
+
+test('équipes : force inconnue comptée comme Moyen, membres rangés du plus fort au plus faible', () => {
+  const J = [{ id: 'a', force: 'F' }, { id: 'b' }, { id: 'c', force: 'N' }, { id: 'd' }, { id: 'e', force: 'M' }, { id: 'f', force: 'M' }];
+  const c = E.composerEquipes(J, 3, { alea: alea(3) });
+  assert.strictEqual(c.ecart, 0);
+  c.equipes.forEach(e => {
+    const v = e.membres.map(id => E.valeurForce(forceDe(J, id)));
+    assert.deepStrictEqual(v, v.slice().sort((x, y) => y - x));
+  });
+});
+
+test('équipes : force proposée d\'après les duels, choix d\'organisateur prioritaire', () => {
+  // 8 joueurs : rangs 1, 2, 3, 3 puis 5ᵉ ex æquo — Fenrir n'est pas sur le podium.
+  const veteran = tournoiFini('vet', '2026-09-01', 'expert', ['Fenros', 'Neuroch', 'Bahlor', 'Lorhelyne', 'Fenrir', 'P', 'Q', 'R']);
+  const nouveaux = tournoiFini('deb', '2026-09-02', 'debutant', ['Shean', 'Frya', 'Militarus', 'Merlin']);
+  const inter = tournoiFini('int', '2026-09-03', 'intermediaire', ['Sarazin', 'Hasashi', 'LeFou', 'Orcote']);
+  const T = [veteran, nouveaux, inter];
+  const f = nom => (E.forceProposee(T, { nom }) || {}).force;
+  assert.deepStrictEqual(['Fenros', 'Bahlor', 'Fenrir', 'Sarazin', 'Hasashi', 'Shean', 'Frya', 'Inconnu'].map(f),
+    ['F', 'F', 'M', 'F', 'M', 'M', 'N', undefined]);
+  assert.strictEqual(E.forceProposee(T, { nom: 'Fenros' }).base, 'resultats');
+  // Un organisateur a classé Frya « Moyen » dans un 2v2 clôturé : ça l'emporte.
+  const deux = Object.assign(tournoi([], 'simple', { equipe: 2 }), { id: 'eq', nom: '2v2', date: '2026-09-10', niveau: 'debutant', statut: 'termine',
+    joueurs: [{ id: 'x', nom: 'Frya', force: 'M' }] });
+  assert.deepStrictEqual([E.forceProposee(T.concat([deux]), { nom: 'Frya' }).force, E.forceProposee(T.concat([deux]), { nom: 'Frya' }).base], ['M', 'organisateur']);
+});
+
+test('équipes : l\'arbre oppose les équipes, sans points de saison', () => {
+  const t = Object.assign(tournoi(['A', 'B', 'C', 'D', 'E', 'F'], 'simple', { equipe: 2, petiteFinale: false }),
+    { id: 'eq', nom: '2v2', date: '2026-10-10', niveau: 'expert', statut: 'termine' });
+  t.equipes = [{ id: 'e1', nom: 'A & B', membres: ['j1', 'j2'] }, { id: 'e2', nom: 'C & D', membres: ['j3', 'j4'] },
+               { id: 'e3', nom: 'E & F', membres: ['j5', 'j6'] }];
+  let res = E.resoudre(t);
+  assert.deepStrictEqual(res.joueurs.map(p => p.id), ['e1', 'e2', 'e3'], 'participants = équipes');
+  assert.strictEqual(res.matchs['W1-1'].statut, 'exempt', '3 équipes : la 1ʳᵉ passe le 1ᵉʳ tour');
+  const w2 = res.matchs['W1-2'];
+  t.resultats['W1-2'] = { p1: w2.a, p2: w2.b, w: 'e2' };
+  const f = E.resoudre(t).matchs['W2-1'];
+  t.resultats['W2-1'] = { p1: f.a, p2: f.b, w: 'e2' };
+  res = E.resoudre(t);
+  assert.ok(res.termine); assert.strictEqual(res.champion, 'e2');
+  assert.deepStrictEqual(E.podium(t, res).map(p => p.nom), ['C & D', 'A & B', 'E & F']);
+  assert.deepStrictEqual(E.pointsTournoi(t), [], 'pas de points de saison');
+  assert.deepStrictEqual(E.classementSaison([t], E.saisonDe('2026-10-10').id, 'expert'), []);
+  assert.strictEqual(E.nomEquipe(['Bahlor', 'Neuroch']), 'Bahlor & Neuroch');
+  assert.strictEqual(E.nomEquipe(['A', 'B', 'C']), 'A, B & C');
+  assert.strictEqual(E.nomEquipe(['Lorhelyne✨', 'Militarus', 'Sarazin', 'Hasashi-le-Grand']), 'Équipe Lorhelyne✨', 'trop long : capitaine');
+});
+
 console.log((process.exitCode ? '✖ ' : '✔ ') + ok + ' test(s) réussi(s)');

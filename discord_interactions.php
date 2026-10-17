@@ -15,6 +15,7 @@
 //  Routes actuelles :
 //   - /sortie + composants sortie   → epice/discord_sortie.php  (existant, inchangé)
 //   - /commande + composants cmd_   → discord_commande.php      (lot 3+, pas encore livré)
+//   - composants tpari/tparim/tparimes → epice/discord_paris.php (paris des tournois PvP)
 //
 //  Sécurité : chaque requête Discord est signée. On refuse (401)
 //  tout ce qui n'est pas signé correctement. La clé publique est
@@ -116,6 +117,10 @@ function detect_route(array $body): ?string {
 
     if ($type === 3 || $type === 5) {
         $cid = (string)($body['data']['custom_id'] ?? '');
+        // Paris des tournois PvP (cf. epice/discord_paris.php) : boutons du message de
+        // paris (tpari:, tparimes:) et son formulaire (tparim:). Les messages déjà
+        // postés gardent ces boutons : ne jamais retirer ces préfixes.
+        if (preg_match('/^tpari(m|mes)?:/', $cid)) return 'paris';
         // Sortie : préfixes existants (cf. epice/discord_sortie.php)
         $sortiePrefixes = [
             'signup:', 'present:', 'maybe:', 'absent:', 'unsignup:',
@@ -169,6 +174,11 @@ if ($route === 'commande') {
 
 if ($route === 'plan') {
     require __DIR__ . '/discord_plan.php';
+    exit;
+}
+
+if ($route === 'paris') {
+    require __DIR__ . '/epice/discord_paris.php';
     exit;
 }
 

@@ -181,6 +181,42 @@
     .pl .ico:disabled { opacity:.25; cursor:default; }
     .note { font-size:.74rem; color:var(--text-muted); line-height:1.6; margin-top:.6rem; }
 
+    /* ÉQUIPES — force des joueurs (F / M / N) et composition */
+    .frc { display:inline-flex; border:1px solid var(--border); border-radius:2px; overflow:hidden; flex-shrink:0; }
+    .frc button { background:none; border:none; border-right:1px solid var(--border); color:var(--text-faint); font-size:.64rem; font-weight:700; width:24px; height:22px; cursor:pointer; padding:0; }
+    .frc button:last-child { border-right:none; }
+    .frc button:hover:not(:disabled) { color:var(--text); background:var(--surface-2); }
+    .frc button:disabled { cursor:default; }
+    .frc button.on { color:#0A0800; }
+    .frc button.on.F { background:#D4A23B; } .frc button.on.M { background:#9AB0D0; } .frc button.on.N { background:#9CCB8A; }
+    .frc button.on.prop { background:transparent; outline:1px dashed currentColor; outline-offset:-3px; }
+    .frc button.on.prop.F { color:#D4A23B; } .frc button.on.prop.M { color:#9AB0D0; } .frc button.on.prop.N { color:#9CCB8A; }
+    .frc-inc { font-size:.64rem; color:#E09080; font-weight:700; width:14px; text-align:center; cursor:help; }
+    .eq-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:.6rem; margin-bottom:.8rem; }
+    .eq { background:var(--surface); border:1px solid var(--border); border-radius:2px; padding:.55rem .65rem; }
+    .eq.exempt { border-left:3px solid var(--accent-dim); }
+    .eq.incomplete { border-color:#5a2a20; }
+    .eq-head { display:flex; align-items:center; gap:.4rem; margin-bottom:.45rem; }
+    .eq-nom { flex:1; min-width:0; font-weight:600; font-size:.86rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .eq-pts { font-size:.62rem; color:var(--text-muted); white-space:nowrap; cursor:help; }
+    .eq-head .ico { background:none; border:1px solid transparent; color:var(--text-muted); cursor:pointer; width:24px; height:22px; border-radius:2px; font-size:.72rem; }
+    .eq-head .ico:hover:not(:disabled) { border-color:var(--border); color:var(--text); }
+    .eq-head .ico:disabled { opacity:.25; cursor:default; }
+    .eq-mbs { display:flex; flex-wrap:wrap; gap:.3rem; }
+    .mb { display:inline-flex; align-items:center; gap:.3rem; padding:.22rem .5rem; border:1px solid var(--border); border-radius:2px; background:var(--surface-2); font-size:.78rem; user-select:none; }
+    .mb.click { cursor:pointer; }
+    .mb.click:hover { border-color:var(--accent-dim); }
+    .mb.sel { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); background:var(--accent-glow); }
+    .mb.vide { border-style:dashed; color:var(--text-faint); font-style:italic; }
+    .mb .f { font-size:.58rem; font-weight:800; width:13px; text-align:center; }
+    .mb .f.F { color:#D4A23B; } .mb .f.M { color:#9AB0D0; } .mb .f.N { color:#9CCB8A; } .mb .f.X { color:#E09080; }
+    .eq-tag { font-size:.62rem; color:var(--accent); margin-top:.4rem; }
+    .eq-banc { padding:.55rem .65rem; border:1px dashed var(--border); border-radius:2px; margin-bottom:.8rem; font-size:.78rem; color:var(--text-muted); }
+    .eq-banc.cible { border-color:var(--accent-dim); cursor:pointer; }
+    .eq-banc .eq-mbs { margin-top:.4rem; }
+    .m-nm .mbs { color:var(--text-muted); font-size:.66rem; }
+    .chip.eq-chip { color:#C9A0E0; border-color:#4E3A62; }
+
     /* SAISON */
     .saison-barre { display:flex; gap:.75rem; flex-wrap:wrap; align-items:center; margin-bottom:1rem; }
     .saison-barre select { width:auto; min-width:220px; }
@@ -199,11 +235,105 @@
     .jr-ts { color:var(--text-muted); white-space:nowrap; font-size:.72rem; min-width:118px; }
     .jr-par { color:var(--accent); white-space:nowrap; }
 
+    /* Combat dont les paris sont fermés (fenêtre écoulée ou fermée par l'orga), dans l'arbre */
+    .m.lance { border-color:#8A4A30; box-shadow:inset 3px 0 0 var(--accent); }
+    .m.lance .m-num { color:var(--accent); font-size:.72rem; }
+
+    /* CONSOLE DE SOIRÉE (orga, sur téléphone pendant qu'il arbitre en jeu) */
+    .cs-tete { display:flex; justify-content:space-between; align-items:center; gap:.75rem; flex-wrap:wrap; margin-bottom:.9rem; }
+    .cs-tete p { font-size:.8rem; color:var(--text-muted); max-width:60ch; }
+    .cs-grille { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:.8rem; }
+    .cs-combat { background:var(--surface); border:1px solid var(--accent-dim); border-radius:2px; padding:.85rem .9rem; display:flex; flex-direction:column; gap:.7rem; }
+    .cs-haut { display:flex; justify-content:space-between; align-items:center; gap:.5rem; flex-wrap:wrap; font-size:.74rem; color:var(--text-muted); font-weight:600; }
+    .cs-gagne { display:grid; grid-template-columns:1fr 1fr; gap:.6rem; }
+    .cs-gagne button { min-height:64px; padding:.6rem .7rem; border:1px solid var(--border); border-radius:2px; background:var(--surface-2); color:var(--text); font-family:inherit; font-size:.92rem; font-weight:700; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.2rem; text-align:center; }
+    .cs-gagne button:hover, .cs-gagne button:focus-visible { border-color:var(--accent); background:var(--accent-glow); outline:none; }
+    .cs-gagne small { font-size:.62rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--accent); }
+    .cs-bas { display:flex; justify-content:space-between; align-items:center; gap:.5rem; flex-wrap:wrap; font-size:.74rem; color:var(--text-muted); }
+    .cs-gagne button:disabled { opacity:.4; cursor:not-allowed; border-color:var(--border); background:var(--surface-2); }
+    .cs-combat.attente { border-color:var(--border); }
+    .cs-info { font-size:.74rem; color:#E0B860; line-height:1.5; }
+    .cs-avance { display:flex; align-items:center; gap:.8rem; flex-wrap:wrap; font-size:.8rem; color:var(--text-muted); margin-bottom:.9rem; }
+    .cs-avance strong { color:var(--text); }
+    .cs-barre { flex:1; min-width:120px; height:6px; background:var(--surface-2); border:1px solid var(--border); border-radius:3px; overflow:hidden; }
+    .cs-barre span { display:block; height:100%; background:var(--accent); }
+    .cs-avance a { cursor:pointer; font-size:.74rem; }
+    .cs-arbre { margin-top:1.4rem; }
+    .cs-annuler { position:sticky; bottom:12px; margin-top:1rem; padding:.75rem 1rem; background:var(--surface-2); border:1px solid var(--accent); border-radius:2px; display:flex; justify-content:space-between; align-items:center; gap:.75rem; flex-wrap:wrap; font-size:.86rem; z-index:20; }
+    .cs-recents { margin-top:1.4rem; }
+    .cs-recents .jr { align-items:center; }
+    @media (max-width: 640px) { .cs-grille { grid-template-columns:1fr; } }
+    /* Console sur TÉLÉPHONE : l'orga pilote d'une main en arbitrant en jeu. Ne restent
+       que le nom du tournoi, les onglets (une ligne qui défile), les combats à saisir et
+       l'arbre en lecture. Sur ordinateur, l'en-tête complet et la barre d'orga restent. */
+    .cs-cloture { display:none; }
+    @media (max-width: 760px) {
+      body.mode-console .nav, body.mode-console #btn-back,
+      body.mode-console #detail-tete .t-info, body.mode-console #detail-tete .podium,
+      body.mode-console #detail-tete > .section-title, body.mode-console #detail-tete .orga-bar,
+      body.mode-console #detail-tete .banner, body.mode-console .cs-tete p { display:none; }
+      body.mode-console .wrap { padding-top:.6rem; }
+      body.mode-console .t-title { gap:.4rem; }
+      body.mode-console .t-title h1 { font-size:1.1rem; }
+      body.mode-console .t-title .chip { font-size:.55rem; }
+      body.mode-console .subtabs { position:sticky; top:0; z-index:15; background:var(--bg); flex-wrap:nowrap; overflow-x:auto; margin-top:.6rem; scrollbar-width:none; }
+      body.mode-console .subtabs::-webkit-scrollbar { display:none; }
+      body.mode-console .subtab { white-space:nowrap; padding:.6rem .8rem; }
+      body.mode-console .sub-console, body.mode-console #sub-console { padding-top:.8rem; }
+      body.mode-console .cs-tete { margin-bottom:.6rem; }
+      body.mode-console .cs-avance { margin-bottom:.7rem; }
+      body.mode-console .cs-gagne button { min-height:72px; font-size:1rem; }
+      .cs-cloture { display:flex; }
+    }
+
+    /* PARIS */
+    .pr-regles { background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:2px; padding:.85rem 1.1rem; font-size:.8rem; color:var(--text-muted); line-height:1.65; }
+    .pr-regles strong { color:var(--text); }
+    .pr-moi { display:flex; flex-wrap:wrap; gap:.4rem 1.6rem; align-items:baseline; margin-top:.9rem; padding:.85rem 1.1rem; background:var(--surface-2); border:1px solid var(--accent-dim); border-radius:2px; font-size:.84rem; }
+    .pr-moi .gros { font-family:'Cinzel',serif; font-size:1.2rem; font-weight:700; }
+    .plus { color:#7CD08A; } .moins { color:#E09080; }
+    .pr-grille { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:.75rem; }
+    .pm { background:var(--surface); border:1px solid var(--border); border-radius:2px; padding:.75rem .85rem; display:flex; flex-direction:column; gap:.6rem; }
+    .pm.ouvert { border-color:var(--accent-dim); }
+    .pm-head { display:flex; justify-content:space-between; align-items:center; gap:.5rem; flex-wrap:wrap; font-size:.72rem; color:var(--text-muted); font-weight:600; letter-spacing:.04em; }
+    .pm-sides { display:grid; grid-template-columns:1fr 1fr; gap:.5rem; }
+    .pm-side { display:flex; flex-direction:column; align-items:flex-start; gap:.15rem; padding:.55rem .7rem; background:var(--surface-2); border:1px solid var(--border); border-radius:2px; color:var(--text); text-align:left; cursor:pointer; min-width:0; }
+    .pm-side:hover:not(:disabled) { border-color:var(--accent); }
+    .pm-side:disabled { cursor:default; }
+    .pm-side.mien { border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent-dim); }
+    .pm-side.gagne { border-color:#2E5A36; background:rgba(42,106,58,.15); }
+    .pm-side .nm { font-weight:600; font-size:.86rem; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .pm-side .mt { font-size:.7rem; color:var(--text-muted); }
+    .pm-foot { font-size:.74rem; color:var(--text-muted); display:flex; justify-content:space-between; gap:.5rem; flex-wrap:wrap; align-items:center; }
+    .pm-foot a { cursor:pointer; }
+    .chip.ouvert { color:#E0B860; border-color:#6A5020; }
+    .chip.ferme { color:#E09080; border-color:#5a2a20; }
+    .chip.regle { color:#7CD08A; border-color:#2E5A36; }
+    .pr-alerte { color:#E0B860; font-size:.7rem; }
+    .dlg-body .pari-gain { margin-top:.6rem; font-size:.78rem; color:var(--text); min-height:1.2em; }
+    .sc-paris { margin-top:1rem; padding:.65rem .8rem; border:1px dashed var(--border); border-radius:2px; font-size:.78rem; color:var(--text-muted); display:flex; justify-content:space-between; align-items:center; gap:.6rem; flex-wrap:wrap; }
+    .sc-paris:empty { display:none; }
+    details.pr-det { margin-top:1.2rem; }
+    details.pr-det summary { cursor:pointer; font-size:.65rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--accent); }
+    details.pr-det > :not(summary) { margin-top:.75rem; }
+    @media (max-width: 640px) { .tbl.pr-tbl th:nth-child(3), .tbl.pr-tbl td:nth-child(3) { display:none; } }
+
     /* FORMULAIRES */
     input[type=text], input[type=number], input[type=date], input[type=time], select, textarea {
       width:100%; background:var(--surface-2); border:1px solid var(--border); border-radius:2px; color:var(--text); font-family:inherit; font-size:.85rem; padding:.55rem .7rem; outline:none; border-left:2px solid var(--accent-dim);
     }
     input:focus, select:focus, textarea:focus { border-color:var(--accent-dim); border-left-color:var(--accent); }
+    /* Cases à cocher dans le thème (la case native restait blanche sur fond sombre) */
+    input[type=checkbox] { -webkit-appearance:none; appearance:none; width:16px; height:16px; flex-shrink:0; margin:0; vertical-align:middle;
+      display:inline-grid; place-content:center; border:1px solid var(--accent-dim); border-radius:2px; background:var(--surface-2); cursor:pointer; transition:border-color .15s, background .15s; }
+    input[type=checkbox]::before { content:''; width:10px; height:10px; background:var(--accent); transform:scale(0); transition:transform .12s;
+      clip-path:polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%); }
+    input[type=checkbox]:hover { border-color:var(--accent); }
+    input[type=checkbox]:checked { border-color:var(--accent); background:var(--accent-glow); }
+    input[type=checkbox]:checked::before { transform:scale(1); }
+    input[type=checkbox]:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+    input[type=checkbox]:disabled { opacity:.45; cursor:not-allowed; }
+    @media (prefers-reduced-motion: reduce) { input[type=checkbox], input[type=checkbox]::before { transition:none; } }
     input[type=date], input[type=time] { color-scheme:dark; }
     textarea { resize:vertical; min-height:64px; }
     label.f { display:block; font-size:.62rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--text-muted); margin-bottom:.35rem; }
@@ -273,6 +403,7 @@
     <button class="nav-tab" data-view="historique">Historique</button>
     <button class="nav-tab" data-view="saison">Saison</button>
     <button class="nav-tab" data-view="palmares">Palmarès</button>
+    <a class="nav-tab" href="paris-aide.html" data-tip="Le guide des paris en Solaris, captures à l'appui">🎲 Comment parier</a>
   </div>
 </nav>
 
@@ -328,14 +459,18 @@
     <button class="back" id="btn-back">← Tous les tournois</button>
     <div id="detail-tete"></div>
     <div class="subtabs" id="subtabs">
+      <button class="subtab" data-sub="console" style="display:none">🎮 Console</button>
       <button class="subtab active" data-sub="arbre">Arbre</button>
       <button class="subtab" data-sub="joueurs">Joueurs</button>
       <button class="subtab" data-sub="classement">Classement</button>
+      <button class="subtab" data-sub="paris">🎲 Paris</button>
       <button class="subtab" data-sub="journal">Journal</button>
     </div>
+    <div class="subview" id="sub-console"></div>
     <div class="subview active" id="sub-arbre"></div>
     <div class="subview" id="sub-joueurs"></div>
     <div class="subview" id="sub-classement"></div>
+    <div class="subview" id="sub-paris"></div>
     <div class="subview" id="sub-journal"></div>
   </section>
 </div>
@@ -363,7 +498,10 @@
         <label class="check"><input type="checkbox" id="f-pf" checked> Petite finale (3ᵉ place)</label></div>
       <div class="fgroup"><label class="f" for="f-bo">Manches par match</label>
         <select id="f-bo"><option value="1">1 manche</option><option value="3">2 manches gagnantes (BO3)</option><option value="5">3 manches gagnantes (BO5)</option></select></div>
+      <div class="fgroup"><label class="f" for="f-equipe">Combats</label>
+        <select id="f-equipe"><option value="1">En duel (1 contre 1)</option><option value="2">Par équipes de 2 (2 contre 2)</option><option value="3">Par équipes de 3 (3 contre 3)</option><option value="4">Par équipes de 4 (4 contre 4)</option></select></div>
     </div>
+    <p class="note" id="f-equipe-note" style="margin:-.4rem 0 .9rem"></p>
     <div class="grid2">
       <div class="fgroup"><label class="f" for="f-date">Date</label><input type="date" id="f-date"></div>
       <div class="fgroup"><label class="f" for="f-heure">Heure</label><input type="time" id="f-heure"></div>
@@ -375,6 +513,20 @@
       <input type="text" id="f-lot2" maxlength="120" placeholder="🥈 2ᵉ place">
       <input type="text" id="f-lot3" maxlength="120" placeholder="🥉 3ᵉ place">
     </div>
+    <label class="check" style="margin-top:1rem"><input type="checkbox" id="f-paris"> 🎲 Ouvrir les paris en Solaris sur ce tournoi</label>
+    <p class="note" style="margin-top:.3rem">Toute la guilde peut alors parier. Se coupe à tout moment : les paris déjà posés restent à régler. <a href="paris-aide.html" target="_blank">Comment ça marche</a></p>
+    <div class="grid2" id="f-paris-opts" style="margin-top:.7rem">
+      <div class="fgroup"><label class="f" for="f-fenetre" data-tip="Quand un combat devient prêt, ses paris restent ouverts ce temps-là puis ferment tout seuls. Réglable combat par combat pendant la soirée (+1 min, fermer, rouvrir).">Temps de pari par combat (min)</label>
+        <input type="number" id="f-fenetre" min="1" max="30" value="2"></div>
+      <div class="fgroup"><label class="f" for="f-banquier" data-tip="Celui qui encaisse et verse les Solaris. Vide = toi, l'organisateur. Souvent mieux confié à quelqu'un qui ne joue pas.">Banquier (vide = toi)</label>
+        <input type="text" id="f-banquier" list="f-membres" maxlength="40" placeholder="Un membre qui ne joue pas"></div>
+    </div>
+    <div class="fgroup">
+      <label class="f" for="f-coorga" data-tip="Ils gèrent ce tournoi comme toi : résultats, paris, annonces. Pratique pour qu'un non-joueur tienne la console pendant que tu arbitres en jeu.">Co-organisateurs (4 au plus)</label>
+      <div class="pl-add" style="margin-bottom:.4rem"><input type="text" id="f-coorga" list="f-membres" maxlength="40" placeholder="Nom d'un membre du Discord"><button class="btn" id="f-coorga-ajout" type="button">＋ Ajouter</button></div>
+      <div id="f-coorgas" class="actions"></div>
+    </div>
+    <datalist id="f-membres"></datalist>
     <p class="note" id="f-note"></p>
     <div class="modal-foot">
       <button class="btn" data-close>Annuler</button>
@@ -387,12 +539,15 @@
 <div class="modal-bg" id="modal-score">
   <div class="modal">
     <h2 id="sc-titre">Match</h2>
+    <div id="sc-saisie">
     <div class="score-grid">
       <div class="who" id="sc-n1"></div><input type="number" id="sc-s1" min="0" max="999" inputmode="numeric"><button class="win-btn" id="sc-w1">🏆 Vainqueur</button>
       <div class="who" id="sc-n2"></div><input type="number" id="sc-s2" min="0" max="999" inputmode="numeric"><button class="win-btn" id="sc-w2">🏆 Vainqueur</button>
     </div>
     <label class="check" style="margin-top:1rem"><input type="checkbox" id="sc-ff"> Victoire par forfait</label>
+    <div class="sc-paris" id="sc-paris"></div>
     <p class="note" id="sc-note"></p>
+    </div>
     <div class="modal-foot">
       <button class="btn danger" id="sc-clear">Effacer le résultat</button>
       <div class="actions"><button class="btn" data-close>Annuler</button><button class="btn primary" id="sc-ok">Enregistrer</button></div>
@@ -406,17 +561,29 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="tournoi-engine.js?v=tournois-3"></script>
+<script src="tournoi-engine.js?v=tournois-4"></script>
+<script src="tournoi-paris.js?v=paris-5"></script>
 <script>
 (function () {
   'use strict';
   const E = window.TournoiEngine;
+  const PR = window.TournoiParis;
   const API = 'tournois-api.php';
   const MED = { 1: { ico: '🥇', c: 'var(--gold)', txt: '1ER' }, 2: { ico: '🥈', c: 'var(--silver)', txt: '2E' }, 3: { ico: '🥉', c: 'var(--bronze)', txt: '3E' } };
   const STATUT_LBL = { preparation: 'En préparation', en_cours: 'En cours', termine: 'Terminé' };
 
   let LISTE = [], PEUT_GERER = false, ADMIN = false;
+  // EST_ORGA : rôle organisateur (tous les tournois). PEUT_GERER : droit sur le tournoi
+  // OUVERT, que son créateur a aussi sans être organisateur (cf. t_peut_gerer côté API).
+  let EST_ORGA = false;
+  // Aperçu « vue joueur » d'un admin (auth-guard.js) : il ne change que le rôle LU
+  // dans le navigateur, le serveur répond toujours en admin. Les droits que la page
+  // tient du serveur sont donc coupés ici, sinon l'aperçu montrait tout l'outillage
+  // d'orga. (Les données reçues restent celles d'un admin : c'est un aperçu.)
+  const APERCU = (() => { try { return localStorage.getItem('previewPlayer') === '1'; } catch (e) { return false; } })();
   let T = null, PEUT_SUPPR = false, RES = null;
+  // Paris du tournoi ouvert : réponse brute de l'API (PARIS) et bilan calculé (BIL).
+  let PARIS = null, BIL = null, PARIS_ERR = '';
   let filtreHisto = '', filtrePalm = '';
 
   // ---------------------------------------------------------------- outils
@@ -441,8 +608,15 @@
   }
   const nivChip = n => `<span class="chip niv-${n}">${E.NIVEAUX[n] ? E.NIVEAUX[n].icon + ' ' + E.NIVEAUX[n].label : esc(n)}</span>`;
   const stChip = s => `<span class="chip st-${s}">${STATUT_LBL[s] || s}</span>`;
-  const nomDe = id => { const j = T && T.joueurs.find(x => x.id === id); return j ? j.nom : '?'; };
-  const seedDe = id => { const i = T ? T.joueurs.findIndex(x => x.id === id) : -1; return i < 0 ? '' : i + 1; };
+  // Participants de l'arbre : les joueurs en duel, les ÉQUIPES dans un tournoi par
+  // équipes (résultats, podium et classement portent alors l'identifiant d'équipe).
+  const EQ = () => !!T && E.estEquipes(T);
+  const parts = () => !T ? [] : (EQ() ? (T.equipes || []) : T.joueurs);
+  const nomDe = id => { const j = parts().find(x => x.id === id); return j ? j.nom : '?'; };
+  const seedDe = id => { const i = parts().findIndex(x => x.id === id); return i < 0 ? '' : i + 1; };
+  const joueurDe = id => T && T.joueurs.find(x => x.id === id);
+  const membresDe = id => { const e = EQ() && T.equipes.find(x => x.id === id); return e ? e.membres.map(m => (joueurDe(m) || {}).nom).filter(Boolean) : []; };
+  const eqChip = t => { const n = E.tailleEquipe(t); return n > 1 ? `<span class="chip eq-chip" data-tip="Tournoi par équipes">👥 ${n} contre ${n}</span>` : ''; };
   // Fenêtre maison, même interface que duneDialog() de Mon Compte. Promesse :
   //   confirmation → true / false ; avec `saisie` → le texte saisi, ou null si annulé.
   //   duneDialog({ titre, html, confirm: 'Lancer', danger, saisie: 'valeur initiale' })
@@ -495,17 +669,23 @@
     T = null; showView(b.dataset.view); chargerListe();
   });
   $('btn-back').onclick = () => { history.replaceState(null, '', location.pathname); T = null; showView('liste'); chargerListe(); };
-  document.querySelectorAll('.subtab').forEach(b => b.onclick = () => montrerSub(b.dataset.sub));
+  document.querySelectorAll('.subtab').forEach(b => b.onclick = () => {
+    montrerSub(b.dataset.sub);
+    if (b.dataset.sub === 'paris' && T) chargerParis();   // cagnottes à jour à chaque visite
+  });
   function montrerSub(s) {
     document.querySelectorAll('.subtab').forEach(x => x.classList.toggle('active', x.dataset.sub === s));
     document.querySelectorAll('.subview').forEach(x => x.classList.toggle('active', x.id === 'sub-' + s));
+    // Console : sur téléphone, les combats doivent tenir sous le pouce sans défiler
+    // sous les infos et les lots du tournoi.
+    document.body.classList.toggle('mode-console', s === 'console');
   }
 
   // ---------------------------------------------------------------- listes
   async function chargerListe() {
     try {
       const j = await api('list');
-      LISTE = j.tournois; PEUT_GERER = j.peut_gerer; ADMIN = j.admin;
+      LISTE = j.tournois; PEUT_GERER = EST_ORGA = j.peut_gerer && !APERCU; ADMIN = j.admin && !APERCU;
       renderListes();
     } catch (e) { $('liste-contenu').innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
   }
@@ -513,9 +693,9 @@
   function carte(t) {
     const pod = (t.podium || []).map(p => `<div>${MED[p.rang] ? MED[p.rang].ico : '🏅'} <strong>${esc(p.nom)}</strong>${t.lots && t.lots[p.rang] ? ` <span class="lot">· 🎁 ${esc(t.lots[p.rang])}</span>` : ''}</div>`).join('');
     return `<div class="tcard" data-t="${esc(t.id)}">
-      <div class="tcard-top">${nivChip(t.niveau)}${stChip(t.statut)}</div>
+      <div class="tcard-top">${nivChip(t.niveau)}${eqChip({ options: { equipe: t.equipe } })}${stChip(t.statut)}${t.paris && t.statut !== 'termine' ? '<span class="chip" data-tip="Paris en Solaris ouverts sur ce tournoi">🎲 Paris</span>' : ''}</div>
       <div class="tcard-name">${esc(t.nom)}</div>
-      <div class="tcard-meta">${esc([dateFr(t.date, t.heure), t.nb_joueurs + ' joueur' + (t.nb_joueurs > 1 ? 's' : ''), E.FORMATS[t.format] || t.format].filter(Boolean).join(' · '))}</div>
+      <div class="tcard-meta">${esc([dateFr(t.date, t.heure), t.equipe > 1 && t.nb_equipes ? t.nb_equipes + ' équipes de ' + t.equipe : t.nb_joueurs + ' joueur' + (t.nb_joueurs > 1 ? 's' : ''), E.FORMATS[t.format] || t.format].filter(Boolean).join(' · '))}</div>
       ${pod ? `<div class="tcard-podium">${pod}</div>` : ''}
     </div>`;
   }
@@ -562,26 +742,41 @@
     const clos = LISTE.filter(t => t.statut === 'termine');
     $('palm-base').textContent = 'Médailles cumulées de tous les tournois clôturés, toutes saisons confondues, '
       + (filtrePalm ? `de niveau ${E.NIVEAUX[filtrePalm].label.toLowerCase()}.` : 'avec un classement séparé par niveau : une médaille chez les débutants ne vaut pas une médaille chez les vétérans.')
-      + ' Deux demi-finalistes ex æquo en simple élimination reçoivent chacun le bronze.';
-    const sections = niveaux.map(n => {
-      const ts = clos.filter(t => t.niveau === n);
+      + ' Deux demi-finalistes ex æquo en simple élimination reçoivent chacun le bronze.'
+      + ' Les tournois par équipes ont leur propre tableau : chaque membre de l\'équipe médaillée y reçoit la médaille.';
+    // Médailles par joueur. Par équipes, chaque membre de l'équipe médaillée reçoit
+    // la médaille — dans un tableau à part : une médaille gagnée à deux ne se
+    // compare pas à une médaille en duel.
+    function tableau(ts) {
       const acc = {};
-      ts.forEach(t => (t.podium || []).forEach(p => {
+      const credite = (j, nom, rang) => {
         // Même identité que le classement de saison : l'identifiant Discord quand
         // on l'a, sinon le nom — un changement de pseudo ne coupe pas le palmarès.
-        const j = (t.joueurs || []).find(x => x.id === p.id);
-        const k = E.cleJoueur(j || { nom: p.nom });
-        acc[k] = acc[k] || { nom: p.nom, 1: 0, 2: 0, 3: 0 };
-        acc[k].nom = p.nom;
-        acc[k][p.rang]++;
+        const k = E.cleJoueur(j || { nom });
+        acc[k] = acc[k] || { nom, 1: 0, 2: 0, 3: 0 };
+        acc[k].nom = nom;
+        acc[k][rang]++;
+      };
+      ts.forEach(t => (t.podium || []).forEach(p => {
+        if (!E.estEquipes(t)) { credite((t.joueurs || []).find(x => x.id === p.id), p.nom, p.rang); return; }
+        const e = (t.equipes || []).find(x => x.id === p.id);
+        (e ? e.membres : []).forEach(m => { const j = (t.joueurs || []).find(x => x.id === m); if (j) credite(j, j.nom, p.rang); });
       }));
-      const rows = Object.values(acc).sort((a, b) => (b[1] - a[1]) || (b[2] - a[2]) || (b[3] - a[3]) || a.nom.localeCompare(b.nom));
-      if (!rows.length && !filtrePalm) return '';
-      const titre = `<div class="section-title">${E.NIVEAUX[n].icon} ${E.NIVEAUX[n].label} <span style="color:var(--text-muted);font-weight:400;letter-spacing:0;text-transform:none">· ${ts.length} tournoi${ts.length > 1 ? 's' : ''}</span></div>`;
-      if (!rows.length) return titre + `<div class="empty">Aucun tournoi ${E.NIVEAUX[n].label.toLowerCase()} clôturé pour l'instant.</div>`;
-      return titre + `<table class="tbl"><thead><tr><th>Combattant</th><th class="num">🥇</th><th class="num">🥈</th><th class="num">🥉</th><th class="num">Podiums</th></tr></thead><tbody>
+      return Object.values(acc).sort((a, b) => (b[1] - a[1]) || (b[2] - a[2]) || (b[3] - a[3]) || a.nom.localeCompare(b.nom));
+    }
+    const table = rows => `<table class="tbl"><thead><tr><th>Combattant</th><th class="num">🥇</th><th class="num">🥈</th><th class="num">🥉</th><th class="num">Podiums</th></tr></thead><tbody>
         ${rows.map(r => `<tr><td>${esc(r.nom)}</td><td class="num">${r[1] || '·'}</td><td class="num">${r[2] || '·'}</td><td class="num">${r[3] || '·'}</td><td class="num">${r[1] + r[2] + r[3]}</td></tr>`).join('')}
       </tbody></table>`;
+    const compte = n => `<span style="color:var(--text-muted);font-weight:400;letter-spacing:0;text-transform:none">· ${n} tournoi${n > 1 ? 's' : ''}</span>`;
+    const sections = niveaux.map(n => {
+      const ts = clos.filter(t => t.niveau === n && !E.estEquipes(t));
+      const te = clos.filter(t => t.niveau === n && E.estEquipes(t));
+      const rows = tableau(ts), rowsE = tableau(te);
+      if (!rows.length && !rowsE.length && !filtrePalm) return '';
+      const titre = `<div class="section-title">${E.NIVEAUX[n].icon} ${E.NIVEAUX[n].label} ${compte(ts.length)}</div>`;
+      let h = titre + (rows.length ? table(rows) : `<div class="empty">Aucun tournoi ${E.NIVEAUX[n].label.toLowerCase()} en duel clôturé pour l'instant.</div>`);
+      if (rowsE.length) h += `<div class="section-title">${E.NIVEAUX[n].icon} ${E.NIVEAUX[n].label} — 👥 par équipes ${compte(te.length)}</div>` + table(rowsE);
+      return h;
     }).join('');
     $('palm-contenu').innerHTML = sections || '<div class="empty">Le palmarès se remplira avec les premiers tournois clôturés.</div>';
   }
@@ -611,11 +806,13 @@
     const b = E.BAREME;
     $('saison-base').innerHTML = `Saison de deux mois, du ${esc(dateFr(sa.debut))} au ${esc(dateFr(sa.fin))}${enCours ? '' : ' — <strong>terminée</strong>'}. `
       + `Points selon la <strong>place finale</strong> de chaque tournoi : <span style="white-space:nowrap">1ᵉʳ ${b[1]} · 2ᵉ ${b[2]} · 3ᵉ ${b[3]} · 4ᵉ ${b[4]} · les autres ${E.POINTS_PARTICIPATION}</span> (les ex æquo prennent les points de leur rang). `
-      + `Seuls les <strong>${E.MEILLEURS_RESULTATS} meilleurs résultats</strong> de chacun comptent. Égalité : le plus de tournois gagnés, puis de podiums.`;
+      + `Seuls les <strong>${E.MEILLEURS_RESULTATS} meilleurs résultats</strong> de chacun comptent. Égalité : le plus de tournois gagnés, puis de podiums. `
+      + `Les tournois <strong>par équipes</strong> ne comptent pas : une victoire à deux ne se compare pas à une victoire en duel (ils ont leur tableau au Palmarès).`;
 
     const cl = E.classementSaison(tous, saisonId, saisonNiveau);
-    const nbT = tous.filter(t => t.niveau === saisonNiveau && E.saisonDe(t.date) && E.saisonDe(t.date).id === saisonId).length;
-    const sansDate = tous.filter(t => !E.saisonDe(t.date)).length;
+    const duels = tous.filter(t => !E.estEquipes(t));
+    const nbT = duels.filter(t => t.niveau === saisonNiveau && E.saisonDe(t.date) && E.saisonDe(t.date).id === saisonId).length;
+    const sansDate = duels.filter(t => !E.saisonDe(t.date)).length;
     $('saison-actions').innerHTML = PEUT_GERER && cl.length ? `<button class="btn" id="saison-pub">📣 Publier ce classement sur Discord</button>` : '';
     if ($('saison-pub')) $('saison-pub').onclick = () => publierSaison(sa, cl, nbT, !enCours);
 
@@ -623,7 +820,7 @@
       // Cause la plus fréquente d'un classement vide : un tournoi SANS DATE (les
       // tournois repris de Challonge, notamment). Il ne compte dans aucune saison
       // et rien ne le signalait ici — on le dit là où on cherche, avec le remède.
-      const orphelins = tous.filter(t => t.niveau === saisonNiveau && !E.saisonDe(t.date));
+      const orphelins = duels.filter(t => t.niveau === saisonNiveau && !E.saisonDe(t.date));
       $('saison-contenu').innerHTML = `<div class="empty">Aucun tournoi ${E.NIVEAUX[saisonNiveau].label.toLowerCase()} terminé dans cette saison.`
         + (orphelins.length ? `<br><br>${orphelins.length > 1 ? "Ces tournois n'ont" : "Ce tournoi n'a"} pas de date, donc ${orphelins.length > 1 ? 'ils ne comptent' : 'il ne compte'} dans aucune saison : `
           + orphelins.map(t => `<a href="?t=${encodeURIComponent(t.id)}">${esc(t.nom)}</a>`).join(', ')
@@ -660,27 +857,132 @@
   async function ouvrir(id, parSortie) {
     try {
       const j = await api('get', null, parSortie ? { sortie: parSortie } : { id });
-      T = j.tournoi; PEUT_GERER = j.peut_gerer; PEUT_SUPPR = j.peut_supprimer;
+      T = j.tournoi; PEUT_GERER = j.peut_gerer && !APERCU; PEUT_SUPPR = j.peut_supprimer && !APERCU; EQ_SEL = null;
+      PARIS = null; PARIS_ERR = '';
       history.replaceState(null, '', location.pathname + '?t=' + encodeURIComponent(T.id));
-      showView('detail'); montrerSub(T.statut === 'preparation' ? 'joueurs' : 'arbre'); renderDetail();
+      // En préparation, l'orga compose la liste ; les autres membres viennent surtout
+      // parier. Pendant le tournoi, l'orga arrive sur sa console de soirée.
+      showView('detail'); renderDetail();
+      montrerSub(T.statut === 'preparation' ? (PEUT_GERER ? 'joueurs' : (T.paris && T.devoile ? 'paris' : 'arbre'))
+        : (PEUT_GERER && T.statut === 'en_cours' ? 'console' : 'arbre'));
+      chargerParis();
       return true;
     } catch (e) { if (!parSortie) toast(e.message, true); return false; }
   }
 
   function renderDetail() {
     RES = E.resoudre(T);
-    renderTete(); renderArbre(); renderJoueurs(); renderClassement(); renderJournal();
+    FORCE_CACHE = {};
+    majOngletsGestion();
+    renderTete(); renderArbre(); renderJoueurs(); renderClassement(); renderParis(); renderJournal(); renderConsole();
   }
+
+  // Onglets Joueurs (composition, forces) et Journal : réservés à ceux qui gèrent
+  // le tournoi. Le serveur ne les envoie d'ailleurs pas aux autres (t_vue_membre).
+  // Console : gestionnaires, pendant le tournoi seulement.
+  function majOngletsGestion() {
+    const vis = { joueurs: PEUT_GERER, journal: PEUT_GERER, console: PEUT_GERER && T.statut === 'en_cours' };
+    Object.keys(vis).forEach(s => {
+      const b = document.querySelector(`.subtab[data-sub="${s}"]`);
+      b.style.display = vis[s] ? '' : 'none';
+      if (!vis[s] && b.classList.contains('active')) montrerSub('arbre');
+    });
+  }
+
+  // ---------------------------------------------------------------- console de soirée
+  //  Pour l'orga qui arbitre en jeu en même temps (premier vrai tournoi : trop de
+  //  manipulations dans l'arbre). Rien que les combats à jouer, et deux gros
+  //  boutons : un toucher = vainqueur enregistré, annulable quelques secondes.
+  //  Les paris ferment tout seuls (fenêtre de 2 min) : rien d'autre à faire.
+  let DERNIER = null;          // dernier résultat saisi depuis la console (pour « Annuler »)
+  function renderConsole() {
+    const el = $('sub-console');
+    if (!el || !T || !PEUT_GERER || T.statut !== 'en_cours') { if (el) el.innerHTML = ''; return; }
+    const rest = E.aJouer(RES);
+    // Avancement : combats réels (sans exemptions ni revanche inutile).
+    const reels = RES.ordre.map(id => RES.matchs[id]).filter(m => m.statut !== 'exempt' && m.statut !== 'inutile');
+    const nbJoues = reels.filter(m => m.statut === 'joue').length;
+    let h = `<div class="cs-tete"><p>Touche l'équipe qui gagne dès que le combat se termine : le résultat est enregistré et les combats suivants s'ouvrent aux paris.${T.paris ? ` Les paris d'un combat restent ouverts ${fenetreMin()} min : lance-le en jeu une fois le compte à rebours fini.` : ''}</p>
+      <button class="btn small" id="cs-actu">⟳ Actualiser</button></div>
+      <div class="cs-avance"><span><strong>${nbJoues}</strong> combat${nbJoues > 1 ? 's' : ''} joué${nbJoues > 1 ? 's' : ''} sur ${reels.length}</span><span class="cs-barre"><span style="width:${reels.length ? Math.round(100 * nbJoues / reels.length) : 0}%"></span></span><a data-vers-arbre-cs>Voir l'arbre ↓</a></div>`;
+    if (!rest.length) {
+      h += RES.termine
+        ? `<div class="empty">🏆 Le dernier combat est joué : ${EQ() ? 'l\'équipe ' : ''}<strong>${esc(nomDe(RES.champion))}</strong> remporte le tournoi. Clôture-le pour figer le podium.</div>
+           <div class="banner cs-cloture"><span>Le podium ne bouge plus après la clôture.</span><button class="btn primary" id="cs-cloturer">Clôturer le tournoi</button></div>`
+        : '<div class="empty">Aucun combat prêt : il manque un résultat (onglet Arbre), ou les combats suivants attendent leurs adversaires.</div>';
+    } else {
+      h += '<div class="cs-grille">' + rest.map(m => {
+        const c = BIL && BIL.cagnottes[m.id];
+        // Paris encore ouverts : le combat ne s'est pas encore joué, pas de vainqueur
+        // à saisir. « ⏹ Fermer » débloque tout de suite si le combat a déjà commencé.
+        const attente = parisEnCours(m);
+        const btn = id => `<button data-gagne="${esc(id)}" data-m="${m.id}"${attente ? ' disabled' : ''}><small>Vainqueur</small>${esc(nomDe(id))}</button>`;
+        return `<div class="cs-combat${attente ? ' attente' : ''}"><div class="cs-haut"><span>Match ${m.num} · ${esc(E.libelleTour(m.bracket, m.round, RES.structure, RES))}</span>${chipFenetre(m)}</div>
+          <div class="cs-gagne">${btn(m.a)}${btn(m.b)}</div>
+          ${attente ? '<div class="cs-info">⏳ Paris en cours : lance le combat en jeu à la fin du compte à rebours, le vainqueur se saisira ensuite. Il a déjà commencé ? « ⏹ Fermer ».</div>' : ''}
+          <div class="cs-bas"><span>${T.paris ? (c ? `🎲 ${c.nb} pari${c.nb > 1 ? 's' : ''} · ${sol(c.total)} Solaris` : '🎲 aucun pari') : ''}</span><span class="actions">${boutonsFenetre(m)}<button class="btn small" data-detail="${m.id}" data-tip="Score, forfait">Détail</button></span></div></div>`;
+      }).join('') + '</div>';
+    }
+    if (DERNIER && Date.now() - DERNIER.quand < 10000) {
+      h += `<div class="cs-annuler"><span>✔ Match ${DERNIER.num} : <strong>${esc(nomDe(DERNIER.w))}</strong> gagne</span><button class="btn small" id="cs-annuler">↩ Annuler</button></div>`;
+    }
+    const joues = RES.ordre.map(id => RES.matchs[id]).filter(m => m.statut === 'joue').sort((a, b) => b.num - a.num).slice(0, 4);
+    if (joues.length) h += `<div class="cs-recents"><div class="section-title">Derniers résultats</div>${joues.map(m => `<div class="jr"><span class="jr-ts">Match ${m.num}</span><span>🏆 <strong>${esc(nomDe(m.vainqueur))}</strong> bat ${esc(nomDe(m.perdant))}</span><span class="actions" style="margin-left:auto"><button class="btn small" data-detail="${m.id}">Corriger</button></span></div>`).join('')}</div>`;
+    // L'arbre complet sous la console : savoir où on en est sans changer d'onglet
+    // (retour du test sur /v2). Copie de l'onglet Arbre, cliquable pareil.
+    const arbre = document.querySelector('#sub-arbre .bk-scroll');
+    if (arbre) h += `<div class="cs-arbre" id="cs-arbre"><div class="section-title">Arbre du tournoi</div><div class="bk-scroll">${arbre.innerHTML}</div></div>`;
+    el.innerHTML = h;
+    el.querySelectorAll('.cs-arbre .m.cliquable').forEach(b => b.onclick = () => ouvrirScore(b.dataset.m));
+    el.querySelectorAll('[data-vers-arbre-cs]').forEach(a => a.onclick = () => { const x = $('cs-arbre'); if (x) x.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+    el.querySelectorAll('[data-gagne]').forEach(b => b.onclick = () => gagneConsole(RES.matchs[b.dataset.m], b.dataset.gagne));
+    el.querySelectorAll('[data-detail]').forEach(b => b.onclick = () => ouvrirScore(b.dataset.detail));
+    brancherFenetre(el);
+    if ($('cs-actu')) $('cs-actu').onclick = () => rafraichir().then(() => toast('Tournoi et paris actualisés'));
+    if ($('cs-annuler')) $('cs-annuler').onclick = annulerConsole;
+    // Même action que le bandeau de l'en-tête, caché sur téléphone en mode console.
+    if ($('cs-cloturer')) $('cs-cloturer').onclick = () => { const b = $('act-cloturer'); if (b) b.click(); };
+  }
+  async function gagneConsole(m, w) {
+    if (!m || m.statut !== 'pret') return;
+    if (parisEnCours(m)) { toast('Paris encore ouverts sur ce combat : attends la fin du compte à rebours, ou « ⏹ Fermer ».', true); return; }
+    const r = Object.assign({}, T.resultats, { [m.id]: { p1: m.a, p2: m.b, w, s1: null, s2: null, forfait: false } });
+    const perdant = w === m.a ? m.b : m.a;
+    const ok = await sauver({ resultats: r }, `Match ${m.num} : ${nomDe(w)} bat ${nomDe(perdant)}`);
+    if (!ok) return;
+    DERNIER = { id: m.id, num: m.num, w, quand: Date.now() };
+    // Même garde qu'à la saisie classique : un résultat ferme les paris du combat.
+    if (T.paris && PARIS && !verrouille(m)) api('paris_verrou', { id: T.id, cible: m.id, a: m.a, b: m.b, on: true, silencieux: true })
+      .then(j => { recevoirParis(j); renderParis(); renderArbre(); renderConsole(); }).catch(() => {});
+    renderConsole();
+    setTimeout(renderConsole, 10500);         // retire la barre « Annuler »
+  }
+  async function annulerConsole() {
+    if (!DERNIER) return;
+    const r = Object.assign({}, T.resultats); delete r[DERNIER.id];
+    const num = DERNIER.num; DERNIER = null;
+    await sauver({ resultats: r }, `Match ${num} : résultat annulé`);
+  }
+  // Arbre encore caché aux membres : en préparation, tant que l'orga ne l'a pas
+  // dévoilé (il peut essayer plusieurs compositions sans rien révéler).
+  const arbreCache = () => T.statut === 'preparation' && !T.devoile;
 
   function renderTete() {
     const opt = T.options || {};
     const fmt = (E.FORMATS[T.format] || T.format) + (T.format === 'double' ? (opt.grandeFinale === 'unique' ? ' · finale sur un match' : ' · revanche possible en finale') : (opt.petiteFinale ? ' · petite finale' : ''));
-    let h = `<div class="t-head"><div class="t-title"><h1>${esc(T.nom)}</h1>${nivChip(T.niveau)}${stChip(T.statut)}</div></div>
+    const taille = E.tailleEquipe(T);
+    const enEquipe = new Set((T.equipes || []).flatMap(e => e.membres));
+    const banc = EQ() ? T.joueurs.filter(j => !enEquipe.has(j.id)).length : 0;
+    let h = `<div class="t-head"><div class="t-title"><h1>${esc(T.nom)}</h1>${nivChip(T.niveau)}${eqChip(T)}${stChip(T.statut)}</div></div>
       <dl class="t-info">
-        <dt>Joueurs</dt><dd>${T.joueurs.length}</dd>
-        <dt>Format</dt><dd>${esc(fmt)}${opt.bestOf > 1 ? ` · ${(opt.bestOf + 1) / 2} manches gagnantes` : ''}</dd>
+        ${EQ() ? `<dt>Équipes</dt><dd>${(T.equipes || []).length
+          ? `${T.equipes.length} équipe${T.equipes.length > 1 ? 's' : ''} de ${taille} · ${T.joueurs.length} joueur${T.joueurs.length > 1 ? 's' : ''}${banc ? ` (${banc} remplaçant${banc > 1 ? 's' : ''})` : ''}`
+          : `de ${taille}, pas encore composées · ${T.joueurs.length} joueur${T.joueurs.length > 1 ? 's' : ''} inscrit${T.joueurs.length > 1 ? 's' : ''}`}</dd>`
+               : `<dt>Joueurs</dt><dd>${T.joueurs.length}</dd>`}
+        <dt>Format</dt><dd>${EQ() ? esc(E.TAILLES_EQUIPE[taille]) + ' · ' : ''}${esc(fmt)}${opt.bestOf > 1 ? ` · ${(opt.bestOf + 1) / 2} manches gagnantes` : ''}</dd>
         <dt>Date</dt><dd>${esc(dateFr(T.date, T.heure)) || '—'}</dd>
-        <dt>Organisé par</dt><dd>${esc(T.cree_par || '—')}</dd>
+        <dt>Organisé par</dt><dd>${esc(T.cree_par || '—')}${(T.coorgas || []).length ? ` <span style="color:var(--text-muted)">avec ${esc(T.coorgas.map(c => c.nom).join(', '))}</span>` : ''}</dd>
+        ${T.paris ? `<dt>Banquier</dt><dd>${esc((T.banquier && T.banquier.nom) || T.cree_par || '—')} <span style="color:var(--text-muted)">· paris de ${T.fenetre_paris || 2} min par combat</span></dd>` : ''}
         <dt>Saison</dt><dd>${E.saisonDe(T.date) ? esc(E.saisonDe(T.date).label) : '<span style="color:var(--text-muted)">aucune (tournoi sans date)</span>'}</dd>
         ${T.description ? `<div class="t-desc">${esc(T.description)}</div>` : ''}
       </dl>`;
@@ -697,6 +999,7 @@
         h += `<div class="pod${qui.length ? '' : ' vide'}" style="--c:${m.c}"><div class="pod-medal">${m.txt}</div><div style="min-width:0">
           <div class="pod-name">${qui.length ? qui.map(p => esc(p.nom)).join(' · ') : 'À conquérir'}</div>
           ${qui.length ? `<div class="pod-rec">${qui.map(p => p.v + ' V – ' + p.d + ' D').join(' · ')}</div>` : ''}
+          ${qui.length && EQ() ? qui.map(p => { const e = T.equipes.find(x => x.id === p.id); return e && e.nom_libre ? `<div class="pod-rec">👥 ${esc(membresDe(p.id).join(', '))}</div>` : ''; }).join('') : ''}
           ${lots[r] ? `<div class="pod-lot">🎁 ${esc(lots[r])}</div>` : ''}</div></div>`;
       });
       h += '</div>';
@@ -704,7 +1007,7 @@
 
     if (T.statut === 'en_cours' && RES.termine && PEUT_GERER) {
       const champ = nomDe(RES.champion);
-      h += `<div class="banner"><span>🏆 Le dernier match est joué : <strong>${esc(champ)}</strong> remporte le tournoi. Clôture pour figer le classement et pouvoir publier les vainqueurs.</span><button class="btn primary" id="act-cloturer">Clôturer le tournoi</button></div>`;
+      h += `<div class="banner"><span>🏆 Le dernier match est joué : ${EQ() ? 'l\'équipe ' : ''}<strong>${esc(champ)}</strong> remporte le tournoi. Clôture pour figer le classement et pouvoir publier les vainqueurs.</span><button class="btn primary" id="act-cloturer">Clôturer le tournoi</button></div>`;
     }
     if (PEUT_GERER) h += `<div class="orga-bar"><div class="lbl">Organisation</div><div class="actions">${boutonsOrga()}</div></div>`;
     $('detail-tete').innerHTML = h;
@@ -715,7 +1018,11 @@
     const b = [];
     const pub = T.publie || {};
     if (T.statut === 'preparation') {
-      b.push(`<button class="btn primary" id="act-lancer"${T.joueurs.length < 2 ? ' disabled data-tip="Il faut au moins deux joueurs"' : ''}>▶ Lancer le tournoi</button>`);
+      const bloque = obstacleLancement();
+      b.push(`<button class="btn primary" id="act-lancer"${bloque ? ` disabled data-tip="${esc(bloque)}"` : ''}>▶ Lancer le tournoi</button>`);
+      b.push(T.devoile
+        ? `<button class="btn" id="act-devoile" data-tip="Les membres ne verront plus l'arbre ni les équipes jusqu'à ce que tu les dévoiles à nouveau">🙈 Cacher l'arbre aux membres</button>`
+        : `<button class="btn" id="act-devoile" data-tip="Les membres voient l'arbre et les équipes, et peuvent parier sur le vainqueur si les paris sont ouverts. Le lancement le dévoile de toute façon.">👁 Dévoiler l'arbre aux membres</button>`);
     }
     if (T.statut === 'en_cours') {
       b.push(`<button class="btn" id="act-annonce" data-tip="Poste sur Discord les matchs à jouer maintenant et le lien vers l'arbre">📣 Annoncer sur Discord${pub.lancement ? ' (à nouveau)' : ''}</button>`);
@@ -727,22 +1034,45 @@
     }
     b.push(`<button class="btn" id="act-modifier">✎ Modifier</button>`);
     if (PEUT_SUPPR) b.push(`<button class="btn danger" id="act-suppr">🗑 Supprimer</button>`);
+    b.push(`<a class="btn" href="orga-aide.html" style="text-decoration:none" data-tip="La soirée pas à pas : lancer chaque combat, saisir les scores au bon moment pour que les paris restent ouverts">📖 Guide de l'orga</a>`);
     return b.join('');
+  }
+
+  // Ce qui empêche de lancer, ou '' : même règle que le serveur (au moins deux
+  // participants ; par équipes, des équipes toutes complètes).
+  function obstacleLancement() {
+    if (!EQ()) return T.joueurs.length < 2 ? 'Il faut au moins deux joueurs' : '';
+    const eqs = T.equipes || [], n = E.tailleEquipe(T);
+    if (eqs.length < 2) return 'Compose d\'abord les équipes (onglet Joueurs) : il en faut au moins deux';
+    const inc = eqs.find(e => e.membres.length !== n);
+    return inc ? `L'équipe « ${inc.nom} » n'est pas complète (${inc.membres.length}/${n})` : '';
   }
 
   function brancherOrga() {
     const on = (id, fn) => { if ($(id)) $(id).onclick = fn; };
     on('act-lancer', async () => {
+      const enEquipe = new Set((T.equipes || []).flatMap(e => e.membres));
+      const banc = EQ() ? T.joueurs.filter(j => !enEquipe.has(j.id)) : [];
+      const qui = EQ() ? `<strong>${T.equipes.length} équipes de ${E.tailleEquipe(T)}</strong>` : `<strong>${T.joueurs.length} joueurs</strong>`;
       if (!await duneDialog({ titre: 'Lancer le tournoi ?', confirm: '▶ Lancer',
-        html: `<strong>${T.joueurs.length} joueurs</strong> en ${esc((E.FORMATS[T.format] || T.format).toLowerCase())}.<br>La liste et l'ordre des têtes de série seront figés. Tu pourras revenir en préparation, mais les scores saisis seraient alors effacés.` })) return;
-      if (await sauver({ statut: 'en_cours' }, 'Tournoi lancé (' + T.joueurs.length + ' joueurs)')) {
-        montrerSub('arbre');
-        if (await duneDialog({ titre: 'Tournoi lancé', confirm: '📣 Annoncer', annuler: 'Plus tard',
-          html: "Annoncer les premiers matchs sur Discord maintenant, avec le lien vers l'arbre ?" })) publier('lancement');
+        html: `${qui} en ${esc((E.FORMATS[T.format] || T.format).toLowerCase())}.<br>${EQ() ? 'Les équipes et leur ordre seront figés (un remplaçant pourra encore entrer à la place d\'un membre).' : 'La liste et l\'ordre des têtes de série seront figés.'} Tu pourras revenir en préparation, mais les scores saisis seraient alors effacés.`
+          + (banc.length ? `<br><span class="alerte">${banc.map(j => esc(j.nom)).join(', ')} ${banc.length > 1 ? 'restent remplaçants' : 'reste remplaçant'} et ne ${banc.length > 1 ? 'joueront' : 'jouera'} pas.</span>` : '')
+          + `<br><br>📣 Le bot annonce le tournoi sur Discord (premiers combats)${T.paris ? ', puis poste juste en dessous le message des paris' : ''}.` })) return;
+      if (await sauver({ statut: 'en_cours' }, 'Tournoi lancé (' + (EQ() ? T.equipes.length + ' équipes de ' + E.tailleEquipe(T) : T.joueurs.length + ' joueurs') + ')')) {
+        montrerSub('console');            // la soirée se mène depuis la console
+        // Deux posts, dans l'ordre : l'annonce, puis (côté serveur, après elle) les paris.
+        publier('lancement');
       }
     });
     on('act-annonce', () => publier('lancement'));
     on('act-publier', () => publier('resultats'));
+    on('act-devoile', async () => {
+      const vers = !T.devoile;
+      if (!vers && PARIS && BIL && BIL.paris.some(p => p.cible === 'vainqueur' && p.etat !== 'annule')) {
+        toast('Des paris sont déjà posés sur le vainqueur : l\'arbre doit rester visible.', true); return;
+      }
+      await sauver({ devoile: vers }, vers ? 'Arbre dévoilé aux membres' : 'Arbre caché aux membres');
+    });
     on('act-prep', async () => {
       const n = Object.keys(T.resultats || {}).length;
       if (!await duneDialog({ titre: 'Revenir en préparation ?', confirm: n ? 'Effacer et revenir' : '↩ Revenir', danger: n > 0,
@@ -754,7 +1084,8 @@
       const pod = E.podium(T, RES);
       if (await sauver({ statut: 'termine', podium: pod }, 'Tournoi clôturé — vainqueur : ' + nomDe(RES.champion))) {
         if (await duneDialog({ titre: 'Tournoi clôturé 🏆', confirm: '🏆 Publier', annuler: 'Plus tard',
-          html: 'Publier le podium et les lots sur Discord maintenant ?' })) publier('resultats');
+          html: 'Publier le podium et les lots sur Discord maintenant ?' + (T.paris && PARIS && PARIS.paris.length
+            ? '<br><br>🎲 Le bot enverra aussi à chaque parieur son solde <strong>en message privé</strong>, et le carnet complet au banquier.' : '') })) publier('resultats');
       }
     });
     on('act-rouvrir', () => sauver({ statut: 'en_cours', podium: [] }, 'Tournoi rouvert'));
@@ -776,16 +1107,27 @@
     try {
       const j = await api('save', { id: T.id, version: T.version, tournoi: n, journal });
       T = j.tournoi; renderDetail(); toast('Enregistré');
+      // Un résultat (ou le lancement) rend des combats prêts : on ouvre leur fenêtre de pari.
+      if (T.statut === 'en_cours') { if (PARIS) ouvrirFenetres(); else chargerParis(); }
+      else if (T.statut === 'preparation' && PARIS) chargerParis();   // fenêtres effacées côté serveur
       return true;
     } catch (e) { toast(e.message, true); return false; }
   }
 
   async function publier(quoi) {
     const body = { id: T.id, quoi };
+    // Cagnottes sans gagnant → part de chaque place du podium ({idJoueur: Solaris}).
+    if (quoi === 'resultats' && BIL) body.paris_lots = Object.fromEntries(lotsParis().rep.filter(p => p.montant > 0).map(p => [p.id, p.montant]));
+    // Solde de chaque parieur (moteur des paris, ici seulement) : le bot l'envoie
+    // en MP à chacun et met les totaux dans le message des paris.
+    if (quoi === 'resultats' && BIL && PARIS && PARIS.peut_banque)
+      body.paris_soldes = Object.values(BIL.soldes).filter(s => s.nbParis).map(s => ({ qui: s.qui, net: s.net }));
     if (quoi === 'lancement') {
       // Les affiches sont calculées ici : le serveur ne connaît pas l'arbre.
       const res = E.resoudre(T);
-      body.lignes = E.aJouer(res).map(m => `**Match ${m.num}** · ${nomDe(m.a)} ⚔️ ${nomDe(m.b)}`);
+      // Équipe renommée : son nom ne dit plus qui la compose, on ajoute les membres.
+      const aff = id => { const e = EQ() && T.equipes.find(x => x.id === id); return e && e.nom_libre ? `${nomDe(id)} (${membresDe(id).join(', ')})` : nomDe(id); };
+      body.lignes = E.aJouer(res).map(m => `**Match ${m.num}** · ${aff(m.a)} ⚔️ ${aff(m.b)}`);
       if (!body.lignes.length) { toast('Aucun match à jouer en ce moment.', true); return; }
     }
     try { const j = await api('publish', body); if (j.tournoi) { T = j.tournoi; renderDetail(); } toast('Publié sur Discord ✔'); }
@@ -797,7 +1139,15 @@
 
   function renderArbre() {
     const el = $('sub-arbre');
-    if (T.joueurs.length < 2) { el.innerHTML = '<div class="empty">Il faut au moins deux joueurs pour dessiner l\'arbre. Ajoute-les dans l\'onglet <strong>Joueurs</strong>.</div>'; return; }
+    if (!PEUT_GERER && arbreCache()) {
+      el.innerHTML = `<div class="empty">🔒 ${EQ() ? 'Les équipes et l\'arbre sont' : 'L\'arbre est'} en cours de préparation.<br>L'organisateur ${EQ() ? 'les' : 'le'} dévoilera avant le lancement.</div>`;
+      return;
+    }
+    if (parts().length < 2) {
+      el.innerHTML = EQ() ? '<div class="empty">Il faut au moins deux équipes pour dessiner l\'arbre. Compose-les dans l\'onglet <strong>Joueurs</strong>.</div>'
+                          : '<div class="empty">Il faut au moins deux joueurs pour dessiner l\'arbre. Ajoute-les dans l\'onglet <strong>Joueurs</strong>.</div>';
+      return;
+    }
     const st = RES.structure, k = st.k, S = st.taille;
     const visible = m => m && m.statut !== 'exempt' && m.statut !== 'inutile';
     const pos = {};
@@ -822,7 +1172,8 @@
       const sc = side === 'a' ? m.s1 : m.s2;
       const cls = m.statut === 'joue' ? (m.vainqueur === id ? ' win' : ' lose') : '';
       const affSc = m.statut === 'joue' ? (m.forfait && m.vainqueur !== id ? 'F' : (sc == null ? (m.vainqueur === id ? '✓' : '') : sc)) : '';
-      return `<div class="m-row${cls}" data-p="${esc(id)}"><span class="m-seed">${seedDe(id)}</span><span class="m-nm">${esc(nomDe(id))}</span><span class="m-sc">${affSc}</span></div>`;
+      const mb = membresDe(id);
+      return `<div class="m-row${cls}" data-p="${esc(id)}"><span class="m-seed">${seedDe(id)}</span><span class="m-nm"${mb.length ? ` data-tip="${esc(mb.join('\n'))}"` : ''}>${esc(nomDe(id))}</span><span class="m-sc">${affSc}</span></div>`;
     }
     function section(sec, cols, hauteur, titre) {
       let heads = '', boxes = '', paths = '';
@@ -837,9 +1188,13 @@
         const m = RES.matchs[id], p = pos[id];
         if (p.sec !== sec || !visible(m) || p.col < 0 || p.col >= cols) return;
         const x = p.col * (COLW + GAP), y = p.cy - MH / 2;
-        const tip = m.id === 'GF2' ? ' data-tip="Revanche : le finaliste venu des perdants a gagné la grande finale, les deux joueurs ont chacun une défaite"' : (m.bracket === 'P' ? ' data-tip="Petite finale : match pour la 3ᵉ place"' : '');
-        boxes += `<div class="m ${m.statut}${cliquable(m) ? ' cliquable' : ''}" data-m="${m.id}" style="left:${x}px;top:${y}px;width:${COLW}px;height:${MH}px"${tip}>
-          <div class="m-num">${m.num || ''}</div><div class="m-rows">${ligne(m, 'a')}${ligne(m, 'b')}</div></div>`;
+        // Combat dont les paris sont fermés (fenêtre écoulée ou fermée par l'orga) :
+        // marqué ⚔ pour tout le monde, il se joue ou va se jouer.
+        const lance = T.paris && T.statut === 'en_cours' && m.statut === 'pret' && PARIS && parisFermes(m);
+        const tip = lance ? ' data-tip="Paris fermés : le combat se joue, résultat attendu"'
+          : m.id === 'GF2' ? ' data-tip="Revanche : le finaliste venu des perdants a gagné la grande finale, les deux joueurs ont chacun une défaite"' : (m.bracket === 'P' ? ' data-tip="Petite finale : match pour la 3ᵉ place"' : '');
+        boxes += `<div class="m ${m.statut}${lance ? ' lance' : ''}${cliquable(m) ? ' cliquable' : ''}" data-m="${m.id}" style="left:${x}px;top:${y}px;width:${COLW}px;height:${MH}px"${tip}>
+          <div class="m-num">${lance ? '⚔' : m.num || ''}</div><div class="m-rows">${ligne(m, 'a')}${ligne(m, 'b')}</div></div>`;
         // Traits de liaison : seulement entre matchs de la même section (le
         // passage des battus chez les perdants n'est pas tracé, comme sur Challonge).
         ['a', 'b'].forEach((side, si) => {
@@ -858,8 +1213,13 @@
 
     let h = '';
     const rest = E.aJouer(RES);
-    if (T.statut === 'preparation') h += '<div class="banner"><span>Aperçu : l\'arbre suit l\'ordre des têtes de série de l\'onglet <strong>Joueurs</strong>. Il sera figé au lancement.</span></div><div style="height:1rem"></div>';
-    else if (PEUT_GERER && T.statut === 'en_cours') h += `<p class="bk-legend">Clique sur un match pour saisir son résultat${rest.length ? ` — <strong>${rest.length}</strong> à jouer maintenant` : ''}. Un résultat se corrige à tout moment : les matchs qui en dépendaient se libèrent d'eux-mêmes.</p>`;
+    if (T.statut === 'preparation') h += PEUT_GERER
+      ? `<div class="banner"><span>Aperçu : l'arbre suit l'ordre ${EQ() ? 'des équipes' : 'des têtes de série'} de l'onglet <strong>Joueurs</strong>. Il sera figé au lancement.<br>${T.devoile ? '👁 Les membres <strong>voient</strong> cet aperçu.' : '🔒 Les membres <strong>ne le voient pas</strong> encore : compose en paix, puis « 👁 Dévoiler l\'arbre ».'}</span></div><div style="height:1rem"></div>`
+      : `<div class="banner"><span>Aperçu : l'arbre peut encore changer jusqu'au lancement du tournoi.</span></div><div style="height:1rem"></div>`;
+    else if (PEUT_GERER && T.statut === 'en_cours') h += T.paris
+      ? `<p class="bk-legend">${rest.length ? `<strong>${rest.length}</strong> à jouer maintenant. ` : ''}Les paris d'un combat se ferment tout seuls ${fenetreMin()} min après qu'il est devenu prêt (⚔ = paris fermés). Clique sur un combat pour saisir son résultat dès qu'il se termine — ou plus simple, l'onglet <a data-vers-console>🎮 Console</a>.</p>`
+      : `<p class="bk-legend">Clique sur un match pour saisir son résultat${rest.length ? ` — <strong>${rest.length}</strong> à jouer maintenant` : ''}. Un résultat se corrige à tout moment : les matchs qui en dépendaient se libèrent d'eux-mêmes.</p>`;
+    else if (T.paris && T.statut === 'en_cours' && rest.length) h += `<p class="bk-legend">🎲 <strong>${rest.length}</strong> match${rest.length > 1 ? 's' : ''} à jouer : les paris se posent dans l'onglet <a data-vers-paris>Paris</a>, pendant ${fenetreMin()} min après que le combat est devenu prêt (⚔ = paris fermés).</p>`;
     h += '<div class="bk-scroll">';
     h += section('W', colsW, hW, st.format === 'double' ? 'Tableau principal' : '');
     if (st.format === 'double' && k >= 2) {
@@ -870,6 +1230,8 @@
     el.innerHTML = h;
 
     el.querySelectorAll('.m.cliquable').forEach(b => b.onclick = () => ouvrirScore(b.dataset.m));
+    el.querySelectorAll('[data-vers-paris]').forEach(a => { a.style.cursor = 'pointer'; a.onclick = () => { montrerSub('paris'); chargerParis(); }; });
+    el.querySelectorAll('[data-vers-console]').forEach(a => { a.style.cursor = 'pointer'; a.onclick = () => { montrerSub('console'); renderConsole(); }; });
     // Survol d'un joueur : tout son parcours s'allume.
     el.querySelectorAll('.m-row[data-p]').forEach(r => {
       r.onmouseenter = () => el.querySelectorAll(`.m-row[data-p="${CSS.escape(r.dataset.p)}"]`).forEach(x => x.classList.add('hl'));
@@ -879,6 +1241,11 @@
 
   // ---------------------------------------------------------------- saisie d'un score
   let SC = null;
+  // Clic de l'orga sur un combat de l'arbre : saisie du résultat. Les paris du
+  // combat se ferment tout seuls à la fin de leur fenêtre (2 min par défaut) ;
+  // l'encart de la fenêtre permet de fermer plus tôt, d'ajouter une minute ou de
+  // rouvrir. (Il y a eu avant un 1ᵉʳ clic « Lancer le combat » : une étape de
+  // trop pour un orga qui arbitre en même temps, remplacée par le minuteur.)
   function ouvrirScore(mid) {
     const m = RES.matchs[mid]; if (!m) return;
     SC = { m, w: m.statut === 'joue' ? m.vainqueur : null };
@@ -891,8 +1258,19 @@
     const bo = (T.options || {}).bestOf || 1;
     $('sc-note').textContent = (bo > 1 ? `Match en ${(bo + 1) / 2} manches gagnantes : saisis le nombre de manches gagnées. ` : 'Le score est facultatif : désigner le vainqueur suffit. ')
       + (m.statut === 'joue' ? 'Modifier ce résultat peut changer la suite de l\'arbre : les matchs déjà joués qui en dépendaient seront remis à jouer.' : '');
-    majWin(); $('modal-score').classList.add('on');
+    majWin(); scParis(); $('modal-score').classList.add('on');
     setTimeout(() => $('sc-s1').focus(), 50);
+  }
+  // Encart « paris » de la fenêtre de score : état des paris du combat, compte
+  // à rebours, et de quoi fermer tout de suite, laisser +1 min ou rouvrir.
+  function scParis() {
+    const el = $('sc-paris'), m = SC && SC.m;
+    if (!m || m.statut !== 'pret' || !PARIS || (!T.paris && !(BIL && BIL.cagnottes[m.id]))) { el.innerHTML = ''; return; }
+    const c = BIL && BIL.cagnottes[m.id];
+    el.innerHTML = `<span>🎲 ${c ? `${c.nb} pari${c.nb > 1 ? 's' : ''} · cagnotte <strong>${sol(c.total)}</strong> Solaris` : 'Aucun pari pour l\'instant'}</span>
+      <span class="actions">${chipFenetre(m)}${boutonsFenetre(m)}</span>`;
+    el.querySelectorAll('[data-fen]').forEach(b => b.addEventListener('click', () => setTimeout(scParis, 400)));
+    brancherFenetre(el);
   }
   function majWin() {
     $('sc-w1').classList.toggle('on', SC.w === SC.m.a);
@@ -906,13 +1284,23 @@
   }));
   $('sc-ok').onclick = async () => {
     if (!SC.w) { toast('Désigne le vainqueur.', true); return; }
+    // Un combat qui a déjà un vainqueur s'est joué : s'il était encore ouvert aux
+    // paris, certains ont pu parier en le regardant. On le dit avant d'enregistrer.
+    if (parisEnCours(SC.m) && !await duneDialog({ titre: 'Paris encore ouverts', confirm: 'Fermer et enregistrer',
+      html: `Les paris de ce combat sont encore ouverts (${mmss(restant(SC.m))}). Normalement on attend la fin du compte à rebours avant de lancer le combat.<br>Enregistrer maintenant ferme ses paris.` })) return;
     const m = SC.m, s1 = $('sc-s1').value, s2 = $('sc-s2').value;
     const r = Object.assign({}, T.resultats);
     r[m.id] = { p1: m.a, p2: m.b, w: SC.w, s1: s1 === '' ? null : +s1, s2: s2 === '' ? null : +s2, forfait: $('sc-ff').checked };
     const sc = s1 !== '' && s2 !== '' ? ` ${s1}–${s2}` : '';
     const txt = `Match ${m.num} : ${nomDe(SC.w)} bat ${nomDe(SC.w === m.a ? m.b : m.a)}${sc}${$('sc-ff').checked ? ' (forfait)' : ''}`;
     closeModals();
-    await sauver({ resultats: r }, (m.statut === 'joue' ? 'Correction — ' : '') + txt);
+    const ok = await sauver({ resultats: r }, (m.statut === 'joue' ? 'Correction — ' : '') + txt);
+    // Un résultat saisi ferme aussi les paris (oubli de « Combat lancé ») : sans
+    // ce verrou, effacer ensuite le résultat rouvrirait un combat déjà vu.
+    if (ok && T.paris && m.statut === 'pret' && PARIS && !verrouille(m)) {
+      api('paris_verrou', { id: T.id, cible: m.id, a: m.a, b: m.b, on: true, silencieux: true })
+        .then(j => { PARIS = j; renderParis(); }).catch(() => {});
+    }
   };
   $('sc-clear').onclick = async () => {
     const m = SC.m; const r = Object.assign({}, T.resultats); delete r[m.id];
@@ -924,22 +1312,27 @@
   function renderJoueurs() {
     const el = $('sub-joueurs');
     const prep = T.statut === 'preparation' && PEUT_GERER;
+    const eq = EQ();
     let h = '';
     if (prep) {
       h += `<div class="pl-add"><div class="ac"><input type="text" id="pl-nouveau" maxlength="200" autocomplete="off" placeholder="Chercher un membre du Discord, ou taper un nom libre"><div class="ac-pop" id="ac-pop"></div></div><button class="btn primary" id="pl-ajout">＋ Ajouter</button></div>
         <div class="ac-etat" id="ac-etat"></div>
         <div class="actions" style="margin-bottom:1rem">
           ${T.sortie_id ? '<button class="btn" id="pl-sync">⟳ Importer les nouveaux inscrits Discord</button><label class="check"><input type="checkbox" id="pl-maybe"> avec les « peut-être »</label>' : ''}
-          <button class="btn" id="pl-melange" ${T.joueurs.length < 2 ? 'disabled' : ''}>🎲 Tirer les têtes de série au sort</button>
+          ${eq ? '' : `<button class="btn" id="pl-melange" ${T.joueurs.length < 2 ? 'disabled' : ''}>🎲 Tirer les têtes de série au sort</button>`}
         </div>`;
     }
+    // Par équipes : ce sont les ÉQUIPES qui ont un rang de tête de série et qui
+    // passent le 1ᵉʳ tour ; la liste des joueurs ne sert qu'à dire qui est inscrit
+    // et quelle est sa force.
+    if (eq) h += htmlEquipes(prep) + `<div class="section-title">Joueurs inscrits · ${T.joueurs.length}</div>`;
     // Places vides de l'arbre = joueurs qui passent le 1ᵉʳ tour sans jouer : toujours
     // les premières têtes de série. Plutôt que de contraindre le nombre de joueurs
     // (personne ne reste sur le banc parce qu'on est 6) ou de remplir avec des absents
     // (forfaits), on montre QUI passe et on laisse choisir : en général les meilleurs,
     // pour que les autres jouent un match de plus.
-    const vides = prep ? E.nbExemptes(T.joueurs.length) : 0;
-    if (prep && T.joueurs.length >= 2) {
+    const vides = prep && !eq ? E.nbExemptes(T.joueurs.length) : 0;
+    if (prep && !eq && T.joueurs.length >= 2) {
       const n = T.joueurs.length, cible = n + vides;
       const noms = T.joueurs.slice(0, vides).map(j => '<strong>' + esc(j.nom) + '</strong>');
       const liste = noms.length > 1 ? noms.slice(0, -1).join(', ') + ' et ' + noms[noms.length - 1] : noms[0];
@@ -952,19 +1345,27 @@
     }
     if (!T.joueurs.length) h += '<div class="empty">Aucun joueur pour l\'instant.</div>';
     h += '<div class="pl-list">' + T.joueurs.map((j, i) => `<div class="pl${i < vides ? ' exempt' : ''}">
-        <span class="pl-seed" data-tip="Tête de série n° ${i + 1}">${i + 1}</span>
+        ${eq ? ctrlForce(j, PEUT_GERER) : `<span class="pl-seed" data-tip="Tête de série n° ${i + 1}">${i + 1}</span>`}
         <span class="pl-nm">${esc(j.nom)}</span>
         ${vides ? `<label class="exo" data-tip="${i < vides ? 'Passe le 1ᵉʳ tour sans jouer. Décocher le fait jouer ce tour, à la place du premier non exempté.' : 'Cocher : passe le 1ᵉʳ tour sans jouer, à la place du dernier exempté.'}"><input type="checkbox" data-exo="${i}"${i < vides ? ' checked' : ''}> passe le 1ᵉʳ tour</label>` : ''}
         <span class="chip">${SOURCE_LBL[j.source] || SOURCE_LBL.manuel}</span>
         ${PEUT_GERER && T.statut !== 'termine' ? `<button class="ico" data-act="ren" data-i="${i}" data-tip="Renommer">✎</button>` : ''}
-        ${prep ? `<button class="ico" data-act="up" data-i="${i}" ${i === 0 ? 'disabled' : ''} data-tip="Monter">▲</button>
-          <button class="ico" data-act="down" data-i="${i}" ${i === T.joueurs.length - 1 ? 'disabled' : ''} data-tip="Descendre">▼</button>
-          <button class="ico" data-act="del" data-i="${i}" data-tip="Retirer du tournoi">✕</button>` : ''}
+        ${prep && !eq ? `<button class="ico" data-act="up" data-i="${i}" ${i === 0 ? 'disabled' : ''} data-tip="Monter">▲</button>
+          <button class="ico" data-act="down" data-i="${i}" ${i === T.joueurs.length - 1 ? 'disabled' : ''} data-tip="Descendre">▼</button>` : ''}
+        ${prep ? `<button class="ico" data-act="del" data-i="${i}" data-tip="Retirer du tournoi">✕</button>` : ''}
       </div>`).join('') + '</div>';
-    h += `<p class="note">L'ordre de la liste est l'ordre des têtes de série : le n° 1 et le n° 2 ne peuvent se rencontrer qu'en finale, et quand le nombre de joueurs n'est pas 4, 8 ou 16, ce sont les mieux placés qui passent le premier tour sans jouer.${T.statut !== 'preparation' ? ' La liste est figée depuis le lancement (renommer reste possible).' : ''}</p>`;
+    h += eq
+      ? `<p class="note">Force de chaque joueur pour équilibrer les équipes : <strong>F</strong> Fort · <strong>M</strong> Moyen · <strong>N</strong> Novice. En pointillé, la force <strong>proposée</strong> — d'après le dernier choix d'un organisateur à un tournoi par équipes, sinon d'après les résultats en duel (podium Vétérans ou victoire Intermédiaires : Fort ; a joué Vétérans ou Intermédiaires, ou gagné chez les Débutants : Moyen ; Débutants seulement : Novice). Survole pour voir sur quoi elle repose ; clique pour la confirmer ou la changer, reclique pour revenir à la proposition. Le site ne devine pas : sans aucun résultat, c'est <strong>?</strong>, compté comme Moyen tant que tu ne l'as pas précisé.${T.statut !== 'preparation' ? ' La liste est figée depuis le lancement (renommer reste possible).' : ''}</p>`
+      : `<p class="note">L'ordre de la liste est l'ordre des têtes de série : le n° 1 et le n° 2 ne peuvent se rencontrer qu'en finale, et quand le nombre de joueurs n'est pas 4, 8 ou 16, ce sont les mieux placés qui passent le premier tour sans jouer.${T.statut !== 'preparation' ? ' La liste est figée depuis le lancement (renommer reste possible).' : ''}</p>`;
     el.innerHTML = h;
 
-    const majJoueurs = (liste, journal) => sauver({ joueurs: liste.map((j, i) => Object.assign({}, j, { seed: i + 1 })) }, journal);
+    // Par équipes, toute modification de la liste repasse sur les équipes : un
+    // joueur retiré quitte la sienne, un renommé change le nom automatique.
+    const majJoueurs = (liste, journal) => {
+      const l = liste.map((j, i) => Object.assign({}, j, { seed: i + 1 }));
+      return sauver(Object.assign({ joueurs: l }, eq ? { equipes: equipesPropres(T.equipes, l) } : {}), journal);
+    };
+    if (eq) brancherEquipes(el, majJoueurs);
     const add = () => {
       const noms = $('pl-nouveau').value.split(',').map(s => s.trim()).filter(Boolean);
       if (!noms.length) return;
@@ -1022,6 +1423,175 @@
       }
     });
   }
+  // ---- Équipes ----------------------------------------------------------------
+  //  Le site PROPOSE (forces + composition équilibrée, cf. composerEquipes du
+  //  moteur), l'organisateur DISPOSE : il corrige une force d'un clic, échange
+  //  deux joueurs d'un clic. Rien n'est figé avant le lancement.
+  let EQ_SEL = null;                 // joueur sélectionné pour un échange
+  let FORCE_CACHE = {};              // forces proposées, vidé à chaque rendu (renderDetail)
+  // Force retenue pour composer : le choix fait ici, sinon la proposition.
+  function forceDe(j) {
+    if (!j) return null;
+    if (E.FORCES[j.force]) return { force: j.force, base: 'choisie', texte: 'Choisi par un organisateur pour ce tournoi.' };
+    const k = E.cleJoueur(j);
+    if (!(k in FORCE_CACHE)) FORCE_CACHE[k] = E.forceProposee(LISTE.filter(t => t.id !== T.id), j);
+    return FORCE_CACHE[k];
+  }
+  function ctrlForce(j, modifiable) {
+    const f = forceDe(j);
+    const tip = !f ? 'Force inconnue : aucun résultat en duel ni choix précédent. Comptée comme Moyen pour composer — clique pour la préciser.'
+      : f.base === 'choisie' ? f.texte + (modifiable ? '\nReclique sur la lettre pour revenir à la proposition.' : '')
+      : 'Proposé. ' + f.texte + (modifiable ? '\nClique pour confirmer ou changer.' : '');
+    return `<span class="frc" data-tip="${esc(tip)}">` + Object.keys(E.FORCES).map(k =>
+      `<button data-frc="${k}" data-j="${esc(j.id)}" class="${k}${f && f.force === k ? ' on' + (f.base === 'choisie' ? '' : ' prop') : ''}" aria-label="${E.FORCES[k].label}"${modifiable ? '' : ' disabled'}>${k}</button>`).join('')
+      + `</span>${f ? '' : '<span class="frc-inc" data-tip="Force inconnue, comptée comme Moyen">?</span>'}`;
+  }
+  // Nettoie une composition après un changement de la liste : membres disparus
+  // retirés, nom automatique recalculé (sauf équipe renommée à la main).
+  function equipesPropres(eqs, joueurs) {
+    const parId = new Map(joueurs.map(j => [j.id, j]));
+    return (eqs || []).map(e => {
+      const membres = e.membres.filter(m => parId.has(m));
+      return Object.assign({}, e, { membres, nom: e.nom_libre ? e.nom : E.nomEquipe(membres.map(m => parId.get(m).nom)) });
+    });
+  }
+  const majEquipes = (eqs, journal) => sauver({ equipes: equipesPropres(eqs, T.joueurs) }, journal);
+  const copieEquipes = () => (T.equipes || []).map(e => Object.assign({}, e, { membres: e.membres.slice() }));
+
+  function chipMembre(id, modif) {
+    const j = joueurDe(id); if (!j) return '';
+    const f = forceDe(j);
+    return `<span class="mb${modif ? ' click' : ''}${EQ_SEL === id ? ' sel' : ''}" data-mb="${esc(id)}"${f ? '' : ' data-tip="Force inconnue, comptée comme Moyen"'}><span class="f ${f ? f.force : 'X'}">${f ? f.force : '?'}</span>${esc(j.nom)}</span>`;
+  }
+
+  function htmlEquipes(prep) {
+    const n = E.tailleEquipe(T), eqs = T.equipes || [];
+    const modif = PEUT_GERER && (T.statut === 'preparation' || T.statut === 'en_cours');
+    const enEquipe = new Set(eqs.flatMap(e => e.membres));
+    const banc = T.joueurs.filter(j => !enEquipe.has(j.id));
+    const vides = E.nbExemptes(eqs.length);
+    const val = id => E.valeurForce((forceDe(joueurDe(id)) || {}).force);
+    let h = `<div class="section-title" style="margin-top:0">Équipes de ${n}${eqs.length ? ' · ' + eqs.length : ''}</div>`;
+    if (prep) {
+      const nbJ = T.joueurs.length, possibles = Math.floor(nbJ / n), reste = nbJ % n;
+      const inconnus = T.joueurs.filter(j => !forceDe(j)).length;
+      let resume = possibles < 2
+        ? `${nbJ} joueur${nbJ > 1 ? 's' : ''} : il en faut au moins <strong>${2 * n}</strong> pour former deux équipes de ${n}.`
+        : `<strong>${nbJ} joueurs</strong> → ${possibles} équipes de ${n}` + (reste
+          ? ` et <strong>${reste} remplaçant${reste > 1 ? 's' : ''}</strong> : ${reste > 1 ? 'les derniers inscrits' : 'le dernier inscrit'}, quelle que soit sa force — échange d'un clic si besoin, ou ajoute ${n - reste} joueur${n - reste > 1 ? 's' : ''} pour une équipe de plus.`
+          : ', tout le monde joue.');
+      if (inconnus) resume += ` ${inconnus} joueur${inconnus > 1 ? 's' : ''} sans force connue (<strong>?</strong>), compté${inconnus > 1 ? 's' : ''} comme Moyen${inconnus > 1 ? 's' : ''} : précise-les plus bas pour un meilleur équilibre.`;
+      h += `<div class="complet${possibles >= 2 && !reste ? ' ok' : ''}"><span>${resume}</span><span class="actions">
+          <button class="btn small primary" id="eq-composer"${possibles < 2 ? ' disabled' : ''} data-tip="Tire les équipes au sort parmi les inscrits en séparant les Forts et en égalisant la force totale de chaque équipe. Tu pourras ensuite échanger deux joueurs d'un clic.">⚖ ${eqs.length ? 'Recomposer' : 'Composer'} des équipes équilibrées</button>
+          ${eqs.length && possibles >= 2 ? '<button class="btn small" id="eq-autre" data-tip="Une autre composition aussi équilibrée, avec les mêmes remplaçants">🎲 Autre tirage</button>' : ''}</span></div>`;
+    }
+    if (!eqs.length) return h + `<div class="empty" style="margin-bottom:1rem">Aucune équipe pour l'instant.${prep ? '<br>« Composer des équipes équilibrées » les tire au sort parmi les inscrits en répartissant forts, moyens et novices.' : ''}</div>`;
+    h += '<div class="eq-grid">' + eqs.map((e, i) => {
+      const somme = e.membres.reduce((s, m) => s + val(m), 0);
+      return `<div class="eq${i < vides ? ' exempt' : ''}${e.membres.length !== n ? ' incomplete' : ''}">
+        <div class="eq-head"><span class="pl-seed" data-tip="Tête de série n° ${i + 1}">${i + 1}</span>
+          <span class="eq-nom"${e.nom_libre ? ' data-tip="Nom choisi à la main"' : ''}>${esc(e.nom)}</span>
+          <span class="eq-pts" data-tip="Force de l'équipe : Fort 3 · Moyen 2 · Novice 1 (inconnue comptée 2)">⚖ ${somme}</span>
+          ${PEUT_GERER && T.statut !== 'termine' ? `<button class="ico" data-eq="ren" data-i="${i}" data-tip="Renommer l'équipe">✎</button>` : ''}
+          ${prep ? `<button class="ico" data-eq="up" data-i="${i}"${i === 0 ? ' disabled' : ''} data-tip="Monter">▲</button><button class="ico" data-eq="down" data-i="${i}"${i === eqs.length - 1 ? ' disabled' : ''} data-tip="Descendre">▼</button>` : ''}
+        </div>
+        <div class="eq-mbs">${e.membres.map(m => chipMembre(m, modif)).join('')}${prep ? Array.from({ length: Math.max(0, n - e.membres.length) }, () => `<span class="mb vide${EQ_SEL ? ' click' : ''}" data-place="${i}">＋ place libre</span>`).join('') : ''}</div>
+        ${i < vides ? '<div class="eq-tag">Passe le 1ᵉʳ tour sans jouer</div>' : ''}
+      </div>`;
+    }).join('') + '</div>';
+    const cible = prep && EQ_SEL && enEquipe.has(EQ_SEL);
+    h += `<div class="eq-banc${cible ? ' cible' : ''}" id="eq-banc"${cible ? ' data-tip="Clique ici pour le passer remplaçant"' : ''}>${banc.length
+      ? `<strong>Remplaçant${banc.length > 1 ? 's' : ''}</strong> — sans équipe, ne ${banc.length > 1 ? 'jouent' : 'joue'} pas :<div class="eq-mbs">${banc.map(j => chipMembre(j.id, modif)).join('')}</div>`
+      : 'Aucun remplaçant : tout le monde joue.'}</div>`;
+    if (modif) h += `<p class="note" style="margin:-.4rem 0 1rem">${prep
+      ? `Clique sur un joueur puis sur un autre pour les <strong>échanger</strong> (entre deux équipes, ou avec un remplaçant), ou sur une place libre / la zone des remplaçants pour l'y déplacer. ${vides ? `Avec ${eqs.length} équipes, ${vides > 1 ? 'les ' + vides + ' premières passent' : 'la première passe'} le 1ᵉʳ tour sans jouer : ▲▼ pour choisir.` : ''}`
+      : 'Tournoi lancé : les équipes sont figées, mais un remplaçant peut prendre la place d\'un membre — clique sur l\'un puis sur l\'autre.'}</p>`;
+    return h;
+  }
+
+  function brancherEquipes(el, majJoueurs) {
+    const n = E.tailleEquipe(T);
+    const nom = id => (joueurDe(id) || {}).nom || '?';
+    // Force : cliquer la lettre la fixe ; recliquer la lettre déjà choisie rend la main à la proposition.
+    el.querySelectorAll('button[data-frc]').forEach(b => b.onclick = () => {
+      const l = T.joueurs.slice(), i = l.findIndex(j => j.id === b.dataset.j); if (i < 0) return;
+      const j = Object.assign({}, l[i]), k = b.dataset.frc;
+      if (j.force === k) delete j.force; else j.force = k;
+      l[i] = j;
+      majJoueurs(l, j.force ? `Force de ${j.nom} : ${E.FORCES[k].label}` : `Force de ${j.nom} : retour à la proposition`);
+    });
+    if ($('eq-composer')) $('eq-composer').onclick = () => composer(false);
+    if ($('eq-autre')) $('eq-autre').onclick = () => composer(true);
+
+    function echanger(a, b) {
+      const eqs = copieEquipes();
+      const ea = eqs.find(e => e.membres.includes(a)), eb = eqs.find(e => e.membres.includes(b));
+      if (!ea && !eb) { toast('Deux remplaçants : rien à échanger.'); return renderJoueurs(); }
+      if (ea === eb) { toast('Ils sont déjà dans la même équipe.'); return renderJoueurs(); }
+      if (T.statut !== 'preparation' && ea && eb) { toast('Tournoi lancé : seul un remplaçant peut entrer dans une équipe.', true); return renderJoueurs(); }
+      const nomA = ea && ea.nom, nomB = eb && eb.nom;
+      if (ea) ea.membres[ea.membres.indexOf(a)] = b;
+      if (eb) eb.membres[eb.membres.indexOf(b)] = a;
+      majEquipes(eqs, ea && eb ? `${nom(a)} (${nomA}) et ${nom(b)} (${nomB}) échangent leur équipe`
+                               : ea ? `${nom(b)} remplace ${nom(a)} dans « ${nomA} »` : `${nom(a)} remplace ${nom(b)} dans « ${nomB} »`);
+    }
+    function deplacer(a, i) {              // i : index d'équipe, ou -1 = remplaçants
+      const eqs = copieEquipes(), src = eqs.find(e => e.membres.includes(a));
+      if (i >= 0 && (eqs[i] === src || eqs[i].membres.length >= n)) return renderJoueurs();
+      if (i < 0 && !src) return renderJoueurs();
+      if (src) src.membres.splice(src.membres.indexOf(a), 1);
+      if (i >= 0) eqs[i].membres.push(a);
+      majEquipes(eqs, i >= 0 ? `${nom(a)} rejoint l'équipe n° ${i + 1}` : `${nom(a)} passe remplaçant`);
+    }
+    el.querySelectorAll('.mb.click[data-mb]').forEach(c => c.onclick = e => {
+      e.stopPropagation();
+      const id = c.dataset.mb;
+      if (!EQ_SEL || EQ_SEL === id) { EQ_SEL = EQ_SEL === id ? null : id; return renderJoueurs(); }
+      const a = EQ_SEL; EQ_SEL = null; echanger(a, id);
+    });
+    el.querySelectorAll('.mb.vide[data-place]').forEach(c => c.onclick = () => {
+      if (!EQ_SEL) return;
+      const a = EQ_SEL; EQ_SEL = null; deplacer(a, +c.dataset.place);
+    });
+    if ($('eq-banc')) $('eq-banc').onclick = () => {
+      if (!EQ_SEL || T.statut !== 'preparation') return;
+      const a = EQ_SEL; EQ_SEL = null; deplacer(a, -1);
+    };
+    el.querySelectorAll('button[data-eq]').forEach(b => b.onclick = async () => {
+      const i = +b.dataset.i, eqs = copieEquipes(), e = eqs[i];
+      if (b.dataset.eq === 'up')   { [eqs[i - 1], eqs[i]] = [eqs[i], eqs[i - 1]]; majEquipes(eqs, `« ${e.nom} » remonte en tête de série n° ${i}`); }
+      if (b.dataset.eq === 'down') { [eqs[i + 1], eqs[i]] = [eqs[i], eqs[i + 1]]; majEquipes(eqs, `« ${e.nom} » descend en tête de série n° ${i + 2}`); }
+      if (b.dataset.eq === 'ren') {
+        const v = await duneDialog({ titre: 'Renommer l\'équipe', confirm: 'Renommer', saisie: e.nom_libre ? e.nom : '',
+          html: `Nom de l'équipe <strong>${esc(e.nom)}</strong>.<br>Laisse vide pour reprendre le nom de ses membres.` });
+        if (v === null || (v === '' && !e.nom_libre) || v === e.nom) return;
+        eqs[i] = Object.assign({}, e, { nom: v || e.nom, nom_libre: !!v });
+        majEquipes(eqs, v ? `Équipe « ${e.nom} » renommée en « ${v} »` : `Équipe « ${e.nom} » : retour au nom de ses membres`);
+      }
+    });
+  }
+
+  // Composition automatique. « Autre tirage » demande au moteur d'éviter la
+  // composition actuelle s'il en trouve une aussi équilibrée.
+  async function composer(autre) {
+    const n = E.tailleEquipe(T);
+    const js = T.joueurs.map(j => ({ id: j.id, force: (forceDe(j) || {}).force }));
+    const actuelle = (T.equipes || []).length ? E.signatureEquipes(T.equipes.map(e => e.membres)) : '';
+    if (!autre && actuelle && !await duneDialog({ titre: 'Recomposer les équipes ?', confirm: '⚖ Recomposer',
+      html: 'Les équipes actuelles, tes échanges et les noms choisis à la main seront remplacés par un nouveau tirage (remplaçants : les derniers inscrits).<br>Pour seulement mélanger autrement en gardant les remplaçants : <strong>🎲 Autre tirage</strong>.' })) return;
+    // Le banc ne dépend pas de la force (cf. moteur) : « Autre tirage » garde les
+    // remplaçants actuels ; « Recomposer » repart de zéro, donc des derniers inscrits.
+    const enEquipe = new Set((T.equipes || []).flatMap(e => e.membres));
+    const banc = autre ? T.joueurs.filter(j => !enEquipe.has(j.id)).map(j => j.id) : [];
+    const c = E.composerEquipes(js, n, { eviter: actuelle, remplacants: banc });
+    if (!c) { toast(`Il faut au moins ${2 * n} joueurs pour deux équipes de ${n}.`, true); return; }
+    if (E.signatureEquipes(c.equipes.map(e => e.membres)) === actuelle) { toast('Pas d\'autre composition aussi équilibrée avec ces forces.'); return; }
+    EQ_SEL = null;
+    const eqs = c.equipes.map(e => ({ id: 'e' + nouvelId().slice(1), nom: '', nom_libre: false, membres: e.membres }));
+    majEquipes(eqs, `Équipes ${actuelle ? 'retirées' : 'tirées'} au sort et équilibrées (écart de force ${c.ecart})`
+      + (c.remplacants.length ? ` — remplaçant${c.remplacants.length > 1 ? 's' : ''} : ${c.remplacants.map(id => (joueurDe(id) || {}).nom).join(', ')}` : ''));
+  }
+
   // ---- Compléter le tableau ---------------------------------------------------
   //  On NE remplit PAS au hasard avec des membres du Discord : un joueur ajouté qui
   //  ne vient pas donne une victoire par forfait à son adversaire, pire qu'un tour
@@ -1149,8 +1719,10 @@
     const rangTxt = c => c.rang == null ? '<span class="chip st-en_cours">En lice</span>' : `<span class="rang-${c.rang}">${c.rang}${c.rang === 1 ? 'ᵉʳ' : 'ᵉ'}</span>`;
     // Rang partagé : on l'écrit « 5ᵉ ex æquo » plutôt que d'inventer un départage.
     const nb = {}; cl.forEach(c => { if (c.rang != null) nb[c.rang] = (nb[c.rang] || 0) + 1; });
-    // Points de saison : seulement une fois le tournoi clôturé (classement figé).
-    const fini = T.statut === 'termine';
+    // Points de saison : seulement une fois le tournoi clôturé (classement figé),
+    // et jamais par équipes (pointsTournoi ne rend rien : pas comparable au duel).
+    const fini = T.statut === 'termine' && !EQ();
+    const nomCl = c => { const mb = membresDe(c.id); return esc(c.nom) + (mb.length && E.nomEquipe(mb) !== c.nom ? `<div style="color:var(--text-muted);font-size:.72rem">👥 ${esc(mb.join(', '))}</div>` : ''); };
     const pts = {}; if (fini) E.pointsTournoi(T, RES).forEach(p => pts[p.id] = p);
     const cellPts = c => {
       const p = pts[c.id]; if (!p) return '';
@@ -1158,10 +1730,12 @@
       return `<td class="num"><span class="pts${p.ajuste ? ' ajuste' : ''}" data-tip="${esc(tip)}">${p.points}${p.ajuste ? ' ✎' : ''}</span>`
         + (PEUT_GERER ? `<button class="ico-aj" data-aj="${esc(c.id)}" data-tip="Corriger les points">✎</button>` : '') + '</td>';
     };
-    el.innerHTML = `<table class="tbl"><thead><tr><th class="num">Rang</th><th>Combattant</th><th class="num">Victoires</th><th class="num">Défaites</th>${fini ? '<th class="num">Points</th>' : ''}</tr></thead><tbody>
-      ${cl.map(c => `<tr><td class="num">${rangTxt(c)}${c.rang != null && nb[c.rang] > 1 ? ' <span style="color:var(--text-muted);font-size:.7rem">ex æquo</span>' : ''}</td><td>${MED[c.rang] ? MED[c.rang].ico + ' ' : ''}${esc(c.nom)}</td><td class="num">${c.v}</td><td class="num">${c.d}</td>${fini ? cellPts(c) : ''}</tr>`).join('')}
+    el.innerHTML = `<table class="tbl"><thead><tr><th class="num">Rang</th><th>${EQ() ? 'Équipe' : 'Combattant'}</th><th class="num">Victoires</th><th class="num">Défaites</th>${fini ? '<th class="num">Points</th>' : ''}</tr></thead><tbody>
+      ${cl.map(c => `<tr><td class="num">${rangTxt(c)}${c.rang != null && nb[c.rang] > 1 ? ' <span style="color:var(--text-muted);font-size:.7rem">ex æquo</span>' : ''}</td><td>${MED[c.rang] ? MED[c.rang].ico + ' ' : ''}${nomCl(c)}</td><td class="num">${c.v}</td><td class="num">${c.d}</td>${fini ? cellPts(c) : ''}</tr>`).join('')}
     </tbody></table>
-    <p class="note">Victoires et défaites comptent les matchs réellement disputés (un tour passé sans adversaire ne compte pas). Les joueurs éliminés au même tour partagent leur rang : rien ne les départage, on n'invente pas d'ordre.${T.format === 'double' ? ' En double élimination, il faut deux défaites pour être éliminé.' : ''}${fini ? ` Les <strong>points</strong> comptent pour le classement de la saison : ils viennent de la place finale (<span style="white-space:nowrap">1ᵉʳ ${E.BAREME[1]} · 2ᵉ ${E.BAREME[2]} · 3ᵉ ${E.BAREME[3]} · 4ᵉ ${E.BAREME[4]} · les autres ${E.POINTS_PARTICIPATION}</span>), jamais du nombre de matchs gagnés.` : ' Les points de saison seront attribués à la clôture.'}</p>`;
+    <p class="note">Victoires et défaites comptent les matchs réellement disputés (un tour passé sans adversaire ne compte pas). Les ${EQ() ? 'équipes éliminées' : 'joueurs éliminés'} au même tour partagent leur rang : rien ne les départage, on n'invente pas d'ordre.${T.format === 'double' ? ' En double élimination, il faut deux défaites pour être éliminé.' : ''}${EQ()
+      ? ' Tournoi par équipes : il ne rapporte <strong>pas de points de saison</strong> (une victoire à plusieurs ne se compare pas à une victoire en duel) ; ses médailles vont au tableau « par équipes » du Palmarès, à chaque membre.'
+      : fini ? ` Les <strong>points</strong> comptent pour le classement de la saison : ils viennent de la place finale (<span style="white-space:nowrap">1ᵉʳ ${E.BAREME[1]} · 2ᵉ ${E.BAREME[2]} · 3ᵉ ${E.BAREME[3]} · 4ᵉ ${E.BAREME[4]} · les autres ${E.POINTS_PARTICIPATION}</span>), jamais du nombre de matchs gagnés.` : ' Les points de saison seront attribués à la clôture.'}</p>`;
     el.querySelectorAll('button[data-aj]').forEach(b => b.onclick = () => ajusterPoints(pts[b.dataset.aj]));
   }
 
@@ -1188,6 +1762,392 @@
   }
 
   // ---------------------------------------------------------------- journal
+  // ---------------------------------------------------------------- paris
+  //  Vrais Solaris du jeu, cagnotte partagée : le calcul est dans
+  //  tournoi-paris.js (testé), cette partie ne fait qu'afficher et envoyer.
+  const sol = n => Math.round(n).toLocaleString('fr-FR');
+  const signe = n => (n > 0 ? '+' : n < 0 ? '−' : '') + sol(Math.abs(n));   // vrai signe moins, pas un tiret
+  const coteTxt = x => x == null ? '—' : '×' + x.toFixed(2).replace('.', ',');
+  const memeAffiche = (v, m) => v && ((v.a === m.a && v.b === m.b) || (v.a === m.b && v.b === m.a));
+  const verrouille = m => !!(PARIS && memeAffiche((PARIS.verrous || {})[m.id], m));
+  // ---- Fenêtre de pari de chaque combat (2 min par défaut, réglable par l'orga) ----
+  // Heure du SERVEUR (secondes) : celle reçue avec les paris, avancée de ce qui
+  // s'est écoulé depuis ; l'horloge du navigateur peut être fausse.
+  let DECALAGE = 0;
+  const maintenantSrv = () => Date.now() / 1000 + DECALAGE;
+  const ouverture = m => { const o = PARIS && (PARIS.ouvertures || {})[m.id]; return memeAffiche(o, m) ? o : null; };
+  // Secondes restantes avant la fermeture, ou null si le combat n'a pas de fenêtre.
+  const restant = m => { const o = ouverture(m); return o ? Math.max(0, Math.ceil(o.fin - maintenantSrv())) : null; };
+  const parisFermes = m => verrouille(m) || restant(m) === 0;
+  // Paris du combat encore en cours (compte à rebours non écoulé) : on n'enregistre
+  // pas son vainqueur sans le dire — il ne s'est normalement pas encore joué.
+  const parisEnCours = m => !!(T && T.paris && T.statut === 'en_cours' && m && m.statut === 'pret' && PARIS
+    && !verrouille(m) && restant(m) > 0);
+  const mmss = s => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+  const fenetreMin = () => (PARIS && PARIS.fenetre) || T.fenetre_paris || 2;
+  function recevoirParis(j) {
+    PARIS = j; PARIS_ERR = '';
+    DECALAGE = (j.maintenant || Date.now() / 1000) - Date.now() / 1000;
+    if (APERCU) { PARIS.peut_gerer = false; PARIS.peut_banque = false; }
+  }
+  // La page de l'orga — qui calcule l'arbre, contrairement au serveur — ouvre la
+  // fenêtre des combats qui viennent de devenir prêts : au lancement, après
+  // chaque résultat, à chaque relecture. Le serveur ignore une fenêtre déjà ouverte.
+  // Un combat pour l'API des paris. Numéro et tour : le serveur ne calcule pas
+  // l'arbre, il les reprend tels quels dans le message Discord (« Match 3 · Demi-finales »).
+  const repereCombat = m => ({ cible: m.id, a: m.a, b: m.b, num: m.num, tour: E.libelleTour(m.bracket, m.round, RES.structure, RES) });
+  async function ouvrirFenetres() {
+    if (!PEUT_GERER || !T || !T.paris || T.statut !== 'en_cours' || !PARIS) return;
+    const nouveaux = E.aJouer(RES).filter(m => !ouverture(m) && !verrouille(m));
+    // Numérotation du moteur non figée : on renvoie aussi les combats déjà ouverts
+    // (ou joués) dont le numéro a bougé, pour que Discord affiche celui du site.
+    const renum = Object.keys(PARIS.ouvertures || {}).map(id => RES.matchs[id])
+      .filter(m => m && m.num != null && m.a != null && m.b != null && ouverture(m) && ouverture(m).num !== m.num);
+    if (!nouveaux.length && !renum.length) return;
+    try {
+      recevoirParis(await api('paris_ouvrir', { id: T.id, matchs: nouveaux.concat(renum).map(repereCombat) }));
+      renderParis(); renderArbre(); renderConsole();
+    } catch (e) { /* on retentera à la prochaine relecture */ }
+  }
+  // Le compte à rebours bouge chaque seconde sans tout redessiner ; quand une
+  // fenêtre se ferme, on redessine pour retirer les boutons de pari.
+  setInterval(() => {
+    if (!T || !PARIS || T.statut !== 'en_cours') return;
+    let ferme = false;
+    document.querySelectorAll('[data-compte]').forEach(el => {
+      const m = RES && RES.matchs[el.dataset.compte]; if (!m) return;
+      const r = restant(m);
+      if (r === null) return;
+      el.textContent = r > 0 ? mmss(r) : '0:00';
+      if (r === 0 && !el.dataset.fini) { el.dataset.fini = '1'; ferme = true; }
+    });
+    if (ferme) {
+      renderParis(); renderArbre(); renderConsole();
+      // Discord ne retire pas tout seul un compte à rebours arrivé à zéro : la
+      // page de l'orga demande au bot de rééditer le message des paris.
+      if (PEUT_GERER && T.paris) api('paris_discord', { id: T.id }).catch(() => {});
+    }
+  }, 1000);
+  const monPari = cible => BIL && BIL.paris.find(p => p.moi && p.cible === cible && p.etat !== 'annule');
+  const repartitionTxt = () => Object.keys(PR.REPARTITION_LOTS).map(r => `${PR.REPARTITION_LOTS[r]} % au ${r === '1' ? 'vainqueur' : r + 'ᵉ'}`).join(', ');
+  // Lots des paris répartis sur le podium : figé à la clôture, sinon celui du
+  // moment si le dernier match est joué, sinon rien encore (rep vide).
+  function lotsParis() {
+    const podium = T.statut === 'termine' ? (T.podium || []) : (RES.termine ? E.podium(T, RES) : []);
+    return { podium, rep: BIL ? PR.repartirLots(BIL.lots, podium) : [] };
+  }
+
+  async function chargerParis() {
+    const id = T && T.id;
+    try {
+      const j = await api('paris', null, { id });
+      if (!T || T.id !== id) return;              // un autre tournoi a été ouvert entre-temps
+      recevoirParis(j);
+    } catch (e) { PARIS_ERR = e.message; }
+    if (!T) return;
+    renderParis(); renderArbre(); renderConsole();   // arbre et console lisent aussi les paris
+    ouvrirFenetres();
+  }
+  async function actionParis(action, body, ok) {
+    try { recevoirParis(await api(action, Object.assign({ id: T.id }, body))); renderParis(); renderArbre(); renderConsole(); if (ok) toast(ok); return true; }
+    catch (e) {
+      toast(e.message, true);
+      // Refusé parce que la page était en retard (combat déjà joué, déjà lancé…) :
+      // on la remet à jour pour que le membre voie l'état réel.
+      if (action === 'parier') rafraichir();
+      return false;
+    }
+  }
+  function basculerVerrou(m, on) {
+    return actionParis('paris_verrou', Object.assign(repereCombat(m), { on }), on ? 'Paris fermés sur ce combat' : `Paris rouverts pour ${fenetreMin()} min`);
+  }
+  function prolonger(m) {
+    return actionParis('paris_prolonger', repereCombat(m), '+1 min de paris');
+  }
+  // Petits boutons de l'orga sur un combat prêt : fermer tout de suite, laisser
+  // une minute de plus, ou rouvrir une fenêtre complète.
+  function boutonsFenetre(m) {
+    if (!PARIS || !PARIS.peut_gerer || !T.paris || T.statut !== 'en_cours' || m.statut !== 'pret') return '';
+    return parisFermes(m)
+      ? `<button class="btn small" data-fen="rouvrir" data-m="${m.id}">🔓 Rouvrir ${fenetreMin()} min</button>`
+      : `<button class="btn small" data-fen="fermer" data-m="${m.id}">⏹ Fermer</button><button class="btn small" data-fen="plus" data-m="${m.id}">+1 min</button>`;
+  }
+  function brancherFenetre(root) {
+    root.querySelectorAll('[data-fen]').forEach(b => b.onclick = ev => {
+      ev.stopPropagation();
+      const m = RES.matchs[b.dataset.m]; if (!m) return;
+      if (b.dataset.fen === 'fermer') basculerVerrou(m, true);
+      else if (b.dataset.fen === 'rouvrir') basculerVerrou(m, false);
+      else prolonger(m);
+    });
+  }
+  // Pastille d'état des paris d'un combat, compte à rebours compris.
+  function chipFenetre(m) {
+    if (!T.paris || m.statut !== 'pret' || T.statut !== 'en_cours') return '';
+    if (parisFermes(m)) return '<span class="chip ferme">Paris fermés</span>';
+    const r = restant(m);
+    return `<span class="chip ouvert">Paris ouverts${r !== null ? ` · <span data-compte="${m.id}">${mmss(r)}</span>` : ''}</span>`;
+  }
+
+  // Remet la page à l'état réel du tournoi (arbre + paris). Sans ça, un membre qui
+  // gardait la page ouverte pariait sur un arbre en retard : « Ce match est déjà
+  // joué » sur un combat que sa page montrait encore ouvert (soirée du 2026-10-10).
+  async function rafraichir() {
+    if (!T) return;
+    const id = T.id, sub = (document.querySelector('.subtab.active') || {}).dataset;
+    try {
+      const j = await api('get', null, { id });
+      if (!T || T.id !== id) return;
+      // Filet Discord : le bot compare le message à ce qu'il devrait montrer et ne
+      // réédite qu'en cas d'écart (gratuit quand tout est à jour).
+      if (PEUT_GERER && T.paris && T.statut === 'en_cours') api('paris_discord', { id }).catch(() => {});
+      if (j.tournoi.version !== T.version || j.tournoi.statut !== T.statut) {
+        T = j.tournoi; PEUT_GERER = j.peut_gerer && !APERCU; PEUT_SUPPR = j.peut_supprimer && !APERCU;
+        renderDetail();
+        if (sub && sub.sub) montrerSub(sub.sub);
+      }
+    } catch (e) { /* hoquet réseau : on retentera au prochain tour */ }
+    await chargerParis();
+  }
+  // Pendant un tournoi en cours, la page se tient à jour toute seule (20 s), sauf
+  // si une fenêtre de saisie est ouverte ou l'onglet du navigateur caché.
+  function rafraichirSiUtile() {
+    if (!T || T.statut !== 'en_cours' || document.hidden) return;
+    if (!document.getElementById('view-detail').classList.contains('active')) return;
+    if (document.querySelector('.modal-bg.on, .dlg-bg.on')) return;
+    rafraichir();
+  }
+  setInterval(rafraichirSiUtile, 20000);
+  // Retour sur la page (sur téléphone, on passe sans cesse de Discord au site) :
+  // mise à jour immédiate, sans attendre le prochain tour de 20 s.
+  document.addEventListener('visibilitychange', rafraichirSiUtile);
+  function libelleCible(p) {
+    if (p.cible === 'vainqueur') return 'Vainqueur du tournoi';
+    const m = RES.matchs[p.cible];
+    return `Match ${m && m.num ? m.num : '?'} · ${nomDe(p.a)} – ${nomDe(p.b)}`;
+  }
+  function etatPari(p) {
+    if (p.etat === 'annule') return `<span style="color:var(--text-muted)">annulé — ${esc(PR.RAISONS[p.raison] || p.raison)}</span>`;
+    if (p.etat === 'en_jeu') return 'en jeu';
+    return p.etat === 'gagne' ? `<span class="plus">gagné ${p.net > 0 ? '+' + sol(p.net) : '(mise rendue)'}</span>` : `<span class="moins">perdu −${sol(p.mise)}</span>`;
+  }
+
+  // Fenêtre de mise. La saisie est un champ texte (duneDialog) : on accepte
+  // « 2 000 », « 2000 » ou « 2k ». L'aperçu du gain suit la frappe.
+  async function demanderMise(titre, intro, cible, choix, ancien, definitif) {
+    const c = BIL && BIL.cagnottes[cible];
+    const p = duneDialog({ titre, confirm: definitif ? 'Parier (définitif)' : (ancien ? 'Modifier mon pari' : 'Parier'),
+      html: `${intro}<br>Mise : de 1 à <strong>${sol(PARIS.plafond)}</strong> Solaris. Si tu perds, tu t'engages à régler ta mise auprès du banquier, <strong>${esc(PARIS.banquier || 'l\'organisateur')}</strong>.<div class="pari-gain" id="dlg-gain"></div>`,
+      saisie: ancien ? String(ancien.mise) : '' });
+    const champ = $('dlg-saisie'), lire = v => { v = String(v || '').toLowerCase().replace(/\s/g, ''); const k = /k$/.test(v); const n = parseInt(v, 10); return isNaN(n) ? 0 : n * (k ? 1000 : 1); };
+    const apercu = () => {
+      const n = lire(champ.value);
+      $('dlg-gain').innerHTML = n < 1 ? '' : n > PARIS.plafond ? `<span class="moins">Au-delà du plafond de ${sol(PARIS.plafond)}.</span>`
+        : `Si ${esc(nomDe(choix))} gagne, tu touches <strong>${sol(PR.gainSimule(c, choix, n, ancien))}</strong> Solaris (mise comprise), si la cagnotte en reste là.`;
+    };
+    champ.setAttribute('inputmode', 'numeric'); champ.placeholder = 'ex. 2000';
+    champ.after($('dlg-gain'));                 // l'aperçu sous le champ, pas au-dessus
+    champ.oninput = apercu; apercu();
+    const v = await p;
+    if (v === null) return null;
+    const n = lire(v);
+    if (n < 1 || n > PARIS.plafond) { toast(`Mise invalide : de 1 à ${sol(PARIS.plafond)} Solaris.`, true); return null; }
+    return n;
+  }
+  async function parierVainqueur(jid) {
+    const n = await demanderMise('Pari sur le vainqueur', `Tu paries que <strong>${esc(nomDe(jid))}</strong> remportera le tournoi.<br><span class="alerte">Ce pari est définitif : il ne pourra plus être changé ni retiré.</span>`, 'vainqueur', jid, null, true);
+    if (n) actionParis('parier', { cible: 'vainqueur', choix: jid, mise: n }, 'Pari enregistré 🎲');
+  }
+  async function parierMatch(mid, jid) {
+    const m = RES.matchs[mid]; if (!m) return;
+    const ancien = monPari(mid);
+    const n = await demanderMise(`Match ${m.num} · ${E.libelleTour(m.bracket, m.round, RES.structure, RES)}`,
+      `Tu paries sur <strong>${esc(nomDe(jid))}</strong> contre ${esc(nomDe(jid === m.a ? m.b : m.a))}.${ancien ? `<br>Ton pari actuel : ${sol(ancien.mise)} sur ${esc(nomDe(ancien.choix))} — il sera remplacé.` : ''}`,
+      mid, jid, ancien ? { choix: ancien.choix, mise: ancien.mise } : null, false);
+    if (n) actionParis('parier', { cible: mid, choix: jid, a: m.a, b: m.b, mise: n }, ancien ? 'Pari modifié 🎲' : 'Pari enregistré 🎲');
+  }
+  async function retirerPari(mid) {
+    const m = RES.matchs[mid], p = monPari(mid); if (!m || !p) return;
+    if (!await duneDialog({ titre: 'Retirer ton pari ?', confirm: 'Retirer', html: `${sol(p.mise)} Solaris sur ${esc(nomDe(p.choix))} (match ${m.num}).` })) return;
+    actionParis('parier', { cible: mid, choix: '', a: m.a, b: m.b, mise: 0 }, 'Pari retiré');
+  }
+
+  // Paris activés par l'organisateur (option du tournoi, désactivée par défaut).
+  // Éteints, l'onglet disparaît… sauf s'il reste des paris posés avant : ils
+  // doivent encore se régler, l'onglet reste alors visible en lecture seule.
+  function majOngletParis() {
+    const b = document.querySelector('.subtab[data-sub="paris"]');
+    const visible = !!T.paris || !!(PARIS && PARIS.paris.length);
+    b.style.display = visible ? '' : 'none';
+    if (!visible && b.classList.contains('active')) montrerSub('arbre');
+  }
+
+  function renderParis() {
+    const el = $('sub-paris');
+    if (!T) return;
+    majOngletParis();
+    if (!PARIS) { el.innerHTML = PARIS_ERR ? `<div class="empty">Paris indisponibles : ${esc(PARIS_ERR)}</div>` : '<div class="empty">Chargement des paris…</div>'; return; }
+    BIL = PR.bilan(T, RES, Object.assign({}, PARIS, { maintenant: maintenantSrv() }));
+    const nbValides = BIL.paris.filter(p => p.etat !== 'annule').length;
+    document.querySelector('.subtab[data-sub="paris"]').textContent = `🎲 Paris${nbValides ? ` (${nbValides})` : ''}`;
+    const banquier = esc(PARIS.banquier || 'l\'organisateur');
+    const jeSuis = PARIS.joueur_moi;
+    const actifs = !!T.paris;
+    let h = `<div class="actions" style="justify-content:flex-end;margin-bottom:.6rem"><button class="btn small" id="pr-actu" data-tip="Recharge les mises des autres membres">⟳ Actualiser</button></div><div class="pr-regles">🎲 On parie de <strong>vrais Solaris du jeu</strong>, ${sol(PARIS.plafond)} au plus par pari. Banquier : <strong>${banquier}</strong>.<br>
+      <strong>Cagnotte partagée</strong> : toutes les mises d'un pari sont mises en commun, et ceux qui ont vu juste se les partagent au prorata de ce qu'ils ont misé. Plus un joueur est donné perdant, plus il rapporte. Une cagnotte sans aucun gagnant va aux lots du podium : ${repartitionTxt()}.<br>
+      Un pari compte dès qu'il est posé : à la fin du tournoi, les perdants envoient leur mise au banquier en jeu, puis le banquier verse les gains.
+      <br><a href="paris-aide.html">Tout comprendre en images : comment parier →</a>
+      ${jeSuis && jeSuis !== '*' ? `<br><span class="pr-alerte">Tu combats dans ce tournoi : tu paries comme tout le monde, mais jamais contre ${EQ() ? 'ton équipe' : 'toi'} : dans tes propres combats, seulement sur ${EQ() ? 'ton équipe' : 'toi'}.</span>` : ''}</div>`;
+    if (!actifs) h += `<div class="banner"><span>🔒 Les paris sont <strong>fermés</strong> sur ce tournoi : plus de nouveau pari. Ceux déjà posés restent à régler avec le banquier.${PARIS.peut_gerer ? ' Pour les rouvrir : ✎ Modifier, case « Ouvrir les paris ».' : ''}</span></div>`;
+
+    // Mon bilan
+    const s = BIL.soldes[PARIS.moi];
+    if (s && s.nbParis) {
+      const regle = (PARIS.reglements || {})[PARIS.moi];
+      const fini = T.statut === 'termine';
+      h += `<div class="pr-moi"><span>Ton solde${fini ? '' : ' (provisoire)'} : <span class="gros ${s.net > 0 ? 'plus' : s.net < 0 ? 'moins' : ''}">${signe(s.net)}</span> Solaris</span>
+        ${s.enJeu ? `<span>${sol(s.enJeu)} encore en jeu</span>` : ''}
+        <span>${s.net < 0 ? `à envoyer à <strong>${banquier}</strong>` : s.net > 0 ? `à recevoir de <strong>${banquier}</strong>` : 'rien à régler pour l\'instant'}${regle ? ' · ✅ réglé' : ''}</span></div>`;
+    }
+    // Lauréat : sa part des lots des paris
+    const lots = lotsParis();
+    const monLot = jeSuis && lots.rep.find(p => p.id === jeSuis && p.montant > 0);
+    if (monLot) h += `<div class="pr-moi"><span>🏆 ${EQ() ? 'Part de ton équipe dans les' : 'Ta part des'} lots des paris : <span class="gros plus">+${sol(monLot.montant)}</span> Solaris</span><span>à recevoir de <strong>${banquier}</strong>${(PARIS.reglements || {})['lot:' + monLot.id] ? ' · ✅ versé' : ''}</span></div>`;
+
+    // Vainqueur du tournoi
+    const cv = BIL.cagnottes.vainqueur;
+    const etatV = cv && cv.etat === 'regle' ? 'regle' : (actifs && T.statut === 'preparation' && T.devoile ? 'ouvert' : 'ferme');
+    const mienV = monPari('vainqueur');
+    // Le vainqueur est libre pour tous, participants compris (seul leur propre combat est limité).
+    const peutV = actifs && !!T.devoile && etatV === 'ouvert' && !mienV;
+    const attenteDevoile = actifs && arbreCache();
+    h += `<div class="section-title">Vainqueur du tournoi <span class="chip ${etatV}" style="margin-left:.5rem">${etatV === 'ouvert' ? 'Paris ouverts jusqu\'au lancement' : etatV === 'regle' ? 'Réglé' : !actifs ? 'Paris fermés' : attenteDevoile ? 'Ouvrent au dévoilement de l\'arbre' : 'Fermé : le tournoi est lancé'}</span></div>`;
+    // On parie sur les participants de l'arbre : joueurs en duel, équipes sinon.
+    // Arbre encore caché : on ne parie pas sur ce qu'on ne voit pas.
+    if (attenteDevoile && !PEUT_GERER) h += `<div class="empty">🔒 Les paris sur le vainqueur ouvriront quand l'organisateur dévoilera ${EQ() ? 'les équipes et ' : ''}l'arbre.</div>`;
+    else if (parts().length < 2) h += `<div class="empty">Les paris s'ouvrent dès que ${EQ() ? 'les équipes sont composées' : 'la liste des combattants est connue'}.</div>`;
+    else {
+      h += `<table class="tbl pr-tbl"><thead><tr><th>${EQ() ? 'Équipe' : 'Combattant'}</th><th class="num">Misé</th><th class="num">Parieurs</th><th class="num" data-tip="Ce que rapporte 1 Solaris misé si ${EQ() ? 'cette équipe gagne' : 'ce joueur gagne'}, mise comprise, avec la cagnotte actuelle">Cote</th><th></th></tr></thead><tbody>`;
+      parts().forEach(j => {
+        const pc = cv && cv.parChoix[j.id];
+        const champ = cv && cv.etat === 'regle' && cv.gagnant === j.id;
+        const membres = EQ() && j.nom_libre ? `<div style="color:var(--text-muted);font-size:.72rem">${esc(membresDe(j.id).join(', '))}</div>` : '';
+        h += `<tr${mienV && mienV.choix === j.id ? ' style="background:var(--accent-glow)"' : ''}><td>${champ ? '🏆 ' : ''}${esc(j.nom)}${mienV && mienV.choix === j.id ? ' <span class="chip">ton pari : ' + sol(mienV.mise) + '</span>' : ''}${membres}</td>
+          <td class="num">${pc ? sol(pc.montant) : '—'}</td><td class="num">${pc ? pc.nb : '—'}</td><td class="num">${coteTxt(PR.cote(cv, j.id))}</td>
+          <td class="num">${peutV ? `<button class="btn small" data-pv="${esc(j.id)}">Parier</button>` : ''}</td></tr>`;
+      });
+      h += `</tbody></table><p class="note">Cagnotte : <strong>${sol(cv ? cv.total : 0)}</strong> Solaris${cv ? ` · ${cv.nb} pari${cv.nb > 1 ? 's' : ''}` : ''}.${mienV ? '' : etatV === 'ouvert' ? ' Un seul pari par membre, définitif.' : ''}${cv && cv.etat === 'regle' && cv.versLots ? ` ${sol(cv.versLots)} Solaris vont aux lots.` : ''}</p>`;
+    }
+
+    // Matchs. En préparation (arbre visible), on montre déjà les combats du 1ᵉʳ
+    // tour : sans eux, on croyait qu'il n'y aurait pas de paris par combat.
+    if (T.statut === 'preparation' && actifs && (T.devoile || PEUT_GERER)) {
+      const premiers = E.aJouer(RES);
+      if (premiers.length) h += `<div class="section-title">Combats du 1ᵉʳ tour — paris ouverts au lancement du tournoi</div><div class="pr-grille">${premiers.map(carteMatch).join('')}</div>`;
+    }
+    if (T.statut !== 'preparation') {
+      const avecParis = RES.ordre.map(id => RES.matchs[id]).filter(m => BIL.cagnottes[m.id] || m.statut === 'pret');
+      const aVenir = avecParis.filter(m => m.statut === 'pret'), joues = avecParis.filter(m => m.statut === 'joue').reverse();
+      h += `<div class="section-title">${T.statut === 'en_cours' ? `Combats — paris ouverts ${fenetreMin()} min dès qu'un combat est prêt` : 'Combats'}</div>`;
+      if (aVenir.length) h += '<div class="pr-grille">' + aVenir.map(carteMatch).join('') + '</div>';
+      else if (T.statut === 'en_cours') h += '<div class="empty">Aucun combat prêt : les suivants apparaîtront ici dès que leurs deux combattants seront connus.</div>';
+      if (joues.length) h += `<details class="pr-det"${aVenir.length ? '' : ' open'}><summary>Combats joués (${joues.length})</summary><div class="pr-grille">${joues.map(carteMatch).join('')}</div></details>`;
+    }
+
+    // Lots des paris : cagnottes sans gagnant, réparties sur le podium
+    if (BIL.lots > 0) {
+      h += `<div class="section-title">Lots des paris — ${sol(BIL.lots)} Solaris</div>`;
+      h += lots.rep.length
+        ? `<table class="tbl"><tbody>${lots.rep.map(p => `<tr><td>${MED[p.rang] ? MED[p.rang].ico : ''} ${esc(p.nom)}</td><td class="num">${Math.round(p.part * 10) / 10} %</td><td class="num plus">+${sol(p.montant)}</td></tr>`).join('')}</tbody></table>`
+        : `<p class="note" style="margin:0">Cagnottes sans gagnant, réparties à la fin du tournoi : ${repartitionTxt()}.</p>`;
+    }
+
+    // Règlement (banquier / orga)
+    if (PARIS.peut_banque) h += blocReglement();   // gestionnaires et banquier désigné
+    el.innerHTML = h;
+
+    el.querySelectorAll('[data-pv]').forEach(b => b.onclick = () => parierVainqueur(b.dataset.pv));
+    el.querySelectorAll('[data-pm]').forEach(b => b.onclick = () => parierMatch(b.dataset.pm, b.dataset.j));
+    el.querySelectorAll('[data-retirer]').forEach(a => a.onclick = () => retirerPari(a.dataset.retirer));
+    brancherFenetre(el);
+    el.querySelectorAll('[data-annuler]').forEach(b => b.onclick = async () => {
+      const p = BIL.paris.find(x => x.id === b.dataset.annuler); if (!p) return;
+      if (!await duneDialog({ titre: 'Annuler ce pari ?', confirm: 'Annuler le pari', annuler: 'Garder', danger: true,
+        html: `<strong>${esc(p.qui)}</strong> : ${sol(p.mise)} Solaris sur ${esc(nomDe(p.choix))} (${esc(libelleCible(p))}).<br>Le pari disparaît du bilan ; le journal des paris en garde la trace.` })) return;
+      actionParis('paris_annuler', { pari: p.id }, 'Pari annulé');
+    });
+    el.querySelectorAll('[data-regle]').forEach(c => c.onchange = () =>
+      actionParis('paris_regle', { qui: c.dataset.regle, montant: +c.dataset.net, on: c.checked }, c.checked ? 'Règlement noté' : 'Règlement décoché'));
+    if ($('pr-actu')) $('pr-actu').onclick = () => rafraichir().then(() => toast('Tournoi et paris actualisés'));
+  }
+
+  function carteMatch(m) {
+    const c = BIL.cagnottes[m.id];
+    const avant = T.statut === 'preparation';     // 1ᵉʳ tour montré avant le lancement : rien à parier encore
+    const etat = m.statut === 'joue' ? 'regle' : avant || parisFermes(m) ? 'ferme' : 'ouvert';
+    const mien = monPari(m.id);
+    const jeJoue = PARIS.joueur_moi && (PARIS.joueur_moi === m.a || PARIS.joueur_moi === m.b);
+    const peut = !!T.paris && etat === 'ouvert' && T.statut === 'en_cours';
+    const cote = id => PR.cote(c, id);
+    const side = id => {
+      const pc = c && c.parChoix[id];
+      const cls = (mien && mien.choix === id ? ' mien' : '') + (m.statut === 'joue' && m.vainqueur === id ? ' gagne' : '');
+      // Son propre combat : on ne parie que sur soi (jamais contre soi).
+      const ok = peut && (!jeJoue || id === PARIS.joueur_moi);
+      return `<button class="pm-side${cls}" ${ok ? `data-pm="${m.id}" data-j="${esc(id)}"` : 'disabled'}>
+        <span class="nm">${m.statut === 'joue' && m.vainqueur === id ? '🏆 ' : ''}${esc(nomDe(id))}</span>
+        <span class="mt">${pc ? sol(pc.montant) + ' misés · ' + coteTxt(cote(id)) : 'aucune mise'}</span></button>`;
+    };
+    let pied = `<span>Cagnotte ${sol(c ? c.total : 0)}${c ? ` · ${c.nb} pari${c.nb > 1 ? 's' : ''}` : ''}${c && c.etat === 'regle' && c.versLots ? ` · ${sol(c.versLots)} aux lots` : ''}</span>`;
+    if (mien) pied += `<span>Ton pari : <strong>${sol(mien.mise)}</strong> sur ${esc(nomDe(mien.choix))} ${mien.etat === 'en_jeu' ? (peut ? `· <a data-retirer="${m.id}">retirer</a>` : '') : '· ' + etatPari(mien)}</span>`;
+    else if (jeJoue && etat !== 'regle') pied += `<span>Tu combats : pari possible sur ${EQ() ? 'ton équipe' : 'toi'} seulement</span>`;
+    const chip = avant ? '<span class="chip ferme">Au lancement</span>'
+      : m.statut === 'joue' ? '<span class="chip regle">Joué</span>' : chipFenetre(m);
+    return `<div class="pm ${etat}"><div class="pm-head"><span>Match ${m.num} · ${esc(E.libelleTour(m.bracket, m.round, RES.structure, RES))}</span>
+      <span class="actions">${chip}${avant ? '' : boutonsFenetre(m)}</span></div>
+      <div class="pm-sides">${side(m.a)}${side(m.b)}</div><div class="pm-foot">${pied}</div></div>`;
+  }
+
+  // Le carnet du banquier : qui doit quoi, qui a réglé. Les soldes sont ceux du
+  // moment ; un règlement noté garde son montant, et la page signale l'écart si
+  // une correction de score a changé le solde depuis.
+  function blocReglement() {
+    const soldes = Object.values(BIL.soldes).filter(s => s.nbParis).sort((a, b) => a.net - b.net);
+    const regl = PARIS.reglements || {};
+    const encaisser = soldes.reduce((t, s) => t + (s.net < 0 ? -s.net : 0), 0);
+    const verser = soldes.reduce((t, s) => t + (s.net > 0 ? s.net : 0), 0);
+    const enJeu = soldes.reduce((t, s) => t + s.enJeu, 0);
+    let h = `<div class="section-title">Banque — règlement${T.statut === 'termine' ? '' : ' (provisoire : tournoi en cours)'}</div>`;
+    if (!soldes.length) return h + '<div class="empty">Aucun pari pour l\'instant.</div>';
+    const lots = lotsParis();
+    h += `<p class="note" style="margin:0 0 .7rem">À encaisser : <strong>${sol(encaisser)}</strong> · à verser aux parieurs : <strong>${sol(verser)}</strong> · lots des paris pour le podium : <strong>${sol(BIL.lots)}</strong>${enJeu ? ` · encore en jeu : ${sol(enJeu)}` : ''}. Les perdants paient d'abord, puis tu verses les gains et les lots : la banque tombe juste.</p>`;
+    h += `<table class="tbl pr-tbl"><thead><tr><th>Parieur</th><th class="num">Solde</th><th class="num">Paris</th><th>À faire</th><th class="num">Réglé</th></tr></thead><tbody>`;
+    soldes.forEach(s => {
+      const r = regl[s.qui];
+      const ecart = r && r.montant !== s.net;
+      h += `<tr><td>${esc(s.qui)}</td><td class="num ${s.net > 0 ? 'plus' : s.net < 0 ? 'moins' : ''}">${signe(s.net)}</td><td class="num">${s.nbParis}${s.enJeu ? ` · ${sol(s.enJeu)} en jeu` : ''}</td>
+        <td>${s.net < 0 ? `te doit <strong>${sol(-s.net)}</strong>` : s.net > 0 ? `à lui verser <strong>${sol(s.net)}</strong>` : '—'}${ecart ? `<div class="pr-alerte">⚠ réglé à ${sol(r.montant)} : le solde a changé depuis</div>` : ''}</td>
+        <td class="num">${s.net !== 0 || r ? `<input type="checkbox" data-regle="${esc(s.qui)}" data-net="${s.net}"${r ? ' checked' : ''}>` : ''}</td></tr>`;
+    });
+    // Lauréats du podium : leur part des lots des paris (clé de règlement « lot:<id joueur> »).
+    lots.rep.filter(p => p.montant > 0).forEach(p => {
+      const cle = 'lot:' + p.id, r = regl[cle], ecart = r && r.montant !== p.montant;
+      h += `<tr><td>${MED[p.rang] ? MED[p.rang].ico : '🏅'} ${esc(p.nom)} <span style="color:var(--text-muted);font-size:.72rem">lots des paris</span></td><td class="num plus">+${sol(p.montant)}</td><td class="num">${Math.round(p.part * 10) / 10} %</td>
+        <td>${EQ() ? 'à leur verser' : 'à lui verser'} <strong>${sol(p.montant)}</strong>${EQ() ? `<div style="color:var(--text-muted);font-size:.72rem">${esc(membresDe(p.id).join(', '))}</div>` : ''}${ecart ? `<div class="pr-alerte">⚠ versé ${sol(r.montant)} : le montant a changé depuis</div>` : ''}</td>
+        <td class="num"><input type="checkbox" data-regle="${esc(cle)}" data-net="${p.montant}"${r ? ' checked' : ''}></td></tr>`;
+    });
+    h += '</tbody></table>';
+    if (BIL.lots > 0 && !lots.rep.length) h += `<p class="note">Les ${sol(BIL.lots)} Solaris des lots des paris seront répartis sur le podium à la fin du tournoi (${repartitionTxt()}).</p>`;
+
+    const tous = BIL.paris.slice().sort((a, b) => String(b.maj || b.le).localeCompare(String(a.maj || a.le)));
+    h += `<details class="pr-det"><summary>Tous les paris (${tous.length})</summary><table class="tbl"><thead><tr><th>Parieur</th><th>Pari</th><th class="num">Mise</th><th>État</th><th></th></tr></thead><tbody>
+      ${tous.map(p => `<tr><td>${esc(p.qui)}</td><td>${esc(libelleCible(p))}<br><span style="color:var(--text-muted);font-size:.74rem">sur ${esc(nomDe(p.choix))}</span></td><td class="num">${sol(p.mise)}</td><td>${etatPari(p)}</td>
+        <td class="num"><button class="btn small danger" data-annuler="${esc(p.id)}">Annuler</button></td></tr>`).join('')}</tbody></table></details>`;
+    const jr = PARIS.journal || [];
+    if (jr.length) h += `<details class="pr-det"><summary>Journal des paris (${jr.length})</summary><div>${jr.map(e => `<div class="jr"><span class="jr-ts">${esc(new Date(e.ts).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))}</span><span class="jr-par">${esc(e.par)}</span><span>${esc(e.texte)}</span></div>`).join('')}</div></details>`;
+    return h;
+  }
+
   function renderJournal() {
     const j = (T.journal || []).slice().reverse();
     $('sub-journal').innerHTML = j.length ? j.map(e => `<div class="jr"><span class="jr-ts">${esc(new Date(e.ts).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }))}</span><span class="jr-par">${esc(e.par)}</span><span>${esc(e.texte)}</span></div>`).join('')
@@ -1210,14 +2170,22 @@
     $('f-gf').value = o.grandeFinale === 'unique' ? 'unique' : 'revanche';
     $('f-pf').checked = o.petiteFinale !== false;
     $('f-bo').value = String(o.bestOf || 1);
+    $('f-equipe').value = String(E.tailleEquipe(t));
     $('f-date').value = t ? t.date : new Date().toISOString().slice(0, 10);
     $('f-heure').value = t ? (t.heure || '') : '21:00';
     $('f-desc').value = t ? (t.description || '') : '';
     ['1', '2', '3'].forEach(r => $('f-lot' + r).value = t && t.lots ? (t.lots[r] || '') : '');
+    $('f-paris').checked = !!(t && t.paris);      // désactivés par défaut : choix de l'organisateur
+    $('f-fenetre').value = (t && t.fenetre_paris) || 2;
+    $('f-banquier').value = t && t.banquier ? t.banquier.nom : '';
+    F_COORGAS = t && t.coorgas ? t.coorgas.map(c => Object.assign({}, c)) : [];
+    majCoorgas(); majParisOpts();
+    // Noms proposés pendant la frappe : les membres du Discord (s'ils sont lisibles).
+    chargerMembres().then(() => { $('f-membres').innerHTML = (MEMBRES || []).map(m => `<option value="${esc(m.nom)}">`).join(''); }).catch(() => {});
     const verrou = t && t.statut !== 'preparation';
-    ['f-format', 'f-gf', 'f-pf'].forEach(id => $(id).disabled = !!verrou);
+    ['f-format', 'f-gf', 'f-pf', 'f-equipe'].forEach(id => $(id).disabled = !!verrou);
     $('f-note').textContent = verrou ? 'Le format est figé depuis le lancement : il définit l\'arbre.' : '';
-    majFormat();
+    majFormat(); majEquipeNote();
     if (!t) {
       $('f-sortie').innerHTML = '<option value="">Chargement des sorties…</option>';
       try {
@@ -1225,7 +2193,9 @@
         const opt = s => `<option value="${esc(s.id)}"${s.tournoi ? ' disabled' : ''}>${esc(s.titre || '(sans titre)')} — ${esc(dateFr(s.date, s.heure))} · ${s.presents} présent${s.presents > 1 ? 's' : ''}${s.tournoi ? ' (déjà un tournoi)' : ''}</option>`;
         // Le serveur ne renvoie que les sorties « Tournoi PvP » (3 dernières semaines).
         const tn = SORTIES;
-        $('f-sortie').innerHTML = '<option value="">— Aucune : joueurs ajoutés à la main —</option>'
+        // Sans sortie (tournoi improvisé) : réservé aux organisateurs. Un membre ne
+        // voit que SES sorties « Tournoi PvP » (filtrées par l'API).
+        $('f-sortie').innerHTML = (EST_ORGA ? '<option value="">— Aucune : joueurs ajoutés à la main —</option>' : '')
           + (tn.length ? tn.map(opt).join('')
                        : '<option value="" disabled>Aucune sortie « Tournoi PvP » ces 3 dernières semaines — crée-la sur Discord</option>');
         if (sortiePre && SORTIES.some(s => s.id === sortiePre && !s.tournoi)) { $('f-sortie').value = sortiePre; majSortie(); }
@@ -1247,20 +2217,63 @@
     if (s.date) $('f-date').value = s.date;
     if (s.heure) $('f-heure').value = s.heure;
   }
+  function majEquipeNote() {
+    const n = +$('f-equipe').value;
+    const change = FORM_T && FORM_T.statut === 'preparation' && (FORM_T.equipes || []).length && n !== E.tailleEquipe(FORM_T);
+    $('f-equipe-note').innerHTML = n > 1
+      ? `Les inscrits seront répartis en équipes de ${n} <strong>équilibrées</strong> (onglet Joueurs) : le site propose, tu ajustes. Pas de points de saison pour un tournoi par équipes.`
+        + (change ? ' <span style="color:#E09080">Changer la taille efface la composition actuelle.</span>' : '')
+      : '';
+  }
+  $('f-equipe').onchange = majEquipeNote;
   $('f-format').onchange = majFormat;
   $('f-sortie').onchange = majSortie;
+  // Co-organisateurs et banquier : un nom, rattaché à son compte Discord quand on
+  // le trouve parmi les membres (c'est le compte qui fait foi pour les droits).
+  let F_COORGAS = [];
+  const personne = nom => {
+    nom = nom.trim(); if (!nom) return null;
+    const m = (MEMBRES || []).find(x => x.nom.toLowerCase() === nom.toLowerCase());
+    return { nom: m ? m.nom : nom, discord_id: m ? m.discord_id : '' };
+  };
+  function majCoorgas() {
+    $('f-coorgas').innerHTML = F_COORGAS.length
+      ? F_COORGAS.map((c, i) => `<span class="chip">${esc(c.nom)} <a data-retire-co="${i}" style="cursor:pointer" aria-label="Retirer">✕</a></span>`).join('')
+      : '<span class="note" style="margin:0">Aucun.</span>';
+    $('f-coorgas').querySelectorAll('[data-retire-co]').forEach(a => a.onclick = () => { F_COORGAS.splice(+a.dataset.retireCo, 1); majCoorgas(); });
+  }
+  function majParisOpts() { $('f-paris-opts').style.display = $('f-paris').checked ? '' : 'none'; }
+  $('f-paris').addEventListener('change', majParisOpts);
+  function ajouterCoorga() {
+    const p = personne($('f-coorga').value);
+    if (!p) return;
+    if (F_COORGAS.length >= 4) { toast('4 co-organisateurs au plus.', true); return; }
+    if (!F_COORGAS.some(c => c.nom.toLowerCase() === p.nom.toLowerCase())) F_COORGAS.push(p);
+    $('f-coorga').value = ''; majCoorgas();
+  }
+  $('f-coorga-ajout').onclick = ajouterCoorga;
+  $('f-coorga').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); ajouterCoorga(); } });
   $('f-ok').onclick = async () => {
     const v = {
       nom: $('f-nom').value.trim(), niveau: $('f-niveau').value, format: $('f-format').value,
-      options: { grandeFinale: $('f-gf').value, petiteFinale: $('f-pf').checked, bestOf: +$('f-bo').value },
+      options: { grandeFinale: $('f-gf').value, petiteFinale: $('f-pf').checked, bestOf: +$('f-bo').value, equipe: +$('f-equipe').value },
       date: $('f-date').value, heure: $('f-heure').value, description: $('f-desc').value.trim(),
-      lots: { 1: $('f-lot1').value.trim(), 2: $('f-lot2').value.trim(), 3: $('f-lot3').value.trim() }
+      lots: { 1: $('f-lot1').value.trim(), 2: $('f-lot2').value.trim(), 3: $('f-lot3').value.trim() },
+      paris: $('f-paris').checked,
+      fenetre_paris: Math.max(1, Math.min(30, +$('f-fenetre').value || 2)),
+      banquier: personne($('f-banquier').value),
+      coorgas: F_COORGAS
     };
     if (!v.nom) { toast('Donne un nom au tournoi.', true); return; }
     if (FORM_T) {
       if (FORM_T.statut !== 'preparation') { delete v.format; delete v.options; v.options = Object.assign({}, FORM_T.options, { bestOf: +$('f-bo').value }); }
+      // Nouvelle taille d'équipe : l'ancienne composition ne tient plus.
+      const nvTaille = v.options.equipe > 1 ? v.options.equipe : 1, chg = FORM_T.statut === 'preparation' && nvTaille !== E.tailleEquipe(FORM_T);
+      if (chg) v.equipes = [];
+      const parisChg = v.paris !== !!FORM_T.paris;
       closeModals();
-      await sauver(v, 'Informations du tournoi modifiées');
+      await sauver(v, 'Informations du tournoi modifiées' + (chg ? ` — ${nvTaille > 1 ? 'équipes de ' + nvTaille : 'en duel'}` : '')
+        + (parisChg ? (v.paris ? ' — paris ouverts' : ' — paris fermés') : ''));
       return;
     }
     v.sortie_id = $('f-sortie').value; v.avec_peut_etre = $('f-maybe').checked;
@@ -1285,7 +2298,10 @@
       // Lien posé sur l'encart Discord : le tournoi de cette sortie, ou sa création.
       const ok = await ouvrir(null, q.get('sortie'));
       if (!ok) {
-        if (PEUT_GERER) ouvrirForm(null, q.get('sortie'));
+        // Le créateur de la sortie monte son tournoi lui-même, sans être organisateur.
+        let peut = EST_ORGA;
+        if (!peut && !APERCU) { try { peut = (await api('droits_sortie', null, { sortie: q.get('sortie') })).peut_creer; } catch (e) { /* lecture seule */ } }
+        if (peut) ouvrirForm(null, q.get('sortie'));
         else toast('L\'arbre de ce tournoi n\'est pas encore monté — reviens après la clôture des inscriptions.');
       }
     }

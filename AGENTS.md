@@ -251,6 +251,13 @@ Tous constatés en production ou en test, pas théoriques.
 - **Un résultat stocke les deux joueurs qu'il opposait**, et c'est voulu : après une correction
   en amont, un résultat dont l'affiche a changé est ignoré puis purgé. Ne pas « simplifier » en
   ne gardant que le vainqueur, on perdrait l'invalidation automatique.
+- **Tournoi par équipes** (`options.equipe` = 2 à 4) : l'arbre oppose des **équipes**
+  (`participants()`), donc résultats, podium et ajustements portent l'**identifiant d'équipe**,
+  pas celui d'un joueur. `joueurs` reste la liste des individus. Pas de points de saison
+  (`pointsTournoi()` rend `[]`) — ne pas les « rajouter » sans décision : comparer le comparable.
+- ⚠ **Le banc des remplaçants ne doit jamais être choisi par l'équilibrage** : à coût égal ou
+  meilleur, l'optimiseur y envoyait un Fort (le champion) pour égaliser les équipes. Le banc
+  est fixé AVANT de composer (désignés par l'organisateur, sinon derniers inscrits).
 
 ### Mini-jeux et scores
 - **Un plafond `max_score` trop bas fait disparaître un record en silence** : la

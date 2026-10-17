@@ -149,11 +149,28 @@
     });
   }
 
+  // Tournoi par équipes (options.equipe = 2, 3 ou 4) : l'arbre oppose des ÉQUIPES,
+  // les joueurs n'en sont que les membres. Tout ce qui suit (arbre, résultats,
+  // classement) ne voit que des « participants » : un joueur en duel, une équipe
+  // sinon. Les résultats référencent donc l'identifiant de l'équipe — un
+  // remplacement en cours de tournoi ne casse rien, l'équipe garde son identifiant.
+  function tailleEquipe(t) {
+    var n = +((t && t.options && t.options.equipe) || 1);
+    return n >= 2 && n <= 4 ? n : 1;
+  }
+  function estEquipes(t) { return tailleEquipe(t) > 1; }
+  function participants(t) {
+    if (!estEquipes(t)) return joueursOrdonnes(t);
+    return (t.equipes || []).map(function (e, i) {
+      return { id: e.id, nom: e.nom, seed: i + 1, membres: (e.membres || []).slice() };
+    });
+  }
+
   // ---------------------------------------------------------------------
   //  RÉSOLUTION : qui joue chaque match, qui l'a gagné, ce qui reste à jouer.
   // ---------------------------------------------------------------------
   function resoudre(t) {
-    var joueurs = joueursOrdonnes(t);
+    var joueurs = participants(t);
     var n = joueurs.length;
     var st = structure(n, t.format, t.options);
     var resultats = t.resultats || {};
@@ -379,7 +396,11 @@
   // Points de chaque joueur d'un tournoi TERMINÉ. Un ajustement d'organisateur
   // (t.ajustements[idJoueur] = {points, raison}) remplace le calcul, qui reste
   // fourni (`auto`) pour l'afficher au survol : une correction se voit toujours.
+  // Un tournoi par équipes ne rapporte AUCUN point de saison : une victoire en 2v2
+  // portée par un coéquipier fort ne vaut pas une victoire en duel. On ne compare
+  // que ce qui est comparable — il a son propre tableau au Palmarès.
   function pointsTournoi(t, res) {
+    if (estEquipes(t)) return [];
     res = res || resoudre(t);
     if (!res.termine) return [];
     var aj = t.ajustements || {};
@@ -458,7 +479,7 @@
     var vus = {}, out = [];
     function ajoute(s) { if (s && !vus[s.id]) { vus[s.id] = true; out.push(s); } }
     ajoute(saisonDe(aujourdhui));
-    tournois.forEach(function (t) { if (t.statut === 'termine') ajoute(saisonDe(t.date)); });
+    tournois.forEach(function (t) { if (t.statut === 'termine' && !estEquipes(t)) ajoute(saisonDe(t.date)); });
     return out.sort(function (a, b) { return a.debut < b.debut ? 1 : -1; });
   }
 
@@ -471,7 +492,7 @@
     var suivant = NIVEAU_SUIVANT[niveau];
     if (!suivant) return null;
     var derniers = [];
-    tournois.filter(function (t) { return t.statut === 'termine' && t.niveau === niveau && t.date; })
+    tournois.filter(function (t) { return t.statut === 'termine' && t.niveau === niveau && t.date && !estEquipes(t); })
       .sort(function (a, b) { return a.date < b.date ? 1 : -1; })
       .forEach(function (t) {
         if (derniers.length >= 3) return;
@@ -528,7 +549,176 @@
   // Ce sont toujours les premières têtes de série (cf. ordreTetes).
   function nbExemptes(n) { return n < 2 ? 0 : Math.max(2, puissance2(n)) - n; }
 
+  // =====================================================================
+  //  ÉQUIPES ÉQUILIBRÉES
+  //
+  //  Demande des joueurs (2026-10) : tournois en 2v2, 3v3 ou 4v4, équipes tirées
+  //  parmi les inscrits mais ÉQUILIBRÉES — « que Bahlor et Fenros ne soient pas
+  //  dans la même équipe ». Chaque joueur a une force Fort / Moyen / Novice ; le
+  //  site PROPOSE une composition, l'organisateur la corrige d'un clic.
+  // =====================================================================
+  var TAILLES_EQUIPE = { 1: 'Duel', 2: '2 contre 2', 3: '3 contre 3', 4: '4 contre 4' };
+  var FORCES = {
+    F: { label: 'Fort',   valeur: 3 },
+    M: { label: 'Moyen',  valeur: 2 },
+    N: { label: 'Novice', valeur: 1 }
+  };
+  // Force inconnue : on ne l'invente pas (l'interface affiche « ? » et invite à
+  // trancher), mais il faut bien la chiffrer pour composer : elle compte comme Moyen.
+  var FORCE_INCONNUE = 2;
+  function valeurForce(f) { return FORCES[f] ? FORCES[f].valeur : FORCE_INCONNUE; }
+
+  // Force proposée pour un joueur, avec sa justification (affichée au survol) :
+  //  1. le dernier choix d'un organisateur, posé sur ce joueur dans un tournoi par
+  //     équipes clôturé — un jugement humain l'emporte sur la formule ;
+  //  2. sinon ses résultats EN DUEL, tous niveaux :
+  //       Fort   : un podium chez les Vétérans, ou une victoire chez les Intermédiaires ;
+  //       Moyen  : a joué chez les Vétérans ou les Intermédiaires, ou gagné chez les Débutants ;
+  //       Novice : uniquement des tournois Débutants, sans victoire ;
+  //  3. sinon null : aucun résultat, c'est à l'organisateur de dire.
+  function forceProposee(tournois, joueur) {
+    var cle = cleJoueur(joueur);
+    var clos = tournois.filter(function (t) { return t.statut === 'termine'; })
+      .sort(function (a, b) { return (a.date || '') < (b.date || '') ? 1 : -1; });
+    for (var i = 0; i < clos.length; i++) {
+      if (!estEquipes(clos[i])) continue;
+      var j = (clos[i].joueurs || []).filter(function (x) { return cleJoueur(x) === cle && FORCES[x.force]; })[0];
+      if (j) return { force: j.force, base: 'organisateur',
+                      texte: 'Choisi par un organisateur pour « ' + clos[i].nom + ' »'
+                           + (clos[i].date ? ' (' + clos[i].date.split('-').reverse().join('/') + ')' : '') + '.' };
+    }
+    var vus = [];
+    clos.forEach(function (t) {
+      if (estEquipes(t)) return;
+      var p = pointsTournoi(t).filter(function (x) { return x.cle === cle; })[0];
+      if (p) vus.push({ niveau: t.niveau, rang: p.rang, nom: t.nom });
+    });
+    if (!vus.length) return null;
+    function a(niv, test) { return vus.some(function (v) { return v.niveau === niv && test(v.rang); }); }
+    function tout() { return true; }
+    function podium(r) { return r != null && r <= 3; }
+    function titre(r) { return r === 1; }
+    var force = a('expert', podium) || a('intermediaire', titre) ? 'F'
+              : a('expert', tout) || a('intermediaire', tout) || a('debutant', titre) ? 'M' : 'N';
+    var detail = vus.slice(0, 4).map(function (v) {
+      return (v.rang === 1 ? '1ᵉʳ' : v.rang + 'ᵉ') + ' — ' + v.nom + ' (' + (NIVEAUX[v.niveau] ? NIVEAUX[v.niveau].label : v.niveau) + ')';
+    }).join('\n');
+    return { force: force, base: 'resultats', texte: 'D\'après ses tournois en duel :\n' + detail + (vus.length > 4 ? '\n…' : '') };
+  }
+
+  // Nom par défaut d'une équipe : ses membres, tant que ça tient (40 caractères).
+  function nomEquipe(noms) {
+    noms = (noms || []).filter(Boolean);
+    if (!noms.length) return 'Équipe';
+    var s = noms.length === 1 ? noms[0] : noms.slice(0, -1).join(', ') + ' & ' + noms[noms.length - 1];
+    return s.length <= 40 ? s : 'Équipe ' + noms[0];
+  }
+
+  // Empreinte d'une composition, indépendante de l'ordre (équipes et membres).
+  function signatureEquipes(equipes) {
+    return equipes.map(function (e) { return e.slice().sort().join('+'); }).sort().join(' | ');
+  }
+
+  // Compose floor(n / taille) équipes équilibrées ; le reste devient remplaçant.
+  // `joueurs` : [{id, force}] dans l'ordre d'inscription ;
+  // options : { alea: () => [0,1), eviter: signature, remplacants: [ids] }.
+  // QUI reste sur le banc ne dépend PAS de la force : laissé à l'équilibrage, il y
+  // envoyait un Fort (le champion !) dès que ça rendait les équipes égales. Ce sont
+  // donc les remplaçants déjà désignés par l'organisateur s'ils sont en bon nombre,
+  // sinon les DERNIERS inscrits — premier inscrit, premier servi.
+  // Coût d'une composition, par ordre d'importance :
+  //   1. deux Forts dans la même équipe alors qu'on pouvait les séparer ;
+  //   2. l'écart de force entre l'équipe la plus forte et la plus faible ;
+  //   3. des Novices regroupés alors qu'on pouvait les répartir ;
+  //   4. la dispersion des forces (variance).
+  // Recherche : départs aléatoires + échanges deux à deux tant que ça s'améliore,
+  // puis tirage AU HASARD parmi les meilleures compositions trouvées — « Autre
+  // tirage » en donne donc une différente (`eviter`) quand il en existe une aussi bonne.
+  function composerEquipes(joueurs, taille, options) {
+    options = options || {};
+    var alea = options.alea || Math.random;
+    var nbEq = Math.floor(joueurs.length / taille), reste = joueurs.length % taille;
+    if (taille < 2 || nbEq < 2) return null;
+    var voulus = (options.remplacants || []).filter(function (id) { return joueurs.some(function (j) { return j.id === id; }); });
+    var banc = voulus.length === reste ? voulus : joueurs.slice(joueurs.length - reste).map(function (j) { return j.id; });
+    joueurs = joueurs.filter(function (j) { return banc.indexOf(j.id) < 0; });
+    var n = joueurs.length, places = n;
+    var val = joueurs.map(function (j) { return valeurForce(j.force); });
+    var fort = joueurs.map(function (j) { return j.force === 'F' ? 1 : 0; });
+    var nov = joueurs.map(function (j) { return j.force === 'N' ? 1 : 0; });
+
+    function cout(perm) {
+      var s = [], f = [], nv = [], e, p, totF = 0, totN = 0;
+      for (e = 0; e < nbEq; e++) { s.push(0); f.push(0); nv.push(0); }
+      for (p = 0; p < places; p++) {
+        e = Math.floor(p / taille);
+        s[e] += val[perm[p]]; f[e] += fort[perm[p]]; nv[e] += nov[perm[p]];
+        totF += fort[perm[p]]; totN += nov[perm[p]];
+      }
+      var capF = Math.ceil(totF / nbEq), capN = Math.ceil(totN / nbEq);
+      var max = -Infinity, min = Infinity, somme = 0, carres = 0, concF = 0, concN = 0;
+      for (e = 0; e < nbEq; e++) {
+        max = Math.max(max, s[e]); min = Math.min(min, s[e]);
+        somme += s[e]; carres += s[e] * s[e];
+        concF += Math.max(0, f[e] - capF); concN += Math.max(0, nv[e] - capN);
+      }
+      var variance = carres / nbEq - Math.pow(somme / nbEq, 2);
+      return concF * 1e6 + (max - min) * 1e4 + concN * 100 + variance;
+    }
+    function equipeDe(p) { return Math.floor(p / taille); }
+
+    var departs = n <= 24 ? 60 : n <= 64 ? 12 : 3;
+    var meilleur = Infinity, sols = {};
+    for (var d = 0; d < departs; d++) {
+      var perm = [], i, k, x;
+      for (i = 0; i < n; i++) perm.push(i);
+      for (i = n - 1; i > 0; i--) { k = Math.floor(alea() * (i + 1)); x = perm[i]; perm[i] = perm[k]; perm[k] = x; }
+      var c = cout(perm), mieux = true;
+      while (mieux) {
+        mieux = false;
+        for (i = 0; i < n; i++) {
+          for (k = i + 1; k < n; k++) {
+            if (equipeDe(i) === equipeDe(k)) continue;   // même équipe : rien ne change
+            x = perm[i]; perm[i] = perm[k]; perm[k] = x;
+            var c2 = cout(perm);
+            if (c2 < c - 1e-9) { c = c2; mieux = true; }
+            else { perm[k] = perm[i]; perm[i] = x; }
+          }
+        }
+      }
+      if (c > meilleur + 1e-9) continue;
+      if (c < meilleur - 1e-9) { meilleur = c; sols = {}; }
+      var eqs = [];
+      for (var e = 0; e < nbEq; e++) eqs.push(perm.slice(e * taille, (e + 1) * taille).map(function (q) { return joueurs[q].id; }));
+      sols[signatureEquipes(eqs)] = { eqs: eqs };
+    }
+    var cles = Object.keys(sols);
+    var autres = cles.filter(function (s) { return s !== options.eviter; });
+    if (!autres.length) autres = cles;
+    var choix = sols[autres[Math.floor(alea() * autres.length)]];
+
+    // Présentation : membres du plus fort au plus faible, équipes de la plus forte
+    // à la plus faible — les premières têtes de série passent le 1ᵉʳ tour s'il y a
+    // des places vides, comme en duel ce sont les mieux armées.
+    var info = {};
+    joueurs.forEach(function (j, q) { info[j.id] = { v: val[q], i: q }; });
+    var equipes = choix.eqs.map(function (eq) {
+      var m = eq.slice().sort(function (a, b) { return (info[b].v - info[a].v) || (info[a].i - info[b].i); });
+      return { membres: m, force: m.reduce(function (s, id) { return s + info[id].v; }, 0), tri: alea() };
+    }).sort(function (a, b) { return (b.force - a.force) || (a.tri - b.tri); });
+    var forces = equipes.map(function (eq) { return eq.force; });
+    return {
+      equipes: equipes.map(function (eq) { return { membres: eq.membres, force: eq.force }; }),
+      remplacants: banc,
+      ecart: Math.max.apply(null, forces) - Math.min.apply(null, forces),
+      alternatives: cles.length
+    };
+  }
+
   return {
+    TAILLES_EQUIPE: TAILLES_EQUIPE, tailleEquipe: tailleEquipe, estEquipes: estEquipes, participants: participants,
+    FORCES: FORCES, FORCE_INCONNUE: FORCE_INCONNUE, valeurForce: valeurForce, forceProposee: forceProposee,
+    nomEquipe: nomEquipe, signatureEquipes: signatureEquipes, composerEquipes: composerEquipes,
     ordreParResultats: ordreParResultats, nbExemptes: nbExemptes,
     FORMATS: FORMATS, NIVEAUX: NIVEAUX,
     ordreTetes: ordreTetes, structure: structure, resoudre: resoudre,

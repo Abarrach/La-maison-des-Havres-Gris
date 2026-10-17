@@ -53,11 +53,14 @@ epice/data/organizers.json
 epice/data/sop_content.json
 # Journal runtime du bot Sorties
 epice/data/discord_sortie.log
+epice/data/paris_discord.log*
 # Sorties Discord non-épice (Labo/Farm/Landsraad) — runtime, recréé par discord_sortie.php
 epice/data/discord_sorties.json
 # Tournois PvP (arbres, scores, podiums) — runtime, recréé par tournois-api.php
 epice/data/tournois.json
 epice/data/tournois_membres_cache.json
+# Paris sur les tournois (vrais Solaris : le carnet du banquier) — runtime, créé par tournois-api.php
+epice/data/paris.json
 
 # Meshes du jeu extraits via FModel (lourd ~357Mo + assets Funcom) — déploiement WinSCP séparé
 models/

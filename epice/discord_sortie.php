@@ -255,7 +255,7 @@ const SORTIE_TYPES = [
     //  RSVP simple : les présents deviennent les joueurs du tournoi, importés par
     //  l'organisateur sur epice/tournois.html (arbre, scores, podium, lots).
     //  'tournoi' = niveau, relu par tournois-api.php (TYPE_NIVEAU) et par le bouton
-    //  « Arbre du tournoi » de l'encart.
+    //  « Suivre le tournoi » de l'encart (« … et parier » si le tournoi a ses paris ouverts).
     //  'image' = bannière fournie AVEC le code (epice/img/), commune aux trois niveaux :
     //  rien à déclarer dans la config, ni en /v2 ni en prod (cf. build_sortie_message).
     //  Le niveau `expert` s'AFFICHE « Vétérans » (moins intimidant, demande de
@@ -1737,6 +1737,20 @@ function discord_delete_message_api($channelId, $messageId) {
 // ============================================================
 //  RENDU DE L'ENCART (embed + composants)
 // ============================================================
+// Le tournoi monté sur le site depuis cette sortie a-t-il ses paris ouverts ?
+// (option de l'organisateur, désactivée par défaut). Lecture seule de
+// epice/data/tournois.json : pas de tournoi encore monté = pas de paris annoncés.
+function sortie_tournoi_paris(string $sid): bool {
+    if ($sid === '') return false;
+    $f = __DIR__ . '/data/tournois.json';
+    if (!file_exists($f)) return false;
+    $d = json_decode((string)file_get_contents($f), true);
+    foreach ((is_array($d) ? ($d['tournois'] ?? []) : []) as $t) {
+        if (($t['sortie_id'] ?? '') === $sid) return !empty($t['paris']);
+    }
+    return false;
+}
+
 function build_sortie_message($sortie) {
     $desc = '';
     if (trim($sortie['description'] ?? '') !== '') $desc .= $sortie['description'] . "\n\n";
@@ -1754,9 +1768,12 @@ function build_sortie_message($sortie) {
     $nb = 0;
     foreach ($signups as $su) { if ($st($su) === 'present') $nb++; }
     $desc .= "👥 **{$nb}** inscrit" . ($nb > 1 ? 's' : '');
+    $parisOuverts = false;
     if (!empty(sortie_type($sortie['type'] ?? 'epice')['tournoi'])) {
+        $parisOuverts = sortie_tournoi_paris((string)($sortie['id'] ?? ''));
         $desc .= "
-🏆 Les présents deviennent les combattants : arbre, scores et lots sur le site (bouton ci-dessous).";
+🏆 Les présents deviennent les combattants : arbre, scores et lots sur le site (bouton ci-dessous)."
+            . ($parisOuverts ? "\n🎲 Toute la guilde peut y parier des Solaris : sur le vainqueur avant le lancement, puis sur chaque combat." : '');
     }
     if (($sortie['type'] ?? 'epice') === 'epice') {
         $desc .= "\n🏗️ **Base avancée (si prévue)** : 1 constructeur pilote de buggy + 1 pilote de buggy *(buggys roquettes à fournir)*. Sous-fief disponible requis pour le constructeur.";
@@ -1974,7 +1991,7 @@ function build_sortie_message($sortie) {
     // ou propose à l'organisateur de le créer s'il n'existe pas encore.
     if (!empty($t['tournoi'])) {
         $base = trim((string)($CFG['site_url'] ?? '')) ?: 'https://havresgris.ddns.net';
-        array_unshift($gestion, ['type' => 2, 'style' => 5, 'label' => 'Arbre du tournoi', 'emoji' => ['name' => '🏆'],
+        array_unshift($gestion, ['type' => 2, 'style' => 5, 'label' => $parisOuverts ? 'Suivre le tournoi et parier' : 'Suivre le tournoi', 'emoji' => ['name' => '🏆'],
                                  'url' => rtrim($base, '/') . '/epice/tournois.html?sortie=' . rawurlencode($sid)]);
     }
     $components[] = ['type' => 1, 'components' => $gestion];

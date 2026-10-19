@@ -183,6 +183,23 @@ else
         + (culturesVues.Count > 0 ? string.Join(", ", culturesVues.Take(12)) : "aucune"));
 
 // ── Export ────────────────────────────────────────────────────────────────────────
+// ── Recherche (--find) : explorer les paks sans rien écrire ───────────────────────
+// Sans ça, chercher un asset demande d'ouvrir FModel et de fouiller à la main — ce qui est
+// précisément ce qu'on vient de supprimer du reste du pipeline.
+var motif = Arg("find");
+if (motif is not null)
+{
+    var trouves = provider.Files.Keys
+        .Where(k => k.Contains(motif, StringComparison.OrdinalIgnoreCase)
+                 && k.EndsWith(".uasset", StringComparison.OrdinalIgnoreCase))
+        .OrderBy(k => k).ToList();
+    Console.WriteLine($"\n{trouves.Count} asset(s) contenant « {motif} »");
+    var plafond = int.TryParse(Arg("find-limit"), out var fl) ? fl : 60;
+    foreach (var k in trouves.Take(plafond)) Console.WriteLine("  " + k);
+    if (trouves.Count > plafond) Console.WriteLine($"  … (+{trouves.Count - plafond}, --find-limit pour en voir plus)");
+    return 0;
+}
+
 var racineSortie = Path.GetFullPath(sortie!);
 var total = 0; var ecrits = 0; var inchanges = 0; var rates = new List<string>();
 var sec = Drapeau("dry-run");

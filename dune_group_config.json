@@ -188,7 +188,7 @@
   "Floor_Round_Corner_Inverted": {
     "socketSetupName": "Floor_Round_Corner_Inverted",
     "snapRotation": "SnapOne",
-    "cornersShape": "TriangleIsosceles",
+    "cornersShape": "TriangleIsoscelesInverted",
     "ghostCameraAngleOffset": 0
   },
   "Rooftop": {
@@ -541,7 +541,7 @@
   },
   "Arch": {
     "socketSetupName": "Arch",
-    "snapRotation": "SnapOne",
+    "snapRotation": "SnapHalf",
     "cornersShape": "Square",
     "ghostCameraAngleOffset": 180
   },
@@ -550,5 +550,1127 @@
     "snapRotation": "SnapHalf",
     "cornersShape": "Square",
     "ghostCameraAngleOffset": 180
+  },
+  "Passageway_Wide": {
+    "socketSetupName": "Door_Frame_Wide",
+    "snapRotation": "SnapHalf",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 180
+  },
+  "Door": {
+    "socketSetupName": "Door",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Hatch": {
+    "socketSetupName": "Hatch",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Totem": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "RespawnBeacon": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "WindTurbine": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Fabricator": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "PortableFabricator": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Deathstill": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "StorageContainer": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Turret": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Stilltent": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Generator": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "WindTrap": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "WaterCistern": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "InsulatedCistern": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "SpiceRefinery": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "SpiceSilo": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Trapdoor": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Thumper": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "PrudenceDoor": {
+    "socketSetupName": "Door",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "PentashieldSurfaceVertical": {
+    "socketSetupName": "Wall",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "PentashieldSurfaceVerticalPlacementCorner": {
+    "socketSetupName": "Wall_Quarter",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "PentashieldSurfaceHorizontal": {
+    "socketSetupName": "Floor",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "PentashieldSurfaceHorizontalPlacementCorner": {
+    "socketSetupName": "Floor_Quarter",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "SeismicProbe": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "StakingUnit": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "ModdingStation": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "OreRefinery": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "ChemicalRefinery": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "WeaponsFabricator": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "WearablesFabricator": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "VehiclesFabricator": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "SurvivalFabricator": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "ConstructionFabricator": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "DoorTall": {
+    "socketSetupName": "Door_Tall",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "DoorWide": {
+    "socketSetupName": "Door_Wide",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "RepairStation": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "CompactThumper": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "LongDurationThumper": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "CompactSeismicProbe": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "LongRangeSeismicProbe": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "BloodWaterExtractor": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "UniqueThumper": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Recycler": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Stilltent_Unique_01": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "GlowGlobe": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Chair": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Table": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "SmallDeco": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Furniture": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "WallFurniture": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "MediumDeco": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "LargeDeco": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "WallDeco": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "CeilingDeco-Small": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "CeilingDeco-Medium": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Banner": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Carpet": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Totem_Small": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "StakingUnitVertical": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Projectors": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "LightMediumDeco": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Heatsource": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "DoorGarage": {
+    "socketSetupName": "Door_Garage",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "IceRefinery": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "PolarFabricator": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "WaterTower": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "Fireplace": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "SandbikeChassis": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "SandbikeGenerator": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "SandbikeEngine": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "SandbikeLocomotion": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "SandbikeHull": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "SandbikeExtra": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "TreadwheelChassis": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "TreadwheelGenerator": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "TreadwheelEngine": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "TreadwheelLocomotion": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "TreadwheelHull": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "TreadwheelExtra": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "BuggyChassis": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "BuggyGenerator": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "BuggyEngine": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "BuggyLocomotion": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "BuggyHull": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "BuggyExtra": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "TankChassis": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "TankGenerator": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "TankEngine": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "TankLocomotion": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "TankHull": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "TankExtra": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "SandcrawlerChassis": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "SandcrawlerGenerator": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "SandcrawlerEngine": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "SandcrawlerLocomotion": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "SandcrawlerHull": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "SandcrawlerExtra": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "OrnithopterLightChassis": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "OrnithopterLightGenerator": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "OrnithopterLightEngine": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "OrnithopterLightHull": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "OrnithopterLightLocomotion": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "OrnithopterLightExtra": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "OrnithopterMediumChassis": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "OrnithopterMediumGenerator": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "OrnithopterMediumEngine": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "OrnithopterMediumHull": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "OrnithopterMediumLocomotion": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "OrnithopterMediumExtra": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "OrnithopterTransportChassis": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "OrnithopterTransportGenerator": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "OrnithopterTransportEngine": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "OrnithopterTransportHull": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "OrnithopterTransportLocomotion": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "OrnithopterTransportExtra": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "SandbikeChoamChassis": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "BuggyChoamChassis": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "BuggySmugglerChassis": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "LightOrnithopterAtreidesChassis": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "LightOrnithopterSmugglerChassis": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "LightOrnithopterChoamChassis": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "MediumOrnithopterChoamChassis": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "TankChoamChassis": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "SandcrawlerChoamChassis": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "TransportOrnithopterChoamChassis": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "SandbikeChoamPSU": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "SandbikeChoamEngine": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "SandbikeChoamBody": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "SandbikeChoamLocomotion": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "SandbikeChoamUtility": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "BuggyChoamPSU": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "BuggyChoamEngine": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "BuggyChoamBody": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "BuggyChoamCockpit": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "BuggyChoamLocomotion": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "BuggyChoamUtility": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "BuggySmugglerPSU": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "BuggySmugglerEngine": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "BuggySmugglerBody": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "BuggySmugglerCockpit": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "BuggySmugglerLocomotion": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "BuggySmugglerUtility": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "LightOrnithopterAtreidesPSU": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "LightOrnithopterAtreidestEngine": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "LightOrnithopterAtreidesBody": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "LightOrnithopterAtreidesCockpit": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "LightOrnithopterAtreidesLocomotion": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "LightOrnithopterAtreidesUtility": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "LightOrnithopterChoamPSU": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "LightOrnithopterChoamEngine": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "LightOrnithopterChoamBody": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "LightOrnithopterChoamCockpit": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "LightOrnithopterChoamLocomotion": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "LightOrnithopterChoamUtility": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "LightOrnithopterSmugglerPSU": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "LightOrnithopterSmugglerEngine": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "LightOrnithopterSmugglerBody": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "LightOrnithopterSmugglerCockpit": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "LightOrnithopterSmugglerLocomotion": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "LightOrnithopterSmugglerUtility": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "MediumOrnithopterChoamPSU": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "MediumOrnithopterChoamEngine": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "MediumOrnithopterChoamBody": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "MediumOrnithopterChoamCockpit": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "MediumOrnithopterChoamLocomotion": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "MediumOrnithoperChoamUtility": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "TankChoamPSU": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "TankChoamEngine": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "TankChoamBody": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "TankChoamCockpit": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "TankChoamLocomotion": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "TankChoamUtility": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "SandcrawlerChoamPSU": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "SandcrawlerChoamEngine": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "SandcrawlerChoamBody": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "SandcrawlerChoamCockpit": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "SandcrawlerChoamLocomotion": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "SandcrawlerChoamUtility": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "TransportOrnithopterChoamPSU": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "TransportOrnithopterChoamEngine": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "TransportOrnithopterChoamBody": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "TransportOrnithopterChoamCockpit": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "TransportOrnithopterChoamLocomotion": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "TransportOrnithopterChoamUtility": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
+  },
+  "ContainerVehicle": {
+    "socketSetupName": "None",
+    "snapRotation": "SnapOne",
+    "cornersShape": "Square",
+    "ghostCameraAngleOffset": 0
   }
 }

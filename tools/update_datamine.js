@@ -12,12 +12,16 @@
  *   1. LE JEU      Steam met à jour des .pak. C'est le SEUL signal fiable qu'un
  *                  patch est sorti (le jeu n'écrit aucun fichier de version ;
  *                  l'identifiant de build vient du manifeste Steam).
- *   2. L'EXPORT    FModel extrait les DataTables en JSON. Étape MANUELLE : FModel
- *                  n'a pas de ligne de commande, et les paks sont chiffrés (clé AES
- *                  stockée dans les réglages FModel, susceptible de changer à chaque
- *                  patch). Cet outil ne peut donc pas exporter à ta place — mais il
- *                  dit exactement QUELS dossiers ré-exporter, et il te le dit tout
- *                  seul, sans que tu aies à surveiller les patchs.
+ *   2. L'EXPORT    FModel extrait les DataTables en JSON. Étape manuelle AUJOURD'HUI
+ *                  (FModel n'a pas de ligne de commande), donc cet outil ne clique
+ *                  pas à ta place : il dit exactement QUELS dossiers ré-exporter, et
+ *                  il le dit tout seul, sans que tu aies à surveiller les patchs.
+ *                  ⚠ Manuel ≠ inévitable : FModel n'est qu'une interface au-dessus de
+ *                  CUE4Parse, qui est une bibliothèque. J:/Download/dune_extract/
+ *                  CostExtract est un programme .NET déjà écrit qui monte les paks et
+ *                  lit les DataTables — revérifié le 2026-10-19 sur le build repackagé
+ *                  en IoStore : il monte toujours. Le généraliser rendrait cette étape
+ *                  scriptable ; seuls le .usmap et la clé AES resteraient hors code.
  *   3. LES SORTIES Les scripts tools/build_*.js transforment l'export en .json servis
  *                  par le site. C'est ce que cet outil exécute, dans l'ordre des
  *                  dépendances, avec un diff sémantique (quoi a été ajouté / retiré /

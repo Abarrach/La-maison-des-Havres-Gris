@@ -782,10 +782,19 @@ d'une date de fichier réelle.
 | **L'export** | **toi, dans FModel** | Compare la date de chaque DataTable exportée à celle du pak dont elle vient, et liste les chemins exacts à ré-exporter |
 | **Les sorties** | `tools/build_*.js` | Les lance dans l'ordre des dépendances, puis affiche un **diff sémantique** (quoi a été ajouté / retiré / modifié), pas un simple « le fichier a changé » |
 
-L'export FModel reste **manuel** et le restera : FModel n'a pas de ligne de commande, et les paks
-sont chiffrés (clé AES à rafraîchir dans FModel après certains patchs, mappings `.usmap` idem).
-L'outil ne peut donc pas exporter à ta place — mais il te dit **quand** et **quoi**, ce qui est
-l'essentiel de la charge mentale.
+L'export passe aujourd'hui par **FModel, à la main** : il n'a pas de ligne de commande, donc
+l'orchestrateur ne peut pas cliquer à ta place — il te dit **quand** et **quoi**, ce qui est
+déjà l'essentiel de la charge mentale.
+
+⚠ **Mais « manuel » n'est pas une fatalité** (vérifié le 2026-10-19) : FModel n'est qu'une
+interface au-dessus de **CUE4Parse**, qui est une bibliothèque. `J:\Download\dune_extract\CostExtract`
+est un programme .NET déjà écrit qui monte les paks du jeu (clé AES + profil `GAME_DuneAwakening`),
+charge le `.usmap` et le `mapstructtypes`, lit la localisation FR et sort des DataTables en JSON.
+Relancé sur le build du 19/10, après le repackaging en IoStore chunké, il **monte toujours**
+(269 100 fichiers, 16 547 types) : ni la clé AES ni le `.usmap` de juin n'étaient périmés.
+Généraliser ce programme rendrait l'étape d'export scriptable de bout en bout. Les deux seules
+pièces qui resteraient hors code : le `.usmap` (dump à refaire quand les structures changent) et
+la clé AES (quand Funcom la change).
 
 ### En pratique
 

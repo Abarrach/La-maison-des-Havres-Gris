@@ -779,22 +779,33 @@ d'une date de fichier réelle.
 | Maillon | Qui le fait | Ce que l'outil en sait |
 |---|---|---|
 | **Le jeu** | Steam télécharge des `.pak` | Lit le manifeste Steam (`buildid`, `LastUpdated`) et la date de **chaque pak** — seul signal fiable qu'un patch est sorti, le jeu n'écrivant aucun fichier de version |
-| **L'export** | **toi, dans FModel** | Compare la date de chaque DataTable exportée à celle du pak dont elle vient, et liste les chemins exacts à ré-exporter |
+| **L'export** | `tools/extract` (.NET/CUE4Parse) | Monte les paks, applique le `.usmap` et la table des types, charge le français, et écrit **aux mêmes chemins que FModel**. FModel n'est plus nécessaire |
 | **Les sorties** | `tools/build_*.js` | Les lance dans l'ordre des dépendances, puis affiche un **diff sémantique** (quoi a été ajouté / retiré / modifié), pas un simple « le fichier a changé » |
 
-L'export passe aujourd'hui par **FModel, à la main** : il n'a pas de ligne de commande, donc
-l'orchestrateur ne peut pas cliquer à ta place — il te dit **quand** et **quoi**, ce qui est
-déjà l'essentiel de la charge mentale.
+**L'export ne passe plus par FModel** (depuis le 2026-10-20). FModel n'a pas de ligne de
+commande, mais il n'est qu'une interface au-dessus de **CUE4Parse**, qui est une
+bibliothèque : `tools/extract` fait le même travail en une commande.
 
-⚠ **Mais « manuel » n'est pas une fatalité** (vérifié le 2026-10-19) : FModel n'est qu'une
-interface au-dessus de **CUE4Parse**, qui est une bibliothèque. `J:\Download\dune_extract\CostExtract`
-est un programme .NET déjà écrit qui monte les paks du jeu (clé AES + profil `GAME_DuneAwakening`),
-charge le `.usmap` et le `mapstructtypes`, lit la localisation FR et sort des DataTables en JSON.
-Relancé sur le build du 19/10, après le repackaging en IoStore chunké, il **monte toujours**
-(269 100 fichiers, 16 547 types) : ni la clé AES ni le `.usmap` de juin n'étaient périmés.
-Généraliser ce programme rendrait l'étape d'export scriptable de bout en bout. Les deux seules
-pièces qui resteraient hors code : le `.usmap` (dump à refaire quand les structures changent) et
-la clé AES (quand Funcom la change).
+Le choix structurant est d'écrire **aux chemins exacts de FModel**, dans la même forme
+(un tableau d'objets exportés). Du coup aucun `tools/build_*.js` ne change, et
+`update_datamine.js` voit simplement des dates d'export fraîches sans rien savoir de
+l'extracteur. On a remplacé la main-d'œuvre, pas le format.
+
+```bash
+dotnet build tools/extract -c Release      # une fois
+```
+
+Équivalence vérifiée contre l'export FModel de juin, sur le build du 19/10 : même forme
+(`Type=DataTable`, mêmes champs), 1 442 recettes des deux côtés, `FText` sérialisé à
+l'octet près (`LocalizedString` comprise), 2 892 lignes traduites en français, et les
+`TMap` remplies. Les écarts sont de vraies nouveautés du patch : **563 armures contre
+560**, **4 227 objets contre 4 154**.
+
+FModel reste utile pour explorer à la main et pour exporter les `.glb` du planner.
+
+⚠ **CUE4Parse vit hors du dépôt** (grosse bibliothèque tierce, sources complètes dans
+`J:\Download\dune_extract\CUE4Parse`). Chemin surchargeable :
+`dotnet build tools/extract -c Release -p:Cue4ParsePath=<...>\CUE4Parse.csproj`.
 
 ### En pratique
 
@@ -829,10 +840,12 @@ schtasks /create /tn "DuneMap - verif datamine" /sc weekly /d WED /st 10:00 /tr 
 ⚠ Le `/nopause` est obligatoire dans une tâche planifiée : sans lui, le script attend une touche
 que personne ne tapera. (Donner le chemin complet du `.cmd` dans `/tr`.)
 
-### Les 13 étapes couvertes
+### Les 15 étapes couvertes
 
 | id | Sortie | Source |
 |---|---|---|
+| `export` | les DataTables, dans l'arborescence d'export | **les paks du jeu** — remplace les clics dans FModel |
+| `mapstructtypes` | `tools/mapstructtypes.json` | le `.usmap` — sans elle, toutes les `TMap` sortent vides |
 | `snapshot` | `stuff_data.json`, `stuff_skills.json`, `stuff_names.json` | gaming.tools (réseau, opt-in `--with-snapshot`) |
 | `recipes` | `stuff_recipes.json` | `Systems/Crafting/DT_ItemsCraftingRecipes` |
 | `descriptions` | `desc` dans `stuff_data.json` | `Systems/Items/CDT_BaseItems` |
@@ -849,6 +862,47 @@ que personne ne tapera. (Donner le chemin complet du `.cmd` dans `/tr`.)
 
 `tools/datamine_state.json` (versionné) garde la trace de **quel build du jeu** a produit les
 données du site, et de la date de chaque étape. Sans lui, plus rien ne le dit.
+
+### Le `.usmap` et la table des types — la seule dépendance qui restait
+
+Un `.usmap` décrit les propriétés du jeu, mais pour une `TMap` il ne dit **pas** quel type
+de struct vit dans la clé et dans la valeur. Sans cette information, FModel comme
+CUE4Parse sortent les maps **vides** — c'est ce qui nous avait fait conclure à tort que
+les recettes de craft étaient « server-side ». Elles sont dans le client ; il manquait la
+table des types.
+
+Cette table venait d'Adain (dune.gaming.tools) en juin 2026. `tools/build_mapstructtypes.js`
+la **reconstruit depuis le `.usmap`**, en Node pur (zstd est intégré depuis Node 22.15) :
+
+```bash
+node tools/build_mapstructtypes.js [fichier.usmap]   # sans argument : le plus récent trouvé
+```
+
+Validation : relancé sur le dump de septembre, il produit **581 entrées strictement
+identiques** au fichier obtenu ce jour-là par une autre voie — contre 541 chez Adain.
+
+Pièges rencontrés, tous coûteux :
+
+- **Format version 4 = `ExplicitEnumValues`** : chaque entrée d'enum passe de 4 à
+  12 octets (valeur `u64` + index de nom). Supposer l'ancien format ne plante pas tout de
+  suite — le décodage déraille des milliers d'octets plus loin, dans la section des
+  structs, c'est-à-dire **loin de la vraie cause**.
+- **Régénérer depuis un `.usmap` plus ANCIEN ne plante pas non plus** : ça annule en
+  silence les corrections du dump récent (3 types redeviennent faux). Les outils prennent
+  donc le `.usmap` le plus récent du dossier, jamais « celui que FModel a en
+  configuration ».
+- **FModel reste souvent réglé sur un ancien `.usmap`** alors qu'un dump plus récent dort
+  à côté : ses exports sortent alors incomplets sans aucun message. `--check` le signale
+  désormais en tête d'écran.
+- **13 noms ambigus** : la table est indexée par le seul nom de propriété, qui peut porter
+  des types différents selon la classe. Limite du format, pas du script (le fichier
+  d'Adain a le même défaut) ; on garde le choix précédent pour rester stable.
+
+**Et le `.usmap` lui-même ?** Il se dumpe depuis le jeu en cours d'exécution (Dumper-7),
+ce qui est la seule étape de toute la chaîne qui touche au processus du jeu, avec le
+risque d'anti-triche que ça implique. Ce n'est **pas** une étape de routine : celui de
+juin lisait encore correctement le build d'octobre. On ne le refait que lorsqu'une
+DataTable sort vide ou fausse.
 
 ### Pièges de ce pipeline
 

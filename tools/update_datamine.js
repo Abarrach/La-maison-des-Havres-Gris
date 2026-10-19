@@ -163,9 +163,24 @@ function lireEtatJeu(reglages) {
   if (!exists(paksDir)) return { ok: false, paksDir };
   const paks = {};
   for (const f of fs.readdirSync(paksDir)) {
-    if (!f.toLowerCase().endsWith('.pak')) continue;
+    // IoStore : le contenu réel est dans les .ucas/.utoc, le .pak à côté peut être un
+    // résidu de 379 octets jamais réécrit. Prendre les trois extensions, sinon on date
+    // le patch sur un fichier mort.
+    if (!/\.(pak|ucas|utoc)$/i.test(f)) continue;
     try { paks[f] = fs.statSync(path.join(paksDir, f)).mtimeMs; } catch (e) { /* ignoré */ }
   }
+  /**
+   * Depuis le repackaging de l'automne 2026, le jeu n'expose plus des paks NOMMÉS par
+   * domaine (Systems.pak, Maps_Biomes_Graben.pak…) mais des chunks numérotés
+   * (pakchunk170-Windows.ucas). Le numéro de chunk ne dit rien du contenu : savoir quel
+   * chunk porte Systems/ demanderait de lire le .utoc.
+   *
+   * On perd donc la granularité « ce patch ne touche que l'art ». On ne perd PAS le
+   * signal : à défaut de savoir quoi, on prend la date du conteneur le plus récent et on
+   * considère que tout peut avoir bougé. Prudent plutôt que faussement rassurant.
+   */
+  const chunke = Object.keys(paks).length > 0
+    && Object.keys(paks).every(f => /^pakchunk\d+|^global\./i.test(f));
   // .../common/<Jeu>/DuneSandbox/Content/Paks → on remonte jusqu'à steamapps
   let steamapps = null, installdir = null;
   let cur = paksDir;
@@ -190,12 +205,18 @@ function lireEtatJeu(reglages) {
     }
   }
   const plusRecent = Object.entries(paks).sort((a, b) => b[1] - a[1])[0] || null;
-  return { ok: true, paksDir, paks, buildId, lastUpdated, pakLePlusRecent: plusRecent };
+  return { ok: true, paksDir, paks, chunke, buildId, lastUpdated, pakLePlusRecent: plusRecent };
 }
 
 /** Date du pak le plus récent parmi ceux qui alimentent une étape (motifs avec * autorisés). */
 function pakMtime(jeu, motifs) {
   if (!jeu.ok || !motifs || !motifs.length) return null;
+  // Paks chunkés : aucun nom ne peut matcher, on retombe sur le conteneur le plus récent.
+  if (jeu.chunke) {
+    return jeu.pakLePlusRecent
+      ? { ms: jeu.pakLePlusRecent[1], pak: jeu.pakLePlusRecent[0], approx: true }
+      : null;
+  }
   let best = null, nom = null;
   for (const [f, m] of Object.entries(jeu.paks)) {
     const match = motifs.some(mo => mo.includes('*')
@@ -550,7 +571,12 @@ function afficherCheck(ctx, analyses) {
   P('');
   if (jeu.ok) {
     P(`Jeu installé   : build Steam ${jeu.buildId || '?'} — dernière mise à jour ${iso(jeu.lastUpdated)}`);
-    if (jeu.pakLePlusRecent) P(`                 pak le plus récent : ${jeu.pakLePlusRecent[0]} (${iso(jeu.pakLePlusRecent[1])})`);
+    if (jeu.pakLePlusRecent) P(`                 conteneur le plus récent : ${jeu.pakLePlusRecent[0]} (${iso(jeu.pakLePlusRecent[1])})`);
+    if (jeu.chunke) {
+      P('                 ⚠ paks CHUNKÉS (pakchunkNNN-Windows, IoStore) : leur numéro ne dit');
+      P('                   pas ce qu\'ils contiennent. Impossible de savoir quel domaine a');
+      P('                   bougé → tout ce qui précède ce patch est déclaré à ré-exporter.');
+    }
   } else {
     P(`Jeu installé   : INTROUVABLE (${jeu.paksDir || 'chemin inconnu'}) — détection de patch impossible,`);
     P('                 seules les dates d\'export FModel serviront de repère.');

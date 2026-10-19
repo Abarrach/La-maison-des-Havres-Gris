@@ -843,6 +843,15 @@ données du site, et de la date de chaque étape. Sans lui, plus rien ne le dit.
 
 ### Pièges de ce pipeline
 
+- **Paks chunkés (automne 2026)** : le jeu est passé de paks nommés par domaine
+  (`Systems.pak`, `Maps_Biomes_Graben.pak`) à des chunks numérotés
+  (`pakchunk170-Windows.ucas`, IoStore). Le numéro ne dit rien du contenu — savoir quel
+  chunk porte `Systems/` demanderait de lire le `.utoc`. L'outil retombe donc sur la date du
+  conteneur le plus récent et déclare **tout** l'export antérieur au patch à ré-exporter :
+  on perd le « ce patch ne touche que l'art », on ne perd pas l'alerte. Le `buildid` Steam,
+  lui, reste un signal exact. ⚠ Les `.pak` résiduels peuvent faire 379 octets et ne plus être
+  réécrits : dater un patch dessus donnerait une fausse fraîcheur, d'où la prise en compte
+  des `.ucas`/`.utoc`.
 - **La mtime d'un dossier ne bouge pas** quand on ré-exporte par-dessus des fichiers existants
   (elle ne change qu'à l'ajout/suppression d'une entrée) : l'outil descend de deux niveaux, avec
   un budget d'entrées — `Maps/Biomes` en contient des dizaines de milliers.

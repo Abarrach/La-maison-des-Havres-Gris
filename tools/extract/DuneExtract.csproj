@@ -15,10 +15,13 @@
         dotnet build tools/extract -p:Cue4ParsePath=D:\chemin\CUE4Parse\CUE4Parse.csproj
     -->
     <Cue4ParsePath Condition="'$(Cue4ParsePath)' == ''">J:\Download\dune_extract\CUE4Parse\CUE4Parse\CUE4Parse.csproj</Cue4ParsePath>
+    <!-- Même clone : la conversion (glTF) vit dans un projet voisin. -->
+    <Cue4ConversionPath Condition="'$(Cue4ConversionPath)' == ''">J:\Download\dune_extract\CUE4Parse\CUE4Parse-Conversion\CUE4Parse-Conversion.csproj</Cue4ConversionPath>
   </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="$(Cue4ParsePath)" />
+    <ProjectReference Include="$(Cue4ConversionPath)" />
     <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
   </ItemGroup>
 

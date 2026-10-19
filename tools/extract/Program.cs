@@ -22,6 +22,9 @@
 //               [--paks <dossier>] [--usmap <f.usmap>] [--mapstructtypes <f.json>]
 //               [--out <racine d'export>] [--aes 0x…]
 using CUE4Parse.Encryption.Aes;
+using CUE4Parse.UE4.Assets.Exports.StaticMesh;
+using CUE4Parse_Conversion;
+using CUE4Parse_Conversion.Meshes;
 using CUE4Parse.FileProvider;
 using CUE4Parse.MappingsProvider;
 using CUE4Parse.UE4.Objects.Core.Misc;
@@ -222,6 +225,68 @@ foreach (var cible in cibles)
     }
     Console.WriteLine($"  {cible.Id,-18} {n,5} asset(s) lus, {nEcrits,5} écrit(s)"
         + (cible.Note is null ? "" : $"   — {cible.Note}"));
+}
+
+// ── Meshes glTF (optionnel, --meshes) ─────────────────────────────────────────────
+// Les .glb du planner venaient d'un export glTF fait à la main dans FModel, puis d'une
+// recopie par tools/flatten_glb.js. CUE4Parse sait les produire : on part du catalogue
+// (base_pieces_v3.json, champ mesh_path) et on écrit models/<nom>.glb — exactement le nom
+// que planner_pieces.json référence. Une pièce sans mesh exporté reste un volume gris.
+if (Drapeau("meshes"))
+{
+    var confMeshes = conf["meshes"] as JObject;
+    var catalogue = Arg("catalogue") ?? Resoudre(confMeshes?["catalogue"]?.ToString());
+    var dossierModels = Arg("models") ?? Resoudre(confMeshes?["out"]?.ToString());
+    var filtre = Arg("mesh-filter");
+    var refaire = Drapeau("mesh-force");
+
+    if (catalogue is null || !File.Exists(catalogue) || dossierModels is null)
+        Console.WriteLine("\nmeshes : ⚠ catalogue ou dossier de sortie non configuré — étape ignorée");
+    else
+    {
+        var pieces = (JObject.Parse(File.ReadAllText(catalogue))["pieces"] as JArray) ?? new JArray();
+        // mesh_path → nom de fichier attendu : dernier segment, sans le suffixe « .Objet ».
+        var voulus = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var piece in pieces)
+        {
+            var mp = piece["mesh_path"]?.ToString();
+            if (string.IsNullOrWhiteSpace(mp)) continue;
+            if (filtre is not null && !mp.Contains(filtre, StringComparison.OrdinalIgnoreCase)) continue;
+            var sansObjet = mp.Contains('.') ? mp[..mp.LastIndexOf('.')] : mp;
+            voulus[sansObjet] = sansObjet[(sansObjet.LastIndexOf('/') + 1)..];
+        }
+
+        Directory.CreateDirectory(dossierModels);
+        var tmp = Path.Combine(Path.GetTempPath(), "duneextract_glb");
+        int exportes = 0, presents = 0, echoues = 0;
+        Console.WriteLine($"\nmeshes : {voulus.Count} mesh(es) référencé(s) par le catalogue → {dossierModels}");
+
+        foreach (var (chemin, nom) in voulus)
+        {
+            var dest = Path.Combine(dossierModels, nom + ".glb");
+            if (!refaire && File.Exists(dest)) { presents++; continue; }
+            try
+            {
+                // Le catalogue donne un chemin moteur (/Game/…) ; le provider indexe à partir
+                // du nom de projet. On traduit, sinon rien ne se charge.
+                var cle = chemin.StartsWith("/Game/") ? "DuneSandbox/Content" + chemin[5..] : chemin;
+                if (!provider.TryLoadPackageObject(cle, out var obj) || obj is not UStaticMesh maillage)
+                { echoues++; rates.Add($"mesh {nom} — asset introuvable ou pas un StaticMesh"); continue; }
+
+                var options = new ExporterOptions { MeshFormat = EMeshFormat.Gltf2, ExportMaterials = false };
+                var exporteur = new MeshExporter(maillage, options);
+                if (!exporteur.TryWriteToDir(new DirectoryInfo(tmp), out _, out var ecrit))
+                { echoues++; rates.Add($"mesh {nom} — export refusé"); continue; }
+
+                // L'exporteur range par dossier d'origine : on ramène à plat sous le nom attendu.
+                File.Copy(ecrit, dest, true);
+                exportes++;
+            }
+            catch (Exception e) { echoues++; rates.Add($"mesh {nom} — {e.Message}"); }
+        }
+        Console.WriteLine($"         {exportes} exporté(s) · {presents} déjà présent(s) · {echoues} échec(s)");
+        try { if (Directory.Exists(tmp)) Directory.Delete(tmp, true); } catch { }
+    }
 }
 
 Console.WriteLine($"\n{total} asset(s) traités · {ecrits} écrit(s) · {inchanges} inchangé(s)");

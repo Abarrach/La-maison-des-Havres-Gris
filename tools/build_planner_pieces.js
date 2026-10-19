@@ -153,7 +153,12 @@ const pieces = v3.pieces.map(p => {
     if (out.sockets.length) withSockets++;
   } else {
     out.sockets = [];                            // machines/véhicules/blockout → fallback
-    out.mesh = null;
+    // Pas d'entrée socket, mais le catalogue connaît quand même le mesh : `mesh_path` finit
+    // par le nom d'asset, qui EST le nom du .glb. Sans cette reprise, un set ajouté par un
+    // patch (Sardaukar, 2026-10-19) resterait en volumes gris alors que ses meshes sont
+    // exportables. Un .glb absent retombe de toute façon sur la boîte (planner_mesh.js).
+    out.mesh = meshDepuisChemin(p.mesh_path);
+    out.mesh_rel = null;
   }
   // Câblage mesh machines/véhicules (survit aux régénérations).
   if (MV_MESH[p.id]) { out.mesh = MV_MESH[p.id]; mvMeshWired++; }
@@ -170,6 +175,13 @@ const pieces = v3.pieces.map(p => {
 // Pièces posables comme les machines (is_machine réutilise toute la logique de pose/
 // footprint/collision/mesh) + drapeau is_utility (onglet de palette dédié). Footprint
 // dérivé de real_size_m (bbox mesh). Survit aux régénérations (lit planner_utilities.json).
+/** `/Game/.../SM_Truc.SM_Truc` → `SM_Truc` : le nom de fichier .glb attendu par le planner. */
+function meshDepuisChemin(mp) {
+  if (!mp) return null;
+  const sansObjet = mp.includes('.') ? mp.slice(0, mp.lastIndexOf('.')) : mp;
+  return sansObjet.slice(sansObjet.lastIndexOf('/') + 1) || null;
+}
+
 const CELL_M = 5.12, LEVEL_M = 3.84;
 const fpCells = m => Math.max(1, Math.ceil((m || CELL_M) / CELL_M - 0.15));
 const hLevels = m => Math.max(1, Math.ceil((m || LEVEL_M) / LEVEL_M));

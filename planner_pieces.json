@@ -1,6 +1,6 @@
 {
   "version": "planner-1",
-  "generated_at": "2026-10-19T22:39:31.542Z",
+  "generated_at": "2026-10-19T22:48:03.018Z",
   "source": {
     "ui": "base_pieces_v3.json",
     "engine": "dune_pieces_sockets.json"
@@ -13966,7 +13966,8 @@
       "is_pillar": true,
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Column",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Column_Corner",
@@ -14041,7 +14042,8 @@
       "is_pillar": true,
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Column",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Door_Frame",
@@ -14093,7 +14095,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_Wall.SM_Wall",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Wall",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Door_Frame_Tall",
@@ -14144,7 +14147,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_DoorFrame_Tall_closed.SM_DoorFrame_Tall_closed",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_DoorFrame_Tall_closed",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Door_Frame_Wide",
@@ -14195,7 +14199,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_DoorFrame_Wide_closed.SM_DoorFrame_Wide_closed",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_DoorFrame_Wide_closed",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Floor",
@@ -14228,7 +14233,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_Floor.SM_Floor",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Floor",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Floor_Round_Corner",
@@ -14264,7 +14270,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_FloorRound.SM_FloorRound",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_FloorRound",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Floor_Round_Corner_Inverted",
@@ -14300,7 +14307,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_FloorRound_Inverted.SM_FloorRound_Inverted",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_FloorRound_Inverted",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Floor_Wedge",
@@ -14334,7 +14342,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_FloorWedge.SM_FloorWedge",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_FloorWedge",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Foundation",
@@ -14366,7 +14375,8 @@
       "is_foundation": true,
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Foundation",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Foundation_Round_Corner",
@@ -14398,7 +14408,8 @@
       "is_foundation": true,
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_FoundationRoundCorner",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Foundation_Wedge",
@@ -14430,7 +14441,8 @@
       "is_foundation": true,
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_FoundationWedge",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Gate_Big",
@@ -14475,7 +14487,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_Gate_Big.SM_Gate_Big",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Gate_Big",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Hatch",
@@ -14528,7 +14541,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_Hatch.SM_Hatch",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Hatch",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Passageway",
@@ -14576,7 +14590,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_Wall.SM_Wall",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Wall",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Pillar_Bottom",
@@ -14607,7 +14622,8 @@
       "is_pillar": true,
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_PillarBottom",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Pillar_Middle",
@@ -14638,7 +14654,8 @@
       "is_pillar": true,
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_PillarMiddle",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Pillar_Top",
@@ -14669,7 +14686,8 @@
       "is_pillar": true,
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_PillarTop",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Railing",
@@ -14697,7 +14715,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_Railing.SM_Railing",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Railing",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Railing_Gate",
@@ -14725,7 +14744,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_RailingGate.SM_RailingGate",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_RailingGate",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Railing_Inclined",
@@ -14775,7 +14795,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_RailingInclined.SM_RailingInclined",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_RailingInclined",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Railing_Inclined_Half",
@@ -14825,7 +14846,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_RailingInclined_Half.SM_RailingInclined_Half",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_RailingInclined_Half",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Railing_Round_Corner",
@@ -14854,7 +14876,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_RailingRoundCorner.SM_RailingRoundCorner",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_RailingRoundCorner",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Ramp",
@@ -14886,7 +14909,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_Ramp.SM_Ramp",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Ramp",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Ramp_Half",
@@ -14918,7 +14942,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_Ramp_Half.SM_Ramp_Half",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Ramp_Half",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Ramp_Corner",
@@ -14950,7 +14975,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_RampCorner.SM_RampCorner",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_RampCorner",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Ramp_Corner_Half",
@@ -14982,7 +15008,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_RampCorner_Half.SM_RampCorner_Half",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_RampCorner_Half",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Ramp_Corner_Inward",
@@ -15014,7 +15041,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_RampCorner_Inward.SM_RampCorner_Inward",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_RampCorner_Inward",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Ramp_Corner_Half_Inward",
@@ -15046,7 +15074,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_RampCorner_Half_Inward.SM_RampCorner_Half_Inward",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_RampCorner_Half_Inward",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Ramp_Wedge_Bottom",
@@ -15074,7 +15103,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_RoofWedgeBottom.SM_RoofWedgeBottom",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_RoofWedgeBottom",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Ramp_Wedge_Top",
@@ -15102,7 +15132,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_RoofWedgeTop.SM_RoofWedgeTop",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_RoofWedgeTop",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Roof",
@@ -15134,7 +15165,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_Roof.SM_Roof",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Roof",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Roof_Half",
@@ -15166,7 +15198,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_Roof_Half.SM_Roof_Half",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Roof_Half",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Roof_Corner",
@@ -15198,7 +15231,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_RoofCorner.SM_RoofCorner",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_RoofCorner",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Roof_Corner_Half",
@@ -15230,7 +15264,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_RoofCorner_Half.SM_RoofCorner_Half",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_RoofCorner_Half",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Roof_Corner_Inward",
@@ -15262,7 +15297,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_RampCorner_Inward.SM_RampCorner_Inward",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_RampCorner_Inward",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Roof_Corner_Half_Inward",
@@ -15294,7 +15330,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_RampCorner_Half_Inward.SM_RampCorner_Half_Inward",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_RampCorner_Half_Inward",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Roof_Cover_Bottom_Half_Left",
@@ -15346,7 +15383,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_RoofCover_Half_L.SM_RoofCover_Half_L",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_RoofCover_Half_L",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Roof_Cover_Bottom_Half_Right",
@@ -15398,7 +15436,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_RoofCover_Half_R.SM_RoofCover_Half_R",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_RoofCover_Half_R",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Roof_Cover_Bottom_Left",
@@ -15450,7 +15489,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_RoofCover_L.SM_RoofCover_L",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_RoofCover_L",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Roof_Cover_Bottom_Right",
@@ -15502,7 +15542,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_RoofCover_R.SM_RoofCover_R",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_RoofCover_R",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Roof_Cover_Top_Half_Left",
@@ -15554,7 +15595,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_RoofCoverTop_Half_L.SM_RoofCoverTop_Half_L",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_RoofCoverTop_Half_L",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Roof_Cover_Top_Half_Right",
@@ -15606,7 +15648,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_RoofCoverTop_Half_R.SM_RoofCoverTop_Half_R",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_RoofCoverTop_Half_R",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Roof_Cover_Top_Left",
@@ -15658,7 +15701,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_RoofCoverTop_L.SM_RoofCoverTop_L",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_RoofCoverTop_L",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Roof_Cover_Top_Right",
@@ -15710,7 +15754,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_RoofCoverTop_R.SM_RoofCoverTop_R",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_RoofCoverTop_R",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Roof_Round_Corner",
@@ -15738,7 +15783,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_RoofRoundCorner.SM_RoofRoundCorner",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_RoofRoundCorner",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Roof_Round_Corner_Half",
@@ -15766,7 +15812,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_RoofRoundCorner_Half.SM_RoofRoundCorner_Half",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_RoofRoundCorner_Half",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Rooftop",
@@ -15799,7 +15846,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_RoofTop.SM_RoofTop",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_RoofTop",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Roof_Wedge_Bottom",
@@ -15824,7 +15872,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_RoofWedgeBottom.SM_RoofWedgeBottom",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_RoofWedgeBottom",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Roof_Wedge_Top",
@@ -15849,7 +15898,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_RoofWedgeTop.SM_RoofWedgeTop",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_RoofWedgeTop",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Stairs",
@@ -15883,7 +15933,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_Stairs.SM_Stairs",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Stairs",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Stairs_Half",
@@ -15917,7 +15968,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_Stairs_Half.SM_Stairs_Half",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Stairs_Half",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Stairs_Corner",
@@ -15951,7 +16003,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_StairsCorner.SM_StairsCorner",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_StairsCorner",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Stairs_Corner_Half",
@@ -15985,7 +16038,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_StairsCorner_Half.SM_StairsCorner_Half",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_StairsCorner_Half",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Stairs_Corner_Inward",
@@ -16019,7 +16073,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_StairsCorner_Inward.SM_StairsCorner_Inward",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_StairsCorner_Inward",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Stairs_Corner_Half_Inward",
@@ -16053,7 +16108,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_StairsCorner_Half_Inward.SM_StairsCorner_Half_Inward",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_StairsCorner_Half_Inward",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Wall",
@@ -16103,7 +16159,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_Wall.SM_Wall",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Wall",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Wall_Protuding",
@@ -16153,7 +16210,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_Wall_02.SM_Wall_02",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Wall_02",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Wall_Half",
@@ -16203,7 +16261,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_Wall_Half.SM_Wall_Half",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Wall_Half",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Wall_Corner_Tall",
@@ -16253,7 +16312,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_WallCorner_Tall.SM_WallCorner_Tall",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_WallCorner_Tall",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Wall_Inclined_Tall",
@@ -16303,7 +16363,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_WallInclined_Tall.SM_WallInclined_Tall",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_WallInclined_Tall",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Wall_Round_Corner",
@@ -16332,7 +16393,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_WallRoundCorner.SM_WallRoundCorner",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_WallRoundCorner",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Wall_Round_Corner_Half",
@@ -16361,7 +16423,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_WallRoundCorner_Half.SM_WallRoundCorner_Half",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_WallRoundCorner_Half",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Wall_Triangle_Bottom_Half_Left",
@@ -16413,7 +16476,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_WallTriangleBottom_Half_L.SM_WallTriangleBottom_Half_L",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_WallTriangleBottom_Half_L",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Wall_Triangle_Bottom_Half_Right",
@@ -16465,7 +16529,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_WallTriangleBottom_Half_R.SM_WallTriangleBottom_Half_R",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_WallTriangleBottom_Half_R",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Wall_Triangle_Bottom_Left",
@@ -16517,7 +16582,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_WallTriangleBottom_L.SM_WallTriangleBottom_L",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_WallTriangleBottom_L",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Wall_Triangle_Bottom_Right",
@@ -16569,7 +16635,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_WallTriangleBottom_R.SM_WallTriangleBottom_R",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_WallTriangleBottom_R",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Wall_Triangle_Top_Half_Left",
@@ -16621,7 +16688,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_WallTriangleTop_Half_L.SM_WallTriangleTop_Half_L",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_WallTriangleTop_Half_L",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Wall_Triangle_Top_Half_Right",
@@ -16673,7 +16741,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_WallTriangleTop_Half_R.SM_WallTriangleTop_Half_R",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_WallTriangleTop_Half_R",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Wall_Triangle_Top_Left",
@@ -16725,7 +16794,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_WallTriangleTop_L.SM_WallTriangleTop_L",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_WallTriangleTop_L",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Wall_Triangle_Top_Right",
@@ -16777,7 +16847,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_WallTriangleTop_R.SM_WallTriangleTop_R",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_WallTriangleTop_R",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Wall_Triangle_Bottom_Tall_Left",
@@ -16827,7 +16898,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_WallTriangleBottom_Tall_L.SM_WallTriangleBottom_Tall_L",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_WallTriangleBottom_Tall_L",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Wall_Triangle_Bottom_Tall_Right",
@@ -16877,7 +16949,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_WallTriangleBottom_Tall_R.SM_WallTriangleBottom_Tall_R",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_WallTriangleBottom_Tall_R",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Wall_Triangle_Top_Tall_Left",
@@ -16927,7 +17000,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_WallTriangleTop_Tall_L.SM_WallTriangleTop_Tall_L",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_WallTriangleTop_Tall_L",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Wall_Triangle_Top_Tall_Right",
@@ -16977,7 +17051,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_WallTriangleTop_Tall_R.SM_WallTriangleTop_Tall_R",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_WallTriangleTop_Tall_R",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Window",
@@ -17027,7 +17102,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_Wall.SM_Wall",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Wall",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Window_Round_Corner",
@@ -17056,7 +17132,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_WallRoundCorner.SM_WallRoundCorner",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_WallRoundCorner",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Ladder",
@@ -17086,7 +17163,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_Ladder.SM_Ladder",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Ladder",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Ramp_Edge_Wide_Left",
@@ -17111,7 +17189,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_RampEdge_Wide_01_L.SM_RampEdge_Wide_01_L",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_RampEdge_Wide_01_L",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Ramp_Edge_Wide_Right",
@@ -17136,7 +17215,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_RampEdge_Wide_01_R.SM_RampEdge_Wide_01_R",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_RampEdge_Wide_01_R",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Ramp_Wide",
@@ -17161,7 +17241,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_Ramp_Wide.SM_Ramp_Wide",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Ramp_Wide",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Stair_Wide",
@@ -17186,7 +17267,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_Stair_Wide.SM_Stair_Wide",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Stair_Wide",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Wall_Triangle_Top_Wide_Left",
@@ -17237,7 +17319,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_WallTriangleTop_Wide_L.SM_WallTriangleTop_Wide_L",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_WallTriangleTop_Wide_L",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Wall_Triangle_Top_Wide_Right",
@@ -17288,7 +17371,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_WallTriangleTop_Wide_R.SM_WallTriangleTop_Wide_R",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_WallTriangleTop_Wide_R",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Floor_Triangle_Wide_Left",
@@ -17322,7 +17406,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_FloorTriangle_Wide_01_L.SM_FloorTriangle_Wide_01_L",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_FloorTriangle_Wide_01_L",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Floor_Triangle_Wide_Right",
@@ -17356,7 +17441,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_FloorTriangle_Wide_01_R.SM_FloorTriangle_Wide_01_R",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_FloorTriangle_Wide_01_R",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Wall_Inclined_Wide_Left",
@@ -17381,7 +17467,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_WallInclined_Wide_01_L.SM_WallInclined_Wide_01_L",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_WallInclined_Wide_01_L",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Wall_Inclined_Wide_Right",
@@ -17406,7 +17493,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_WallInclined_Wide_01_R.SM_WallInclined_Wide_01_R",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_WallInclined_Wide_01_R",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Roof_Wedge_Bottom_Half",
@@ -17431,7 +17519,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_RoofWedgeBottom_Half.SM_RoofWedgeBottom_Half",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_RoofWedgeBottom_Half",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Roof_Wedge_Top_Half",
@@ -17456,7 +17545,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_RoofWedgeTop_Half.SM_RoofWedgeTop_Half",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_RoofWedgeTop_Half",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Door_Frame_Garage",
@@ -17507,7 +17597,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_GarageDoor.SM_GarageDoor",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_GarageDoor",
+      "mesh_rel": null
     },
     {
       "id": "Blockout_Arch",
@@ -17557,7 +17648,8 @@
       "mesh_path": "/Game/Dune/Environment/PlayerBuilt/Template/Meshes/SM_Arch.SM_Arch",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Arch",
+      "mesh_rel": null
     },
     {
       "id": "Choam_Shelter_Column",
@@ -40849,7 +40941,8 @@
       "is_pillar": true,
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_MTX_Env_PB_Choam_Column",
+      "mesh_rel": null
     },
     {
       "id": "MTX_B1C5_Choam_Level2Extention_Floor_01",
@@ -40882,7 +40975,8 @@
       "mesh_path": "/Game/DLC/MTX/Environment/PlayerBuilt/Choam/Meshes/SM_MTX_Env_PB_Choam_Floor.SM_MTX_Env_PB_Choam_Floor",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_MTX_Env_PB_Choam_Floor",
+      "mesh_rel": null
     },
     {
       "id": "MTX_B1C5_Choam_Level2Extention_Passageway_01",
@@ -40930,7 +41024,8 @@
       "mesh_path": "/Game/DLC/MTX/Environment/PlayerBuilt/Choam/Meshes/SM_MTX_Env_PB_Choam_Passageway.SM_MTX_Env_PB_Choam_Passageway",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_MTX_Env_PB_Choam_Passageway",
+      "mesh_rel": null
     },
     {
       "id": "MTX_B1C5_Choam_Level2Extention_Rooftop_01",
@@ -40963,7 +41058,8 @@
       "mesh_path": "/Game/DLC/MTX/Environment/PlayerBuilt/Choam/Meshes/SM_MTX_Env_PB_Choam_RoofTop.SM_MTX_Env_PB_Choam_RoofTop",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_MTX_Env_PB_Choam_RoofTop",
+      "mesh_rel": null
     },
     {
       "id": "MTX_B1C5_Choam_Level2Extention_Wall_01",
@@ -41013,7 +41109,8 @@
       "mesh_path": "/Game/DLC/MTX/Environment/PlayerBuilt/Choam/Meshes/SM_MTX_Env_PB_Choam_Wall_01.SM_MTX_Env_PB_Choam_Wall_01",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_MTX_Env_PB_Choam_Wall_01",
+      "mesh_rel": null
     },
     {
       "id": "MTX_B1C5_Choam_Level2Extention_Wall_02",
@@ -41063,7 +41160,8 @@
       "mesh_path": "/Game/DLC/MTX/Environment/PlayerBuilt/Choam/Meshes/SM_MTX_Env_PB_Choam_Wall_02.SM_MTX_Env_PB_Choam_Wall_02",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_MTX_Env_PB_Choam_Wall_02",
+      "mesh_rel": null
     },
     {
       "id": "MTX_B1C5_Choam_Level2Extention_Wall_03",
@@ -41113,7 +41211,8 @@
       "mesh_path": "/Game/DLC/MTX/Environment/PlayerBuilt/Choam/Meshes/SM_MTX_Env_PB_Choam_Wall_03.SM_MTX_Env_PB_Choam_Wall_03",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_MTX_Env_PB_Choam_Wall_03",
+      "mesh_rel": null
     },
     {
       "id": "MTX_B1C5_Choam_Level2Extention_Wall_Round_Corner",
@@ -41142,7 +41241,8 @@
       "mesh_path": "/Game/DLC/MTX/Environment/PlayerBuilt/Choam/Meshes/SM_MTX_Env_PB_Choam_WallRoundCorner.SM_MTX_Env_PB_Choam_WallRoundCorner",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_MTX_Env_PB_Choam_WallRoundCorner",
+      "mesh_rel": null
     },
     {
       "id": "MTX_B1C5_Choam_Level2Extention_Column_Corner",
@@ -41217,7 +41317,8 @@
       "is_pillar": true,
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_MTX_Env_PB_Choam_Column",
+      "mesh_rel": null
     },
     {
       "id": "Choam_Shelter_Column_New",
@@ -65982,7 +66083,8 @@
       "is_pillar": true,
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_Column",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Door_Frame",
@@ -66034,7 +66136,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_DoorFrame.SM_Player_PB_Sard_DoorFrame",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_DoorFrame",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Door_Frame_Tall",
@@ -66085,7 +66188,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_DoorFrame_Tall.SM_Player_PB_Sard_DoorFrame_Tall",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_DoorFrame_Tall",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Floor",
@@ -66118,7 +66222,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_Floor.SM_Player_PB_Sard_Floor",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_Floor",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Floor_Round_Corner",
@@ -66154,7 +66259,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_FloorRoundCorner.SM_Player_PB_Sard_FloorRoundCorner",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_FloorRoundCorner",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Floor_Round_Inverted",
@@ -66190,7 +66296,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_FloorRoundCorner_In.SM_Player_PB_Sard_FloorRoundCorner_In",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_FloorRoundCorner_In",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Foundation",
@@ -66222,7 +66329,8 @@
       "is_foundation": true,
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_Foundation",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Foundation_Round_Corner",
@@ -66254,7 +66362,8 @@
       "is_foundation": true,
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_FoundationRoundCorner",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Foundation_Wedge",
@@ -66286,7 +66395,8 @@
       "is_foundation": true,
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_FoundationWedge",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Passageway",
@@ -66334,7 +66444,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_Passageway.SM_Player_PB_Sard_Passageway",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_Passageway",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Pillar_Bottom",
@@ -66365,7 +66476,8 @@
       "is_pillar": true,
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_PillarBottom",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Pillar_Middle",
@@ -66396,7 +66508,8 @@
       "is_pillar": true,
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_PillarMiddle",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Pillar_Top",
@@ -66427,7 +66540,8 @@
       "is_pillar": true,
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_PillarTop",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Railing",
@@ -66455,7 +66569,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_Railing.SM_Player_PB_Sard_Railing",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_Railing",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Railing_Gate",
@@ -66483,7 +66598,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_RailingGate.SM_Player_PB_Sard_RailingGate",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_RailingGate",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Railing_Inclined",
@@ -66533,7 +66649,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_RailingInclined.SM_Player_PB_Sard_RailingInclined",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_RailingInclined",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Railing_Round_Corner",
@@ -66562,7 +66679,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_RailingRoundCorner.SM_Player_PB_Sard_RailingRoundCorner",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_RailingRoundCorner",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Ramp",
@@ -66594,7 +66712,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_Ramp.SM_Player_PB_Sard_Ramp",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_Ramp",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Ramp_Corner",
@@ -66626,7 +66745,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_RampCorner.SM_Player_PB_Sard_RampCorner",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_RampCorner",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Ramp_Corner_Inward",
@@ -66658,7 +66778,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_RampCorner_In.SM_Player_PB_Sard_RampCorner_In",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_RampCorner_In",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Roof_01",
@@ -66690,7 +66811,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_Roof_01.SM_Player_PB_Sard_Roof_01",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_Roof_01",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Roof_02",
@@ -66722,7 +66844,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_Roof_02.SM_Player_PB_Sard_Roof_02",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_Roof_02",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Roof_Corner",
@@ -66754,7 +66877,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_RoofCorner.SM_Player_PB_Sard_RoofCorner",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_RoofCorner",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Roof_Round_Corner",
@@ -66782,7 +66906,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_RoofRoundCorner.SM_Player_PB_Sard_RoofRoundCorner",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_RoofRoundCorner",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Roof_Corner_Inward",
@@ -66814,7 +66939,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_RoofCorner_In.SM_Player_PB_Sard_RoofCorner_In",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_RoofCorner_In",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Roof_Wedge_Bottom",
@@ -66839,7 +66965,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_RoofWedgeBottom.SM_Player_PB_Sard_RoofWedgeBottom",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_RoofWedgeBottom",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Roof_Wedge_Top",
@@ -66864,7 +66991,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_RoofWedgeTop.SM_Player_PB_Sard_RoofWedgeTop",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_RoofWedgeTop",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Rooftop_01",
@@ -66897,7 +67025,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_RoofTop_01.SM_Player_PB_Sard_RoofTop_01",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_RoofTop_01",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Rooftop_02",
@@ -66930,7 +67059,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_RoofTop_02.SM_Player_PB_Sard_RoofTop_02",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_RoofTop_02",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Stairs",
@@ -66964,7 +67094,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_Stairs.SM_Player_PB_Sard_Stairs",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_Stairs",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Stairs_Corner",
@@ -66998,7 +67129,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_StairsCorner.SM_Player_PB_Sard_StairsCorner",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_StairsCorner",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Stairs_Corner_Inward",
@@ -67032,7 +67164,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_StairsCorner_In.SM_Player_PB_Sard_StairsCorner_In",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_StairsCorner_In",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Wall_01",
@@ -67082,7 +67215,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_Wall_01.SM_Player_PB_Sard_Wall_01",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_Wall_01",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Wall_02",
@@ -67132,7 +67266,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_Wall_02.SM_Player_PB_Sard_Wall_02",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_Wall_02",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Wall_03",
@@ -67182,7 +67317,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_Wall_03.SM_Player_PB_Sard_Wall_03",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_Wall_03",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Wall_Round_Corner",
@@ -67211,7 +67347,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_WallRoundCorner.SM_Player_PB_Sard_WallRoundCorner",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_WallRoundCorner",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Wall_Inclined_Corner_Tall",
@@ -67261,7 +67398,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_WallInclinedCorner_Tall.SM_Player_PB_Sard_WallInclinedCorner_Tall",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_WallInclinedCorner_Tall",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Wall_Inclined_Tall_01",
@@ -67311,7 +67449,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_WallInclined_Tall_01.SM_Player_PB_Sard_WallInclined_Tall_01",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_WallInclined_Tall_01",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Wall_Triangle_Bottom_Left",
@@ -67363,7 +67502,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_WallTriangleBottom_L.SM_Player_PB_Sard_WallTriangleBottom_L",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_WallTriangleBottom_L",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Wall_Triangle_Bottom_Right",
@@ -67415,7 +67555,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_WallTriangleBottom_R.SM_Player_PB_Sard_WallTriangleBottom_R",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_WallTriangleBottom_R",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Wall_Triangle_Top_Left",
@@ -67467,7 +67608,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_WallTriangleTop_L.SM_Player_PB_Sard_WallTriangleTop_L",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_WallTriangleTop_L",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Wall_Triangle_Top_Right",
@@ -67519,7 +67661,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_WallTriangleTop_R.SM_Player_PB_Sard_WallTriangleTop_R",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_WallTriangleTop_R",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Wall_Triangle_Bottom_Tall_Left",
@@ -67569,7 +67712,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_WallTriangleBottom_Tall_L.SM_Player_PB_Sard_WallTriangleBottom_Tall_L",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_WallTriangleBottom_Tall_L",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Wall_Triangle_Bottom_Tall_Right",
@@ -67619,7 +67763,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_WallTriangleBottom_Tall_R.SM_Player_PB_Sard_WallTriangleBottom_Tall_R",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_WallTriangleBottom_Tall_R",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Window",
@@ -67669,7 +67814,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_Window_01.SM_Player_PB_Sard_Window_01",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_Window_01",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Window_Round_Corner",
@@ -67698,7 +67844,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_WindowRoundCorner.SM_Player_PB_Sard_WindowRoundCorner",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_WindowRoundCorner",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Rooftop_Wedge",
@@ -67732,7 +67879,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_RoofTopWedge.SM_Player_PB_Sard_RoofTopWedge",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_RoofTopWedge",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Rooftop_Round_Corner",
@@ -67768,7 +67916,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_RoofTopRoundCorner.SM_Player_PB_Sard_RoofTopRoundCorner",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_RoofTopRoundCorner",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Rooftop_Round_Inverted",
@@ -67804,7 +67953,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_RoofTopRoundCorner_In.SM_Player_PB_Sard_RoofTopRoundCorner_In",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_RoofTopRoundCorner_In",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Garage_Door_Frame",
@@ -67855,7 +68005,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_GarageDoorFrame.SM_Player_PB_Sard_GarageDoorFrame",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_GarageDoorFrame",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Wall_Inclined_Tall_02",
@@ -67905,7 +68056,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_WallInclined_Tall_02.SM_Player_PB_Sard_WallInclined_Tall_02",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_WallInclined_Tall_02",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Window_Inclined_Tall",
@@ -67955,7 +68107,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_WindowInclined_Tall_01.SM_Player_PB_Sard_WindowInclined_Tall_01",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_WindowInclined_Tall_01",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Roof_03",
@@ -67987,7 +68140,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_Roof_03.SM_Player_PB_Sard_Roof_03",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_Roof_03",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Wall_Triangle_Top_Tall_Left",
@@ -68037,7 +68191,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_WallTriangleTop_Tall_L.SM_Player_PB_Sard_WallTriangleTop_Tall_L",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_WallTriangleTop_Tall_L",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Wall_Triangle_Top_Tall_Right",
@@ -68087,7 +68242,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_WallTriangleTop_Tall_R.SM_Player_PB_Sard_WallTriangleTop_Tall_R",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_WallTriangleTop_Tall_R",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Door_Frame_Wide",
@@ -68138,7 +68294,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_Passageway_Wide.SM_Player_PB_Sard_Passageway_Wide",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_Passageway_Wide",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_PrudenceDoor_Frame",
@@ -68190,7 +68347,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_DoorFrame.SM_Player_PB_Sard_DoorFrame",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_DoorFrame",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Railing_Inclined_Half",
@@ -68240,7 +68398,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_RailingInclined_Half.SM_Player_PB_Sard_RailingInclined_Half",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_RailingInclined_Half",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Ramp_Half",
@@ -68272,7 +68431,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_Ramp_Half.SM_Player_PB_Sard_Ramp_Half",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_Ramp_Half",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Ramp_Corner_Half",
@@ -68304,7 +68464,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_RampCorner_Half.SM_Player_PB_Sard_RampCorner_Half",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_RampCorner_Half",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Ramp_Corner_Half_Inward",
@@ -68336,7 +68497,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_RampCorner_Half_In.SM_Player_PB_Sard_RampCorner_Half_In",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_RampCorner_Half_In",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Stairs_Half",
@@ -68370,7 +68532,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_Stairs_Half.SM_Player_PB_Sard_Stairs_Half",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_Stairs_Half",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Stairs_Corner_Half",
@@ -68404,7 +68567,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_StairsCorner_Half.SM_Player_PB_Sard_StairsCorner_Half",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_StairsCorner_Half",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Stairs_Corner_Half_Inward",
@@ -68438,7 +68602,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_StairsCorner_Half_In.SM_Player_PB_Sard_StairsCorner_Half_In",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_StairsCorner_Half_In",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Wall_Half",
@@ -68488,7 +68653,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_Wall_Half.SM_Player_PB_Sard_Wall_Half",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_Wall_Half",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Wall_Round_Corner_Half",
@@ -68517,7 +68683,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_WallRoundCorner_Half.SM_Player_PB_Sard_WallRoundCorner_Half",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_WallRoundCorner_Half",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Wall_Triangle_Bottom_Half_Left",
@@ -68569,7 +68736,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_WallTriangleBottom_Half_L.SM_Player_PB_Sard_WallTriangleBottom_Half_L",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_WallTriangleBottom_Half_L",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Wall_Triangle_Bottom_Half_Right",
@@ -68621,7 +68789,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_WallTriangleBottom_Half_R.SM_Player_PB_Sard_WallTriangleBottom_Half_R",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_WallTriangleBottom_Half_R",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Wall_Triangle_Top_Half_Left",
@@ -68673,7 +68842,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_WallTriangleTop_Half_L.SM_Player_PB_Sard_WallTriangleTop_Half_L",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_WallTriangleTop_Half_L",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Wall_Triangle_Top_Half_Right",
@@ -68725,7 +68895,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_WallTriangleTop_Half_R.SM_Player_PB_Sard_WallTriangleTop_Half_R",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_WallTriangleTop_Half_R",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Floor_Wedge",
@@ -68759,7 +68930,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_FloorWedge.SM_Player_PB_Sard_FloorWedge",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_FloorWedge",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Floor_02",
@@ -68792,7 +68964,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_Floor_02.SM_Player_PB_Sard_Floor_02",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_Floor_02",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Floor_Round_Corner_02",
@@ -68828,7 +69001,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_FloorRoundCorner_02.SM_Player_PB_Sard_FloorRoundCorner_02",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_FloorRoundCorner_02",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Door_Frame_L",
@@ -68880,7 +69054,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_DoorFrame_L.SM_Player_PB_Sard_DoorFrame_L",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_DoorFrame_L",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Column_corner",
@@ -68955,7 +69130,8 @@
       "is_pillar": true,
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_Column",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Door_Frame_Tall_L",
@@ -69006,7 +69182,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_DoorFrame_Tall_L.SM_Player_PB_Sard_DoorFrame_Tall_L",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_DoorFrame_Tall_L",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Roof_02_L",
@@ -69038,7 +69215,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_Roof_02_L.SM_Player_PB_Sard_Roof_02_L",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_Roof_02_L",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Roof_03_L",
@@ -69070,7 +69248,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_Roof_03_L.SM_Player_PB_Sard_Roof_03_L",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_Roof_03_L",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Wall_Inclined_Tall_02_L",
@@ -69120,7 +69299,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_WallInclined_Tall_02_L.SM_Player_PB_Sard_WallInclined_Tall_02_L",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_WallInclined_Tall_02_L",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Window_L",
@@ -69170,7 +69350,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_Window_01_L.SM_Player_PB_Sard_Window_01_L",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_Window_01_L",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Window_Inclined_Tall_L",
@@ -69220,7 +69401,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_WindowInclined_Tall_01_L.SM_Player_PB_Sard_WindowInclined_Tall_01_L",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_WindowInclined_Tall_01_L",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Wall_02_L",
@@ -69270,7 +69452,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_Wall_02_L.SM_Player_PB_Sard_Wall_02_L",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_Wall_02_L",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Wall_Inclined_Tall_01_L",
@@ -69320,7 +69503,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_WallInclined_Tall_01_L.SM_Player_PB_Sard_WallInclined_Tall_01_L",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_WallInclined_Tall_01_L",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_Wall_Inclined_Corner_Tall_L",
@@ -69370,7 +69554,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_WallInclinedCorner_Tall_L.SM_Player_PB_Sard_WallInclinedCorner_Tall_L",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_WallInclinedCorner_Tall_L",
+      "mesh_rel": null
     },
     {
       "id": "Sardaukar_PrudenceDoor_Frame_L",
@@ -69422,7 +69607,8 @@
       "mesh_path": "/Game/DLC/B1C5/Player/PlayerBuilt/Sard/Meshes/SM_Player_PB_Sard_DoorFrame_L.SM_Player_PB_Sard_DoorFrame_L",
       "requires_totem": true,
       "sockets": [],
-      "mesh": null
+      "mesh": "SM_Player_PB_Sard_DoorFrame_L",
+      "mesh_rel": null
     },
     {
       "id": "MTX_Smug_Pillar_Bottom",
@@ -88172,7 +88358,8 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/FabricatorLarge/Meshes/Source/Static_02/SM_Plac_Choam_Fabricator_Large_01.SM_Plac_Choam_Fabricator_Large_01",
       "is_machine": true,
       "sockets": [],
-      "mesh": "SM_Plac_Choam_Fabricator_Large_01"
+      "mesh": "SM_Plac_Choam_Fabricator_Large_01",
+      "mesh_rel": null
     },
     {
       "id": "PortableFabricator_Placeable",
@@ -88202,7 +88389,8 @@
       "mesh_path": "",
       "is_machine": true,
       "sockets": [],
-      "mesh": null
+      "mesh": null,
+      "mesh_rel": null
     },
     {
       "id": "SpiceRefinery_Placeable",
@@ -88232,7 +88420,8 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/SpiceRefinery/Meshes/SM_Env_Props_Choam_SpiceRefinery.SM_Env_Props_Choam_SpiceRefinery",
       "is_machine": true,
       "sockets": [],
-      "mesh": "SM_Env_Props_Choam_SpiceRefinery"
+      "mesh": "SM_Env_Props_Choam_SpiceRefinery",
+      "mesh_rel": null
     },
     {
       "id": "MediumOreRefinery_Placeable",
@@ -88262,7 +88451,8 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/OreRefinery/Meshes/SM_Env_Prop_Choam_OreRefinery_01.SM_Env_Prop_Choam_OreRefinery_01",
       "is_machine": true,
       "sockets": [],
-      "mesh": "SM_Env_Prop_Choam_OreRefinery_01"
+      "mesh": "SM_Env_Prop_Choam_OreRefinery_01",
+      "mesh_rel": null
     },
     {
       "id": "SmallOreRefinery_Placeable",
@@ -88292,7 +88482,8 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/OreRefinery/Meshes/SM_Env_Prop_Choam_OreRefinery_Small.SM_Env_Prop_Choam_OreRefinery_Small",
       "is_machine": true,
       "sockets": [],
-      "mesh": "SM_Env_Prop_Choam_OreRefinery_Small"
+      "mesh": "SM_Env_Prop_Choam_OreRefinery_Small",
+      "mesh_rel": null
     },
     {
       "id": "SmallChemicalRefinery_Placeable",
@@ -88322,7 +88513,8 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/ChemicalRefinery/Meshes/SM_Env_Prop_Choam_ChemicalRefinery_Small.SM_Env_Prop_Choam_ChemicalRefinery_Small",
       "is_machine": true,
       "sockets": [],
-      "mesh": "SM_Env_Prop_Choam_ChemicalRefinery_Small"
+      "mesh": "SM_Env_Prop_Choam_ChemicalRefinery_Small",
+      "mesh_rel": null
     },
     {
       "id": "WeaponsFabricator_Placeable",
@@ -88352,7 +88544,8 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/Fabricator/Meshes/SM_Env_Prop_Choam_Fabricator_Weapons.SM_Env_Prop_Choam_Fabricator_Weapons",
       "is_machine": true,
       "sockets": [],
-      "mesh": "SM_Env_Prop_Choam_Fabricator_Weapons"
+      "mesh": "SM_Env_Prop_Choam_Fabricator_Weapons",
+      "mesh_rel": null
     },
     {
       "id": "WearablesFabricator_Placeable",
@@ -88382,7 +88575,8 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/Fabricator/Meshes/SM_Env_Prop_Choam_Fabricator_Wearables.SM_Env_Prop_Choam_Fabricator_Wearables",
       "is_machine": true,
       "sockets": [],
-      "mesh": "SM_Env_Prop_Choam_Fabricator_Wearables"
+      "mesh": "SM_Env_Prop_Choam_Fabricator_Wearables",
+      "mesh_rel": null
     },
     {
       "id": "VehiclesFabricator_Placeable",
@@ -88412,7 +88606,8 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/Fabricator/Meshes/SM_Env_Prop_Choam_Fabricator_Vehicles.SM_Env_Prop_Choam_Fabricator_Vehicles",
       "is_machine": true,
       "sockets": [],
-      "mesh": "SM_Env_Prop_Choam_Fabricator_Vehicles"
+      "mesh": "SM_Env_Prop_Choam_Fabricator_Vehicles",
+      "mesh_rel": null
     },
     {
       "id": "SurvivalFabricator_Placeable",
@@ -88442,7 +88637,8 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/Fabricator/Meshes/SM_Env_Prop_Choam_Fabricator_Survival.SM_Env_Prop_Choam_Fabricator_Survival",
       "is_machine": true,
       "sockets": [],
-      "mesh": "SM_Env_Prop_Choam_Fabricator_Survival"
+      "mesh": "SM_Env_Prop_Choam_Fabricator_Survival",
+      "mesh_rel": null
     },
     {
       "id": "ConstructionFabricator_Placeable",
@@ -88472,7 +88668,8 @@
       "mesh_path": "",
       "is_machine": true,
       "sockets": [],
-      "mesh": null
+      "mesh": null,
+      "mesh_rel": null
     },
     {
       "id": "MediumChemicalRefinery_Placeable",
@@ -88502,7 +88699,8 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/ChemicalRefinery/Meshes/SM_Env_Prop_Choam_ChemicalRefinery_Medium.SM_Env_Prop_Choam_ChemicalRefinery_Medium",
       "is_machine": true,
       "sockets": [],
-      "mesh": "SM_Env_Prop_Choam_ChemicalRefinery_Medium"
+      "mesh": "SM_Env_Prop_Choam_ChemicalRefinery_Medium",
+      "mesh_rel": null
     },
     {
       "id": "MediumSpiceRefinery_Placeable",
@@ -88532,7 +88730,8 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/SpiceRefinery/Meshes/SM_Env_Prop_Choam_SpiceRefinery_Medium.SM_Env_Prop_Choam_SpiceRefinery_Medium",
       "is_machine": true,
       "sockets": [],
-      "mesh": "SM_Env_Prop_Choam_SpiceRefinery_Medium"
+      "mesh": "SM_Env_Prop_Choam_SpiceRefinery_Medium",
+      "mesh_rel": null
     },
     {
       "id": "AdvancedWeaponsFabricator_Placeable",
@@ -88562,7 +88761,8 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/Fabricator/Meshes/SM_Env_Prop_Choam_Fabricator_Weapons_Advanced.SM_Env_Prop_Choam_Fabricator_Weapons_Advanced",
       "is_machine": true,
       "sockets": [],
-      "mesh": "SM_Env_Prop_Choam_Fabricator_Weapons_Advanced"
+      "mesh": "SM_Env_Prop_Choam_Fabricator_Weapons_Advanced",
+      "mesh_rel": null
     },
     {
       "id": "AdvancedWearablesFabricator_Placeable",
@@ -88592,7 +88792,8 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/Fabricator/Meshes/SM_Env_Prop_Choam_Fabricator_Wearables_Advandced.SM_Env_Prop_Choam_Fabricator_Wearables_Advandced",
       "is_machine": true,
       "sockets": [],
-      "mesh": "SM_Env_Prop_Choam_Fabricator_Wearables_Advandced"
+      "mesh": "SM_Env_Prop_Choam_Fabricator_Wearables_Advandced",
+      "mesh_rel": null
     },
     {
       "id": "Advanced_VehiclesFabricator_Placeable",
@@ -88622,7 +88823,8 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/Fabricator/Meshes/SM_Env_Prop_Choam_Fabricator_Vehicles_Large.SM_Env_Prop_Choam_Fabricator_Vehicles_Large",
       "is_machine": true,
       "sockets": [],
-      "mesh": "SM_Env_Prop_Choam_Fabricator_Vehicles_Large"
+      "mesh": "SM_Env_Prop_Choam_Fabricator_Vehicles_Large",
+      "mesh_rel": null
     },
     {
       "id": "Advanced_SurvivalFabricator_Placeable",
@@ -88652,7 +88854,8 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/Fabricator/Meshes/SM_Env_Prop_Choam_Fabricator_Survival_Advanced_01_assemble.SM_Env_Prop_Choam_Fabricator_Survival_Advanced_01_assemble",
       "is_machine": true,
       "sockets": [],
-      "mesh": "SM_Env_Prop_Choam_Fabricator_Survival_Advanced_01_assemble"
+      "mesh": "SM_Env_Prop_Choam_Fabricator_Survival_Advanced_01_assemble",
+      "mesh_rel": null
     },
     {
       "id": "LargeOreRefinery_Placeable",
@@ -88682,7 +88885,8 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/OreRefinery/Meshes/SM_Env_Prop_Choam_OreRefinery_Large.SM_Env_Prop_Choam_OreRefinery_Large",
       "is_machine": true,
       "sockets": [],
-      "mesh": "SM_Env_Prop_Choam_OreRefinery_Large"
+      "mesh": "SM_Env_Prop_Choam_OreRefinery_Large",
+      "mesh_rel": null
     },
     {
       "id": "LargeSpiceRefinery_Placeable",
@@ -88712,7 +88916,8 @@
       "mesh_path": "/Game/Dune/Environment/Props/Choam/SpiceRefinery/Meshes/SM_Env_Prop_Choam_SpiceRefinery_Large_Full.SM_Env_Prop_Choam_SpiceRefinery_Large_Full",
       "is_machine": true,
       "sockets": [],
-      "mesh": "SM_Env_Prop_Choam_SpiceRefinery_Large_Full"
+      "mesh": "SM_Env_Prop_Choam_SpiceRefinery_Large_Full",
+      "mesh_rel": null
     },
     {
       "id": "Sandbike_Vehicle",
@@ -88743,7 +88948,8 @@
       "is_machine": true,
       "is_vehicle": true,
       "sockets": [],
-      "mesh": "SM_ProxyMesh_Choam_GC_Sandbike"
+      "mesh": "SM_ProxyMesh_Choam_GC_Sandbike",
+      "mesh_rel": null
     },
     {
       "id": "Buggy_Vehicle",
@@ -88774,7 +88980,8 @@
       "is_machine": true,
       "is_vehicle": true,
       "sockets": [],
-      "mesh": "SM_ProxyMesh_Choam_GC_Buggy"
+      "mesh": "SM_ProxyMesh_Choam_GC_Buggy",
+      "mesh_rel": null
     },
     {
       "id": "Tank_Vehicle",
@@ -88805,7 +89012,8 @@
       "is_machine": true,
       "is_vehicle": true,
       "sockets": [],
-      "mesh": null
+      "mesh": null,
+      "mesh_rel": null
     },
     {
       "id": "Sandcrawler_Vehicle",
@@ -88836,7 +89044,8 @@
       "is_machine": true,
       "is_vehicle": true,
       "sockets": [],
-      "mesh": "SM_ProxyMesh_Choam_GC_Industrial"
+      "mesh": "SM_ProxyMesh_Choam_GC_Industrial",
+      "mesh_rel": null
     },
     {
       "id": "TreadWheel_Vehicle",
@@ -88867,7 +89076,8 @@
       "is_machine": true,
       "is_vehicle": true,
       "sockets": [],
-      "mesh": null
+      "mesh": null,
+      "mesh_rel": null
     },
     {
       "id": "LightOrnithopter_Vehicle",
@@ -88898,7 +89108,8 @@
       "is_machine": true,
       "is_vehicle": true,
       "sockets": [],
-      "mesh": "SM_ProxyMesh_Choam_Ornithopter_Light"
+      "mesh": "SM_ProxyMesh_Choam_Ornithopter_Light",
+      "mesh_rel": null
     },
     {
       "id": "MediumOrnithopter_Vehicle",
@@ -88929,7 +89140,8 @@
       "is_machine": true,
       "is_vehicle": true,
       "sockets": [],
-      "mesh": "SM_ProxyMesh_Choam_Ornithopter_Medium"
+      "mesh": "SM_ProxyMesh_Choam_Ornithopter_Medium",
+      "mesh_rel": null
     },
     {
       "id": "TransportOrnithopter_Vehicle",
@@ -88960,7 +89172,8 @@
       "is_machine": true,
       "is_vehicle": true,
       "sockets": [],
-      "mesh": "SM_ProxyMesh_Choam_Ornithopter_Transport"
+      "mesh": "SM_ProxyMesh_Choam_Ornithopter_Transport",
+      "mesh_rel": null
     },
     {
       "id": "WindTurbineOmnidirectional_Placeable",

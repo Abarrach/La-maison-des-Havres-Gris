@@ -9,6 +9,12 @@
   "locale": "fr",
   "aes": "",
 
+  "meshes": {
+    "_note": "Export glTF des meshes du Constructeur (--meshes). Le nom de sortie est le nom d'asset, exactement ce que planner_pieces.json référence. Par défaut on ne refait pas un .glb déjà présent (--mesh-force pour forcer, --mesh-filter <texte> pour se limiter à un set).",
+    "catalogue": "../../base_pieces_v3.json",
+    "out": "../../models"
+  },
+
   "targets": [
     {
       "id": "recipes",

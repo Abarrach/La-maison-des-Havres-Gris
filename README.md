@@ -840,7 +840,7 @@ schtasks /create /tn "DuneMap - verif datamine" /sc weekly /d WED /st 10:00 /tr 
 ⚠ Le `/nopause` est obligatoire dans une tâche planifiée : sans lui, le script attend une touche
 que personne ne tapera. (Donner le chemin complet du `.cmd` dans `/tr`.)
 
-### Les 15 étapes couvertes
+### Les 16 étapes couvertes
 
 | id | Sortie | Source |
 |---|---|---|
@@ -857,6 +857,7 @@ que personne ne tapera. (Donner le chemin complet du `.cmd` dans `/tr`.)
 | `plans_index` | `plans_index.json` | `Localization/ST_Localization_Items` + `CDT_BaseItems` |
 | `plans_univers` | `plans_uniques.json` | export de l'addon en jeu (`.txt`, opt-in `--with-univers`) |
 | `base_pieces_v3` | `base_pieces_v3.json` | `Systems/Building/Data`, `Systems/Vehicles` — script **externe** (opt-in `--run-planner-import`) |
+| `sockets` | `dune_socket_profiles.json`, `dune_group_config.json`, `dune_pieces_sockets.json` | `DT_DuneSocketSetupData` + `CDT_BuildableGroupData` |
 | `planner_pieces` | `planner_pieces.json` | 100 % local (fusion v3 + sockets + utilitaires) |
 | `meshes` | `models/*.glb` | **les paks** via `DuneExtract --meshes` (glTF), ou `flatten_glb` depuis un export FModel. `models/` n'est pas versionné |
 
@@ -931,6 +932,47 @@ Ce qui reste manuel pour un nouveau set : **les sockets** (aucun générateur po
 tant que tcno.co n'a pas le set. Piste repérée : `ExporterOptions` expose un
 `ESocketFormat` — les sockets pourraient sortir avec les meshes.
 
+### Les sockets — comment la chaîne d'accroche se datamine
+
+Ces trois fichiers ont longtemps été **le seul angle mort** du pipeline : issus d'un reverse
+engineering manuel (dune.layout.tools + FModel) de juin 2026. Le coût s'est vu avec le set
+Sardaukar du 19/10 : arrivé sans aucune accroche, posé en mode « cellule ».
+
+Tout était pourtant dans les DataTables, à condition d'avoir la table des types de `TMap` :
+
+| Source | Ce qu'elle donne |
+|---|---|
+| `DT_DuneSocketSetupData` | 71 profils, en **deux tableaux parallèles** : `m_SocketInstances[i]` = le transform du socket, `m_PerInstanceStaticSocketData[i]` = ses types et son coût |
+| `CDT_BuildableGroupData` | par groupe : le profil (`m_SocketSetup`), la rotation d'accroche, la forme des coins |
+| `base_pieces_v3.json` | quelle pièce appartient à quel groupe |
+
+La chaîne est donc **pièce → groupe → profil → sockets**.
+
+```bash
+node tools/build_sockets_from_datamine.js --check   # compare aux fichiers en place, n'écrit rien
+node tools/build_sockets_from_datamine.js           # écrit les 3 fichiers
+```
+
+**Validation** — c'est `--check` qui a servi de preuve : 551 pièces sur 551 résolvent
+exactement le même profil que le fichier fait à la main, et 67 profils sur 71 sont
+identiques. Sur le catalogue : 593 pièces inchangées, **186 qui gagnent des sockets**,
+**0 qui en perd**. Couverture 552 → 737 pièces, 92 → 279 groupes.
+
+Deux pièges à connaître :
+
+- **Les arrondis.** Le quaternion redonne `160.528785` là où le fichier historique notait
+  `160.53`, et `147.80167` pour `147.8`. Garder la précision brute ferait ressortir 16
+  profils comme « modifiés » à chaque régénération, pour deux millièmes de centimètre — et
+  ce bruit masquerait un vrai changement. D'où l'arrondi au dixième (position) et au
+  centième (angle).
+- **4 profils divergent vraiment** (`Door_Wide`, `Door_Frame_Garage`, `Door_Garage`,
+  `Arch`), ce qui touche 7 pièces. Le profil `Door`, lui, est identique : la transcription
+  manuelle était donc fidèle, et ces écarts sont selon toute vraisemblance des changements
+  du jeu depuis juin. Le jeu fait foi. **Si une porte de garage se place mal, c'est là.**
+
+`size` et `hasGlb` ne sont pas dans les DataTables (boîte englobante du `.glb` et présence
+du fichier) : ils sont repris du fichier existant quand il les connaît, plutôt qu'inventés.
+
 ### Pièges de ce pipeline
 
 - **Paks chunkés (automne 2026)** : le jeu est passé de paks nommés par domaine
@@ -962,14 +1004,12 @@ tant que tcno.co n'a pas le set. Piste repérée : `ExporterOptions` expose un
 
 `--check` les rappelle à chaque passage — c'est le seul moyen de ne pas les oublier après un patch.
 
-- **`dune_pieces_sockets.json` / `dune_socket_profiles.json` / `dune_group_config.json`** :
-  aucun script de régénération n'existe (reverse engineering manuel dune.layout.tools + FModel).
-  Si un patch change la géométrie des pièces, ces fichiers ne bougeront pas. Dégradation propre :
-  une pièce absente retombe sur une pose « cellule » simple.
 - **`planner_utilities.json`** : extrait à la main de `DT_PlaceableData_Functional` + bbox des `.glb`.
-- **`planner_costs.json`** : **non dataminable** (les recettes de structures sont des
-  `InstancedStruct`), compilé par TroubleChute (tools.tcno.co/dune, crédité) — après un patch
-  d'équilibrage, vérification manuelle.
+- **`planner_costs.json`** : compilé par TroubleChute (tools.tcno.co/dune, crédité).
+  ⚠ **La conclusion « non dataminable » est tombée le 2026-10-20** : `CDT_BuildableGroupData`
+  contient `m_BuildableTierData[].m_PlacementCosts` — les coûts par palier, en clair (un Ramp
+  Tier0 coûte 8 pierres, Tier1 10). Ce qui bloquait, c'était la table des types de `TMap`,
+  maintenant régénérable. Chantier ouvert, pas encore fait.
 - **`metiers.json`, `landsraad_data.json`** : saisis à la main.
 - **`base_pieces_v2.json`** : plus lu par aucune page — ne pas perdre de temps à le régénérer.
 

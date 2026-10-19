@@ -409,6 +409,19 @@ const STEPS = [
       + 'ici après coup. Régénérer ce fichier entraîne planner_pieces en cascade.',
   },
   {
+    id: 'sockets',
+    label: 'Géométrie d\'accroche du planner (profils, groupes, pièces)',
+    script: 'tools/build_sockets_from_datamine.js',
+    args: (c) => [path.join(c.exportRoot, 'Systems')],
+    outputs: ['dune_socket_profiles.json', 'dune_group_config.json', 'dune_pieces_sockets.json'],
+    sources: ['Systems/Building/Data/DT_DuneSocketSetupData.json', 'Systems/Building/Data/CDT_BuildableGroupData.json'],
+    paks: ['*'],
+    requiresLocal: ['base_pieces_v3.json'],
+    note: 'Sans ces fichiers, une pièce se pose en mode « cellule » : pas d\'accroche. '
+      + 'Longtemps le seul angle mort du pipeline (reverse engineering manuel) ; la chaîne '
+      + 'pièce → groupe → profil est en fait entièrement dans les DataTables.',
+  },
+  {
     id: 'planner_pieces',
     label: 'Catalogue unifié du planner (pièces + sockets + utilitaires)',
     script: 'tools/build_planner_pieces.js',
@@ -436,15 +449,6 @@ const STEPS = [
 // Elles existent, elles servent, mais aucun script ne sait les régénérer. Les lister à
 // chaque --check est le seul moyen de ne pas les oublier après un patch.
 const ANGLES_MORTS = [
-  {
-    id: 'sockets',
-    fichiers: ['dune_pieces_sockets.json', 'dune_socket_profiles.json', 'dune_group_config.json'],
-    label: 'Géométrie d\'accroche du planner (552 pièces, 71 profils, 92 groupes)',
-    detail: 'AUCUN script de régénération n\'existe. Issus d\'un reverse engineering manuel\n'
-      + '    (dune.layout.tools + FModel) fait dans une session antérieure.\n'
-      + '    Si un patch change la géométrie des pièces, ces fichiers ne bougeront pas.\n'
-      + '    Dégradation propre : une pièce absente retombe sur une pose « cellule » simple.',
-  },
   {
     id: 'planner_utilities',
     fichiers: ['planner_utilities.json'],

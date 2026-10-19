@@ -1,6 +1,6 @@
 {
   "_note": "Écrit par tools/update_datamine.js. Dit de QUEL build du jeu proviennent les données du site, et quand chaque étape a tourné pour la dernière fois. Versionné exprès : c'est la seule trace de la fraîcheur des données.",
-  "updated_at": "2026-10-19T23:02:12.740Z",
+  "updated_at": "2026-10-19T23:04:00.155Z",
   "game": {
     "build_id": "25936403",
     "last_updated": "2026-10-19T12:46:42.000Z",
@@ -124,6 +124,25 @@
       "outputs": {
         "base_pieces_v3.json": {
           "entrees": 764
+        }
+      }
+    },
+    "sockets": {
+      "ran_at": "2026-10-19T23:04:00.144Z",
+      "game_build_id": "25936403",
+      "sources": {
+        "Systems/Building/Data/DT_DuneSocketSetupData.json": "2026-10-19T22:37:31.166Z",
+        "Systems/Building/Data/CDT_BuildableGroupData.json": "2026-10-19T22:37:31.085Z"
+      },
+      "outputs": {
+        "dune_socket_profiles.json": {
+          "entrees": 71
+        },
+        "dune_group_config.json": {
+          "entrees": 279
+        },
+        "dune_pieces_sockets.json": {
+          "entrees": 737
         }
       }
     }

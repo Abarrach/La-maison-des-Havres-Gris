@@ -259,6 +259,19 @@ function pakMtime(jeu, motifs) {
 // `args`    : arguments passés au script, calculés depuis les chemins découverts.
 const STEPS = [
   {
+    id: 'export',
+    label: 'Export des DataTables depuis les paks (sans FModel)',
+    exe: (c) => c.extracteur,
+    args: () => ['--config', path.join(ROOT, 'tools/extract/extract.config.json')],
+    outputs: [],            // écrit dans l'arborescence d'export, pas dans le dépôt
+    sources: [],
+    paks: ['*'],            // tout pak/ucas/utoc : c'est la source du jeu elle-même
+    note: 'Remplace les clics dans FModel : monte les paks, applique le .usmap et la table '
+      + 'des types, charge la localisation FR, et écrit aux MÊMES chemins que FModel — donc '
+      + 'les étapes suivantes ne voient aucune différence. Lecture seule : ne touche ni au '
+      + 'jeu ni à aucun processus. À construire une fois : dotnet build tools/extract -c Release',
+  },
+  {
     id: 'snapshot',
     label: 'Snapshot gaming.tools (liste d\'objets, stats d\'armes, capacités)',
     script: 'tools/build_stuff_snapshot.js',
@@ -679,8 +692,16 @@ function afficherCheck(ctx, analyses) {
   if (!aExporter.size && !aBatir.length) {
     P('Rien : les données du site correspondent à l\'export FModel, lui-même à jour avec le jeu.');
   }
-  if (aExporter.size) {
-    P('1. Dans FModel (export manuel, l\'outil ne peut pas le faire à ta place) :');
+  if (aExporter.size && ctx.extracteur) {
+    // L'extracteur est là : plus aucune raison d'envoyer quelqu'un cliquer dans FModel.
+    P('1. node tools/update_datamine.js');
+    P('   → l\'étape « export » relit les paks et réécrit ces DataTables toute seule,');
+    P('     puis enchaîne sur les étapes qui en dépendent :');
+    for (const rel of [...aExporter].sort()) P(`       Content/Dune/${rel}`);
+    P('   (FModel reste utile pour explorer à la main et pour les .glb du planner.)');
+  } else if (aExporter.size) {
+    P('1. Dans FModel — export manuel, car l\'extracteur n\'est pas construit.');
+    P('   Pour rendre cette étape automatique : dotnet build tools/extract -c Release');
     P(`   • ouvrir ${jeu.paksDir || 'le dossier Paks du jeu'}`);
     P('   • si le chargement échoue après un patch : rafraîchir la clé AES et les mappings (.usmap)');
     P('   • ré-exporter en JSON (clic droit → Export Raw Data / Save Properties) :');
@@ -708,7 +729,15 @@ function lireSortie(rel) { return readJson(path.join(ROOT, rel)); }
 
 function executer(step, ctx) {
   const argv = step.args ? step.args(ctx) : [];
-  const cmd = ['node', step.script, ...argv].join(' ');
+  // Une étape peut être un exécutable (l'extracteur .NET) plutôt qu'un script node.
+  const binaire = step.exe ? step.exe(ctx) : null;
+  if (step.exe && !binaire) {
+    console.log(`⏭  [${step.id}] SKIP — binaire absent. Construis-le : dotnet build tools/extract -c Release`);
+    return { id: step.id, status: 'skipped' };
+  }
+  const programme = binaire || 'node';
+  const arguments_ = binaire ? argv : [step.script, ...argv];
+  const cmd = [programme, ...arguments_].join(' ');
   if (DRY_RUN) { console.log(`   (dry-run) ${cmd}`); return { id: step.id, status: 'dry-run', cmd }; }
 
   const avant = {};
@@ -717,7 +746,7 @@ function executer(step, ctx) {
   console.log(`\n▶ [${step.id}] ${step.label}`);
   console.log(`   ${cmd}`);
   try {
-    execFileSync('node', [step.script, ...argv], { cwd: ROOT, stdio: 'inherit' });
+    execFileSync(programme, arguments_, { cwd: ROOT, stdio: 'inherit' });
   } catch (e) {
     console.error(`✗ [${step.id}] ÉCHEC : ${e.message}`);
     return { id: step.id, status: 'error', error: e.message };
@@ -761,6 +790,10 @@ const ctx = {
   exportsRoot: reglages.exportsRoot,
   exportAddon: valOf('univers-src') || 'J:/Download/plans total.txt',
   usmap: usmapLePlusRecent(reglages),
+  extracteur: (() => {
+    const p = path.join(ROOT, 'tools/extract/bin/Release/net10.0/DuneExtract.exe');
+    return exists(p) ? p : null;
+  })(),
 };
 
 if (!exists(exportRoot)) {
@@ -851,7 +884,34 @@ if (!aLancer.length) {
 console.log(`Pipeline : ${aLancer.map(x => x.step.id).join(' → ')}`);
 
 // Une étape « externe » (script hors dépôt) a son propre lanceur.
-const resultats = aLancer.map(({ step }) => (step.external ? importPlanner(ctx) : executer(step, ctx)));
+const resultats = [];
+const dejaFaites = new Set();
+for (const { step } of aLancer) {
+  resultats.push(step.external ? importPlanner(ctx) : executer(step, ctx));
+  dejaFaites.add(step.id);
+}
+
+/**
+ * L'export vient peut-être de rafraîchir les DataTables : les étapes écartées faute
+ * d'export à jour sont désormais faisables. Sans cette reprise, il faudrait relancer la
+ * commande une seconde fois — et surtout le diff du patch arriverait en deux morceaux,
+ * répartis sur deux exécutions.
+ */
+if (resultats.some(r => r.id === 'export' && r.status === 'ok') && !ONLY && !DRY_RUN) {
+  const suite = STEPS
+    .filter(st => !dejaFaites.has(st.id))
+    .filter(st => !(st.optIn && !WITH[st.optIn]))
+    .map(st => ({ step: st, a: analyser(st, ctx) }))
+    .filter(x => !x.a.garde && (x.a.verdict === 'build' || FORCE));
+  if (suite.length) {
+    console.log(`
+▶ L'export a rafraîchi les sources : reprise de ${suite.map(x => x.step.id).join(', ')}`);
+    for (const { step } of suite) {
+      resultats.push(step.external ? importPlanner(ctx) : executer(step, ctx));
+      dejaFaites.add(step.id);
+    }
+  }
+}
 
 // ── Compte rendu ────────────────────────────────────────────────────────────
 const rapport = [];

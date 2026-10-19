@@ -1,0 +1,89 @@
+{
+  "_note": "Ce que DuneExtract sort du jeu, et où. Les chemins vides sont déduits des réglages FModel (dossier de paks, .usmap). La sortie imite EXACTEMENT l'arborescence d'export de FModel : les scripts tools/build_*.js ne voient aucune différence.",
+  "_aes": "Clé de déchiffrement des paks. Laissée VIDE exprès : elle est lue dans les réglages FModel au besoin, et n'a pas sa place dans un dépôt git. Passer --aes 0x… si le montage échoue.",
+
+  "paks": "",
+  "usmap": "",
+  "mapstructtypes": "../mapstructtypes.json",
+  "out": "J:/Download/Fmodel/Output/Exports",
+  "locale": "fr",
+  "aes": "",
+
+  "targets": [
+    {
+      "id": "recipes",
+      "path": "Systems/Crafting/DT_ItemsCraftingRecipes",
+      "mode": "file",
+      "note": "recettes de craft (ingrédients, sorties, qualités)"
+    },
+    {
+      "id": "base_items",
+      "path": "Systems/Items/CDT_BaseItems",
+      "mode": "file",
+      "note": "descriptions FR + tags des objets (sert aussi aux plans)"
+    },
+    {
+      "id": "armor",
+      "path": "Systems/Items/DT_ArmorItemTable",
+      "mode": "file",
+      "note": "valeur d'armure + mitigations"
+    },
+    {
+      "id": "augments",
+      "path": "Systems/Items/DT_ItemTable_Augments",
+      "mode": "file",
+      "note": "table des augments"
+    },
+    {
+      "id": "upgrades",
+      "path": "Systems/Items/Upgrades/",
+      "mode": "dir",
+      "note": "effets chiffrés par qualité (DataAssets)"
+    },
+    {
+      "id": "quality",
+      "path": "Systems/Items/Quality/",
+      "mode": "dir",
+      "note": "scaling par grade (courbes CF_*PerQuality)"
+    },
+    {
+      "id": "loottables",
+      "path": "Systems/LootTables/",
+      "mode": "dir",
+      "note": "butin : lieux nommés + conteneurs à tags"
+    },
+    {
+      "id": "looting",
+      "path": "Systems/Looting/",
+      "mode": "dir",
+      "note": "configuration du butin"
+    },
+    {
+      "id": "localization_items",
+      "path": "Localization/ST_Localization_Items",
+      "mode": "file",
+      "note": "pont nom de plan ↔ identifiant"
+    },
+    {
+      "id": "building",
+      "path": "Systems/Building/Data/",
+      "mode": "dir",
+      "note": "catalogue du Constructeur (alimente base_pieces_v3)"
+    },
+    {
+      "id": "vehicles",
+      "path": "Systems/Vehicles/",
+      "mode": "dir",
+      "note": "véhicules (alimente base_pieces_v3)"
+    }
+  ],
+
+  "_targets_differes": [
+    {
+      "id": "maps_biomes",
+      "path": "Maps/Biomes/",
+      "mode": "dir",
+      "note": "LOURD (~16 000 assets) : lieux réels des plans uniques. À activer en le déplaçant dans targets, ou via --only maps_biomes si réintégré."
+    }
+  ]
+}

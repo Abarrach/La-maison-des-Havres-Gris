@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>DuneExtract</AssemblyName>
+    <RootNamespace>DuneExtract</RootNamespace>
+    <InvariantGlobalization>true</InvariantGlobalization>
+
+    <!--
+      CUE4Parse vit HORS du dépôt : c'est une grosse bibliothèque tierce (sources
+      complètes), on ne la versionne pas ici. Surcharger au besoin :
+        dotnet build tools/extract -p:Cue4ParsePath=D:\chemin\CUE4Parse\CUE4Parse.csproj
+    -->
+    <Cue4ParsePath Condition="'$(Cue4ParsePath)' == ''">J:\Download\dune_extract\CUE4Parse\CUE4Parse\CUE4Parse.csproj</Cue4ParsePath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(Cue4ParsePath)" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
+  </ItemGroup>
+
+</Project>

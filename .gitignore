@@ -67,3 +67,9 @@ stuff_cache_skills.json
 stuff_cache/
 # Cache de noms d'items (intermédiaire build, régénéré par build_stuff_snapshot.js)
 stuff_names.json
+
+# Sortie de compilation de l'extracteur .NET (tools/extract)
+tools/extract/bin/
+tools/extract/obj/
+# Chemins machine du dump de .usmap (jamais versionnés)
+tools/dump_usmap.config.json

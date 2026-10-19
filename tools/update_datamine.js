@@ -898,14 +898,21 @@ for (const { step } of aLancer) {
  * répartis sur deux exécutions.
  */
 if (resultats.some(r => r.id === 'export' && r.status === 'ok') && !ONLY && !DRY_RUN) {
-  const suite = STEPS
-    .filter(st => !dejaFaites.has(st.id))
-    .filter(st => !(st.optIn && !WITH[st.optIn]))
-    .map(st => ({ step: st, a: analyser(st, ctx) }))
-    .filter(x => !x.a.garde && (x.a.verdict === 'build' || FORCE));
-  if (suite.length) {
+  // En BOUCLE, et non en une passe : une dépendance à deux niveaux serait sinon ratée.
+  // Vécu le 2026-10-20 — l'export a débloqué base_pieces_v3, mais planner_pieces (qui
+  // dépend de base_pieces_v3, pas de l'export) a été évalué AVANT que base_pieces_v3 ne
+  // tourne, donc jugé à jour. Le catalogue du planner est resté en arrière d'un cran,
+  // silencieusement. On réévalue donc après chaque vague, jusqu'à ce que plus rien ne
+  // bouge.
+  for (let vague = 0; vague < 6; vague++) {
+    const suite = STEPS
+      .filter(st => !dejaFaites.has(st.id))
+      .filter(st => !(st.optIn && !WITH[st.optIn]))
+      .map(st => ({ step: st, a: analyser(st, ctx) }))
+      .filter(x => !x.a.garde && (x.a.verdict === 'build' || (FORCE && x.a.verdict === 'ok')));
+    if (!suite.length) break;
     console.log(`
-▶ L'export a rafraîchi les sources : reprise de ${suite.map(x => x.step.id).join(', ')}`);
+▶ Reprise (vague ${vague + 1}) : ${suite.map(x => x.step.id).join(', ')}`);
     for (const { step } of suite) {
       resultats.push(step.external ? importPlanner(ctx) : executer(step, ctx));
       dejaFaites.add(step.id);

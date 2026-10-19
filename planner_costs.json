@@ -1219,5 +1219,6033 @@
         }
       }
     }
-  }
+  },
+  "by_piece": {
+    "Atreides_Outpost_Column": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Pillar",
+      "tier": "Tier2",
+      "health": 10000
+    },
+    "Atreides_Outpost_Door_Frame": {
+      "resources": {
+        "Plastone": 10
+      },
+      "group": "Door_Frame",
+      "tier": "Tier2",
+      "health": 5000
+    },
+    "Atreides_Outpost_Door_Frame_Wide": {
+      "resources": {
+        "Plastone": 25
+      },
+      "group": "Passageway_Wide",
+      "tier": "Tier2",
+      "health": 5000
+    },
+    "Atreides_Outpost_Door_Frame_Wide_02": {
+      "resources": {
+        "Plastone": 25
+      },
+      "group": "Door_Frame_Wide",
+      "tier": "Tier2",
+      "health": 5000
+    },
+    "Atreides_Outpost_Door_Frame_Tall": {
+      "resources": {
+        "Plastone": 10
+      },
+      "group": "Door_Frame_Tall",
+      "tier": "Tier2",
+      "health": 5000
+    },
+    "Atreides_Outpost_Floor": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Floor",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Floor_Round_Corner": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Floor_Round_Corner",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Floor_Round_Corner_Inverted": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Floor_Round_Corner_Inverted",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Floor_Wedge": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Floor_Wedge",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Foundation": {
+      "resources": {
+        "Plastone": 18
+      },
+      "group": "Foundation",
+      "tier": "Tier2",
+      "health": 10000
+    },
+    "Atreides_Outpost_Foundation_Round_Corner": {
+      "resources": {
+        "Plastone": 18
+      },
+      "group": "Foundation_Round_Corner",
+      "tier": "Tier2",
+      "health": 10000
+    },
+    "Atreides_Outpost_Foundation_Wedge": {
+      "resources": {
+        "Plastone": 18
+      },
+      "group": "Foundation_Wedge",
+      "tier": "Tier2",
+      "health": 10000
+    },
+    "Atreides_Outpost_Hatch": {
+      "resources": {
+        "Plastone": 10
+      },
+      "group": "Hatch_Frame",
+      "tier": "Tier2",
+      "health": 5000
+    },
+    "Atreides_Outpost_Passageway": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Passageway",
+      "tier": "Tier2",
+      "health": 5000
+    },
+    "Atreides_Outpost_Pillar_Bottom": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Pillar",
+      "tier": "Tier2",
+      "health": 10000
+    },
+    "Atreides_Outpost_Pillar_Middle": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Pillar",
+      "tier": "Tier2",
+      "health": 10000
+    },
+    "Atreides_Outpost_Pillar_Top": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Pillar",
+      "tier": "Tier2",
+      "health": 10000
+    },
+    "Atreides_Outpost_Railing": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Railing",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Railing_Gate": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Railing",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Railing_Inclined": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Railing_Inclined",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Railing_Inclined_Half": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Railing_Inclined_Half",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Railing_Round_Corner": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Railing_Round_Corner",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Ramp": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Ramp",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Ramp_Half": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Ramp_Half",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Ramp_Corner": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Ramp_Corner",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Ramp_Corner_Half": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Ramp_Corner_Half",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Ramp_Corner_Inward": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Ramp_Corner_Inward",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Ramp_Corner_Half_Inward": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Ramp_Corner_Half_Inward",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Roof_Cover_Bottom_Half_Left": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Roof_Cover_Bottom_Half_Left",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Roof_Cover_Bottom_Half_Right": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Roof_Cover_Bottom_Half_Right",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Roof_Cover_Top_Half_Left": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Roof_Cover_Top_Half_Left",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Roof_Cover_Top_Half_Right": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Roof_Cover_Top_Half_Right",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Roof_Half": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Roof_Half",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Roof_Corner_Half": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Roof_Corner_Half",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Roof_Corner_Half_Inward": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Roof_Corner_Half_Inward",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Roof_Round_Corner_Half": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Roof_Round_Corner_Half",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Rooftop_01": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Rooftop",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Rooftop_02": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Floor",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Stairs": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Stairs",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Stairs_Half": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Stairs_Half",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Stairs_Corner": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Stairs_Corner",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Stairs_Corner_Half": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Stairs_Corner_Half",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Stairs_Corner_Inward": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Stairs_Corner_Inward",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Stairs_Corner_Half_Inward": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Stairs_Corner_Half_Inward",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Wall_01": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Wall_02": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Wall_03": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Wall_04": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Wall_Half": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Half",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Wall_Round_Corner_01": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Round_Corner",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Wall_Round_Corner_02": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Round_Corner",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Wall_Round_Corner_03": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Round_Corner",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Wall_Round_Corner_Half": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Round_Corner_Half",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Wall_Triangle_Bottom_Half_Left": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Triangle_Bottom_Half_Left",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Wall_Triangle_Bottom_Half_Right": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Triangle_Bottom_Half_Right",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Wall_Triangle_Bottom_Left": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Triangle_Bottom_Left",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Wall_Triangle_Bottom_Right": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Triangle_Bottom_Right",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Wall_Triangle_Top_Half_Left": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Triangle_Top_Half_Left",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Wall_Triangle_Top_Half_Right": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Triangle_Top_Half_Right",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Wall_Triangle_Top_Left": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Triangle_Top_Left",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Wall_Triangle_Top_Right": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Triangle_Top_Right",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Window_01": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Window_02": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Window_03": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Window_04": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Ramp_Edge_Wide_Left": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Ramp_Edge_Wide_Left",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Ramp_Edge_Wide_Right": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Ramp_Edge_Wide_Right",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Ramp_Wide": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Ramp_Wide",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Stair_Wide": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Ramp_Wide",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Wall_Triangle_Top_Wide_Left": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Triangle_Top_Wide_Left",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Wall_Triangle_Top_Wide_Right": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Triangle_Top_Wide_Right",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Floor_Triangle_Wide_Left": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Floor_Triangle_Wide_Left",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Floor_Triangle_Wide_Right": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Floor_Triangle_Wide_Right",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Wall_Inclined_Wide_Left": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Inclined_Wide_Left",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Wall_Inclined_Wide_Right": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Inclined_Wide_Right",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Column_Corner": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Pillar_Corner",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_PrudenceDoor_Frame": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "PrudenceDoor_Frame",
+      "tier": "Tier2",
+      "health": 6500
+    },
+    "Atreides_Outpost_Ladder": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Ladder",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Gate_Big": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Gate_Big",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Roof_Wedge_Top_Half": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Roof_Wedge_Top_Half",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Roof_Wedge_Bottom_Half": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Roof_Wedge_Bottom_Half",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "MTX_Atre_BreakfastRoom_Floor": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Floor",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "MTX_Atre_BreakfastRoom_FloorRoundCorner": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Floor_Round_Corner",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "MTX_Atre_BreakfastRoom_Wall_01": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "MTX_Atre_BreakfastRoom_WallRoundCorner": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Round_Corner",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "MTX_Atreides_Outpost_Window_Movie": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "MTX_Atreides_Outpost_Bookshelf": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "MTX_Atreides_Outpost_FloorLight_Movie": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Floor",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "MTX_Atreides_Outpost_DoorFrame": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Passageway",
+      "tier": "Tier0",
+      "health": 2500
+    },
+    "Atreides_Outpost_Rooftop_Wedge": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Floor_Wedge",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Rooftop_Round_Corner": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Floor_Round_Corner",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Outpost_Rooftop_Round_Corner_Inverted": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Floor_Round_Corner_Inverted",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Atreides_Garage_Door_Frame": {
+      "resources": {
+        "Plastone": 25
+      },
+      "group": "Door_Frame_Garage",
+      "tier": "Tier2",
+      "health": 5000
+    },
+    "Blockout_Column": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Pillar",
+      "tier": "Tier0",
+      "health": 5000
+    },
+    "Blockout_Column_Corner": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Pillar_Corner",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Door_Frame": {
+      "resources": {
+        "Granite Stone": 5
+      },
+      "group": "Door_Frame",
+      "tier": "Tier0",
+      "health": 2500
+    },
+    "Blockout_Door_Frame_Tall": {
+      "resources": {
+        "Granite Stone": 5
+      },
+      "group": "Door_Frame_Tall",
+      "tier": "Tier0",
+      "health": 2500
+    },
+    "Blockout_Door_Frame_Wide": {
+      "resources": {
+        "Granite Stone": 16
+      },
+      "group": "Door_Frame_Wide",
+      "tier": "Tier0",
+      "health": 2500
+    },
+    "Blockout_Floor": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Floor",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Floor_Round_Corner": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Floor_Round_Corner",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Floor_Round_Corner_Inverted": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Floor_Round_Corner_Inverted",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Floor_Wedge": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Floor_Wedge",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Foundation": {
+      "resources": {
+        "Granite Stone": 12
+      },
+      "group": "Foundation",
+      "tier": "Tier0",
+      "health": 5000
+    },
+    "Blockout_Foundation_Round_Corner": {
+      "resources": {
+        "Granite Stone": 12
+      },
+      "group": "Foundation_Round_Corner",
+      "tier": "Tier0",
+      "health": 5000
+    },
+    "Blockout_Foundation_Wedge": {
+      "resources": {
+        "Granite Stone": 12
+      },
+      "group": "Foundation_Wedge",
+      "tier": "Tier0",
+      "health": 5000
+    },
+    "Blockout_Gate_Big": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Gate_Big",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Hatch": {
+      "resources": {
+        "Granite Stone": 5
+      },
+      "group": "Hatch_Frame",
+      "tier": "Tier0",
+      "health": 2500
+    },
+    "Blockout_Passageway": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Passageway",
+      "tier": "Tier0",
+      "health": 2500
+    },
+    "Blockout_Pillar_Bottom": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Pillar",
+      "tier": "Tier0",
+      "health": 5000
+    },
+    "Blockout_Pillar_Middle": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Pillar",
+      "tier": "Tier0",
+      "health": 5000
+    },
+    "Blockout_Pillar_Top": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Pillar",
+      "tier": "Tier0",
+      "health": 5000
+    },
+    "Blockout_Railing": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Railing",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Railing_Gate": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Railing",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Railing_Inclined": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Railing_Inclined",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Railing_Inclined_Half": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Railing_Inclined_Half",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Railing_Round_Corner": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Railing_Round_Corner",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Ramp": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Ramp",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Ramp_Half": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Ramp_Half",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Ramp_Corner": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Ramp_Corner",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Ramp_Corner_Half": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Ramp_Corner_Half",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Ramp_Corner_Inward": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Ramp_Corner_Inward",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Ramp_Corner_Half_Inward": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Ramp_Corner_Half_Inward",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Ramp_Wedge_Bottom": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Angled_Wedge_Bottom",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Ramp_Wedge_Top": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Angled_Wedge_Top",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Roof": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Roof",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Roof_Half": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Roof_Half",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Roof_Corner": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Roof_Corner",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Roof_Corner_Half": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Roof_Corner_Half",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Roof_Corner_Inward": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Roof_Corner_Inward",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Roof_Corner_Half_Inward": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Roof_Corner_Half_Inward",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Roof_Cover_Bottom_Half_Left": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Roof_Cover_Bottom_Half_Left",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Roof_Cover_Bottom_Half_Right": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Roof_Cover_Bottom_Half_Right",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Roof_Cover_Bottom_Left": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Roof_Cover_Bottom_Left",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Roof_Cover_Bottom_Right": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Roof_Cover_Bottom_Right",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Roof_Cover_Top_Half_Left": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Roof_Cover_Top_Half_Left",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Roof_Cover_Top_Half_Right": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Roof_Cover_Top_Half_Right",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Roof_Cover_Top_Left": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Roof_Cover_Top_Left",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Roof_Cover_Top_Right": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Roof_Cover_Top_Right",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Roof_Round_Corner": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Roof_Round_Corner",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Roof_Round_Corner_Half": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Roof_Round_Corner_Half",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Rooftop": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Rooftop",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Roof_Wedge_Bottom": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Roof_Wedge_Bottom",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Roof_Wedge_Top": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Roof_Wedge_Top",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Stairs": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Stairs",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Stairs_Half": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Stairs_Half",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Stairs_Corner": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Stairs_Corner",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Stairs_Corner_Half": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Stairs_Corner_Half",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Stairs_Corner_Inward": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Stairs_Corner_Inward",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Stairs_Corner_Half_Inward": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Stairs_Corner_Half_Inward",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Wall": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Wall_Protuding": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Protuding",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Wall_Half": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Half",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Wall_Corner_Tall": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Inclined_Corner_Tall",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Wall_Inclined_Tall": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Inclined_Tall",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Wall_Round_Corner": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Round_Corner",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Wall_Round_Corner_Half": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Round_Corner_Half",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Wall_Triangle_Bottom_Half_Left": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Triangle_Bottom_Half_Left",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Wall_Triangle_Bottom_Half_Right": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Triangle_Bottom_Half_Right",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Wall_Triangle_Bottom_Left": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Triangle_Bottom_Left",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Wall_Triangle_Bottom_Right": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Triangle_Bottom_Right",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Wall_Triangle_Top_Half_Left": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Triangle_Top_Half_Left",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Wall_Triangle_Top_Half_Right": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Triangle_Top_Half_Right",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Wall_Triangle_Top_Left": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Triangle_Top_Left",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Wall_Triangle_Top_Right": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Triangle_Top_Right",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Wall_Triangle_Bottom_Tall_Left": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Triangle_Bottom_Tall_Left",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Wall_Triangle_Bottom_Tall_Right": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Triangle_Bottom_Tall_Right",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Wall_Triangle_Top_Tall_Left": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Triangle_Top_Tall_Left",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Wall_Triangle_Top_Tall_Right": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Triangle_Top_Tall_Right",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Window": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Window_Round_Corner": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Round_Corner",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Tower": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Tower",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Ladder": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Ladder",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Ramp_Edge_Wide_Left": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Ramp_Edge_Wide_Left",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Ramp_Edge_Wide_Right": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Ramp_Edge_Wide_Right",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Ramp_Wide": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Ramp_Wide",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Stair_Wide": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Ramp_Wide",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Wall_Triangle_Top_Wide_Left": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Triangle_Top_Wide_Left",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Wall_Triangle_Top_Wide_Right": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Triangle_Top_Wide_Right",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Floor_Triangle_Wide_Left": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Floor_Triangle_Wide_Left",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Floor_Triangle_Wide_Right": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Floor_Triangle_Wide_Right",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Wall_Inclined_Wide_Left": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Inclined_Wide_Left",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Wall_Inclined_Wide_Right": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Inclined_Wide_Right",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "MLS_TEST": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Blockout_Roof_Wedge_Bottom_Half": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Roof_Wedge_Bottom_Half",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Roof_Wedge_Top_Half": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Roof_Wedge_Top_Half",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Blockout_Door_Frame_Garage": {
+      "resources": {
+        "Granite Stone": 16
+      },
+      "group": "Door_Frame_Garage",
+      "tier": "Tier0",
+      "health": 2500
+    },
+    "Blockout_Arch": {
+      "resources": {
+        "Granite Stone": 12
+      },
+      "group": "Arch",
+      "tier": "Tier0",
+      "health": 5000
+    },
+    "Choam_Shelter_Column": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "Choam_Shelter_Door_Frame": {
+      "resources": {
+        "Granite Stone": 7
+      },
+      "group": "Door_Frame",
+      "tier": "Tier1",
+      "health": 3500
+    },
+    "Choam_Shelter_Floor": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Floor_Round_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Floor_Round_Corner_Inverted": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor_Round_Corner_Inverted",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Floor_Wedge": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor_Wedge",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Foundation": {
+      "resources": {
+        "Granite Stone": 15
+      },
+      "group": "Foundation",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "Choam_Shelter_Foundation_Round_Corner": {
+      "resources": {
+        "Granite Stone": 15
+      },
+      "group": "Foundation_Round_Corner",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "Choam_Shelter_Foundation_Wedge": {
+      "resources": {
+        "Granite Stone": 15
+      },
+      "group": "Foundation_Wedge",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "Choam_Shelter_Hatch": {
+      "resources": {
+        "Granite Stone": 7
+      },
+      "group": "Hatch_Frame",
+      "tier": "Tier1",
+      "health": 3500
+    },
+    "Choam_Shelter_Pillar_Bottom": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "Choam_Shelter_Pillar_Middle": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "Choam_Shelter_Pillar_Top": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "Choam_Shelter_Railing": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Railing_Gate": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Railing_Round_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Railing_Inclined_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing_Inclined_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Railing_Inclined": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing_Inclined",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Ramp": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Ramp",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Ramp_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Ramp_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Ramp_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Ramp_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Ramp_Corner_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Ramp_Corner_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Ramp_Corner_Inward": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Ramp_Corner_Inward",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Ramp_Corner_Half_Inward": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Ramp_Corner_Half_Inward",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Roof_Round_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Ramp_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Roof_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Roof_Wedge_Bottom": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Angled_Wedge_Bottom",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Roof_Wedge_Top": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Angled_Wedge_Top",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Roof_Corner_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Corner_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Roof_Round_Corner_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Round_Corner_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Rooftop": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Rooftop",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Rooftop_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Stairs": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Stairs",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Stairs_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Stairs_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Stairs_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Stairs_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Stairs_Corner_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Stairs_Corner_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Stairs_Corner_Inward": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Stairs_Corner_Inward",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Stairs_Corner_Half_Inward": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Stairs_Corner_Half_Inward",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Wall_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Wall_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Protuding",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Wall_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Wall_Round_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Wall_Triangle_Bottom_Left": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Bottom_Left",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Wall_Triangle_Bottom_Half_Left": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Bottom_Half_Left",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Wall_Triangle_Bottom_Right": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Bottom_Right",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Wall_Triangle_Bottom_Half_Right": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Bottom_Half_Right",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Wall_Triangle_Top_Left": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Top_Left",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Wall_Triangle_Top_Half_Left": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Top_Half_Left",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Wall_Triangle_Top_Right": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Top_Right",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Wall_Triangle_Top_Half_Right": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Top_Half_Right",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Window": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Window_Round_Corner_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Round_Corner_Sideless",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Window_Round_Corner_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_PrudenceDoor_Frame": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "PrudenceDoor_Frame",
+      "tier": "Tier1",
+      "health": 4500
+    },
+    "Choam_Shelter_Column_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Ladder": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Ladder",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Roof_Cover_Bottom_Half_Left": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Cover_Bottom_Half_Left",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Roof_Cover_Bottom_Half_Right": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Cover_Bottom_Half_Right",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Column": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "Choam_Level2_Column_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Door_Frame": {
+      "resources": {
+        "Granite Stone": 7
+      },
+      "group": "Door_Frame",
+      "tier": "Tier1",
+      "health": 3500
+    },
+    "Choam_Level2_Door_Frame_Wide": {
+      "resources": {
+        "Granite Stone": 20
+      },
+      "group": "Door_Frame_Wide",
+      "tier": "Tier1",
+      "health": 3500
+    },
+    "Choam_Level2_Floor": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Floor_Round_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Floor_Round_Corner_Inverted": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor_Round_Corner_Inverted",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Foundation": {
+      "resources": {
+        "Granite Stone": 15
+      },
+      "group": "Foundation",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "Choam_Level2_Foundation_Round_Corner": {
+      "resources": {
+        "Granite Stone": 15
+      },
+      "group": "Foundation_Round_Corner",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "Choam_Level2_Hatch": {
+      "resources": {
+        "Granite Stone": 7
+      },
+      "group": "Hatch_Frame",
+      "tier": "Tier1",
+      "health": 3500
+    },
+    "Choam_Level2_Passageway": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Passageway",
+      "tier": "Tier1",
+      "health": 3500
+    },
+    "Choam_Level2_Pillar_Bottom": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "Choam_Level2_Pillar_Middle": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "Choam_Level2_Pillar_Top": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "Choam_Level2_Railing": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Railing_Gate": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Railing_Inclined": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing_Inclined",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Railing_Inclined_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing_Inclined_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Railing_Round_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Ramp": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Ramp",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Ramp_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Ramp_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Ramp_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Ramp_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Ramp_Corner_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Ramp_Corner_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Ramp_Corner_Inward": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Ramp_Corner_Inward",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Ramp_Corner_Half_Inward": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Ramp_Corner_Half_Inward",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Roof_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Roof_Corner_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Corner_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Roof_Corner_Half_Inward": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Corner_Half_Inward",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Roof_Cover_Bottom_Half_Left": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Cover_Bottom_Half_Left",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Roof_Cover_Bottom_Half_Right": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Cover_Bottom_Half_Right",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Roof_Round_Corner_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Round_Corner_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Rooftop_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Rooftop",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Rooftop_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Stairs": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Stairs",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Stairs_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Stairs_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Stairs_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Stairs_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Stairs_Corner_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Stairs_Corner_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Stairs_Corner_Inward": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Stairs_Corner_Inward",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Stairs_Corner_Half_Inward": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Stairs_Corner_Half_Inward",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Wall_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Wall_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Wall_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Wall_Round_Corner_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Wall_Round_Corner_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Wall_Round_Corner_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Round_Corner_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Wall_Triangle_Bottom_Half_Left": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Bottom_Half_Left",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Wall_Triangle_Bottom_Half_Right": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Bottom_Half_Right",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Wall_Triangle_Bottom_Left": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Bottom_Left",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Wall_Triangle_Bottom_Right": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Bottom_Right",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Wall_Triangle_Top_Half_Left": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Top_Half_Left",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Wall_Triangle_Top_Half_Right": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Top_Half_Right",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Wall_Triangle_Top_Left": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Top_Left",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Wall_Triangle_Top_Right": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Top_Right",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Window_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Window_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Protuding",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Window_Round_Corner_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Window_Round_Corner_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Ladder": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Ladder",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_PrudenceDoor": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "PrudenceDoor_Frame",
+      "tier": "Tier1",
+      "health": 4500
+    },
+    "Choam_Level2_Foundation_Wedge": {
+      "resources": {
+        "Granite Stone": 15
+      },
+      "group": "Foundation_Wedge",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "Choam_Level2_Floor_Wedge": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor_Wedge",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Roof_Wedge_Top_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Wedge_Top_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Roof_Wedge_Bottom_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Wedge_Bottom_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Rooftop_Wedge": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor_Wedge",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Rooftop_Round_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Rooftop_Round_Corner_Inverted": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor_Round_Corner_Inverted",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Choam_TwitchReward_Column": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "MTX_Choam_TwitchReward_Floor": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Choam_TwitchReward_Foundation": {
+      "resources": {
+        "Granite Stone": 15
+      },
+      "group": "Foundation",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "MTX_Choam_TwitchReward_Passageway": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Passageway",
+      "tier": "Tier1",
+      "health": 3500
+    },
+    "MTX_Choam_TwitchReward_Stairs": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Stairs",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Choam_TwitchReward_Wall_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Choam_TwitchReward_Window_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Choam_TwitchReward_Stairs_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Stairs_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Choam_TwitchReward_Stairs_Corner_Inverted": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Stairs_Corner_Inward",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Choam_TwitchReward_Wall_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Choam_TwitchReward_Floor_Round": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Choam_TwitchReward_Foundation_Round_Corner": {
+      "resources": {
+        "Granite Stone": 15
+      },
+      "group": "Foundation_Round_Corner",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "MTX_Choam_TwitchReward_Wall_Round": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Choam_TwitchReward_Rooftop": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Rooftop",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Choam_TwitchReward_Hatch": {
+      "resources": {
+        "Granite Stone": 7
+      },
+      "group": "Hatch_Frame",
+      "tier": "Tier1",
+      "health": 3500
+    },
+    "MTX_Choam_TwitchReward_Wall_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Choam_TwitchReward_Column_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "MTX_Choam_TwitchReward_Ladder": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Ladder",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Choam_TwitchReward_Door": {
+      "resources": {
+        "Granite Stone": 7
+      },
+      "group": "Door_Frame",
+      "tier": "Tier1",
+      "health": 3500
+    },
+    "MTX_Choam_TwitchReward_Railing_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Choam_TwitchReward_Window_Round": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Choam_TwitchReward_Railing_Inclined": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing_Inclined",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Choam_TwitchReward_Railing_Gate": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Choam_TwitchReward_Railing_Corner_Round": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Choam_TwitchReward_Pillar_Bottom": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "MTX_Choam_TwitchReward_Pillar_Middle": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "MTX_Choam_TwitchReward_Pillar_Top": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "MTX_Choam_TwitchReward_Triangle_Top_Left": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Top_Left",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Choam_TwitchReward_Triangle_Top_Right": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Top_Right",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Choam_TwitchReward_Triangle_Bottom_Right": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Bottom_Right",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Choam_TwitchReward_Triangle_Bottom_Left": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Bottom_Left",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Choam_TwitchReward_Half_Triangle_Top_Left": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Top_Half_Left",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Choam_TwitchReward_Half_Triangle_Top_Right": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Top_Half_Right",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Choam_TwitchReward_Half_Triangle_Bottom_Left": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Bottom_Half_Left",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Choam_TwitchReward_Half_Triangle_Bottom_Right": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Bottom_Half_Right",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Choam_TwitchReward_Roof_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Corner_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Choam_TwitchReward_Roof_Corner_Inverted": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Corner_Half_Inward",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Choam_TwitchReward_Roof_Corner_Round": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Choam_TwitchReward_Roof_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Level2_Garage_Door_Frame": {
+      "resources": {
+        "Granite Stone": 20
+      },
+      "group": "Door_Frame_Garage",
+      "tier": "Tier1",
+      "health": 3500
+    },
+    "MTX_Neut_Gunner_Floor": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Neut_Gunner_Foundation": {
+      "resources": {
+        "Granite Stone": 15
+      },
+      "group": "Foundation",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "MTX_Neut_Gunner_Railing_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Neut_Gunner_Railing_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Neut_Gunner_Railing_Round_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Neut_Gunner_Column": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "MTX_B1C5_Choam_Level2Extention_Column": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "MTX_B1C5_Choam_Level2Extention_Floor_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_B1C5_Choam_Level2Extention_Passageway_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Passageway",
+      "tier": "Tier1",
+      "health": 3500
+    },
+    "MTX_B1C5_Choam_Level2Extention_Rooftop_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Rooftop",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_B1C5_Choam_Level2Extention_Wall_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_B1C5_Choam_Level2Extention_Wall_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_B1C5_Choam_Level2Extention_Wall_03": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_B1C5_Choam_Level2Extention_Wall_Round_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_B1C5_Choam_Level2Extention_Column_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Choam_Shelter_Column_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Pillar",
+      "tier": "Tier0",
+      "health": 5000
+    },
+    "Choam_Shelter_Door_Frame_New": {
+      "resources": {
+        "Granite Stone": 5
+      },
+      "group": "Door_Frame",
+      "tier": "Tier0",
+      "health": 2500
+    },
+    "Choam_Shelter_Door_Frame_Wide_New": {
+      "resources": {
+        "Granite Stone": 16
+      },
+      "group": "Door_Frame_Wide",
+      "tier": "Tier0",
+      "health": 2500
+    },
+    "Choam_Shelter_Floor_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Floor",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Floor_Round_Corner_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Floor_Round_Corner",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Floor_Round_Corner_Inverted_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Floor_Round_Corner_Inverted",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Foundation_New": {
+      "resources": {
+        "Granite Stone": 12
+      },
+      "group": "Foundation",
+      "tier": "Tier0",
+      "health": 5000
+    },
+    "Choam_Shelter_Foundation_Round_Corner_New": {
+      "resources": {
+        "Granite Stone": 12
+      },
+      "group": "Foundation_Round_Corner",
+      "tier": "Tier0",
+      "health": 5000
+    },
+    "Choam_Shelter_Hatch_New": {
+      "resources": {
+        "Granite Stone": 5
+      },
+      "group": "Hatch_Frame",
+      "tier": "Tier0",
+      "health": 2500
+    },
+    "Choam_Shelter_Pillar_Bottom_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Pillar",
+      "tier": "Tier0",
+      "health": 5000
+    },
+    "Choam_Shelter_Pillar_Middle_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Pillar",
+      "tier": "Tier0",
+      "health": 5000
+    },
+    "Choam_Shelter_Pillar_Top_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Pillar",
+      "tier": "Tier0",
+      "health": 5000
+    },
+    "Choam_Shelter_Railing_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Railing",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Railing_Gate_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Railing",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Railing_Round_Corner_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Railing_Round_Corner",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Railing_Inclined_Half_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Railing_Inclined_Half",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Railing_Inclined_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Railing_Inclined",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Ramp_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Ramp",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Ramp_Half_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Ramp_Half",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Ramp_Corner_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Ramp_Corner",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Ramp_Corner_Half_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Ramp_Corner_Half",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Ramp_Corner_Inward_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Ramp_Corner_Inward",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Ramp_Corner_Half_Inward_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Ramp_Corner_Half_Inward",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Roof_Half_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Roof_Half",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Roof_Corner_Half_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Roof_Corner_Half",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Roof_Corner_Half_Inward_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Roof_Corner_Half_Inward",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Roof_Round_Corner_Half_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Roof_Round_Corner_Half",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Rooftop_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Rooftop",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Rooftop_02_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Floor",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Roof_Cover_Half_Left_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Roof_Cover_Bottom_Half_Left",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Roof_Cover_Half_Right_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Roof_Cover_Bottom_Half_Right",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Stairs_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Stairs",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Stairs_Half_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Stairs_Half",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Stairs_Corner_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Stairs_Corner",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Stairs_Corner_Half_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Stairs_Corner_Half",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Stairs_Corner_Inward_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Stairs_Corner_Inward",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Stairs_Corner_Half_Inward_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Stairs_Corner_Half_Inward",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Wall_01_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Wall_02_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Protuding",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Wall_03_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Wall_Half_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Half",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Wall_Round_Corner_01_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Round_Corner",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Wall_Round_Corner_02_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Round_Corner",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Wall_Round_Corner_Half_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Round_Corner_Half",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Wall_Triangle_Bottom_Left_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Triangle_Bottom_Left",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Wall_Triangle_Bottom_Half_Left_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Triangle_Bottom_Half_Left",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Wall_Triangle_Bottom_Right_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Triangle_Bottom_Right",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Wall_Triangle_Bottom_Half_Right_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Triangle_Bottom_Half_Right",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Wall_Triangle_Top_Left_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Triangle_Top_Left",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Wall_Triangle_Top_Half_Left_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Triangle_Top_Half_Left",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Wall_Triangle_Top_Right_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Triangle_Top_Right",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Wall_Triangle_Top_Half_Right_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Triangle_Top_Half_Right",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Window_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Window_Round_Corner_01_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Round_Corner_Sideless",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Window_Round_Corner_02_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Wall_Round_Corner",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Column_Corner_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Pillar_Corner",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Ladder_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Ladder",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Passageway_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Passageway",
+      "tier": "Tier0",
+      "health": 2500
+    },
+    "Choam_Shelter_Foundation_Wedge_New": {
+      "resources": {
+        "Granite Stone": 12
+      },
+      "group": "Foundation_Wedge",
+      "tier": "Tier0",
+      "health": 5000
+    },
+    "Choam_Shelter_Floor_Wedge_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Floor_Wedge",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Roof_Wedge_Top_Half_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Roof_Wedge_Top_Half",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Roof_Wedge_Bottom_Half_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Roof_Wedge_Bottom_Half",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Rooftop_Wedge_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Floor_Wedge",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Rooftop_Round_Corner_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Floor_Round_Corner",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Choam_Shelter_Rooftop_Round_Corner_Inverted_New": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "group": "Floor_Round_Corner_Inverted",
+      "tier": "Tier0",
+      "health": 4000
+    },
+    "Harkonnen_Outpost_Column": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Pillar",
+      "tier": "Tier2",
+      "health": 10000
+    },
+    "Harkonnen_Outpost_Door_Frame": {
+      "resources": {
+        "Plastone": 10
+      },
+      "group": "Door_Frame",
+      "tier": "Tier2",
+      "health": 5000
+    },
+    "Harkonnen_Outpost_Door_Frame_Tall": {
+      "resources": {
+        "Plastone": 10
+      },
+      "group": "Door_Frame_Tall",
+      "tier": "Tier2",
+      "health": 5000
+    },
+    "Harkonnen_Outpost_Door_Frame_Wide": {
+      "resources": {
+        "Plastone": 25
+      },
+      "group": "Door_Frame_Wide",
+      "tier": "Tier2",
+      "health": 5000
+    },
+    "Harkonnen_Outpost_Floor": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Floor",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Floor_Round_Corner": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Floor_Round_Corner",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Floor_Round_Inverted": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Floor_Round_Corner_Inverted",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Floor_Wedge": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Floor_Wedge",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Foundation": {
+      "resources": {
+        "Plastone": 18
+      },
+      "group": "Foundation",
+      "tier": "Tier2",
+      "health": 10000
+    },
+    "Harkonnen_Outpost_Foundation_Round_Corner": {
+      "resources": {
+        "Plastone": 18
+      },
+      "group": "Foundation_Round_Corner",
+      "tier": "Tier2",
+      "health": 10000
+    },
+    "Harkonnen_Outpost_Foundation_Wedge": {
+      "resources": {
+        "Plastone": 18
+      },
+      "group": "Foundation_Wedge",
+      "tier": "Tier2",
+      "health": 10000
+    },
+    "Harkonnen_Outpost_Gate_Big": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Gate_Big",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Hatch": {
+      "resources": {
+        "Plastone": 10
+      },
+      "group": "Hatch_Frame",
+      "tier": "Tier2",
+      "health": 5000
+    },
+    "Harkonnen_Outpost_Passageway": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Passageway",
+      "tier": "Tier2",
+      "health": 5000
+    },
+    "Harkonnen_Outpost_Pillar_Bottom": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Pillar",
+      "tier": "Tier2",
+      "health": 10000
+    },
+    "Harkonnen_Outpost_Pillar_Middle": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Pillar",
+      "tier": "Tier2",
+      "health": 10000
+    },
+    "Harkonnen_Outpost_Pillar_Top": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Pillar",
+      "tier": "Tier2",
+      "health": 10000
+    },
+    "Harkonnen_Outpost_Railing": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Railing",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Railing_Gate": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Railing",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Railing_Inclined": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Railing_Inclined",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Railing_Inclined_Half": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Railing_Inclined_Half",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Railing_Round_Corner": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Railing_Round_Corner",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Ramp": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Ramp",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Ramp_Half": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Ramp_Half",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Ramp_Corner": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Ramp_Corner",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Ramp_Corner_Half": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Ramp_Corner_Half",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Ramp_Corner_Inward": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Ramp_Corner_Inward",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Ramp_Corner_Half_Inward": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Ramp_Corner_Half_Inward",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Roof_01": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Roof",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Roof_02": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Roof",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Roof_Corner": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Roof_Corner",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Roof_Round_Corner": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Roof_Round_Corner",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Roof_Corner_Inward": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Roof_Corner_Inward",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Roof_Cover_Bottom_Left": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Roof_Cover_Bottom_Left",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Roof_Cover_Bottom_Right": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Roof_Cover_Bottom_Right",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Roof_Wedge_Bottom": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Roof_Wedge_Bottom",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Roof_Wedge_Top": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Roof_Wedge_Top",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Rooftop": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Rooftop",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Rooftop_02": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Floor",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Stairs": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Stairs",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Stairs_Half": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Stairs_Half",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Stairs_Corner": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Stairs_Corner",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Stairs_Corner_Half": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Stairs_Corner_Half",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Stairs_Corner_Inward": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Stairs_Corner_Inward",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Stairs_Corner_Half_Inward": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Stairs_Corner_Half_Inward",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Ladder": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Ladder",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Wall_01": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Wall_02": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Wall_03": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Wall_04": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Wall_Half": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Half",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Wall_Round_Corner": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Round_Corner",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Wall_Round_Corner_02": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Round_Corner",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Wall_Round_Corner_03": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Round_Corner",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Wall_Round_Corner_Half": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Round_Corner_Half",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Wall_Corner_Tall": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Inclined_Corner_Tall",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Wall_Inclined_Tall": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Inclined_Tall",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Wall_Triangle_Bottom_Left": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Triangle_Bottom_Left",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Wall_Triangle_Bottom_Right": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Triangle_Bottom_Right",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Wall_Triangle_Bottom_Half_Left": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Triangle_Bottom_Half_Left",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Wall_Triangle_Bottom_Half_Right": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Triangle_Bottom_Half_Right",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Wall_Triangle_Top_Left": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Triangle_Top_Left",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Wall_Triangle_Top_Right": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Triangle_Top_Right",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Wall_Triangle_Top_Half-Left": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Triangle_Top_Half_Left",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Wall_Triangle_Top_Half_Right": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Triangle_Top_Half_Right",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Wall_Triangle_Bottom_Tall_Left": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Triangle_Bottom_Tall_Left",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Wall_Triangle_Bottom_Tall_Right": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Triangle_Bottom_Tall_Right",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Wall_Triangle_Top_Tall_Left": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Triangle_Top_Tall_Left",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Wall_Triangle_Top_Tall_Right": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Triangle_Top_Tall_Right",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Window": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Window_Round_Corner": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Wall_Round_Corner",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Tower": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Tower",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Column_Corner": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Pillar_Corner",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_PrudenceDoor_Frame": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "PrudenceDoor_Frame",
+      "tier": "Tier2",
+      "health": 6500
+    },
+    "Harkonnen_Outpost_Rooftop_Wedge": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Floor_Wedge",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Rooftop_Round_Corner": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Floor_Round_Corner",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Outpost_Rooftop_Round_Inverted": {
+      "resources": {
+        "Plastone": 12
+      },
+      "group": "Floor_Round_Corner_Inverted",
+      "tier": "Tier2",
+      "health": 8000
+    },
+    "Harkonnen_Garage_Door_Frame": {
+      "resources": {
+        "Plastone": 25
+      },
+      "group": "Door_Frame_Garage",
+      "tier": "Tier2",
+      "health": 5000
+    },
+    "LandingPad_Floor": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "LandingPad_Floor_Round_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "LandingPad_Wall": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "LandingPad_Wall_Triangle_Top_Left": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Top_Left",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Neut_JailSet_Floor": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Neut_JailSet_Wall_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Neut_JailSet_Wall_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Neut_JailSet_Foundation": {
+      "resources": {
+        "Granite Stone": 15
+      },
+      "group": "Foundation",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "MTX_Neut_JailSet_Door_Frame": {
+      "resources": {
+        "Granite Stone": 7
+      },
+      "group": "Door_Frame",
+      "tier": "Tier1",
+      "health": 3500
+    },
+    "MTX_Neut_DesertMechanic_Foundation": {
+      "resources": {
+        "Granite Stone": 15
+      },
+      "group": "Foundation",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "MTX_Neut_DesertMechanic_Wall": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Neut_DesertMechanic_Floor": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Neut_DesertMechanic_Door_Frame_Wide": {
+      "resources": {
+        "Granite Stone": 20
+      },
+      "group": "Door_Frame_Wide",
+      "tier": "Tier1",
+      "health": 3500
+    },
+    "MTX_Neut_DesertMechanic_Center_Column": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "MTX_Neut_DesertMechanic_Floor_Wedge": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor_Wedge",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Neut_DesertMechanic_Foundation_Wedge": {
+      "resources": {
+        "Granite Stone": 15
+      },
+      "group": "Foundation_Wedge",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "MTX_Neut_DesertMechanic_Prudence_Door_Frame": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "PrudenceDoor_Frame",
+      "tier": "Tier1",
+      "health": 4500
+    },
+    "MTX_Neut_DesertMechanic_Railing": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Neut_DesertMechanic_Ramp": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Ramp",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Neut_DesertMechanic_Rooftop": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Neut_DesertMechanic_Rooftop_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Neut_DesertMechanic_Rooftop_Corner_Inverted": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Corner_Inward",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Neut_DesertMechanic_Staircase": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Stairs",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Neut_DesertMechanic_Wall_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Neut_DesertMechanic_Wall_Triangle_Bottom_Left": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Bottom_Left",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Neut_DesertMechanic_Wall_Triangle_Bottom_Right": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Bottom_Right",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Neut_DesertMechanic_Wall_Triangle_Top_Left": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Top_Left",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Neut_DesertMechanic_Wall_Triangle_Top_Right": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Top_Right",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Neut_DesertMechanic_Window_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Neut_DesertMechanic_Corner_Column": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Neut_DesertMechanic_Garage_Door_Frame": {
+      "resources": {
+        "Granite Stone": 20
+      },
+      "group": "Door_Frame_Garage",
+      "tier": "Tier1",
+      "health": 3500
+    },
+    "MTX_Neut_DesertMechanic_Passageway": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Passageway",
+      "tier": "Tier1",
+      "health": 3500
+    },
+    "Sardaukar_Column": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "Sardaukar_Door_Frame": {
+      "resources": {
+        "Granite Stone": 7
+      },
+      "group": "Door_Frame",
+      "tier": "Tier1",
+      "health": 3500
+    },
+    "Sardaukar_Door_Frame_Tall": {
+      "resources": {
+        "Granite Stone": 7
+      },
+      "group": "Door_Frame_Tall",
+      "tier": "Tier1",
+      "health": 3500
+    },
+    "Sardaukar_Floor": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Floor_Round_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Floor_Round_Inverted": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor_Round_Corner_Inverted",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Foundation": {
+      "resources": {
+        "Granite Stone": 15
+      },
+      "group": "Foundation",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "Sardaukar_Foundation_Round_Corner": {
+      "resources": {
+        "Granite Stone": 15
+      },
+      "group": "Foundation_Round_Corner",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "Sardaukar_Foundation_Wedge": {
+      "resources": {
+        "Granite Stone": 15
+      },
+      "group": "Foundation_Wedge",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "Sardaukar_Passageway": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Passageway",
+      "tier": "Tier1",
+      "health": 3500
+    },
+    "Sardaukar_Pillar_Bottom": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "Sardaukar_Pillar_Middle": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "Sardaukar_Pillar_Top": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "Sardaukar_Railing": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Railing_Gate": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Railing_Inclined": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing_Inclined",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Railing_Round_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Ramp": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Ramp",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Ramp_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Ramp_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Ramp_Corner_Inward": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Ramp_Corner_Inward",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Roof_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Roof_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Roof_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Roof_Round_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Roof_Corner_Inward": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Corner_Inward",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Roof_Wedge_Bottom": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Wedge_Bottom",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Roof_Wedge_Top": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Wedge_Top",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Rooftop_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Rooftop",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Rooftop_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Stairs": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Stairs",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Stairs_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Stairs_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Stairs_Corner_Inward": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Stairs_Corner_Inward",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Wall_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Wall_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Wall_03": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Wall_Round_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Wall_Inclined_Corner_Tall": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Inclined_Corner_Tall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Wall_Inclined_Tall_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Inclined_Tall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Wall_Triangle_Bottom_Left": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Bottom_Left",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Wall_Triangle_Bottom_Right": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Bottom_Right",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Wall_Triangle_Top_Left": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Top_Left",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Wall_Triangle_Top_Right": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Top_Right",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Wall_Triangle_Bottom_Tall_Left": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Bottom_Tall_Left",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Wall_Triangle_Bottom_Tall_Right": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Bottom_Tall_Right",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Window": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Window_Round_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Rooftop_Wedge": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor_Wedge",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Rooftop_Round_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Rooftop_Round_Inverted": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor_Round_Corner_Inverted",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Garage_Door_Frame": {
+      "resources": {
+        "Granite Stone": 20
+      },
+      "group": "Door_Frame_Garage",
+      "tier": "Tier1",
+      "health": 3500
+    },
+    "Sardaukar_Wall_Inclined_Tall_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Inclined_Tall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Window_Inclined_Tall": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Inclined_Tall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Roof_03": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Wall_Triangle_Top_Tall_Left": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Top_Tall_Left",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Wall_Triangle_Top_Tall_Right": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Top_Tall_Right",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Door_Frame_Wide": {
+      "resources": {
+        "Granite Stone": 20
+      },
+      "group": "Passageway_Wide",
+      "tier": "Tier1",
+      "health": 3500
+    },
+    "Sardaukar_PrudenceDoor_Frame": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "PrudenceDoor_Frame",
+      "tier": "Tier1",
+      "health": 4500
+    },
+    "Sardaukar_Railing_Inclined_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing_Inclined_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Ramp_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Ramp_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Ramp_Corner_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Ramp_Corner_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Ramp_Corner_Half_Inward": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Ramp_Corner_Half_Inward",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Stairs_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Stairs_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Stairs_Corner_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Stairs_Corner_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Stairs_Corner_Half_Inward": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Stairs_Corner_Half_Inward",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Wall_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Wall_Round_Corner_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Round_Corner_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Wall_Triangle_Bottom_Half_Left": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Bottom_Half_Left",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Wall_Triangle_Bottom_Half_Right": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Bottom_Half_Right",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Wall_Triangle_Top_Half_Left": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Top_Half_Left",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Wall_Triangle_Top_Half_Right": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Top_Half_Right",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Floor_Wedge": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor_Wedge",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Floor_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Floor_Round_Corner_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Door_Frame_L": {
+      "resources": {
+        "Granite Stone": 7
+      },
+      "group": "Door_Frame",
+      "tier": "Tier1",
+      "health": 3500
+    },
+    "Sardaukar_Column_corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Door_Frame_Tall_L": {
+      "resources": {
+        "Granite Stone": 7
+      },
+      "group": "Door_Frame_Tall",
+      "tier": "Tier1",
+      "health": 3500
+    },
+    "Sardaukar_Roof_02_L": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Roof_03_L": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Wall_Inclined_Tall_02_L": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Inclined_Tall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Window_L": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Window_Inclined_Tall_L": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Inclined_Tall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Wall_02_L": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Wall_Inclined_Tall_01_L": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Inclined_Tall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_Wall_Inclined_Corner_Tall_L": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Inclined_Corner_Tall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Sardaukar_PrudenceDoor_Frame_L": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "PrudenceDoor_Frame",
+      "tier": "Tier1",
+      "health": 4500
+    },
+    "MTX_Smug_Pillar_Bottom": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "MTX_Smug_Pillar_Middle": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "MTX_Smug_Pillar_Top": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "MTX_Smug_Ladder": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Ladder",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Column": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "MTX_Smug_Hatch": {
+      "resources": {
+        "Granite Stone": 7
+      },
+      "group": "Hatch_Frame",
+      "tier": "Tier1",
+      "health": 3500
+    },
+    "MTX_Smug_Door_Frame": {
+      "resources": {
+        "Granite Stone": 7
+      },
+      "group": "Door_Frame",
+      "tier": "Tier1",
+      "health": 3500
+    },
+    "MTX_Smug_Door_Frame_Wide": {
+      "resources": {
+        "Granite Stone": 20
+      },
+      "group": "Door_Frame_Wide",
+      "tier": "Tier1",
+      "health": 3500
+    },
+    "MTX_Smug_Floor": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Floor_Round_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Floor_Wedge": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor_Wedge",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Floor_Round_Corner_Inverted": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor_Round_Corner_Inverted",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Foundation": {
+      "resources": {
+        "Granite Stone": 15
+      },
+      "group": "Foundation",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "MTX_Smug_Foundation_Round_Corner": {
+      "resources": {
+        "Granite Stone": 15
+      },
+      "group": "Foundation_Round_Corner",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "MTX_Smug_Foundation_Wedge": {
+      "resources": {
+        "Granite Stone": 15
+      },
+      "group": "Foundation_Wedge",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "MTX_Smug_Stairs": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Stairs",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Stairs_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Stairs_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Stairs_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Stairs_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Stairs_Corner_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Stairs_Corner_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Stairs_Corner_Inverted": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Stairs_Corner_Inward",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Stairs_Corner_Inverted_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Stairs_Corner_Half_Inward",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Ramp": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Ramp",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Ramp_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Ramp_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Ramp_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Ramp_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Ramp_Corner_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Ramp_Corner_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Ramp_Corner_Inverted": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Ramp_Corner_Inward",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Ramp_Corner_Inverted_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Ramp_Corner_Half_Inward",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Railing": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Railing_Gate": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Railing_Round_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Railing_Inclined_Left": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing_Inclined",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Railing_Inclined_Half_Left": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing_Inclined_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Window_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Window_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Window_Round_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Roof_Wedge_Bottom_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Wedge_Bottom_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Rooftop_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Rooftop",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Rooftop_Round_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Rooftop_Round_Corner_Inverted": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor_Round_Corner_Inverted",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Rooftop_Wedge": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor_Wedge",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Rooftop_Wedge_Top_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Wedge_Top_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Roof_Round_Corner_Half_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Round_Corner_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Roof_Half_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Roof_Corner_Half_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Corner_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Roof_Corner_Half_Inverted_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Corner_Half_Inward",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Roof_Half_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Roof_Corner_Half_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Corner_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Roof_Corner_Half_Inverted_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Corner_Half_Inward",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Roof_Round_Corner_Half_01_A": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Round_Corner_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Rooftop_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Rooftop",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Wall_Triangle_Top_Left": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Top_Left",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Wall_Triangle_Bottom_Right": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Bottom_Right",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Wall_Triangle_Top_Left_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Top_Half_Left",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Wall_Triangle_Bottom_Right_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Bottom_Half_Right",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Wall_Triangle_Bottom_Left": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Bottom_Left",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Wall_Triangle_Top_Right": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Top_Right",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Wall_Triangle_Bottom_Left_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Bottom_Half_Left",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Wall_Triangle_Top_Right_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Top_Half_Right",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Wall_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Wall_Round_Corner_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Round_Corner_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Wall_Round_Corner_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Wall_Round_Corner_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Wall_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Wall_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Wall_03": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Wall_04": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Roof_Round_Corner_Half_01_B": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Round_Corner_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Passageway": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Passageway",
+      "tier": "Tier1",
+      "health": 3500
+    },
+    "MTX_Smug_Roof_Cover_Bottom_Half_L": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Cover_Bottom_Half_Left",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Roof_Cover_Bottom_Half_R": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Cover_Bottom_Half_Right",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Railing_Inclined_Right": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing_Inclined",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Railing_Inclined_Right_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing_Inclined_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Corner_Column": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "MTX_Smug_Garage_Door_Frame": {
+      "resources": {
+        "Granite Stone": 20
+      },
+      "group": "Door_Frame_Garage",
+      "tier": "Tier1",
+      "health": 3500
+    },
+    "MTX_Smug_Prudence_Door_Frame": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "PrudenceDoor_Frame",
+      "tier": "Tier1",
+      "health": 4500
+    },
+    "Watershippers_Arch_01": {
+      "resources": {
+        "Granite Stone": 15
+      },
+      "group": "Arch",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "Watershippers_Column": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "Watershippers_Door_Frame": {
+      "resources": {
+        "Granite Stone": 7
+      },
+      "group": "Door_Frame",
+      "tier": "Tier1",
+      "health": 3500
+    },
+    "Watershippers_Floor_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Floor_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Floor_Round_Corner_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Floor_Round_Corner_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Floor_Round_Corner_In": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Floor_Round_Corner_Inverted",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Foundation": {
+      "resources": {
+        "Granite Stone": 15
+      },
+      "group": "Foundation",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "Watershippers_Foundation_Round_Corner": {
+      "resources": {
+        "Granite Stone": 15
+      },
+      "group": "Foundation_Round_Corner",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "Watershippers_Passageway": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Passageway",
+      "tier": "Tier1",
+      "health": 3500
+    },
+    "Watershippers_Pillar_Bottom": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "Watershippers_Pillar_Middle": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "Watershippers_Pillar_Top": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar",
+      "tier": "Tier1",
+      "health": 7000
+    },
+    "Watershippers_Railing": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Railing_Gate": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Railing_Inclined_L": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing_Inclined",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Railing_Inclined_R": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing_Inclined",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Railing_Round_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Railing_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Roof_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Roof_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Roof_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Corner_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Roof_Corner_In": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Corner_Half_Inward",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Roof_Round_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Roof_Round_Corner_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Rooftop_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Rooftop",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Rooftop_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Rooftop",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Stairs": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Stairs",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Stairs_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Stairs_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Stairs_Corner_In": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Stairs_Corner_Inward",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Wall_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Wall_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Wall_03": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Wall_Half": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Half",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Wall_Triangle_Bottom_Half_L": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Bottom_Half_Left",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Wall_Triangle_Bottom_Half_R": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Bottom_Half_Right",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Wall_Triangle_Bottom_L": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Bottom_Left",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Wall_Triangle_Bottom_R": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Bottom_Right",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Wall_Triangle_Top_Half_L": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Top_Half_Left",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Wall_Triangle_Top_Half_R": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Top_Half_Right",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Wall_Triangle_Top_L": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Top_Left",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Wall_Triangle_Top_R": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Triangle_Top_Right",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Window_01": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Window_02": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Window_Wide": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Window_Wide",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Window_Round_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Wall_Round_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Garage_Door_Big_Frame": {
+      "resources": {
+        "Granite Stone": 20
+      },
+      "group": "Door_Frame_Garage",
+      "tier": "Tier1",
+      "health": 3500
+    },
+    "Watershippers_Prudence_Door_Frame": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "PrudenceDoor_Frame",
+      "tier": "Tier1",
+      "health": 4500
+    },
+    "Watershippers_Ramp": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Ramp",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Ramp_Corner": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Ramp_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Ramp_Corner_Inwards": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Ramp_Corner_Inward",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Corner_Column": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "group": "Pillar_Corner",
+      "tier": "Tier1",
+      "health": 5600
+    },
+    "Watershippers_Door_Frame_Wide": {
+      "resources": {
+        "Granite Stone": 20
+      },
+      "group": "Passageway_Wide",
+      "tier": "Tier1",
+      "health": 3500
+    }
+  },
+  "_by_piece_note": "Coûts dataminés (CDT_BuildableGroupData.m_BuildableTierData[].m_PlacementCosts), indexés par identifiant de pièce. Le coût dépend du couple groupe × palier, et le palier est porté par la pièce : indexer ainsi évite le pont faction → set → nom anglais. Les noms de matériaux sont les noms anglais du jeu (Name.SourceString), identiques à ceux de tcno, pour que les deux sources s'agrègent. Les clés tcno sont conservées : le planner s'en sert en repli.",
+  "_by_piece_generated_at": "2026-10-19T23:58:54.239Z"
 }

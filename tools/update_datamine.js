@@ -422,6 +422,18 @@ const STEPS = [
       + 'pièce → groupe → profil est en fait entièrement dans les DataTables.',
   },
   {
+    id: 'costs',
+    label: 'Coûts de construction (matériaux par groupe x palier)',
+    script: 'tools/build_costs_from_datamine.js',
+    args: (c) => [path.join(c.exportRoot, 'Systems')],
+    outputs: ['planner_costs.json'],
+    sources: ['Systems/Building/Data/CDT_BuildableGroupData.json', 'Systems/Building/Data/BuildingData'],
+    paks: ['*'],
+    note: 'Ajoute la cle by_piece sans toucher aux donnees tcno, que le planner garde en repli. '
+      + 'Le cout depend du couple groupe x palier, et le palier est porte par la piece : indexer '
+      + 'par piece evite le pont faction -> set -> nom anglais.',
+  },
+  {
     id: 'planner_pieces',
     label: 'Catalogue unifié du planner (pièces + sockets + utilitaires)',
     script: 'tools/build_planner_pieces.js',
@@ -455,17 +467,6 @@ const ANGLES_MORTS = [
     label: 'Utilitaires du planner (22 placeables fonctionnels)',
     detail: 'Extrait à la main de DT_PlaceableData_Functional + bbox lue dans les .glb.\n'
       + '    Pas de script : un patch ajoutant un utilitaire demande une passe manuelle.',
-  },
-  {
-    id: 'planner_costs',
-    fichiers: ['planner_costs.json'],
-    label: 'Coûts de construction (matériaux, énergie, eau)',
-    detail: 'Compilés par TroubleChute (tools.tcno.co/dune), crédité — donc figés à SA date.\n'
-      + '    ⚠ On a longtemps écrit « non dataminable, InstancedStruct ». C\'EST FAUX (vérifié le\n'
-      + '    2026-10-20) : CDT_BuildableGroupData porte m_BuildableTierData[].m_PlacementCosts,\n'
-      + '    soit les coûts par palier en clair (un Ramp Tier0 coûte 8 pierres, Tier1 10).\n'
-      + '    Ce qui bloquait était la table des types de TMap, désormais régénérable.\n'
-      + '    → chantier ouvert : un build_costs_from_datamine.js remplacerait la dépendance.',
   },
   {
     id: 'divers',

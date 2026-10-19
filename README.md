@@ -840,7 +840,7 @@ schtasks /create /tn "DuneMap - verif datamine" /sc weekly /d WED /st 10:00 /tr 
 ⚠ Le `/nopause` est obligatoire dans une tâche planifiée : sans lui, le script attend une touche
 que personne ne tapera. (Donner le chemin complet du `.cmd` dans `/tr`.)
 
-### Les 16 étapes couvertes
+### Les 17 étapes couvertes
 
 | id | Sortie | Source |
 |---|---|---|
@@ -858,6 +858,7 @@ que personne ne tapera. (Donner le chemin complet du `.cmd` dans `/tr`.)
 | `plans_univers` | `plans_uniques.json` | export de l'addon en jeu (`.txt`, opt-in `--with-univers`) |
 | `base_pieces_v3` | `base_pieces_v3.json` | `Systems/Building/Data`, `Systems/Vehicles` — script **externe** (opt-in `--run-planner-import`) |
 | `sockets` | `dune_socket_profiles.json`, `dune_group_config.json`, `dune_pieces_sockets.json` | `DT_DuneSocketSetupData` + `CDT_BuildableGroupData` |
+| `costs` | `planner_costs.json` (clé `by_piece`) | `CDT_BuildableGroupData` + `DT_BuildingData_*` |
 | `planner_pieces` | `planner_pieces.json` | 100 % local (fusion v3 + sockets + utilitaires) |
 | `meshes` | `models/*.glb` | **les paks** via `DuneExtract --meshes` (glTF), ou `flatten_glb` depuis un export FModel. `models/` n'est pas versionné |
 
@@ -973,6 +974,43 @@ Deux pièges à connaître :
 `size` et `hasGlb` ne sont pas dans les DataTables (boîte englobante du `.glb` et présence
 du fichier) : ils sont repris du fichier existant quand il les connaît, plutôt qu'inventés.
 
+### Les coûts de construction — et une fausse conclusion qui a coûté des mois
+
+Ce README affirmait que les coûts n'étaient **pas dataminables** (« les recettes de
+structures sont des `InstancedStruct` »). C'était faux, et cette phrase a dissuadé de
+rouvrir le sujet. `CDT_BuildableGroupData` porte `m_BuildableTierData[].m_PlacementCosts`,
+soit les coûts par palier **en clair**. Ce qui bloquait réellement était la table des types
+de `TMap` : sans elle la map sortait vide, d'où la mauvaise conclusion.
+
+```bash
+node tools/build_costs_from_datamine.js --check   # confronte à tcno, n'écrit rien
+node tools/build_costs_from_datamine.js           # ajoute la clé by_piece
+```
+
+**Le modèle réel du jeu** : le coût ne dépend pas du « set » (notion de tcno) mais du couple
+**groupe × palier** — une Fondation coûte 12 pierres en Tier0 et 15 en Tier1. Et le palier
+est porté par la **pièce**, pas par la faction : les Atréides ont 85 pièces en Tier2 et 8 en
+Tier0. D'où une indexation par identifiant de pièce, qui supprime le pont
+faction → set → nom anglais.
+
+**Confrontation avec tcno** (c'est la validation) : sur 272 pièces comparables,
+**zéro écart de quantité**. 198 valeurs strictement identiques, et 74 où seul le *matériau*
+diffère — exactement les cas où une pièce a un palier différent de celui dominant son set,
+que l'approximation « un matériau par set » de tcno ne pouvait pas voir. **465 pièces
+gagnent un coût que tcno n'avait pas**, dont tout le set Sardaukar. Couverture 272 → 753.
+
+Deux précautions :
+
+- **Les noms de matériaux viennent de `Name.SourceString`** (`Stone` → « Granite Stone »),
+  c'est-à-dire exactement les noms de tcno. Prendre le nom français ici couperait chaque
+  matériau en deux lignes dans la synthèse.
+- **L'ordre de résolution compte** dans `resolvePieceCost` : machines et utilitaires
+  d'abord, car eux seuls portent énergie et production d'eau. Les mettre après le datamine
+  ferait silencieusement tomber le bilan énergie à zéro.
+
+Les clés tcno sont conservées et le planner s'en sert en repli ; le crédit affiché dans la
+synthèse distingue désormais les coûts (jeu) de l'énergie et l'eau (TroubleChute).
+
 ### Pièges de ce pipeline
 
 - **Paks chunkés (automne 2026)** : le jeu est passé de paks nommés par domaine
@@ -1005,11 +1043,6 @@ du fichier) : ils sont repris du fichier existant quand il les connaît, plutôt
 `--check` les rappelle à chaque passage — c'est le seul moyen de ne pas les oublier après un patch.
 
 - **`planner_utilities.json`** : extrait à la main de `DT_PlaceableData_Functional` + bbox des `.glb`.
-- **`planner_costs.json`** : compilé par TroubleChute (tools.tcno.co/dune, crédité).
-  ⚠ **La conclusion « non dataminable » est tombée le 2026-10-20** : `CDT_BuildableGroupData`
-  contient `m_BuildableTierData[].m_PlacementCosts` — les coûts par palier, en clair (un Ramp
-  Tier0 coûte 8 pierres, Tier1 10). Ce qui bloquait, c'était la table des types de `TMap`,
-  maintenant régénérable. Chantier ouvert, pas encore fait.
 - **`metiers.json`, `landsraad_data.json`** : saisis à la main.
 - **`base_pieces_v2.json`** : plus lu par aucune page — ne pas perdre de temps à le régénérer.
 

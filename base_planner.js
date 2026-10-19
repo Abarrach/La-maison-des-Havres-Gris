@@ -11,8 +11,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 // ?v= : cache-busting. Bump à chaque modif des modules pour forcer le rechargement
 // (sinon le navigateur sert l'ancienne version mise en cache).
-import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot41sockets';
-import { createMeshFactory } from './planner_mesh.js?v=lot41sockets';
+import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot42couts';
+import { createMeshFactory } from './planner_mesh.js?v=lot42couts';
 
 // ============================================================
 // MOTEUR — bascule ancien (géométrie+grille) / nouveau (sockets+meshes réels)
@@ -349,7 +349,7 @@ const EXCLUDED_PIECE_IDS = new Set([
 ]);
 
 async function loadCatalog() {
-  const url = ENGINE === 'sockets' ? 'planner_pieces.json?v=lot41sockets' : PIECES_JSON_URL;
+  const url = ENGINE === 'sockets' ? 'planner_pieces.json?v=lot42couts' : PIECES_JSON_URL;
   const resp = await fetch(url);
   if (!resp.ok) throw new Error('pieces ' + resp.status);
   const piecesData = await resp.json();
@@ -7107,7 +7107,7 @@ const MATERIAL_FR = {
 
 async function loadCosts() {
   try {
-    const r = await fetch('planner_costs.json?v=lot41sockets');
+    const r = await fetch('planner_costs.json?v=lot42couts');
     if (!r.ok) return;
     SUMMARY.costs = await r.json();
     SUMMARY.costIndex = new Map();
@@ -7136,10 +7136,19 @@ const COST_ALIAS = {
 // Coût matériaux + énergie/eau d'une pièce, ou null si inconnu.
 function resolvePieceCost(piece) {
   if (!SUMMARY.costs) return null;
+  // 1. Machines et utilitaires : eux seuls portent énergie et production d'eau, qui ne
+  //    sont pas dans les coûts de construction. Ils passent donc EN PREMIER — les mettre
+  //    après le datamine ferait silencieusement tomber le bilan énergie à zéro.
   const en0 = bpNorm(piece.label_en || piece.label_fr);
   const en = COST_ALIAS[en0] || en0;
   const f = SUMMARY.costIndex.get(en);
   if (f) return { resources: f.resources || {}, power: f.power || 0, waterProd: f.waterProd || 0 };
+  // 2. Pièces de construction : coût DATAMINÉ, indexé par identifiant de pièce — donc
+  //    sans le pont faction → set → nom anglais, et fidèle au modèle du jeu
+  //    (groupe × palier). 753 pièces couvertes contre 272 chez tcno, dont les sets
+  //    ajoutés par un patch. Confronté à tcno : zéro écart de quantité.
+  const direct = (SUMMARY.costs.by_piece || {})[piece.id];
+  if (direct && direct.resources) return { resources: direct.resources, power: 0, waterProd: 0 };
   const set = FACTION_TO_SET[piece.faction_id];
   if (set && SUMMARY.buildIndex[set]) {
     const res = SUMMARY.buildIndex[set].get(en);
@@ -7224,7 +7233,10 @@ function renderSummary() {
   }
 
   // ── Crédit ──
-  h += '<div class="bp-summary-credit">Coûts : données compilées par '
+  // Le crédit doit dire la vérité : les coûts de construction viennent maintenant des
+  // données du jeu, mais énergie et eau des machines restent le relevé de TroubleChute.
+  h += '<div class="bp-summary-credit">Coûts de construction : extraits des données du jeu. '
+     + 'Énergie et eau des machines : données compilées par '
      + '<a href="https://tools.tcno.co/dune" target="_blank" rel="noopener">TroubleChute (tcno.co)</a></div>';
   body.innerHTML = h;
 }

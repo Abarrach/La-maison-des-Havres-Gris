@@ -1,0 +1,2326 @@
+{
+  "AbilityAndBoostTypeMap": {
+    "Key": "EItemTemplateID",
+    "Value": "EVehicleBoostType"
+  },
+  "AcousticTextureParamsMap": {
+    "Key": "Guid",
+    "Value": "AkAcousticTextureParams"
+  },
+  "ActionInstanceData": {
+    "Key": null,
+    "Value": "InputActionInstance"
+  },
+  "ActorDebugMap": {
+    "Key": "ActorGlobalID",
+    "Value": null
+  },
+  "AkGeometryMap": {
+    "Key": null,
+    "Value": "AkGeometrySurfacePropertiesToMap"
+  },
+  "AnimBpPhysicsAssets": {
+    "Key": null,
+    "Value": "AnimBpGeneratedPhysicsAssets"
+  },
+  "AssignmentMaterialsById": {
+    "Key": "HoudiniMaterialIdentifier",
+    "Value": null
+  },
+  "AttachedInstanceComponents": {
+    "Key": null,
+    "Value": "Transform"
+  },
+  "AttributeBlendModes": {
+    "Key": null,
+    "Value": "ECustomAttributeBlendType"
+  },
+  "AttributeCurves": {
+    "Key": "AnimationAttributeIdentifier",
+    "Value": "AttributeCurve"
+  },
+  "AutomaticMapValidationLists": {
+    "Key": null,
+    "Value": "AutomaticMapValidationList"
+  },
+  "AuxBusLanguageMap": {
+    "Key": "WwiseLanguageCookedData",
+    "Value": "WwiseAuxBusCookedData"
+  },
+  "BakedOutputObjects": {
+    "Key": "HoudiniBakedOutputObjectIdentifier",
+    "Value": "HoudiniBakedOutputObject"
+  },
+  "BakedWorkResultObjectOutputs": {
+    "Key": null,
+    "Value": "HoudiniPDGWorkResultObjectBakedOutput"
+  },
+  "BaseAdditionalCurrencyPrices": {
+    "Key": "ECurrency",
+    "Value": null
+  },
+  "BigMomentsData": {
+    "Key": "GameplayTag",
+    "Value": "BigMomentData"
+  },
+  "BindingGroups": {
+    "Key": null,
+    "Value": "MovieSceneObjectBindingIDs"
+  },
+  "BindingIdToReferences": {
+    "Key": "Guid",
+    "Value": "LevelSequenceBindingReferenceArray"
+  },
+  "BlendShapes": {
+    "Key": "EARFaceBlendShape",
+    "Value": null
+  },
+  "BoneRotationOffsets": {
+    "Key": null,
+    "Value": "Quat"
+  },
+  "BoundActorComponents": {
+    "Key": "Guid",
+    "Value": null
+  },
+  "BreakEventRegistrations": {
+    "Key": null,
+    "Value": "BreakEventCallbackWrapper"
+  },
+  "CachedInputNodes": {
+    "Key": "Guid",
+    "Value": "Guid"
+  },
+  "CachedMaps": {
+    "Key": "EBakeMapType",
+    "Value": null
+  },
+  "CachedOutputNodes": {
+    "Key": "HoudiniOutputObjectIdentifier",
+    "Value": "Guid"
+  },
+  "Caches": {
+    "Key": null,
+    "Value": "ObjectCache"
+  },
+  "CellMap": {
+    "Key": "IntPoint",
+    "Value": "RVTGridCellData"
+  },
+  "ChainSettings": {
+    "Key": null,
+    "Value": "TargetChainSettings"
+  },
+  "ChallengeRoomAudioEvents": {
+    "Key": "EChallengeRoomAudioEvent",
+    "Value": "ChallengeRoomAudioEventData"
+  },
+  "ChannelDefinitionMap": {
+    "Key": null,
+    "Value": "ChannelDefinition"
+  },
+  "ChannelsTracks": {
+    "Key": null,
+    "Value": "RichCurves"
+  },
+  "CharacterWeaponTemplates": {
+    "Key": "EAnimWeaponType",
+    "Value": "WeaponAnimData"
+  },
+  "ClientPerSignificanceSettings": {
+    "Key": "ESignificanceLevel",
+    "Value": "ComponentSignificanceOptimizationSettings"
+  },
+  "CollisionEventRegistrations": {
+    "Key": null,
+    "Value": "ChaosHandlerSet"
+  },
+  "CommonInputPlatformData": {
+    "Key": null,
+    "Value": "CommonInputPlatformBaseData"
+  },
+  "content": {
+    "Key": "GameplayTagContainerHashable",
+    "Value": "DuneGlobalCacheJourneyContentData"
+  },
+  "ContextSteeringParameters": {
+    "Key": null,
+    "Value": "MercunaContextualSteeringActorParameters"
+  },
+  "ContractAnchors": {
+    "Key": "EContractLocationAnchorName",
+    "Value": "GameplayTagQuery"
+  },
+  "ControlChannelMap": {
+    "Key": null,
+    "Value": "ChannelMapInfo"
+  },
+  "ControlCustomizations": {
+    "Key": "RigElementKey",
+    "Value": "RigControlElementCustomization"
+  },
+  "CookedComponentInstancingData": {
+    "Key": null,
+    "Value": "BlueprintCookedComponentInstancingData"
+  },
+  "CookedPropertyGuids": {
+    "Key": null,
+    "Value": "Guid"
+  },
+  "CostOverrideTable": {
+    "Key": "EItemTemplateID",
+    "Value": "CraftingRecyclerRewardList"
+  },
+  "CrumblingEventRegistrations": {
+    "Key": null,
+    "Value": "CrumblingEventCallbackWrapper"
+  },
+  "CurrentInputLocks": {
+    "Key": null,
+    "Value": "ECommonInputType"
+  },
+  "CurveConversionAssetMap": {
+    "Key": null,
+    "Value": "SoftObjectPath"
+  },
+  "CurveData": {
+    "Key": null,
+    "Value": "RichCurve"
+  },
+  "CustomizableObjectParametersTags": {
+    "Key": null,
+    "Value": "ParameterTags"
+  },
+  "CustomLODMapping": {
+    "Key": null,
+    "Value": "LODMappingData"
+  },
+  "DamageMitigationStats": {
+    "Key": "EDamageMitigationFloatStatID",
+    "Value": null
+  },
+  "DataInterfaceStorage": {
+    "Key": "NiagaraVariableBase",
+    "Value": null
+  },
+  "DefaultInputBakeSettings": {
+    "Key": "EGLTFMaterialPropertyGroup",
+    "Value": "GLTFOverrideMaterialBakeSettings"
+  },
+  "Dependencies": {
+    "Key": "RigVMGraphFunctionIdentifier",
+    "Value": null
+  },
+  "DeviceOverrideData": {
+    "Key": null,
+    "Value": "AudioBasedVibrationData"
+  },
+  "DirectorInstances": {
+    "Key": "MovieSceneSequenceID",
+    "Value": null
+  },
+  "DisableVirtualLayers": {
+    "Key": null,
+    "Value": "MultilayerProjectorLayer"
+  },
+  "DrinkFillableGameplayEffect": {
+    "Key": "EFillableType",
+    "Value": null
+  },
+  "DrinkFillableHydrateFactor": {
+    "Key": "EFillableType",
+    "Value": null
+  },
+  "EditLayers": {
+    "Key": null,
+    "Value": "HoudiniClearedTargetLayer"
+  },
+  "EntityComponentFields": {
+    "Key": null,
+    "Value": "MovieSceneEntityComponentField"
+  },
+  "Entries": {
+    "Key": null,
+    "Value": "CustomizedToolMenuEntry"
+  },
+  "EntryOrder": {
+    "Key": null,
+    "Value": "CustomizedToolMenuNameArray"
+  },
+  "EventLanguageMap": {
+    "Key": "WwiseLanguageCookedData",
+    "Value": "WwiseEventCookedData"
+  },
+  "EventTracks": {
+    "Key": null,
+    "Value": "CacheEventTrack"
+  },
+  "ExpansionStates": {
+    "Key": null,
+    "Value": "MovieSceneExpansionState"
+  },
+  "ExpiredPooledShakesMap": {
+    "Key": null,
+    "Value": "PooledCameraShakes"
+  },
+  "FactionDataAssets": {
+    "Key": "EFaction",
+    "Value": null
+  },
+  "FillablePricesPer100Ml": {
+    "Key": "EFillableType",
+    "Value": null
+  },
+  "FilterOptionsByMarkerTag": {
+    "Key": "GameplayTag",
+    "Value": "MarkerFilterOptions"
+  },
+  "FunctionsMetaData": {
+    "Key": null,
+    "Value": "StructCookedMetaDataStore"
+  },
+  "GamepadInputOverrides": {
+    "Key": null,
+    "Value": "CommonInputTypeInfo"
+  },
+  "GPUScriptParameterInfos": {
+    "Key": "NiagaraCompileHash",
+    "Value": "NDIDataChannel_GPUScriptParameterAccessInfo"
+  },
+  "GraphAssetPlayerInformation": {
+    "Key": null,
+    "Value": "GraphAssetPlayerInformation"
+  },
+  "GraphBlendOptions": {
+    "Key": null,
+    "Value": "AnimGraphBlendOptions"
+  },
+  "GraphNameAssetPlayers": {
+    "Key": null,
+    "Value": "GraphAssetPlayerInformation"
+  },
+  "GroundAgentTypes": {
+    "Key": null,
+    "Value": "MercunaGroundAgentProperties"
+  },
+  "Groups": {
+    "Key": null,
+    "Value": "ResourceNodePointGroup"
+  },
+  "HardCapPerInventoryHardCapType": {
+    "Key": "EInventoryHardCapType",
+    "Value": null
+  },
+  "HardwareCursors": {
+    "Key": "EMouseCursor",
+    "Value": "HardwareCursorReference"
+  },
+  "HashToStreamableBlock": {
+    "Key": null,
+    "Value": "MutableStreamableBlock"
+  },
+  "Hierarchies": {
+    "Key": null,
+    "Value": "MovieSceneSequenceHierarchy"
+  },
+  "Hierarchy": {
+    "Key": "MovieSceneSequenceID",
+    "Value": "MovieSceneSequenceHierarchyNode"
+  },
+  "HLODActors": {
+    "Key": null,
+    "Value": "HLODProxyMesh"
+  },
+  "ImpactDecals": {
+    "Key": "EPhysicalSurface",
+    "Value": null
+  },
+  "Ingredients": {
+    "Key": "EItemTemplateID",
+    "Value": "CraftingRecipeIngredient"
+  },
+  "Inputs": {
+    "Key": "EGLTFMaterialPropertyGroup",
+    "Value": "GLTFOverrideMaterialBakeSettings"
+  },
+  "Inputs_Bool": {
+    "Key": null,
+    "Value": "MovieSceneBoolChannel"
+  },
+  "Inputs_Float": {
+    "Key": null,
+    "Value": "MovieSceneFloatChannel"
+  },
+  "Inputs_Int": {
+    "Key": null,
+    "Value": "MovieSceneIntegerChannel"
+  },
+  "Inputs_String": {
+    "Key": null,
+    "Value": "MovieSceneStringChannel"
+  },
+  "Inputs_Trigger": {
+    "Key": null,
+    "Value": "MovieSceneAudioTriggerChannel"
+  },
+  "InputsInjectedThisTick": {
+    "Key": null,
+    "Value": "InjectedInputArray"
+  },
+  "InstancedOutputs": {
+    "Key": "HoudiniOutputObjectIdentifier",
+    "Value": "HoudiniInstancedOutput"
+  },
+  "InstancedStaticMeshComponents": {
+    "Key": "HLODInstancingKey",
+    "Value": null
+  },
+  "InventoryHardCapPerItemMap": {
+    "Key": "EItemTemplateID",
+    "Value": "InventoryHardCaps"
+  },
+  "InverseMap": {
+    "Key": null,
+    "Value": "EMapMarker"
+  },
+  "Items": {
+    "Key": "EItemTemplateID",
+    "Value": "OutputItemData"
+  },
+  "ItemTypeNameMap": {
+    "Key": "EInventoryType",
+    "Value": null
+  },
+  "KeysPressedThisTick": {
+    "Key": "Key",
+    "Value": "Vector"
+  },
+  "KeyToIndex": {
+    "Key": "RigElementKey",
+    "Value": null
+  },
+  "LandscapeDisplacementVolumesTileIndexMap": {
+    "Key": "IntPoint",
+    "Value": null
+  },
+  "Levels": {
+    "Key": null,
+    "Value": "DuneGlobalCacheGrdLevel"
+  },
+  "Light Components": {
+    "Key": null,
+    "Value": "F_LightComponentValidationDetails"
+  },
+  "LightComponents_16_E2BE8FB842C9962BB116E1B0CFC41D97": {
+    "Key": null,
+    "Value": "F_LightComponentValidationDetails"
+  },
+  "m_AbandonedDecayCurves": {
+    "Key": "EVehicleAbandonedDurabilityDecay",
+    "Value": "RuntimeFloatCurve"
+  },
+  "m_Abilities": {
+    "Key": "ENpcCombatAbilityName",
+    "Value": "NpcAbilityInfo"
+  },
+  "m_AbilityAnimations": {
+    "Key": null,
+    "Value": "AnimMontageHolder"
+  },
+  "m_AbilityMontageOverrides": {
+    "Key": null,
+    "Value": "AnimMontageHolder"
+  },
+  "m_ActionAudioEvents": {
+    "Key": "EBuildingActionAudioType",
+    "Value": null
+  },
+  "m_Actions": {
+    "Key": "EInputAction",
+    "Value": null
+  },
+  "m_ActionVariations": {
+    "Key": null,
+    "Value": "PossibleMeleeAction"
+  },
+  "m_ActiveFractureLines": {
+    "Key": null,
+    "Value": "InterpCurveVector"
+  },
+  "m_ActiveSubChannels": {
+    "Key": "ETextChatChannelType",
+    "Value": null
+  },
+  "m_ActiveZones": {
+    "Key": null,
+    "Value": "SecurityZoneData"
+  },
+  "m_ActorToSpawn": {
+    "Key": "ESpiceState",
+    "Value": "SpiceVisionActorTuningArray"
+  },
+  "m_ActorTypeDamageModifiers": {
+    "Key": null,
+    "Value": "DamageTypeScalarPair"
+  },
+  "m_AddictionStateConfigs": {
+    "Key": "ESpiceState",
+    "Value": "SpiceAddictionStateConfig"
+  },
+  "m_AdminPasswords": {
+    "Key": null,
+    "Value": "EDunePrivileges"
+  },
+  "m_AllianceColors": {
+    "Key": "EAllianceType",
+    "Value": "LinearColor"
+  },
+  "m_AllPlayerDataCaches": {
+    "Key": null,
+    "Value": "FlsPlayerDataCaches"
+  },
+  "m_AreaDefineMeshComponents": {
+    "Key": "MapAreaId",
+    "Value": null
+  },
+  "m_AssetReferencerCollection": {
+    "Key": "EItemTemplateID",
+    "Value": "ItemReferencerRecord"
+  },
+  "m_AssignedBehaviorInfo": {
+    "Key": "EModularAIBehaviorName",
+    "Value": "ModularAiBehaviorInfo"
+  },
+  "m_AttributeToArmorStats": {
+    "Key": "GameplayAttribute",
+    "Value": "EArmorStat"
+  },
+  "m_AudioEventsMap": {
+    "Key": "EPatrolShipAudioEvent",
+    "Value": null
+  },
+  "m_AvailableFieldGroupsByType": {
+    "Key": null,
+    "Value": "ResourceFieldGroup"
+  },
+  "m_BaseBackupToolTimeRestrictionMapAreas": {
+    "Key": "EDuneMapId",
+    "Value": "MapRegionsTimeArray"
+  },
+  "m_bCustomMinBuildableDistanceFromServerBorder": {
+    "Key": "EDuneMapId",
+    "Value": null
+  },
+  "m_BehaviorStateUpdateIntervalSeconds": {
+    "Key": "ELodLevel",
+    "Value": null
+  },
+  "m_BehaviorTargetingAbilities": {
+    "Key": "EModularAIBehaviorName",
+    "Value": "GameplayAbilitySpecHandle"
+  },
+  "m_Bindings": {
+    "Key": null,
+    "Value": "CinematicsBindings"
+  },
+  "m_BinocularsInWorldMarkers": {
+    "Key": "MarkerId",
+    "Value": null
+  },
+  "m_BiomesPerRadiationLevel": {
+    "Key": null,
+    "Value": "RadiationBiome"
+  },
+  "m_BlockedImpactFX": {
+    "Key": "EDamageBlockType",
+    "Value": null
+  },
+  "m_BodyPartCache": {
+    "Key": "ECharacterCreationModifiableBodyPartType",
+    "Value": null
+  },
+  "m_BodyPartParameters": {
+    "Key": "ECharacterCreationModifiableBodyPartType",
+    "Value": null
+  },
+  "m_BodyPartValues": {
+    "Key": "ECharacterCreationModifiableBodyPartType",
+    "Value": "CCValidFloatValues"
+  },
+  "m_BotPawns": {
+    "Key": "Guid",
+    "Value": null
+  },
+  "m_BucketConfiguration": {
+    "Key": "EPlayerActionFloodControlBucketType",
+    "Value": "PlayerActionBucketTypeInfo"
+  },
+  "m_BuildableActionAudioEvents": {
+    "Key": "EBuildingActionAudioType",
+    "Value": null
+  },
+  "m_BuildableBuildAndFillHoldTimes": {
+    "Key": "EBuildableBuildAndFillHoldTimeType",
+    "Value": null
+  },
+  "m_BuildablesItemDataMap": {
+    "Key": "EBuildableType",
+    "Value": null
+  },
+  "m_BuildableStructureLimitsPerMap": {
+    "Key": "EDuneMapId",
+    "Value": "BuildableStructureLimitArrayData"
+  },
+  "m_BuildableTierData": {
+    "Key": "EBuildableTier",
+    "Value": "BuildableTierData"
+  },
+  "m_BuildableTypesCache": {
+    "Key": "EBuildableType",
+    "Value": "EBuildingMode"
+  },
+  "m_BuildableTypeStaticMeshCache": {
+    "Key": "BuildableSwatchKey",
+    "Value": null
+  },
+  "m_BuildingPieces": {
+    "Key": "EBuildableType",
+    "Value": "BuildingBlueprintBuildingItemContainer"
+  },
+  "m_ButtonHighlightMap": {
+    "Key": "EBuildingSubAction",
+    "Value": null
+  },
+  "m_ButtonIcons": {
+    "Key": "ESocialMenuFriendsListButtonTypes",
+    "Value": null
+  },
+  "m_ButtonWidgetToButtonType": {
+    "Key": null,
+    "Value": "ESocialMenuFriendsListButtonTypes"
+  },
+  "m_CachedActorParameters": {
+    "Key": null,
+    "Value": "EventLayeredParameterWrapper"
+  },
+  "m_CachedAiRespawnData": {
+    "Key": "SoftObjectPath",
+    "Value": "CachedAiRespawnData"
+  },
+  "m_CachedChatMessages": {
+    "Key": "Guid",
+    "Value": null
+  },
+  "m_CachedComponentParameters": {
+    "Key": null,
+    "Value": "EventLayeredParameterWrapper"
+  },
+  "m_CachedDimensionInfos": {
+    "Key": null,
+    "Value": "DimensionInfoContainer"
+  },
+  "m_CachedFeedbackItems": {
+    "Key": "EInputContext",
+    "Value": null
+  },
+  "m_CachedInvites": {
+    "Key": "PersistencePartyInviteId",
+    "Value": "PartyInvitation"
+  },
+  "m_CachedLevels": {
+    "Key": "ESpecializationTrack",
+    "Value": null
+  },
+  "m_CachedMemberToPartyId": {
+    "Key": "PersistenceActorId",
+    "Value": "PersistencePartyId"
+  },
+  "m_CachedModuleDurabilities": {
+    "Key": "EVehicleModuleType",
+    "Value": null
+  },
+  "m_CachedOutcomeInventories": {
+    "Key": "InventoryTypeFilter",
+    "Value": "InventoriesList"
+  },
+  "m_CachedParties": {
+    "Key": "PersistencePartyId",
+    "Value": "Party"
+  },
+  "m_CachedPlatformSessionsData": {
+    "Key": "PersistencePartyId",
+    "Value": "PartyPlatformSessions"
+  },
+  "m_CachedSortedItemNodes": {
+    "Key": null,
+    "Value": "TechTreeNodeDataList"
+  },
+  "m_CameraModifiers": {
+    "Key": "EPostProcessCameraModifierName",
+    "Value": "PostProcessCameraModifierData"
+  },
+  "m_CameraSpringOffsets": {
+    "Key": "ECharacterCreationCameraFocus",
+    "Value": "CameraSpringOffsetConfig"
+  },
+  "m_CardImages": {
+    "Key": "EJourneyState",
+    "Value": null
+  },
+  "m_CategoryIcons": {
+    "Key": "ESkillTree",
+    "Value": null
+  },
+  "m_CategorySetupData": {
+    "Key": "ESocialMenuFriendsListCategories",
+    "Value": "SocialFriendsListCategorySetupData"
+  },
+  "m_ChainedMeleeActions": {
+    "Key": null,
+    "Value": "PossibleMeleeAction"
+  },
+  "m_ChangedCustomizationInfo": {
+    "Key": null,
+    "Value": "VehicleCustomizationInfo"
+  },
+  "m_CharacterData": {
+    "Key": null,
+    "Value": "CharacterMetadataEntry"
+  },
+  "m_ChargingDamageTypes": {
+    "Key": "GameplayAttribute",
+    "Value": null
+  },
+  "m_Checkpoints": {
+    "Key": null,
+    "Value": "GenericCheckpoint"
+  },
+  "m_CheckpointStateMap": {
+    "Key": null,
+    "Value": "CheckpointState"
+  },
+  "m_CircuitElements": {
+    "Key": "EntityId",
+    "Value": "ECircuitElementFlowType"
+  },
+  "m_ClothingModifierEffects": {
+    "Key": "PersistenceItemId",
+    "Value": "ActiveGameplayEffectHandle"
+  },
+  "m_Clusters": {
+    "Key": null,
+    "Value": "WorldLayoutClusterEntry"
+  },
+  "m_ColdZoneLevelTextMap": {
+    "Key": "EColdZoneLevel",
+    "Value": null
+  },
+  "m_ColorMap": {
+    "Key": "ETargetValidity",
+    "Value": "LinearColor"
+  },
+  "m_CombatAbilityDecisionSets": {
+    "Key": "ENPCCombatBehaviorSetName",
+    "Value": "NpcAbilitySetData"
+  },
+  "m_ComponentLodLevels": {
+    "Key": "ELodLevel",
+    "Value": null
+  },
+  "m_ConnectedPlayerControllers": {
+    "Key": "PersistenceActorId",
+    "Value": null
+  },
+  "m_ContentTypeToConfiguration": {
+    "Key": "ECCScreenContentType",
+    "Value": "ContentConfiguration"
+  },
+  "m_ContractHierarchySettingsMap": {
+    "Key": null,
+    "Value": "ContractHierarchySetting"
+  },
+  "m_ContractListEntriesData": {
+    "Key": "ContractInfoKey",
+    "Value": null
+  },
+  "m_ControllerTickRates": {
+    "Key": "ELodLevel",
+    "Value": null
+  },
+  "m_CurrentFeedbackItems": {
+    "Key": "EInputContext",
+    "Value": null
+  },
+  "m_CurrentHighlightedActors": {
+    "Key": null,
+    "Value": "HighlightActorData"
+  },
+  "m_CustomBackgroundOpacityMap": {
+    "Key": "EMetaDialogBackgroundOpacity",
+    "Value": null
+  },
+  "m_CustomizationData": {
+    "Key": "EWeaponModType",
+    "Value": "WeaponCustomizationData"
+  },
+  "m_CustomizationItemIcons": {
+    "Key": "ECustomizationType",
+    "Value": null
+  },
+  "m_DamageMitigationStats": {
+    "Key": "EDamageMitigationFloatStatID",
+    "Value": null
+  },
+  "m_DamageToVehicles": {
+    "Key": "EVehicleModel",
+    "Value": null
+  },
+  "m_DamageTypeReactionMap": {
+    "Key": null,
+    "Value": "EFireZoneDamageTypeReactions"
+  },
+  "m_DangerZoneMovementInfo": {
+    "Key": null,
+    "Value": "DangerZoneLocationAndVelocity"
+  },
+  "m_Data": {
+    "Key": null,
+    "Value": "NpcDialogueData"
+  },
+  "m_DefaultBuildingDamageMitigation": {
+    "Key": "EDamageMitigationFloatStatID",
+    "Value": null
+  },
+  "m_DefaultDamageMitigation": {
+    "Key": "EDamageMitigationFloatStatID",
+    "Value": null
+  },
+  "m_DefaultFlyingVehicleBoostTogglePlatformMap": {
+    "Key": "EDunePlatformType",
+    "Value": null
+  },
+  "m_DefaultMasteringModePlatformMap": {
+    "Key": "EDunePlatformType",
+    "Value": "EDuneAudioMasteringMode"
+  },
+  "m_DefaultMitigationStats": {
+    "Key": "EDamageMitigationFloatStatID",
+    "Value": null
+  },
+  "m_DefaultPlaceableDamageMitigation": {
+    "Key": "EDamageMitigationFloatStatID",
+    "Value": null
+  },
+  "m_DefaultShieldDamageMitigation": {
+    "Key": "EDamageMitigationFloatStatID",
+    "Value": null
+  },
+  "m_DefaultShowrooms": {
+    "Key": "EShowroomId",
+    "Value": "ShowroomDefinition"
+  },
+  "m_DefaultStats": {
+    "Key": "EHealthFloatId",
+    "Value": null
+  },
+  "m_DefaultSuspensorTogglePlatformMap": {
+    "Key": "EDunePlatformType",
+    "Value": null
+  },
+  "m_DefaultTimerIntervals": {
+    "Key": "EDuneSquadTimers",
+    "Value": "TimerIntervalPerLod"
+  },
+  "m_DesiredEntryClassMapping": {
+    "Key": "ENotificationType",
+    "Value": null
+  },
+  "m_DifficultyConfigToAttributeMap": {
+    "Key": null,
+    "Value": "GameplayAttribute"
+  },
+  "m_DisplacementState": {
+    "Key": null,
+    "Value": "DynamicVolumeState"
+  },
+  "m_DisplayTexts": {
+    "Key": "ESpiceState",
+    "Value": null
+  },
+  "m_DistanceTravelled": {
+    "Key": "EVehicleModuleType",
+    "Value": null
+  },
+  "m_DiveAnimMontages": {
+    "Key": "EDiveDirection",
+    "Value": null
+  },
+  "m_DuneS2SControllerActorsMap": {
+    "Key": null,
+    "Value": "PerServerSetRankBulkData"
+  },
+  "m_DynamicBTMap": {
+    "Key": "GameplayTag",
+    "Value": null
+  },
+  "m_DynamicBTs": {
+    "Key": "GameplayTag",
+    "Value": null
+  },
+  "m_DynamicInventories": {
+    "Key": "PersistenceInventoryId",
+    "Value": "GameStateDynamicInventoryNode"
+  },
+  "m_DynamicMarkerDataMap": {
+    "Key": "EntityId",
+    "Value": "DynamicMarkerData"
+  },
+  "m_Effects": {
+    "Key": null,
+    "Value": "ActiveGamePadColorEffect"
+  },
+  "m_EffectTypeUIOverrides": {
+    "Key": null,
+    "Value": "EDungeonGameplayEffectType"
+  },
+  "m_EncounterDataAssetsCache": {
+    "Key": "EEncounterName",
+    "Value": null
+  },
+  "m_EncounterGroupMapping": {
+    "Key": null,
+    "Value": "EncounterNodeGroupSettings"
+  },
+  "m_Entries": {
+    "Key": null,
+    "Value": "NetworkActorSpawnConfigEntry"
+  },
+  "m_EquipmentSlotBoundsMap": {
+    "Key": "EEquipmentSlot",
+    "Value": "BoxSphereBounds"
+  },
+  "m_ExplorationVolumeToJourneyNodeNameMap": {
+    "Key": "GameplayTag",
+    "Value": null
+  },
+  "m_ExternalConditions": {
+    "Key": null,
+    "Value": "ExternalContractConditionData"
+  },
+  "m_FactionMarkerMap": {
+    "Key": "EFaction",
+    "Value": null
+  },
+  "m_FactionScoreMap": {
+    "Key": "EFaction",
+    "Value": null
+  },
+  "m_FactionsMap": {
+    "Key": "EFaction",
+    "Value": null
+  },
+  "m_FactionTagToDisplayName": {
+    "Key": "GameplayTag",
+    "Value": null
+  },
+  "m_FavoritesItemDataMap": {
+    "Key": "EBuildableType",
+    "Value": null
+  },
+  "m_FilterEntries": {
+    "Key": "GameplayTag",
+    "Value": "MapMarkerFilterEntry"
+  },
+  "m_FloodControlPostponedActions": {
+    "Key": "EPlayerActionFloodControlBucketType",
+    "Value": null
+  },
+  "m_FractureLineGroupMap": {
+    "Key": null,
+    "Value": "FractureLineGroup"
+  },
+  "m_FriendInvitesCategoriesToPlayerEntries": {
+    "Key": "ESocialMenuFriendsListCategories",
+    "Value": "PlayerInfoEntries"
+  },
+  "m_FriendsListCategoriesToPlayerEntries": {
+    "Key": "ESocialMenuFriendsListCategories",
+    "Value": "PlayerInfoEntries"
+  },
+  "m_GameContentPacksByTag": {
+    "Key": "GameplayTag",
+    "Value": "PrimaryAssetId"
+  },
+  "m_GameplayAbilityEvents": {
+    "Key": null,
+    "Value": "GameplayAbilityFeedbackEvent"
+  },
+  "m_GameplayEffectsReactionMap": {
+    "Key": null,
+    "Value": "EFireZoneDamageTypeReactions"
+  },
+  "m_GenericActorsTemplates": {
+    "Key": null,
+    "Value": "GenericActorTemplateRowBase"
+  },
+  "m_GhostsData": {
+    "Key": null,
+    "Value": "SimilarPositionBuildableGhostArray"
+  },
+  "m_GridItemDataMap": {
+    "Key": "EBuildableType",
+    "Value": null
+  },
+  "m_GridSortTypeToNameMap": {
+    "Key": "EGridSortType",
+    "Value": null
+  },
+  "m_GroupedContractData": {
+    "Key": "GameplayTag",
+    "Value": null
+  },
+  "m_Groups": {
+    "Key": null,
+    "Value": "ResourceNodePointGroup"
+  },
+  "m_GruntEvents": {
+    "Key": "EDunePlayerVoiceGrunt",
+    "Value": "DunePlayerVoiceGrunt"
+  },
+  "m_GUIAudioEvents": {
+    "Key": "EGUIAudioEventsType",
+    "Value": null
+  },
+  "m_GuildRoleSettings": {
+    "Key": "EGuildRole",
+    "Value": "GuildRoleSettings"
+  },
+  "m_HateDurations": {
+    "Key": "EHateDuration",
+    "Value": null
+  },
+  "m_HateLevels": {
+    "Key": "EHateLevel",
+    "Value": null
+  },
+  "m_HeatmapValueToColdZoneLevelMapping": {
+    "Key": null,
+    "Value": "EColdZoneLevel"
+  },
+  "m_HighlightedInstances": {
+    "Key": null,
+    "Value": "HighlightBoxData"
+  },
+  "m_HismcByBuildingType": {
+    "Key": "BuildableSwatchKey",
+    "Value": null
+  },
+  "m_HitSweeps": {
+    "Key": null,
+    "Value": "Transform"
+  },
+  "m_HUDInfoPerMode": {
+    "Key": "EVehicleBackupToolMode",
+    "Value": null
+  },
+  "m_HUDNotificationEntryBodyMapping": {
+    "Key": "ENotificationType",
+    "Value": null
+  },
+  "m_ImpactDecals": {
+    "Key": "EPhysicalSurface",
+    "Value": null
+  },
+  "m_ImpactFX": {
+    "Key": "EPhysicalSurface",
+    "Value": null
+  },
+  "m_InputActionWidgets": {
+    "Key": "EInputAction",
+    "Value": null
+  },
+  "m_InputContextWidgets": {
+    "Key": "EInputContext",
+    "Value": null
+  },
+  "m_Instances": {
+    "Key": "GameplayTag",
+    "Value": "JourneyStoryContentInstances"
+  },
+  "m_InstancesContent": {
+    "Key": null,
+    "Value": "EncounterContent"
+  },
+  "m_InstancesResourceNode": {
+    "Key": null,
+    "Value": "ResourceNodeInfo"
+  },
+  "m_InteractionErrorMessageMap": {
+    "Key": "ESocialInteractionErrorMessageType",
+    "Value": null
+  },
+  "m_IntersectingIndices": {
+    "Key": null,
+    "Value": "Vector"
+  },
+  "m_Intervals": {
+    "Key": "ELodLevel",
+    "Value": null
+  },
+  "m_InWorldMarkers": {
+    "Key": "MarkerId",
+    "Value": null
+  },
+  "m_ItemDataToEntryDataMap": {
+    "Key": null,
+    "Value": "SettingsEntryRef"
+  },
+  "m_ItemTemplateLootDistributionLink": {
+    "Key": "EItemTemplateID",
+    "Value": "ItemTemplateLootDistributionLink"
+  },
+  "m_ItemTiers": {
+    "Key": "EItemTier",
+    "Value": "ItemTierData"
+  },
+  "m_JourneyCategories": {
+    "Key": "EJourneyCategory",
+    "Value": "JourneyCategory"
+  },
+  "m_JourneyCinematicMap": {
+    "Key": "EJourneyCinematicType",
+    "Value": null
+  },
+  "m_JourneyCollections": {
+    "Key": "EJourneyCategory",
+    "Value": null
+  },
+  "m_JourneyNodeToMarkerIdMap": {
+    "Key": null,
+    "Value": "MarkerId"
+  },
+  "m_JourneyProgressionStatePresets": {
+    "Key": "GameplayTag",
+    "Value": "JourneyProgressionStatePreset"
+  },
+  "m_JourneyStateDescriptionTextStyles": {
+    "Key": "EJourneyState",
+    "Value": null
+  },
+  "m_JourneyStoryEventComponentMap": {
+    "Key": "GameplayTag",
+    "Value": null
+  },
+  "m_KeybindsIgnoreMap": {
+    "Key": null,
+    "Value": "KeybindNameList"
+  },
+  "m_KeystoneParentItemsMap": {
+    "Key": null,
+    "Value": "SpecializationKeystoneItemParents"
+  },
+  "m_KnockbackEventSettings": {
+    "Key": "GameplayTag",
+    "Value": "KnockbackEventSettingsEntry"
+  },
+  "m_LandsraadTaskProgressPerFaction": {
+    "Key": "EFaction",
+    "Value": "LandsraadBoardTaskProgress"
+  },
+  "m_LandsraadTaskStatePerFaction": {
+    "Key": "EFaction",
+    "Value": "LandsraadBoardTaskState"
+  },
+  "m_LastSeenProgress": {
+    "Key": "ESpecializationTrack",
+    "Value": null
+  },
+  "m_LastSeenUITaskInfo": {
+    "Key": null,
+    "Value": "LastSeenLandsraadUITaskInfo"
+  },
+  "m_LimitNumberOfBuildablesPerMap": {
+    "Key": "EDuneMapId",
+    "Value": null
+  },
+  "m_ListenActions": {
+    "Key": null,
+    "Value": "ListenActionArray"
+  },
+  "m_ListEntryClasses": {
+    "Key": "ESpecTrackProgressType",
+    "Value": null
+  },
+  "m_ListItemsData": {
+    "Key": "PersistenceActorId",
+    "Value": null
+  },
+  "m_LoadedLevelSequenceMap": {
+    "Key": null,
+    "Value": "LevelSequenceData"
+  },
+  "m_LoadedModularAIBehaviorsMap": {
+    "Key": "EModularAIBehaviorName",
+    "Value": "LoadedModularAIBehavior"
+  },
+  "m_LodCapacities": {
+    "Key": "ELodLevel",
+    "Value": null
+  },
+  "m_LootQualityDataPerItemId": {
+    "Key": "EItemTemplateID",
+    "Value": null
+  },
+  "m_LootQualityDataPerItemTag": {
+    "Key": "GameplayTagQuery",
+    "Value": null
+  },
+  "m_MapPresetFeatures": {
+    "Key": "EMapPreset",
+    "Value": "MapFeaturesEntry"
+  },
+  "m_MapPresetMapIds": {
+    "Key": "EMapPreset",
+    "Value": "MapIds"
+  },
+  "m_Maps": {
+    "Key": "EDuneMapId",
+    "Value": "MapFeaturesEntry"
+  },
+  "m_MapsSettingsOverride": {
+    "Key": "EDuneMapId",
+    "Value": "MapFeaturesEntry"
+  },
+  "m_MapStartEvents": {
+    "Key": "EDuneMapId",
+    "Value": null
+  },
+  "m_MarkerAnalysisData": {
+    "Key": "EAnalysisResultType",
+    "Value": null
+  },
+  "m_MarkerIdToJourneyNodeMap": {
+    "Key": "MarkerId",
+    "Value": null
+  },
+  "m_MarkerMap": {
+    "Key": "MarkerId",
+    "Value": "MapMarkerSPSItem"
+  },
+  "m_MarkerPawns": {
+    "Key": "ActorGlobalID",
+    "Value": null
+  },
+  "m_MarkersFromOlderTransfer": {
+    "Key": "MarkerId",
+    "Value": "MapMarkerSPSItem"
+  },
+  "m_MarkerTypeScalars": {
+    "Key": "EMapMarker",
+    "Value": "MarkerTypeScalarSetting"
+  },
+  "m_MarkerWidgets": {
+    "Key": "MarkerId",
+    "Value": null
+  },
+  "m_MasteringModes": {
+    "Key": null,
+    "Value": "DuneAudioMasteringMode"
+  },
+  "m_MaterialParameterTotals": {
+    "Key": null,
+    "Value": "MaterialParameterTotalData"
+  },
+  "m_MaterialParameterTrackContainers": {
+    "Key": null,
+    "Value": "MaterialParameterTrackContainer"
+  },
+  "m_MaxLandclaimSegmentsPerMap": {
+    "Key": "EDuneMapId",
+    "Value": null
+  },
+  "m_MeleeActionMontages": {
+    "Key": null,
+    "Value": "MeleeActionMontage"
+  },
+  "m_MemberStatusMap": {
+    "Key": "PersistenceActorId",
+    "Value": "EPartyMemberStatus"
+  },
+  "m_MentatVisionArchetypeIcons": {
+    "Key": "GameplayTag",
+    "Value": null
+  },
+  "m_MetaDialogWidthMap": {
+    "Key": "EMetaDialogWidth",
+    "Value": null
+  },
+  "m_ModeGameplayTags": {
+    "Key": "EWeldingTorchMode",
+    "Value": "GameplayTag"
+  },
+  "m_ModularSquadAIBehaviors": {
+    "Key": "EModularAIBehaviorName",
+    "Value": "ModularAiBehaviorInstance"
+  },
+  "m_ModuleDurabilities": {
+    "Key": "EVehicleModuleType",
+    "Value": null
+  },
+  "m_ModuleList": {
+    "Key": "GameplayTag",
+    "Value": "TrainingModuleUIData"
+  },
+  "m_Modules": {
+    "Key": "EVehicleModuleType",
+    "Value": "EVehicleModuleTemplateID"
+  },
+  "m_ModuleSubTypes": {
+    "Key": "EVehicleModuleSubType",
+    "Value": "VehicleCustomizationModule"
+  },
+  "m_ModuleTypes": {
+    "Key": "EVehicleModuleType",
+    "Value": "VehicleCustomizationModule"
+  },
+  "m_MovementSpeeds": {
+    "Key": "EDuneAiMovementSpeed",
+    "Value": null
+  },
+  "m_MovementTickRates": {
+    "Key": "ELodLevel",
+    "Value": null
+  },
+  "m_MoveTasks": {
+    "Key": null,
+    "Value": "BossContentAction_MoveToData"
+  },
+  "m_MultiplayerPresets": {
+    "Key": "EServerCustomDifficultyPreset",
+    "Value": null
+  },
+  "m_MutableFloatParameters": {
+    "Key": null,
+    "Value": "CCValidFloatValues"
+  },
+  "m_MutableIntParameters": {
+    "Key": null,
+    "Value": "CCValidOptionValues"
+  },
+  "m_MutableParametersMetadata": {
+    "Key": null,
+    "Value": "CCScreenMutableParameter"
+  },
+  "m_NameToExecutionBase": {
+    "Key": null,
+    "Value": "CachedShortCommandExecutionEntries"
+  },
+  "m_NearHitAnimations": {
+    "Key": "EAnimWeaponType",
+    "Value": "AnimMontageHolder"
+  },
+  "m_NetworkFailureLocTexts": {
+    "Key": "ENetworkFailure",
+    "Value": null
+  },
+  "m_NodeStateIdByStory": {
+    "Key": null,
+    "Value": "MnemonicRecallId"
+  },
+  "m_NotificationAudioEvents": {
+    "Key": "ENotificationType",
+    "Value": null
+  },
+  "m_NotificationEntriesData": {
+    "Key": "ENotificationType",
+    "Value": "NotificationEntryWidgetData"
+  },
+  "m_NpcAbilityData": {
+    "Key": "ENpcCombatAbilityName",
+    "Value": "NpcAbilityData"
+  },
+  "m_NpcBoneBodyPartDataMap": {
+    "Key": "ENpcModifiableBodyPartType",
+    "Value": "NpcBoneBodyPartData"
+  },
+  "m_NpcHomeDistanceRanges": {
+    "Key": "ENPCHomeDistance",
+    "Value": null
+  },
+  "m_NpcWeaponUserConfigs": {
+    "Key": "EItemTemplateID",
+    "Value": "NpcWeaponUserConfig"
+  },
+  "m_OnTargetCustomizationInfo": {
+    "Key": null,
+    "Value": "VehicleCustomizationInfo"
+  },
+  "m_OppositeFactionMap": {
+    "Key": "EFaction",
+    "Value": "EFaction"
+  },
+  "m_OverlappedPlayers": {
+    "Key": null,
+    "Value": "BossEncounterVolumeOverlap"
+  },
+  "m_OverridingSfxSwitchStates": {
+    "Key": "EAudioSwitchStateGroup_Character",
+    "Value": "EAudioSwitchState_Character"
+  },
+  "m_OwnedSwatches": {
+    "Key": "GameplayTag",
+    "Value": "CustomizationDataArray"
+  },
+  "m_OwnedVariants": {
+    "Key": "GameplayTag",
+    "Value": "CustomizationDataArray"
+  },
+  "m_Participants": {
+    "Key": "PersistenceActorId",
+    "Value": "DungeonParticipantState"
+  },
+  "m_PendingConfirmationInteractions": {
+    "Key": null,
+    "Value": "Guid"
+  },
+  "m_PerMapSettings": {
+    "Key": "EDuneMapId",
+    "Value": "PerMapCartographySettings"
+  },
+  "m_PerMapSystemSettings": {
+    "Key": null,
+    "Value": "SpiceSystemSettings"
+  },
+  "m_PerMapThreatSettings": {
+    "Key": "EDuneMapId",
+    "Value": "AudioThreatSettings"
+  },
+  "m_PermissionConfiguration": {
+    "Key": "EPermissionType",
+    "Value": "PermissionTypeConfiguration"
+  },
+  "m_PermissionsIcons": {
+    "Key": "EPermissionActorType",
+    "Value": null
+  },
+  "m_Placeables": {
+    "Key": "EBuildableType",
+    "Value": "BuildingBlueprintPlaceableItemContainer"
+  },
+  "m_PlaceableToolConfiguration": {
+    "Key": "EBuildableDataEditorPlaceablePreset",
+    "Value": "BuildableDataEditorPlaceablePresetConfig"
+  },
+  "m_PlacementCosts": {
+    "Key": "EItemTemplateID",
+    "Value": null
+  },
+  "m_PlacementHelperBrushes": {
+    "Key": "EBuildableType",
+    "Value": null
+  },
+  "m_PlayerCallbackMap": {
+    "Key": null,
+    "Value": "LevelSequenceTriggerVolumeEventPlayerCallbackData"
+  },
+  "m_PlayerOnlineStateToColor": {
+    "Key": "EPlayerOnlineStateType",
+    "Value": "LinearColor"
+  },
+  "m_PlayerRequestSystemStaticData": {
+    "Key": "EPlayerRequestSystemType",
+    "Value": "PlayerRequestSystemFullStaticData"
+  },
+  "m_PlayerSequenceInfoMap": {
+    "Key": null,
+    "Value": "PlayerSequenceInfo"
+  },
+  "m_PlayersOverLifetimeMetrics": {
+    "Key": null,
+    "Value": "SpiceFieldPlayerMetrics"
+  },
+  "m_PooledActorTypes": {
+    "Key": "SoftClassPath",
+    "Value": "ActorTypeSettings"
+  },
+  "m_Presets": {
+    "Key": "EServerCustomDifficultyPreset",
+    "Value": null
+  },
+  "m_PriceStatsMap": {
+    "Key": "EItemTemplateID",
+    "Value": "DEItemPriceStats"
+  },
+  "m_PrimaryMarkers": {
+    "Key": "EMapMarker",
+    "Value": "CompassMarkerShrinkConfig"
+  },
+  "m_ProcessedPotentialGhosts": {
+    "Key": null,
+    "Value": "ProcessedPotentialGhosts"
+  },
+  "m_ProgressStates": {
+    "Key": "GameplayTag",
+    "Value": null
+  },
+  "m_ProgressTrackingAssets": {
+    "Key": "EMapMarker",
+    "Value": "FullscreenMapMarkerRowBase"
+  },
+  "m_PveFallbacks": {
+    "Key": "ESecurityZoneType",
+    "Value": "ESecurityZoneType"
+  },
+  "m_QualitySettings": {
+    "Key": null,
+    "Value": "OvermapQualitySettings"
+  },
+  "m_QuarantinedPlayerRewards": {
+    "Key": null,
+    "Value": "DunePlayerRewardsQuarantine"
+  },
+  "m_QuicksandVehicleVFXMap": {
+    "Key": "EVehicleModel",
+    "Value": null
+  },
+  "m_QuickTimeEventConfigs": {
+    "Key": null,
+    "Value": "DuneQuickTimeEventConfig"
+  },
+  "m_RareResourceIds": {
+    "Key": "EItemTemplateID",
+    "Value": "RareResourceNodeDropInfoBase"
+  },
+  "m_ReceivingEntriesMap": {
+    "Key": "GmeUserIdWrapper",
+    "Value": "VoiceChatIndicatorEntryWithHideTimer"
+  },
+  "m_RecipeGuiDataClientCache": {
+    "Key": "EItemCraftingRecipeId",
+    "Value": null
+  },
+  "m_RecipeMultipliers": {
+    "Key": "EItemCraftingRecipeId",
+    "Value": "CraftingOutputMultiplierLevel"
+  },
+  "m_RegisteredEncounterActors": {
+    "Key": "PersistenceEncounterId",
+    "Value": null
+  },
+  "m_RegisteredTravelDestinationNames": {
+    "Key": null,
+    "Value": "EDuneMapId"
+  },
+  "m_ResourceDefinitionMapping": {
+    "Key": "EItemTemplateID",
+    "Value": "ResourceTypeDefinition"
+  },
+  "m_RespawnLocationMapLimit": {
+    "Key": "ESpawnLocationGroup",
+    "Value": null
+  },
+  "m_RespawnMapSettings": {
+    "Key": "EDuneMapId",
+    "Value": "RespawnMapSettings"
+  },
+  "m_RestoreTimes": {
+    "Key": "EDuneMapId",
+    "Value": null
+  },
+  "m_RotationSettings": {
+    "Key": "EAimAssistRotationType",
+    "Value": "AimAssistRotationSettings"
+  },
+  "m_RotationSettingsADS": {
+    "Key": "EAimAssistRotationType",
+    "Value": "AimAssistRotationSettings"
+  },
+  "m_SandwormAttackDifficultyGroupSettings": {
+    "Key": "ESandwormAttackDifficultyGroup",
+    "Value": "SandwormAttackDifficultyGroupSettings"
+  },
+  "m_SecondaryMarkers": {
+    "Key": "EMapMarker",
+    "Value": "CompassMarkerShrinkConfig"
+  },
+  "m_SenseConfigObjects": {
+    "Key": null,
+    "Value": "NpcSenseConfigStorage"
+  },
+  "m_ServerInteractions": {
+    "Key": "Guid",
+    "Value": null
+  },
+  "m_ServerPartyCallbacks": {
+    "Key": "PersistencePartyId",
+    "Value": "ServerPerPartyDelegates"
+  },
+  "m_SettingsOverride": {
+    "Key": "ESecurityZoneType",
+    "Value": "SecurityZoneRowBase"
+  },
+  "m_ShortcutsTargetMenuMap": {
+    "Key": "EPlayerMenuScreen",
+    "Value": "ShortcutTargetMenuInfo"
+  },
+  "m_Showrooms": {
+    "Key": "EShowroomId",
+    "Value": null
+  },
+  "m_SkillTreeCategoryGUIDataMap": {
+    "Key": "ESkillTree",
+    "Value": "SkillTreeCategoryGUIData"
+  },
+  "m_SocketComponentToModules": {
+    "Key": null,
+    "Value": "BuildingSocketDataContainer"
+  },
+  "m_SocketModuleAssignments": {
+    "Key": null,
+    "Value": "EVehicleModuleTemplateID"
+  },
+  "m_SolarisAmountToTagMapping": {
+    "Key": "GameplayTag",
+    "Value": null
+  },
+  "m_SpawnedInstances": {
+    "Key": null,
+    "Value": "TerrainBlockInstance"
+  },
+  "m_SpiceFieldBiomes": {
+    "Key": "ESpiceFieldSequence",
+    "Value": "SpiceFieldBiome"
+  },
+  "m_SpiceFieldTypeSettings": {
+    "Key": "ESpiceFieldType",
+    "Value": "SpiceFieldTypeSettings"
+  },
+  "m_SpiceVisionVisualData": {
+    "Key": "ESpiceState",
+    "Value": "SpiceVisionData"
+  },
+  "m_SquadTickRates": {
+    "Key": "ELodLevel",
+    "Value": null
+  },
+  "m_StabilizationDamageMitigationStats": {
+    "Key": "EDamageMitigationFloatStatID",
+    "Value": null
+  },
+  "m_StaticSpawnLocations": {
+    "Key": "StaticSpawnLocatorName",
+    "Value": null
+  },
+  "m_StatusMap": {
+    "Key": "EStatBarStatus",
+    "Value": "FloatRange"
+  },
+  "m_StoreTimes": {
+    "Key": "EDuneMapId",
+    "Value": null
+  },
+  "m_SubLevelGroupsSettings": {
+    "Key": null,
+    "Value": "TerrainBlockTemplateSubLevelGroupSettings"
+  },
+  "m_TabIdxToFilterOptionMap": {
+    "Key": null,
+    "Value": "EBattlegroupFilterOption"
+  },
+  "m_TabList": {
+    "Key": "EVehicleManagementTabs",
+    "Value": null
+  },
+  "m_TabsData": {
+    "Key": "EPlaceableMenuTabs",
+    "Value": "PlaceableTabsDataEntry"
+  },
+  "m_TabViews": {
+    "Key": "ESkillTree",
+    "Value": null
+  },
+  "m_TargetCandidates": {
+    "Key": "EntityId",
+    "Value": "PerceivedActor"
+  },
+  "m_TeamDebugColors": {
+    "Key": "EPredefinedTeamId",
+    "Value": "Color"
+  },
+  "m_TeleportToLocations": {
+    "Key": null,
+    "Value": "Vector"
+  },
+  "m_Templates": {
+    "Key": null,
+    "Value": "VehicleTemplateModules"
+  },
+  "m_TerminalMap": {
+    "Key": "PersistenceActorId",
+    "Value": null
+  },
+  "m_TextErrorWidgets": {
+    "Key": "EFilterTextErrorType",
+    "Value": null
+  },
+  "m_ThreatGeneratedPerSpiceHarvestedMap": {
+    "Key": "ESpiceFieldType",
+    "Value": null
+  },
+  "m_TierLootDistribution": {
+    "Key": "GameplayTag",
+    "Value": "LootDistributionTierData"
+  },
+  "m_TimeOfDayRegionBiomeAreas": {
+    "Key": "Guid",
+    "Value": "TimeOfDayRegionBiomeAreas"
+  },
+  "m_ToastLevelSoundMap": {
+    "Key": "EToastNotificationLevel",
+    "Value": "EGUIAudioEventsType"
+  },
+  "m_TotemInvoicesMap": {
+    "Key": "PersistenceActorId",
+    "Value": "TaxationDialogContentTotemData"
+  },
+  "m_TrainerUnlockTags": {
+    "Key": "ESkillTree",
+    "Value": "GameplayTagContainer"
+  },
+  "m_TravelFailureLocTexts": {
+    "Key": "ETravelFailure",
+    "Value": null
+  },
+  "m_TutorialIdToIndexMap": {
+    "Key": "ETutorialEnum",
+    "Value": null
+  },
+  "m_UnrealInputComponentMap": {
+    "Key": "EInputComponent",
+    "Value": null
+  },
+  "m_Variations": {
+    "Key": null,
+    "Value": "VariationDetailsEntry"
+  },
+  "m_VehicleMeshes": {
+    "Key": "EVehicleModuleType",
+    "Value": "VehicleModuleMesh"
+  },
+  "m_VehicleModulePreviewMeshes": {
+    "Key": "EVehicleModuleType",
+    "Value": null
+  },
+  "m_VehicleSlots": {
+    "Key": "EVehicleModuleType",
+    "Value": "VehicleModuleSlot"
+  },
+  "m_VehicleToolVehicleExtents": {
+    "Key": null,
+    "Value": "Vector"
+  },
+  "m_VFXToSpawn": {
+    "Key": "ESpiceState",
+    "Value": "SpiceVisionVFXTuningArray"
+  },
+  "m_VignetteStyles": {
+    "Key": "EPlayerDamageStatus",
+    "Value": "DamageVignetteStyle"
+  },
+  "m_VoiceSets": {
+    "Key": null,
+    "Value": "DunePlayerVoiceSet"
+  },
+  "m_VotingBlockPerBoardIndex": {
+    "Key": null,
+    "Value": "ELandsraadVotingBlockName"
+  },
+  "m_WeaponMuzzleOffsetMap": {
+    "Key": "EWeaponModFrame",
+    "Value": "Vector"
+  },
+  "m_WeaponsLocalMap": {
+    "Key": "EVehicleModuleType",
+    "Value": null
+  },
+  "m_WeaponStatsGameplayEffects": {
+    "Key": null,
+    "Value": "EWeaponStat"
+  },
+  "m_WeightedRareResourceIds": {
+    "Key": "EItemTemplateID",
+    "Value": "RareResourceNodeWeightDropInfo"
+  },
+  "m_WindowWidgets": {
+    "Key": "EWindowWidgets",
+    "Value": null
+  },
+  "m_WindowWidgetsByName": {
+    "Key": null,
+    "Value": "EWindowWidgets"
+  },
+  "m_WingTipVFXs": {
+    "Key": "EVehicleModuleType",
+    "Value": null
+  },
+  "m_WorldLayoutsPerWorld": {
+    "Key": null,
+    "Value": "WorldLayoutCollection"
+  },
+  "Map": {
+    "Key": null,
+    "Value": "MeshSectionInfo"
+  },
+  "MapOverrideSettings": {
+    "Key": "EDuneMapId",
+    "Value": "OptimizationSettings"
+  },
+  "MapRegionVendorId": {
+    "Key": "EDuneMapId",
+    "Value": "VendorRegionData"
+  },
+  "MarkerTypeCounts": {
+    "Key": "EMapMarker",
+    "Value": null
+  },
+  "MarkerTypeSurveyingConfig": {
+    "Key": "EMapMarker",
+    "Value": "MarkerTypeSurveyConfiguration"
+  },
+  "MaxCandidateThreatScoreMap": {
+    "Key": "ESandowmTargetPriority",
+    "Value": null
+  },
+  "MaxThreatBlobValueMap": {
+    "Key": "EThreatBlobType",
+    "Value": null
+  },
+  "MeleeAnimSets": {
+    "Key": "EMeleeType",
+    "Value": "MeleeAnimSet"
+  },
+  "MiningYieldTiersMap": {
+    "Key": null,
+    "Value": "MiningYieldTierData"
+  },
+  "ModuleData": {
+    "Key": "GameplayTag",
+    "Value": "ModuleDynamicData"
+  },
+  "MultilayerProjectors": {
+    "Key": null,
+    "Value": "MultilayerProjector"
+  },
+  "Naked Light Actors": {
+    "Key": null,
+    "Value": "F_LightActorValidationDetails"
+  },
+  "NameToBoneTransformMap": {
+    "Key": "ENpcModifiableBodyPartType",
+    "Value": "ModifyBoneChain"
+  },
+  "NodeColorsMap": {
+    "Key": null,
+    "Value": "NodeColors"
+  },
+  "NodeTypeMap": {
+    "Key": null,
+    "Value": "AnimNodeStructData"
+  },
+  "Non Lighting Actor": {
+    "Key": null,
+    "Value": "F_LightActorValidationDetails"
+  },
+  "NotificationAudioEvents": {
+    "Key": "ENotificationType",
+    "Value": null
+  },
+  "Operands": {
+    "Key": null,
+    "Value": "RigVMOperand"
+  },
+  "OrderedSavedPoseIndicesMap": {
+    "Key": null,
+    "Value": "CachedPoseIndices"
+  },
+  "OriginDataMap": {
+    "Key": "GameplayTag",
+    "Value": "ItemOriginGUIData"
+  },
+  "OrnithopterFlightModeDamageMitigation": {
+    "Key": "EOrnithopterFlightMode",
+    "Value": "DamageMitigationMap"
+  },
+  "Outcome": {
+    "Key": "EItemTemplateID",
+    "Value": "CraftingRecipeOutcome"
+  },
+  "OutputObjects": {
+    "Key": "HoudiniOutputObjectIdentifier",
+    "Value": "HoudiniOutputObject"
+  },
+  "Outputs": {
+    "Key": "HoudiniOutputObjectIdentifier",
+    "Value": "HoudiniAssetBlueprintOutput"
+  },
+  "OverlapFilterInclusiveCollisionType": {
+    "Key": "ECollisionChannel",
+    "Value": "EObjectTypeQuery"
+  },
+  "OverlappedActors": {
+    "Key": null,
+    "Value": "Vector"
+  },
+  "ParameterOptions": {
+    "Key": null,
+    "Value": "PopulationClassParameterOptions"
+  },
+  "ParametersMappings": {
+    "Key": null,
+    "Value": "ParameterRenamedValues"
+  },
+  "ParameterUIDataMap": {
+    "Key": null,
+    "Value": "ParameterUIData"
+  },
+  "PendingEventsByRootInstance": {
+    "Key": "MovieSceneEvaluationInstanceKey",
+    "Value": "MovieSceneEvaluationHookEventContainer"
+  },
+  "PerActorSettings": {
+    "Key": null,
+    "Value": "ActorOptimizationSettings"
+  },
+  "PerAgentTypeModifiers": {
+    "Key": "MercunaAgentType",
+    "Value": "MercunaModifier"
+  },
+  "PerComponentSettings": {
+    "Key": null,
+    "Value": "ComponentOptimizationSettings"
+  },
+  "PerDeviceOverrides": {
+    "Key": null,
+    "Value": "ForceFeedbackEffectOverridenChannelDetails"
+  },
+  "PerkData": {
+    "Key": "GameplayTag",
+    "Value": "PerkDynamicData"
+  },
+  "Perks": {
+    "Key": null,
+    "Value": "ModulePerk"
+  },
+  "PerkUnlocks": {
+    "Key": null,
+    "Value": "ModulePerkUIData"
+  },
+  "PerLevelPrereqModuleTags": {
+    "Key": null,
+    "Value": "GameplayTagContainer"
+  },
+  "PerMapActivationSettings": {
+    "Key": "EDuneMapId",
+    "Value": "ResourceFieldActivationSettings"
+  },
+  "PerMapData": {
+    "Key": null,
+    "Value": "DuneGlobalCacheMapData"
+  },
+  "PerTierRewards": {
+    "Key": null,
+    "Value": "ReturningPlayerTierReward"
+  },
+  "PhysicsAssetsMergingParameters": {
+    "Key": null,
+    "Value": "AssetMergingParameters"
+  },
+  "PlaceableCategories": {
+    "Key": "EBuildableStructureCategoryType",
+    "Value": "BuildingStructureCollectionPlaceableArray"
+  },
+  "PlayerControllerMap": {
+    "Key": "UniqueNetIdRepl",
+    "Value": null
+  },
+  "Pool": {
+    "Key": "EInteractionKeyCode",
+    "Value": "RandomizedPentashieldKeyPool"
+  },
+  "PossessedObjects": {
+    "Key": null,
+    "Value": "LevelSequenceObject"
+  },
+  "PreallocatedInstances": {
+    "Key": null,
+    "Value": "GameplayCueNotifyActorArray"
+  },
+  "PreviousNameMap": {
+    "Key": "RigElementKey",
+    "Value": "RigElementKey"
+  },
+  "Profiles": {
+    "Key": null,
+    "Value": "RetargetProfile"
+  },
+  "Progress Background Map": {
+    "Key": "ETargetValidity",
+    "Value": "LinearColor"
+  },
+  "Proper Light Actors": {
+    "Key": null,
+    "Value": "F_LightActorValidationDetails"
+  },
+  "PropertiesMetaData": {
+    "Key": null,
+    "Value": "FieldCookedMetaDataStore"
+  },
+  "PulseImpactEffects": {
+    "Key": "EPhysicalSurface",
+    "Value": null
+  },
+  "PurchasedLimitedItemAmounts": {
+    "Key": "EItemTemplateID",
+    "Value": null
+  },
+  "QualityLevels": {
+    "Key": null,
+    "Value": "CraftingPerQualityItemCostData"
+  },
+  "RecentlyKilledVictims": {
+    "Key": "PersistenceActorId",
+    "Value": "Timespan"
+  },
+  "Recipe": {
+    "Key": "EItemTemplateID",
+    "Value": null
+  },
+  "RecipeIngredientsFilter": {
+    "Key": "GameplayTag",
+    "Value": "CraftingRecyclerFilterList"
+  },
+  "RefundItems": {
+    "Key": "EItemTemplateID",
+    "Value": null
+  },
+  "RegionIdToVendorId": {
+    "Key": null,
+    "Value": "EVendorId"
+  },
+  "RegisteredTabsByID": {
+    "Key": null,
+    "Value": "CommonRegisteredTabInfo"
+  },
+  "ReinforcementPointsNum": {
+    "Key": "EAIAttackTier",
+    "Value": null
+  },
+  "RemovalEventRegistrations": {
+    "Key": null,
+    "Value": "RemovalEventCallbackWrapper"
+  },
+  "RenderPassData": {
+    "Key": "MoviePipelinePassIdentifier",
+    "Value": "MoviePipelineRenderPassOutputData"
+  },
+  "ReplacementMaterialsById": {
+    "Key": "HoudiniMaterialIdentifier",
+    "Value": null
+  },
+  "RequiredSkillTags": {
+    "Key": "GameplayTag",
+    "Value": null
+  },
+  "ResourceTierMap": {
+    "Key": "EItemTemplateID",
+    "Value": null
+  },
+  "RestrictionStatusesInCurrentMap": {
+    "Key": "EBuildableStructureCategoryType",
+    "Value": null
+  },
+  "RestrictionStatusesInServer": {
+    "Key": "EBuildableStructureCategoryType",
+    "Value": null
+  },
+  "Result": {
+    "Key": "EBakeMapType",
+    "Value": null
+  },
+  "RetargetPoses": {
+    "Key": null,
+    "Value": "IKRetargetPose"
+  },
+  "RollbackNetStartupActors": {
+    "Key": null,
+    "Value": "RollbackNetStartupActorInfo"
+  },
+  "Sections": {
+    "Key": null,
+    "Value": "CustomizedToolMenuSection"
+  },
+  "ServerPerLodSettings": {
+    "Key": "ELodLevel",
+    "Value": "ComponentLODOptimizationSettings"
+  },
+  "ServerWidgets": {
+    "Key": "ServerID",
+    "Value": null
+  },
+  "SetByCallerTagMagnitudes": {
+    "Key": "GameplayTag",
+    "Value": null
+  },
+  "Settings": {
+    "Key": null,
+    "Value": "DuneArmorItemAudioSetting"
+  },
+  "SettingsMap": {
+    "Key": null,
+    "Value": "PlatformSettingsInstances"
+  },
+  "ShareSetLanguageMap": {
+    "Key": "WwiseLanguageCookedData",
+    "Value": "WwiseShareSetCookedData"
+  },
+  "SoftwareCursors": {
+    "Key": "EMouseCursor",
+    "Value": "SoftClassPath"
+  },
+  "SoundBankLanguageMap": {
+    "Key": "WwiseLanguageCookedData",
+    "Value": "WwiseSoundBankCookedData"
+  },
+  "SourceItems": {
+    "Key": null,
+    "Value": "NodeItem"
+  },
+  "SourceRetargetPoses": {
+    "Key": null,
+    "Value": "IKRetargetPose"
+  },
+  "SpawnedActorAmountDuringVision": {
+    "Key": "Guid",
+    "Value": null
+  },
+  "SpawnedActorTypeAmount": {
+    "Key": "Guid",
+    "Value": null
+  },
+  "SpecificItemsThatPlayerCanBuy": {
+    "Key": "EItemTemplateID",
+    "Value": "VendorIndividualItemData"
+  },
+  "SpecificItemsThatPlayerCanSell": {
+    "Key": "EItemTemplateID",
+    "Value": "VendorIndividualItemData"
+  },
+  "SpiceFieldTypeToMarkerTypeMap": {
+    "Key": "EMapMarker",
+    "Value": null
+  },
+  "SpiceYieldByType": {
+    "Key": "ESpiceFieldType",
+    "Value": null
+  },
+  "StatChangesPerItemId": {
+    "Key": "EItemTemplateID",
+    "Value": "StatChangePerQualityData"
+  },
+  "StatChangesPerItemTag": {
+    "Key": "GameplayTagQuery",
+    "Value": "StatChangePerQualityData"
+  },
+  "StateUIDataMap": {
+    "Key": null,
+    "Value": "ParameterUIData"
+  },
+  "StaticMeshSurfaceOverride": {
+    "Key": null,
+    "Value": "AkGeometrySurfaceOverride"
+  },
+  "StrToStruct": {
+    "Key": null,
+    "Value": "StructSerializerBuiltinTestStruct"
+  },
+  "StrToVec": {
+    "Key": null,
+    "Value": "Vector"
+  },
+  "SubContentBlocksSettings": {
+    "Key": "SoftObjectPath",
+    "Value": "TerrainBlockTemplateSubLevelContentBlockSettings"
+  },
+  "SubLevelGroupsSettings": {
+    "Key": null,
+    "Value": "TerrainBlockTemplateSubLevelGroupSettings"
+  },
+  "SubLevelsGroups": {
+    "Key": null,
+    "Value": "TerrainBlockTemplateSubLevelGroupSettings"
+  },
+  "SubSectionRanges": {
+    "Key": "Guid",
+    "Value": "MovieSceneFrameRange"
+  },
+  "SubSequences": {
+    "Key": "MovieSceneSequenceID",
+    "Value": "MovieSceneSubSequenceData"
+  },
+  "SurfaceAgentTypes": {
+    "Key": null,
+    "Value": "MercunaSurfaceAgentProperties"
+  },
+  "Systems": {
+    "Key": null,
+    "Value": "NiagaraOutlinerSystemData"
+  },
+  "Tags to Error Messages": {
+    "Key": "GameplayTag",
+    "Value": null
+  },
+  "TagSources": {
+    "Key": null,
+    "Value": "GameplayTagSource"
+  },
+  "TagsToTierDataMap": {
+    "Key": "GameplayTag",
+    "Value": "EItemTier"
+  },
+  "TagToStateEnumMap": {
+    "Key": "GameplayTag",
+    "Value": "EShieldStateChangeReason"
+  },
+  "TargetItems": {
+    "Key": null,
+    "Value": "NodeItem"
+  },
+  "TargetRetargetPoses": {
+    "Key": null,
+    "Value": "IKRetargetPose"
+  },
+  "Test Light Actors": {
+    "Key": null,
+    "Value": "F_LightActorValidationDetails"
+  },
+  "TextureLayerParameterToRefArray": {
+    "Key": "Guid",
+    "Value": null
+  },
+  "Textures": {
+    "Key": null,
+    "Value": "MaskOutTexture"
+  },
+  "TheatBlobTypeCanBeAffectedByAreaThreatMap": {
+    "Key": "EThreatBlobType",
+    "Value": null
+  },
+  "ThreatBlobCanDecayMap": {
+    "Key": "EThreatBlobType",
+    "Value": null
+  },
+  "ThreatBlobHasContributorsMap": {
+    "Key": "EThreatBlobType",
+    "Value": null
+  },
+  "ThreatBlobTypeCanMergeMap": {
+    "Key": "EThreatBlobType",
+    "Value": null
+  },
+  "ThreatBlobTypeIsHighPrioMap": {
+    "Key": "EThreatBlobType",
+    "Value": null
+  },
+  "ThreatBlobTypeSizeMap": {
+    "Key": "EThreatBlobType",
+    "Value": null
+  },
+  "TierIconsMap": {
+    "Key": "GameplayTag",
+    "Value": null
+  },
+  "ToastData": {
+    "Key": "ENotificationType",
+    "Value": null
+  },
+  "Tools": {
+    "Key": "EConstructionSystemToolType",
+    "Value": null
+  },
+  "Tracks": {
+    "Key": "MovieSceneTrackIdentifier",
+    "Value": "MovieSceneEvaluationTrack"
+  },
+  "TrackSignatureToTrackIdentifier": {
+    "Key": "Guid",
+    "Value": "MovieSceneTrackIdentifier"
+  },
+  "TrackTemplateFields": {
+    "Key": null,
+    "Value": "MovieSceneEvaluationField"
+  },
+  "TrackTemplates": {
+    "Key": null,
+    "Value": "MovieSceneEvaluationTemplate"
+  },
+  "TransitionTiles": {
+    "Key": "BiomeNeighborhood",
+    "Value": "TiledLandscapeTileWithLODs"
+  },
+  "TranslationNameToIndexMap": {
+    "Key": null,
+    "Value": "GameplayCueTranslatorNodeIndex"
+  },
+  "Types": {
+    "Key": "MercunaAgentType",
+    "Value": null
+  },
+  "UnfilteredMontageAnimNotifies": {
+    "Key": null,
+    "Value": "AnimNotifyArray"
+  },
+  "UniqueTileDetailsByNameMap": {
+    "Key": null,
+    "Value": "IntPoint"
+  },
+  "UserParameterRedirects": {
+    "Key": "NiagaraVariable",
+    "Value": "NiagaraVariable"
+  },
+  "VariableIndices": {
+    "Key": "NiagaraVariableBase",
+    "Value": null
+  },
+  "VectorParameterValues": {
+    "Key": null,
+    "Value": "LinearColor"
+  },
+  "WarningToAudioEventMap": {
+    "Key": "EAIWaveWarningAudio",
+    "Value": null
+  },
+  "WeakUserWidgetData": {
+    "Key": null,
+    "Value": "SequenceTickManagerWidgetData"
+  },
+  "WeightMaps": {
+    "Key": null,
+    "Value": "PointWeightMap"
+  },
+  "WorldData": {
+    "Key": null,
+    "Value": "NiagaraOutlinerWorldData"
+  },
+  "WorldParticleSystemPools": {
+    "Key": null,
+    "Value": "PSCPool"
+  },
+  "XYtoCollisionComponentMap": {
+    "Key": "IntPoint",
+    "Value": null
+  },
+  "XYtoComponentMap": {
+    "Key": "IntPoint",
+    "Value": null
+  }
+}

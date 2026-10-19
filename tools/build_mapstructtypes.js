@@ -202,19 +202,42 @@ function construire(maps, base) {
   return { table: ordonnee, ambigus, heritees };
 }
 
-// ── Découverte du .usmap par défaut (réglages FModel) ───────────────────────
+// ── Découverte du .usmap par défaut ─────────────────────────────────────────
+/**
+ * On part du .usmap configuré dans FModel, MAIS on prend le plus RÉCENT de son dossier.
+ *
+ * Piège constaté (2026-10-20) : FModel pointait encore sur le .usmap de juin alors qu'un
+ * dump de septembre dormait juste à côté. Régénérer depuis le vieux fichier ne plante pas
+ * — il ANNULE silencieusement les corrections apportées par le dump récent (3 types
+ * redeviennent faux). Une régénération ne doit jamais faire reculer la table.
+ */
 function usmapDeFModel() {
   const appdata = process.env.APPDATA || path.join(process.env.USERPROFILE || '', 'AppData/Roaming');
+  let configure = null;
   try {
     const s = JSON.parse(fs.readFileSync(path.join(appdata, 'FModel', 'AppSettings.json'), 'utf8'));
     const e = Object.entries(s.PerDirectory || {}).find(([k]) => /dune/i.test(k));
     const chemins = ((e && e[1].Endpoints) || []).map(x => x && x.FilePath).filter(Boolean);
-    return chemins.length ? chemins[chemins.length - 1] : null;
-  } catch (err) { return null; }
+    configure = chemins.length ? chemins[chemins.length - 1] : null;
+  } catch (err) { return { choisi: null, configure: null }; }
+  if (!configure) return { choisi: null, configure: null };
+
+  let choisi = configure;
+  try {
+    const dossier = path.dirname(configure);
+    const candidats = fs.readdirSync(dossier)
+      .filter(f => f.toLowerCase().endsWith('.usmap'))
+      .map(f => path.join(dossier, f))
+      .map(p => ({ p, m: fs.statSync(p).mtimeMs }))
+      .sort((a, b) => b.m - a.m);
+    if (candidats.length) choisi = candidats[0].p;
+  } catch (err) { /* dossier illisible : on garde celui de FModel */ }
+  return { choisi, configure };
 }
 
 // ── Main ────────────────────────────────────────────────────────────────────
-const entree = args.find(a => !a.startsWith('--')) || usmapDeFModel();
+const fmodel = usmapDeFModel();
+const entree = args.find(a => !a.startsWith('--')) || fmodel.choisi;
 if (!entree || !fs.existsSync(entree)) {
   console.error('Usage : node tools/build_mapstructtypes.js <fichier.usmap> [--out=…] [--base=…]');
   console.error(entree ? `Introuvable : ${entree}` : 'Aucun .usmap trouvé (ni en argument, ni dans les réglages FModel).');
@@ -236,6 +259,10 @@ fs.writeFileSync(sortieFichier, JSON.stringify(table, null, 2) + '\n');
 
 if (!QUIET) {
   console.log(`usmap  : ${entree}`);
+  if (fmodel.configure && path.resolve(fmodel.configure) !== path.resolve(entree)) {
+    console.log(`         ⚠ FModel, lui, pointe encore sur ${path.basename(fmodel.configure)} —`);
+    console.log(`           pense à le changer (Mapping), sinon tes exports FModel resteront sur l'ancien.`);
+  }
   console.log(`         version ${u.version}, compression ${['aucune', 'Oodle', 'Brotli', 'ZStandard'][u.methode]}`);
   console.log(`         ${u.noms} noms · ${u.enums} enums · ${u.structs} structs · ${u.maps.length} TMap rencontrées`);
   console.log(`sortie : ${sortieFichier}`);

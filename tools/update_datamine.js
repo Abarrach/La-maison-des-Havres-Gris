@@ -144,6 +144,27 @@ function lireReglagesFModel() {
   };
 }
 
+/**
+ * Le .usmap à utiliser : le PLUS RÉCENT du dossier où vit celui configuré dans FModel.
+ *
+ * Piège constaté (2026-10-20) : FModel pointait encore sur celui de juin alors qu'un dump
+ * de septembre dormait à côté. Régénérer depuis le vieux ne plante pas — il ANNULE
+ * silencieusement les corrections du récent. Une régénération ne doit jamais reculer.
+ */
+function usmapLePlusRecent(reglages) {
+  const configure = reglages.mappings || null;
+  if (!configure) return { choisi: null, configure: null };
+  try {
+    const dossier = path.dirname(configure);
+    const cands = fs.readdirSync(dossier)
+      .filter(f => f.toLowerCase().endsWith('.usmap'))
+      .map(f => path.join(dossier, f))
+      .map(p => ({ p, m: fs.statSync(p).mtimeMs }))
+      .sort((a, b) => b.m - a.m);
+    return { choisi: cands.length ? cands[0].p : configure, configure };
+  } catch (e) { return { choisi: configure, configure }; }
+}
+
 /** Racine des exports : .../Exports/DuneSandbox/Content/Dune (celle que suivent les build_*). */
 function trouverRacineExport(reglages) {
   const forcee = valOf('export');
@@ -247,6 +268,19 @@ const STEPS = [
     note: 'Réseau, ~30 min, régulièrement bloqué (403 Cloudflare) y compris depuis le poste de dev. '
       + 'Seule source des stats d\'ARMES (le datamine ne donne que des références de Blueprints). '
       + 'Utile surtout quand un patch ajoute de NOUVEAUX objets.',
+  },
+  {
+    id: 'mapstructtypes',
+    label: 'Table des types de TMap (clé/valeur des maps)',
+    script: 'tools/build_mapstructtypes.js',
+    args: (c) => [c.usmap.choisi].filter(Boolean),
+    outputs: ['tools/mapstructtypes.json'],
+    sources: [],
+    sourcesAbs: (c) => [c.usmap.choisi],
+    paks: [],
+    note: 'Sans cette table, FModel et CUE4Parse sortent les TMap VIDES (recettes, coûts, '
+      + 'scaling par grade). Elle se déduit du .usmap : dès que celui-ci change, elle doit '
+      + 'suivre, sinon les nouvelles maps redeviennent vides sans message d\'erreur.',
   },
   {
     id: 'recipes',
@@ -492,6 +526,13 @@ function analyser(step, ctx) {
     const abs = path.join(exportRoot, rel);
     return { rel, abs, present: exists(abs), mtime: treeMtime(abs) };
   });
+  // Sources hors export FModel (le .usmap vit à côté de FModel, pas dans ses exports).
+  // Elles ne se « ré-exportent » pas : on les marque pour que le plan d'action ne
+  // demande jamais de les regénérer dans FModel.
+  for (const abs of (step.sourcesAbs ? step.sourcesAbs(ctx) : [])) {
+    if (!abs) continue;
+    srcs.push({ rel: path.basename(abs), abs, present: exists(abs), mtime: treeMtime(abs), horsExport: true });
+  }
   const manquants = srcs.filter(s => !s.present).map(s => s.rel);
   const localsManquants = (step.requiresLocal || []).filter(f => !exists(path.join(ROOT, f)));
   const manuelManquant = step.manual && !exists(ctx.exportAddon) ? ctx.exportAddon : null;
@@ -500,7 +541,7 @@ function analyser(step, ctx) {
   // Périmés côté export : ceux dont le pak est plus récent (marge de 1 h pour absorber
   // l'écart entre le téléchargement Steam et l'horodatage des fichiers extraits).
   const MARGE = 3600 * 1000;
-  let aReexporter = pak ? srcs.filter(s => !s.mtime || pak.ms - s.mtime > MARGE) : [];
+  let aReexporter = pak ? srcs.filter(s => !s.horsExport && (!s.mtime || pak.ms - s.mtime > MARGE)) : [];
   // Un dossier parent déjà listé couvre ses enfants : ne pas demander deux fois le même
   // export (LootTables et LootTables/Loot_DifficultyScaled, par exemple).
   aReexporter = aReexporter.filter(s => !aReexporter.some(a => a !== s && s.rel.startsWith(a.rel + '/')));
@@ -589,7 +630,13 @@ function afficherCheck(ctx, analyses) {
   if (reglages.ok) P(`                 (réglages lus dans ${reglages.fichier})`);
   if (reglages.mappings) {
     const m = exists(reglages.mappings);
-    P(`Mappings usmap : ${path.basename(reglages.mappings)}${m ? '' : '  ✗ fichier absent'}`);
+    P(`Mappings usmap : ${path.basename(reglages.mappings)}${m ? '' : '  ✗ fichier absent'}  (réglage FModel)`);
+    const u = ctx.usmap;
+    if (u && u.choisi && path.resolve(u.choisi) !== path.resolve(reglages.mappings)) {
+      P(`                 ⚠ un .usmap PLUS RÉCENT existe à côté : ${path.basename(u.choisi)}`);
+      P('                   (' + iso(treeMtime(u.choisi)) + ') — FModel exporte donc avec un fichier périmé.');
+      P('                   Le changer dans FModel : Settings → Mapping.');
+    }
   }
   const derniere = etat.updated_at ? `${iso(Date.parse(etat.updated_at))}` : 'jamais';
   P(`Dernier passage: ${derniere}${etat.game && etat.game.build_id ? ` (données issues du build ${etat.game.build_id})` : ''}`);
@@ -607,7 +654,10 @@ function afficherCheck(ctx, analyses) {
     const det = [];
     if (a.pak) det.push(`jeu ${a.pak.pak} ${jour(a.pak.ms)}`);
     const srcMax = a.srcs.reduce((m, s) => (s.mtime && s.mtime > m ? s.mtime : m), 0);
-    if (srcMax) det.push(`export ${jour(srcMax)}`);
+    // « export » désigne l'export FModel ; une source qui n'en vient pas (le .usmap)
+    // mérite son propre mot, sinon on cherche en vain le fichier dans les exports.
+    const horsExport = a.srcs.length && a.srcs.every(s => s.horsExport);
+    if (srcMax) det.push(`${horsExport ? 'source' : 'export'} ${jour(srcMax)}`);
     if (a.sortieMs) det.push(`généré ${jour(a.sortieMs)}`);
     if (det.length) P(`    ${det.join('  ·  ')}`);
     if (a.raison) P(`    → ${a.raison}`);
@@ -710,6 +760,7 @@ const ctx = {
   reglages, exportRoot, jeu, etat,
   exportsRoot: reglages.exportsRoot,
   exportAddon: valOf('univers-src') || 'J:/Download/plans total.txt',
+  usmap: usmapLePlusRecent(reglages),
 };
 
 if (!exists(exportRoot)) {

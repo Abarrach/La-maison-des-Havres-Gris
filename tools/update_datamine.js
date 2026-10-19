@@ -460,9 +460,12 @@ const ANGLES_MORTS = [
     id: 'planner_costs',
     fichiers: ['planner_costs.json'],
     label: 'Coûts de construction (matériaux, énergie, eau)',
-    detail: 'Source NON dataminable : compilée par TroubleChute (tools.tcno.co/dune), crédité.\n'
-      + '    Les recettes de structures ne sont pas dans les DataTables (InstancedStruct).\n'
-      + '    Après un patch d\'équilibrage, vérifier à la main sur tcno.co.',
+    detail: 'Compilés par TroubleChute (tools.tcno.co/dune), crédité — donc figés à SA date.\n'
+      + '    ⚠ On a longtemps écrit « non dataminable, InstancedStruct ». C\'EST FAUX (vérifié le\n'
+      + '    2026-10-20) : CDT_BuildableGroupData porte m_BuildableTierData[].m_PlacementCosts,\n'
+      + '    soit les coûts par palier en clair (un Ramp Tier0 coûte 8 pierres, Tier1 10).\n'
+      + '    Ce qui bloquait était la table des types de TMap, désormais régénérable.\n'
+      + '    → chantier ouvert : un build_costs_from_datamine.js remplacerait la dépendance.',
   },
   {
     id: 'divers',

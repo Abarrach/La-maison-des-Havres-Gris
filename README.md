@@ -858,7 +858,7 @@ que personne ne tapera. (Donner le chemin complet du `.cmd` dans `/tr`.)
 | `plans_univers` | `plans_uniques.json` | export de l'addon en jeu (`.txt`, opt-in `--with-univers`) |
 | `base_pieces_v3` | `base_pieces_v3.json` | `Systems/Building/Data`, `Systems/Vehicles` — script **externe** (opt-in `--run-planner-import`) |
 | `planner_pieces` | `planner_pieces.json` | 100 % local (fusion v3 + sockets + utilitaires) |
-| `meshes` | `models/*.glb` | export FModel (opt-in `--with-meshes`, `models/` n'est pas versionné) |
+| `meshes` | `models/*.glb` | **les paks** via `DuneExtract --meshes` (glTF), ou `flatten_glb` depuis un export FModel. `models/` n'est pas versionné |
 
 `tools/datamine_state.json` (versionné) garde la trace de **quel build du jeu** a produit les
 données du site, et de la date de chaque étape. Sans lui, plus rien ne le dit.
@@ -903,6 +903,33 @@ ce qui est la seule étape de toute la chaîne qui touche au processus du jeu, a
 risque d'anti-triche que ça implique. Ce n'est **pas** une étape de routine : celui de
 juin lisait encore correctement le build d'octobre. On ne le refait que lorsqu'une
 DataTable sort vide ou fausse.
+
+### Meshes `.glb` — exportés depuis les paks aussi
+
+Les meshes du planner venaient d'un export glTF fait à la main dans FModel, puis d'une
+recopie par `tools/flatten_glb.js`. `CUE4Parse-Conversion` sait écrire du glTF 2.0 binaire :
+
+```bash
+DuneExtract --meshes                      # tous les meshes manquants du catalogue
+DuneExtract --meshes --mesh-filter Sard   # un seul set
+DuneExtract --meshes --mesh-force         # réécrit ceux déjà présents
+```
+
+Le nom de sortie est le nom d'asset (`SM_Player_PB_Sard_Column.glb`), c'est-à-dire
+exactement ce que `planner_pieces.json` référence dans son champ `mesh`.
+
+⚠ **Le mesh d'une pièce sans sockets** : `build_planner_pieces.js` forçait `mesh` à `null`
+dès qu'une pièce n'avait pas d'entrée dans `dune_pieces_sockets.json`. Un set ajouté par un
+patch serait donc resté en volumes gris **alors que ses meshes venaient d'être extraits**.
+Le catalogue connaît pourtant le chemin : `mesh_path` finit par le nom d'asset. On le dérive
+désormais dans ce cas. Sans danger : un `.glb` absent retombe sur la boîte (le `GLTFLoader`
+a un callback d'erreur), et le câblage explicite des machines/véhicules (`MV_MESH`) passe
+après et continue de gagner.
+
+Ce qui reste manuel pour un nouveau set : **les sockets** (aucun générateur pour
+`dune_pieces_sockets.json`), donc pose en mode « cellule » sans accroche, et les **coûts**
+tant que tcno.co n'a pas le set. Piste repérée : `ExporterOptions` expose un
+`ESocketFormat` — les sockets pourraient sortir avec les meshes.
 
 ### Pièges de ce pipeline
 

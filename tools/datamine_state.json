@@ -1,6 +1,6 @@
 {
   "_note": "Écrit par tools/update_datamine.js. Dit de QUEL build du jeu proviennent les données du site, et quand chaque étape a tourné pour la dernière fois. Versionné exprès : c'est la seule trace de la fraîcheur des données.",
-  "updated_at": "2026-10-19T22:15:15.049Z",
+  "updated_at": "2026-10-19T22:39:31.635Z",
   "game": {
     "build_id": "25936403",
     "last_updated": "2026-10-19T12:46:42.000Z",
@@ -12,12 +12,12 @@
   },
   "steps": {
     "planner_pieces": {
-      "ran_at": "2026-09-13T21:13:17.817Z",
-      "game_build_id": "24654038",
+      "ran_at": "2026-10-19T22:39:31.619Z",
+      "game_build_id": "25936403",
       "sources": {},
       "outputs": {
         "planner_pieces.json": {
-          "entrees": 692
+          "entrees": 786
         }
       }
     },
@@ -28,6 +28,102 @@
       "outputs": {
         "tools/mapstructtypes.json": {
           "entrees": 581
+        }
+      }
+    },
+    "export": {
+      "ran_at": "2026-10-19T22:37:47.190Z",
+      "game_build_id": "25936403",
+      "sources": {},
+      "outputs": {}
+    },
+    "descriptions": {
+      "ran_at": "2026-10-19T22:37:47.190Z",
+      "game_build_id": "25936403",
+      "sources": {
+        "Systems/Items/CDT_BaseItems.json": "2026-10-19T22:36:52.143Z"
+      },
+      "outputs": {
+        "stuff_data.json": {
+          "entrees": 691
+        }
+      }
+    },
+    "armor": {
+      "ran_at": "2026-10-19T22:37:47.190Z",
+      "game_build_id": "25936403",
+      "sources": {
+        "Systems/Items/DT_ArmorItemTable.json": "2026-10-19T22:36:52.292Z"
+      },
+      "outputs": {
+        "stuff_data.json": {
+          "entrees": 691
+        }
+      }
+    },
+    "augments": {
+      "ran_at": "2026-10-19T22:37:47.190Z",
+      "game_build_id": "25936403",
+      "sources": {
+        "Systems/Items/DT_ItemTable_Augments.json": "2026-10-19T22:36:52.442Z",
+        "Systems/Items/Upgrades": "2026-10-19T22:36:54.822Z"
+      },
+      "outputs": {
+        "stuff_augments.json": {
+          "entrees": 122
+        }
+      }
+    },
+    "loot": {
+      "ran_at": "2026-10-19T22:37:47.190Z",
+      "game_build_id": "25936403",
+      "sources": {
+        "Systems/LootTables/Loot_DifficultyScaled": "2026-10-19T22:37:00.927Z",
+        "Systems/Looting": "2026-10-19T22:37:24.677Z"
+      },
+      "outputs": {
+        "stuff_loot.json": {
+          "entrees": 189
+        }
+      }
+    },
+    "plan_sources": {
+      "ran_at": "2026-10-19T22:37:47.190Z",
+      "game_build_id": "25936403",
+      "sources": {
+        "Systems/LootTables": "2026-10-19T22:37:15.207Z",
+        "Systems/Looting": "2026-10-19T22:37:24.677Z",
+        "Systems/Items/CDT_BaseItems.json": "2026-10-19T22:36:52.143Z"
+      },
+      "outputs": {
+        "plan_sources.json": {
+          "entrees": 155
+        }
+      }
+    },
+    "plans_index": {
+      "ran_at": "2026-10-19T22:37:47.190Z",
+      "game_build_id": "25936403",
+      "sources": {
+        "Localization/ST_Localization_Items.json": "2026-10-19T22:37:24.960Z",
+        "Systems/Items/CDT_BaseItems.json": "2026-10-19T22:36:52.143Z"
+      },
+      "outputs": {
+        "plans_index.json": {
+          "entrees": 1476
+        }
+      }
+    },
+    "base_pieces_v3": {
+      "ran_at": "2026-10-19T22:39:31.115Z",
+      "game_build_id": "25936403",
+      "sources": {
+        "Systems/Building/Data": "2026-10-19T22:37:37.843Z",
+        "Systems/Vehicles": "2026-10-19T22:37:42.797Z"
+      },
+      "outputs": {
+        "base_pieces_v3.json": {
+          "entrees": 764
         }
       }
     }

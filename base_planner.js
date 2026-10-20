@@ -11,8 +11,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 // ?v= : cache-busting. Bump à chaque modif des modules pour forcer le rechargement
 // (sinon le navigateur sert l'ancienne version mise en cache).
-import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot43arrondis';
-import { createMeshFactory } from './planner_mesh.js?v=lot43arrondis';
+import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot44triangles';
+import { createMeshFactory } from './planner_mesh.js?v=lot44triangles';
 
 // ============================================================
 // MOTEUR — bascule ancien (géométrie+grille) / nouveau (sockets+meshes réels)
@@ -349,7 +349,7 @@ const EXCLUDED_PIECE_IDS = new Set([
 ]);
 
 async function loadCatalog() {
-  const url = ENGINE === 'sockets' ? 'planner_pieces.json?v=lot43arrondis' : PIECES_JSON_URL;
+  const url = ENGINE === 'sockets' ? 'planner_pieces.json?v=lot44triangles' : PIECES_JSON_URL;
   const resp = await fetch(url);
   if (!resp.ok) throw new Error('pieces ' + resp.status);
   const piecesData = await resp.json();
@@ -3338,6 +3338,24 @@ function socketComputeSnap(pieceId, cur) {
   // AUTO-EMPILEMENT : si la case est déjà occupée par une fondation/pilier au niveau courant,
   // on monte d'un étage → cliquer plusieurs fois empile les fondations vers le haut.
   if (piece?.is_foundation || piece?.is_pillar) {
+    // EXCEPTION : empreinte NON carrée (fondation triangulaire ou arrondie). La grille
+    // centre la pièce sur la cellule — juste pour un carré, faux pour tout le reste : un
+    // triangle doit poser son ARÊTE contre celle du voisin, donc son centroïde à 404 cm du
+    // centre voisin et non à 512. D'où le symptôme « le triangle se pose au milieu du carré
+    // au lieu de se coller ». Les SOLS triangulaires, eux, se collaient déjà correctement —
+    // justement parce qu'ils ne passent pas par cette branche.
+    // On les fait donc passer par le moteur de sockets, avec la hauteur des fondations
+    // (cz = niveau×384, pas (niveau+1)×384). Repli sur la grille s'il n'y a rien à quoi
+    // s'accrocher : première pièce d'un plan vide, ou pose isolée.
+    const forme = piece?.dimensions?.shape || piece?.placement_rules?.footprint_shape || 'square';
+    if (forme !== 'square') {
+      const occNC = socketEngine.occSet(placed);
+      for (let floor = curFloor; floor <= getMaxFloor(); floor++) {
+        const r = socketEngine.snapPiece(cur, pieceId, placed, occNC,
+          { zHint: floor * CM_PER_LEVEL, zTol: CM_PER_LEVEL / 2 });
+        if (r) return { pos: r.pos, rotation: r.rotation, snapped: true, floor };
+      }
+    }
     const baseF = curFloor;
     const maxF = getMaxFloor();
     for (let floor = baseF; floor <= maxF; floor++) {
@@ -7107,7 +7125,7 @@ const MATERIAL_FR = {
 
 async function loadCosts() {
   try {
-    const r = await fetch('planner_costs.json?v=lot43arrondis');
+    const r = await fetch('planner_costs.json?v=lot44triangles');
     if (!r.ok) return;
     SUMMARY.costs = await r.json();
     SUMMARY.costIndex = new Map();

@@ -24,6 +24,19 @@ $CFG = require $CFG_PATH;
 // ---- Journal d'erreurs (silencieux côté Discord) ------------
 // Écrit dans epice/data/ (protégé de l'accès direct par nginx, et confirmé accessible en
 // écriture pour www-data — contrairement à epice/ lui-même dont les droits sont incertains).
+/**
+ * Journalise la réponse réellement émise vers Discord.
+ *
+ * Les logs du 2026-10-20 montrent un handler qui tourne (« signature valide, type=2 »)
+ * et un Discord qui déclare pourtant n'avoir rien reçu. Entre les deux, rien n'était
+ * tracé : impossible de distinguer « on n'a rien émis » de « on a émis quelque chose que
+ * Discord a refusé ». On enregistre donc la taille et le début du JSON sortant — le début
+ * suffit à repérer un payload tronqué ou un type de réponse inattendu.
+ */
+function dlog_reponse($quoi, $json) {
+    dlog('RÉPONSE ' . $quoi . ' : ' . strlen($json) . ' octets — ' . substr($json, 0, 160));
+}
+
 function dlog($msg) {
     $dir = __DIR__ . '/data';
     if (!is_dir($dir)) @mkdir($dir, 0775, true);
@@ -33,6 +46,15 @@ function dlog($msg) {
 // Filet de sécurité pour les erreurs FATALES non rattrapables par try/catch
 // (ex: appel de fonction inexistante, épuisement mémoire). Sans ça, Discord
 // affiche juste "Une erreur s'est produite. Réessaie." sans aucune trace côté serveur.
+// Trace de fin d'exécution : si le script s'arrête sans qu'aucune ligne « RÉPONSE » ne
+// précède, c'est qu'il est mort avant d'émettre — et Discord affiche alors une absence de
+// réponse sans qu'aucune erreur ne soit visible.
+register_shutdown_function(function () {
+    $e = error_get_last();
+    if ($e && in_array($e['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+        dlog('FATAL : ' . $e['message'] . ' @ ' . $e['file'] . ':' . $e['line']);
+    }
+});
 register_shutdown_function(function () {
     $err = error_get_last();
     if ($err && in_array($err['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
@@ -836,7 +858,16 @@ function build_activity_picker(string $sub): array {
 function respond_type_picker() {
     $data = build_cat_picker('e');
     $data['flags'] = 32768 | 64;    // Components V2 + éphémère
-    echo json_encode(['type' => 4, 'data' => $data], JSON_UNESCAPED_UNICODE);
+    $json = json_encode(['type' => 4, 'data' => $data], JSON_UNESCAPED_UNICODE);
+    // json_encode renvoie FALSE sur un contenu invalide (UTF-8 cassé, profondeur…) :
+    // un `echo false` n'écrit RIEN, Discord ne reçoit rien, et rien ne plante. C'est
+    // exactement le profil observé. On le dit au lieu de le subir.
+    if ($json === false) {
+        dlog('ÉCHEC json_encode (picker) : ' . json_last_error_msg());
+        $json = json_encode(['type' => 4, 'data' => ['flags' => 64, 'content' => "Erreur d'affichage du sélecteur. Préviens un admin."]]);
+    }
+    dlog_reponse('picker', (string)$json);
+    echo $json;
     exit;
 }
 
@@ -1666,7 +1697,9 @@ function build_sortie_message($sortie) {
 function respond_message($text, $ephemeral = false) {
     $data = ['content' => $text];
     if ($ephemeral) $data['flags'] = 64;
-    echo json_encode(['type' => 4, 'data' => $data]);
+    $json = json_encode(['type' => 4, 'data' => $data]);
+    dlog_reponse('message', (string)$json);
+    echo $json;
     exit;
 }
 

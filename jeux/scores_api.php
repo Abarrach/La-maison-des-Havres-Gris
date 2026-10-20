@@ -593,6 +593,13 @@ if ($action === 'submit') {
     if ($notifyFn !== null) {
         if (function_exists('fastcgi_finish_request')) {
             echo json_encode($payload);
+            // php-fpm tourne avec output_buffering = 4096 (vérifié le 2026-10-20) : une
+            // réponse plus COURTE que 4 Ko reste dans le tampon, et fastcgi_finish_request()
+            // clôt la requête sans jamais l'envoyer. Celle-ci fait ~100 octets : elle n'est
+            // donc JAMAIS parvenue au client. Le score était bien enregistré (le travail se
+            // fait avant), mais la confirmation disparaissait — ce qui explique que l'écran
+            // du jeu et le classement aient pu diverger sans que personne ne comprenne.
+            while (ob_get_level() > 0) ob_end_flush();
             fastcgi_finish_request();
         }
         $notifyFn();

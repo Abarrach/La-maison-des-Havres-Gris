@@ -38,6 +38,20 @@ function cmd_log($msg) {
     @file_put_contents($dir . '/discord_commande.log', date('c') . ' ' . $msg . "\n", FILE_APPEND);
 }
 
+// --- Capture de TOUTE réponse émise ---------------------------
+// Ce fichier compte de nombreux points d'émission. Instrumenter « ceux qu'on
+// soupçonne » nous a déjà fait rater le bon chemin deux fois : le tampon de sortie, lui,
+// voit ce que PHP envoie RÉELLEMENT, sans toucher à aucun appel existant.
+// Le cas « RÉPONSE VIDE » est le plus précieux : json_encode renvoie FALSE sur un contenu
+// invalide, `echo false` n'écrit rien, Discord ne reçoit rien et rien ne plante — c'est
+// exactement le symptôme qu'on traque depuis le début.
+ob_start(function ($sortie) {
+    dlog($sortie === ''
+        ? 'RÉPONSE VIDE (rien émis) — Discord ne recevra rien'
+        : 'RÉPONSE ' . strlen($sortie) . ' octets — ' . substr($sortie, 0, 150));
+    return $sortie;
+});
+
 // --- Chronomètre d'étapes -------------------------------------
 // Discord coupe l'interaction à 3 s. Jusqu'ici, un dépassement ne laissait qu'une seule
 // trace — « la requête est arrivée » — sans dire QUELLE étape avait pris le temps, ni si
@@ -223,6 +237,7 @@ function handle_delete_ok($body, $id) {
 
     // 1) Met à jour l'éphémère de confirmation tout de suite (rester sous 3 s).
     echo json_encode(['type' => 7, 'data' => ['content' => "🗑️ Demande supprimée.", 'components' => []]]);
+    while (ob_get_level() > 0) ob_end_flush();   // le tampon doit partir AVANT la clôture
     if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
 
     // 2) Efface l'encart principal en arrière-plan (via bot REST, routé par discordMsgVia).
@@ -374,6 +389,7 @@ function respond_update_ephemeral($text) {
 // NE FAIT PAS de exit — c'est l'appelant qui exit après avoir envoyé les MP éventuels.
 function respond_update_encart($req, $thanks) {
     echo json_encode(['type' => 7, 'data' => build_encart_payload($req, $thanks)]);
+    while (ob_get_level() > 0) ob_end_flush();   // le tampon doit partir AVANT la clôture
     if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
     // Après fastcgi_finish_request : Discord a déjà la réponse, journaliser ici ne coûte
     // plus rien au délai. Si ce total dépasse 3000 ms, c'est que Discord avait renoncé.

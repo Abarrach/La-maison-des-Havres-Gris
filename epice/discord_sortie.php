@@ -24,6 +24,20 @@ $CFG = require $CFG_PATH;
 // ---- Journal d'erreurs (silencieux côté Discord) ------------
 // Écrit dans epice/data/ (protégé de l'accès direct par nginx, et confirmé accessible en
 // écriture pour www-data — contrairement à epice/ lui-même dont les droits sont incertains).
+// --- Capture de TOUTE réponse émise ---------------------------
+// Ce fichier compte de nombreux points d'émission. Instrumenter « ceux qu'on
+// soupçonne » nous a déjà fait rater le bon chemin deux fois : le tampon de sortie, lui,
+// voit ce que PHP envoie RÉELLEMENT, sans toucher à aucun appel existant.
+// Le cas « RÉPONSE VIDE » est le plus précieux : json_encode renvoie FALSE sur un contenu
+// invalide, `echo false` n'écrit rien, Discord ne reçoit rien et rien ne plante — c'est
+// exactement le symptôme qu'on traque depuis le début.
+ob_start(function ($sortie) {
+    dlog($sortie === ''
+        ? 'RÉPONSE VIDE (rien émis) — Discord ne recevra rien'
+        : 'RÉPONSE ' . strlen($sortie) . ' octets — ' . substr($sortie, 0, 150));
+    return $sortie;
+});
+
 /**
  * Journalise la réponse réellement émise vers Discord.
  *
@@ -1101,7 +1115,8 @@ function handle_create($body, $stype = 'epice') {
         // réponse d'interaction elle-même (type 4), il faut le redemander via l'API webhook.
         // Sans ce message_id, discord_sortie_cleanup.php (purge auto 4 h après la fin) ne sait
         // jamais QUOI supprimer et ignore silencieusement la sortie pour toujours.
-        if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
+        while (ob_get_level() > 0) ob_end_flush();   // le tampon doit partir AVANT la clôture
+    if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
         $mid = fetch_original_message_id($body);
         if ($mid !== '') {
             mutate_sortie($sortie['id'], function (&$s) use ($mid) { $s['discord']['message_id'] = $mid; });
@@ -1124,6 +1139,7 @@ function handle_create($body, $stype = 'epice') {
     // Puis le bot poste lui-même l'encart. Avantage secondaire : l'API REST renvoie
     // directement l'id du message, là où une réponse d'interaction obligeait à le
     // redemander ensuite (cf. fetch_original_message_id).
+    while (ob_get_level() > 0) ob_end_flush();   // le tampon doit partir AVANT la clôture
     if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
     $mid = discord_post_message_api($chan, build_sortie_message($sortie));
     if ($mid !== '') {
@@ -1406,7 +1422,8 @@ function handle_edit_save($body, $sid) {
 
     // MP aux inscrits si la DATE et/ou l'HEURE a changé — envoi en arrière-plan.
     if ($oldDate !== $date || $oldHeure !== $heure) {
-        if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
+        while (ob_get_level() > 0) ob_end_flush();   // le tampon doit partir AVANT la clôture
+    if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
         notify_when_change($updated, $oldDate, $oldHeure, $editorId);
     }
     exit;

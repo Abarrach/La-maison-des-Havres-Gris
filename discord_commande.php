@@ -38,6 +38,17 @@ function cmd_log($msg) {
     @file_put_contents($dir . '/discord_commande.log', date('c') . ' ' . $msg . "\n", FILE_APPEND);
 }
 
+// --- Chronomètre d'étapes -------------------------------------
+// Discord coupe l'interaction à 3 s. Jusqu'ici, un dépassement ne laissait qu'une seule
+// trace — « la requête est arrivée » — sans dire QUELLE étape avait pris le temps, ni si
+// l'écriture avait eu lieu. Incident du 2026-10-20 : le clic est bien arrivé, la demande
+// n'a PAS changé d'état, et le verrou n'a rien signalé. On horodate donc chaque étape.
+// Coût : une ligne de log par étape, uniquement sur les interactions de bouton.
+define('CMD_T0', microtime(true));
+function cmd_step($label) {
+    cmd_log(sprintf('   %6.0f ms  %s', (microtime(true) - CMD_T0) * 1000, $label));
+}
+
 // Filet erreurs fatales (sinon Discord n'affiche qu'un générique "Une erreur s'est produite").
 register_shutdown_function(function () {
     $err = error_get_last();
@@ -101,7 +112,9 @@ respond_ephemeral("Type d'interaction non géré.");
 
 // -- Prise en charge -------------------------------------------
 function handle_take($body, $id) {
+    cmd_step('handle_take: entrée');
     $req = find_req($id);
+    cmd_step('find_req ' . ($req ? 'OK (statut=' . ($req['status'] ?? '?') . ')' : 'INTROUVABLE'));
     if (!$req) respond_ephemeral("Cette demande n'existe plus.");
     if (($req['status'] ?? 'pending') !== 'pending') {
         $st = $req['status'] ?? '';
@@ -112,6 +125,7 @@ function handle_take($body, $id) {
     }
 
     $u = interaction_user_info($body);
+    cmd_step('interaction_user_info OK');   // lit le fichier des comptes du site
     $crafterLabel = $u['pseudo'] !== '' ? $u['pseudo'] : $u['display'];
 
     $updated = mutate_req($id, function (&$r) use ($crafterLabel, $u) {
@@ -119,6 +133,7 @@ function handle_take($body, $id) {
         $r['crafterAssigned']   = $crafterLabel;
         $r['crafterDiscordId']  = $u['discord_id']; // sert aux checks de droits Terminé/Libérer
     });
+    cmd_step('mutate_req ' . ($updated ? 'OK (fichier RÉÉCRIT)' : 'ÉCHEC (rien écrit)'));
     if (!$updated) respond_ephemeral("Impossible d'écrire la demande (fichier verrouillé ?). Réessaie.");
 
     // On rafraîchit l'encart tout de suite (rester sous 3 s). Pas de MP :
@@ -340,6 +355,10 @@ function prepend_req($req) {
 // Message éphémère (visible du seul cliqueur).
 function respond_ephemeral($text) {
     echo json_encode(['type' => 4, 'data' => ['flags' => 64, 'content' => $text]]);
+    // Sortie la plus courante des refus (« déjà prise en charge », « n'existe plus »…).
+    // Sans cette ligne, un traitement qui part par ici ne laisse aucune trace de fin et
+    // on ne peut pas distinguer « refusé vite » de « jamais terminé ».
+    if (function_exists('cmd_step')) cmd_step('réponse éphémère : ' . substr($text, 0, 60));
     exit;
 }
 
@@ -356,6 +375,9 @@ function respond_update_ephemeral($text) {
 function respond_update_encart($req, $thanks) {
     echo json_encode(['type' => 7, 'data' => build_encart_payload($req, $thanks)]);
     if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
+    // Après fastcgi_finish_request : Discord a déjà la réponse, journaliser ici ne coûte
+    // plus rien au délai. Si ce total dépasse 3000 ms, c'est que Discord avait renoncé.
+    cmd_step('réponse envoyée (encart mis à jour)');
 }
 
 // Payload embed + composants pour l'encart, selon l'état.

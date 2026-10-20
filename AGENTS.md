@@ -210,6 +210,12 @@ Tous constatés en production ou en test, pas théoriques.
   `scene.updateMatrixWorld(true)` avant chaque mesure.
 - Les pages sont derrière `auth-guard.js` : pour tester en local, servir une copie avec
   les gardes neutralisées. **Ne pas demander ses identifiants à l'utilisateur.**
+- **MIEUX (vérifié le 2026-10-20) : Claude in Chrome** (`mcp__claude-in-chrome__*`) pilote
+  le VRAI Chrome de l'utilisateur, donc sa session Discord est déjà ouverte : les pages
+  protégées s'affichent sans contournement ni identifiant, et le canvas Three.js **rend
+  réellement** (onglet au premier plan, `requestAnimationFrame` tourne). La limite décrite
+  ci-dessus ne vaut que pour le navigateur intégré. Vérifier la disponibilité avec
+  `list_connected_browsers`, et refermer les onglets ouverts en fin de tâche.
 - Les CSV de données sont publics (pas d'auth) : on peut les télécharger pour reproduire
   fidèlement un bug d'affichage avec les vraies données.
 

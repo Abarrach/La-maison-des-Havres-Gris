@@ -664,7 +664,16 @@ function respond_modal($stype = 'epice') {
     // Titre de modal : 45 caractères MAX côté Discord, au-delà le modal est rejeté
     // en bloc (et Discord n'affiche qu'une erreur générique). Les libellés de type
     // s'allongeant au fil des activités, on coupe systématiquement.
-    echo json_encode(sortie_modal('sortie_create_modal:' . $stype, sn_cut('Nouvelle sortie ' . $t['label'], 45)));
+    $json = json_encode(sortie_modal('sortie_create_modal:' . $stype, sn_cut('Nouvelle sortie ' . $t['label'], 45)));
+    // C'est LE chemin qui échoue (clic « Choisir » → newpick → modal), et le seul qui
+    // n'était pas tracé. json_encode renvoie FALSE sur un contenu invalide : `echo false`
+    // n'écrit rien, Discord ne reçoit rien, rien ne plante — profil exact de l'incident.
+    if ($json === false) {
+        dlog('ÉCHEC json_encode (modal ' . $stype . ') : ' . json_last_error_msg());
+        respond_message("Impossible d'ouvrir le formulaire. Réessaie, et préviens un admin si ça persiste.", true);
+    }
+    dlog_reponse('modal:' . $stype, (string)$json);
+    echo $json;
     exit;
 }
 

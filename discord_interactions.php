@@ -138,11 +138,34 @@ function detect_route(array $body): ?string {
     return null;
 }
 
+/**
+ * Âge de l'interaction au moment où NOTRE code la reçoit.
+ *
+ * L'identifiant Discord est un « snowflake » : ses bits de poids fort portent la date de
+ * création, à la milliseconde. On peut donc comparer l'heure de naissance de l'interaction
+ * à l'instant où PHP la traite — c'est la seule façon de distinguer deux causes qu'on
+ * confondait jusqu'ici :
+ *   âge faible + traitement lent  → le temps se perd dans NOTRE code ;
+ *   âge déjà élevé                → il s'est perdu AVANT (réseau, TLS, nginx, file
+ *                                   d'attente php-fpm), et chercher dans le handler est
+ *                                   une perte de temps.
+ * Mesuré le 2026-10-20 : un traitement complet prend 3 ms. Un dépassement des 3 s de
+ * Discord ne peut donc pas venir du handler.
+ */
+function interaction_age_ms(array $body): ?int {
+    $id = (string)($body['id'] ?? '');
+    if ($id === '' || !ctype_digit($id)) return null;
+    if (PHP_INT_SIZE < 8) return null;              // décalage 22 bits : exige du 64 bits
+    $ts = ((int)$id >> 22) + 1420070400000;         // epoch Discord
+    return (int)round(microtime(true) * 1000) - $ts;
+}
+
 $route = detect_route($body);
 dispatcher_log('type=' . $type
     . ' name=' . ($body['data']['name'] ?? '-')
     . ' custom_id=' . ($body['data']['custom_id'] ?? '-')
-    . ' → route=' . ($route ?? 'inconnue'));
+    . ' → route=' . ($route ?? 'inconnue')
+    . ' âge=' . (interaction_age_ms($body) ?? '?') . 'ms');
 
 // Marqueur consommé par les handlers pour NE PAS revérifier la signature
 // (elle vient d'être validée ici). Voir epice/discord_sortie.php pour l'usage.

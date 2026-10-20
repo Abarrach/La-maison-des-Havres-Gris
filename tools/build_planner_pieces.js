@@ -37,6 +37,27 @@ function promotePillarCenterSocket(s) {
   return true;
 }
 
+// --- Normalisation socket de BASE des pièces arrondies (No_Cost → Foundation_Edge) ---
+// Même mécanisme que ci-dessus, autre famille. Un mur/toit/rampe ARRONDI s'assoit sur une
+// fondation par un socket `BP_DuneBuildingFoundationSocket_C` placé SOUS lui (lz < 0), que
+// le jeu note `No_Cost`. Le moteur refusant à un No_Cost d'initier une accroche, ces pièces
+// n'avaient AUCUNE accroche possible sur une fondation : mesuré à 0 candidat, aussi bien
+// avec les sockets dataminés qu'avec les anciens faits à la main. En jeu elles se posent
+// pourtant sans difficulté, et les TYPES correspondent déjà (la fondation expose
+// `BP_DuneBuildingFoundationSocket_C`) : seul le coût bloquait.
+// On ne promeut que sur les pièces NON-fondation : sur une fondation, ce même socket sert
+// de cible, le promouvoir y ferait s'empiler les fondations entre elles.
+let promotedRoundBaseSockets = 0;
+function promoteRoundBaseSocket(s, piece) {
+  if (s.cost !== 'No_Cost') return false;
+  if (piece.is_foundation) return false;
+  if (!(s.types || []).includes('BP_DuneBuildingFoundationSocket_C')) return false;
+  if ((s.lz || 0) >= 0) return false;            // doit être SOUS la pièce
+  s.cost = 'Foundation_Edge';
+  promotedRoundBaseSockets++;
+  return true;
+}
+
 // --- Normalisation sockets « rambarde inclinée » (angled railing) ---
 // Mécanisme du jeu : une rambarde INCLINÉE s'accroche sur le CÔTÉ d'un escalier/rampe via des
 // sockets `BP_DuneAngledRailingSocket_*` en No_Cost. MAIS le dump est asymétrique (la rampe a
@@ -145,6 +166,7 @@ const pieces = v3.pieces.map(p => {
     out.socket_size    = s.size || null;        // {x,y,z} normalisé du jeu
     out.sockets        = s.sockets || [];
     out.sockets.forEach(promotePillarCenterSocket);     // sol↔pilier (cf. note ci-dessus)
+    out.sockets.forEach(sk => promoteRoundBaseSocket(sk, out));  // arrondis ↔ fondation
     out.sockets.forEach(normalizeAngledRailingSocket);  // rambarde inclinée ↔ flanc rampe/escalier
     out.sockets.forEach(sk => deactivateFloorCurvedSocket(sk, s.group));  // sol arrondi ne s'aspire plus sur un mur arrondi
     out.mesh           = s.mesh || null;         // basename glb (SM_/SK_…)
@@ -222,6 +244,7 @@ console.log(`  avec sockets non vides   : ${withSockets}`);
 console.log(`  avec mesh (.glb)         : ${withMesh}`);
 console.log(`  sans données socket      : ${pieces.length - enriched} (machines/véhicules/blockout → fallback)`);
 console.log(`  sockets centraux pilier promus (No_Cost→Foundation_Edge) : ${promotedPillarSockets}`);
+console.log(`  sockets de base arrondis promus (No_Cost→Foundation_Edge) : ${promotedRoundBaseSockets}`);
 console.log(`  sockets rambarde inclinée normalisés (→Sideways) : ${promotedRailingSockets}`);
 console.log(`  mesh machines/véhicules câblés : ${mvMeshWired}`);
 console.log(`  sockets courbes désactivés sur sols arrondis : ${deactivatedFloorCurved}`);

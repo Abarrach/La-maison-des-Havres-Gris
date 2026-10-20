@@ -1,6 +1,6 @@
 {
   "_note": "Écrit par tools/update_datamine.js. Dit de QUEL build du jeu proviennent les données du site, et quand chaque étape a tourné pour la dernière fois. Versionné exprès : c'est la seule trace de la fraîcheur des données.",
-  "updated_at": "2026-10-19T23:58:54.259Z",
+  "updated_at": "2026-10-20T12:48:43.753Z",
   "game": {
     "build_id": "25936403",
     "last_updated": "2026-10-19T12:46:42.000Z",
@@ -12,7 +12,7 @@
   },
   "steps": {
     "planner_pieces": {
-      "ran_at": "2026-10-19T23:02:12.726Z",
+      "ran_at": "2026-10-20T12:48:43.733Z",
       "game_build_id": "25936403",
       "sources": {},
       "outputs": {

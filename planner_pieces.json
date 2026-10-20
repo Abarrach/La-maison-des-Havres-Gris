@@ -1,6 +1,6 @@
 {
   "version": "planner-1",
-  "generated_at": "2026-10-19T23:02:12.658Z",
+  "generated_at": "2026-10-20T12:48:43.674Z",
   "source": {
     "ui": "base_pieces_v3.json",
     "engine": "dune_pieces_sockets.json"
@@ -7604,7 +7604,7 @@
             "BP_DuneBuildingFoundationSocket_C",
             "BP_DuneBuildingSquareFloorCenterSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -7741,7 +7741,7 @@
             "BP_DuneBuildingFoundationSocket_C",
             "BP_DuneBuildingSquareFloorCenterSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -7878,7 +7878,7 @@
             "BP_DuneBuildingFoundationSocket_C",
             "BP_DuneBuildingSquareFloorCenterSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -12368,7 +12368,7 @@
             "BP_DuneBuildingFoundationSocket_C",
             "BP_DuneBuildingSquareFloorCenterSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -20525,7 +20525,7 @@
           "targetTypes": [
             "BP_DuneBuildingFoundationSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -22844,7 +22844,7 @@
             "BP_DuneBuildingFoundationSocket_C",
             "BP_DuneBuildingSquareFloorCenterSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -24761,7 +24761,7 @@
             "BP_DuneBuildingFoundationSocket_C",
             "BP_DuneBuildingSquareFloorCenterSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -29807,7 +29807,7 @@
           "targetTypes": [
             "BP_DuneBuildingFoundationSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -32383,7 +32383,7 @@
             "BP_DuneBuildingFoundationSocket_C",
             "BP_DuneBuildingSquareFloorCenterSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -33565,7 +33565,7 @@
             "BP_DuneBuildingFoundationSocket_C",
             "BP_DuneBuildingSquareFloorCenterSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -33646,7 +33646,7 @@
             "BP_DuneBuildingFoundationSocket_C",
             "BP_DuneBuildingSquareFloorCenterSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -40681,7 +40681,7 @@
             "BP_DuneBuildingFoundationSocket_C",
             "BP_DuneBuildingSquareFloorCenterSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -40818,7 +40818,7 @@
             "BP_DuneBuildingFoundationSocket_C",
             "BP_DuneBuildingSquareFloorCenterSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -42264,7 +42264,7 @@
             "BP_DuneBuildingFoundationSocket_C",
             "BP_DuneBuildingSquareFloorCenterSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -42401,7 +42401,7 @@
             "BP_DuneBuildingFoundationSocket_C",
             "BP_DuneBuildingSquareFloorCenterSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -45861,7 +45861,7 @@
             "BP_DuneBuildingFoundationSocket_C",
             "BP_DuneBuildingSquareFloorCenterSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -46963,7 +46963,7 @@
             "BP_DuneBuildingFoundationSocket_C",
             "BP_DuneBuildingSquareFloorCenterSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -48721,7 +48721,7 @@
           "targetTypes": [
             "BP_DuneBuildingFoundationSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -51170,7 +51170,7 @@
             "BP_DuneBuildingFoundationSocket_C",
             "BP_DuneBuildingSquareFloorCenterSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -57627,7 +57627,7 @@
             "BP_DuneBuildingFoundationSocket_C",
             "BP_DuneBuildingSquareFloorCenterSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -57764,7 +57764,7 @@
             "BP_DuneBuildingFoundationSocket_C",
             "BP_DuneBuildingSquareFloorCenterSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -59053,7 +59053,7 @@
             "BP_DuneBuildingFoundationSocket_C",
             "BP_DuneBuildingSquareFloorCenterSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -59134,7 +59134,7 @@
             "BP_DuneBuildingFoundationSocket_C",
             "BP_DuneBuildingSquareFloorCenterSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -65663,7 +65663,7 @@
           "targetTypes": [
             "BP_DuneBuildingFoundationSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -68721,7 +68721,7 @@
             "BP_DuneBuildingFoundationSocket_C",
             "BP_DuneBuildingSquareFloorCenterSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -68858,7 +68858,7 @@
             "BP_DuneBuildingFoundationSocket_C",
             "BP_DuneBuildingSquareFloorCenterSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -68995,7 +68995,7 @@
             "BP_DuneBuildingFoundationSocket_C",
             "BP_DuneBuildingSquareFloorCenterSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -71200,7 +71200,7 @@
             "BP_DuneBuildingFoundationSocket_C",
             "BP_DuneBuildingSquareFloorCenterSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -79337,7 +79337,7 @@
           "targetTypes": [
             "BP_DuneBuildingFoundationSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -81216,7 +81216,7 @@
             "BP_DuneBuildingFoundationSocket_C",
             "BP_DuneBuildingSquareFloorCenterSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -82514,7 +82514,7 @@
             "BP_DuneBuildingFoundationSocket_C",
             "BP_DuneBuildingSquareFloorCenterSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -93630,7 +93630,7 @@
             "BP_DuneBuildingFoundationSocket_C",
             "BP_DuneBuildingSquareFloorCenterSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -97294,7 +97294,7 @@
             "BP_DuneBuildingFoundationSocket_C",
             "BP_DuneBuildingSquareFloorCenterSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -97431,7 +97431,7 @@
             "BP_DuneBuildingFoundationSocket_C",
             "BP_DuneBuildingSquareFloorCenterSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,
@@ -105829,7 +105829,7 @@
             "BP_DuneBuildingFoundationSocket_C",
             "BP_DuneBuildingSquareFloorCenterSocket_C"
           ],
-          "cost": "No_Cost"
+          "cost": "Foundation_Edge"
         },
         {
           "lx": 256,

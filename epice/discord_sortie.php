@@ -979,6 +979,36 @@ function fmt_duree($d) {
 }
 
 // Crée la sortie + poste l'encart (réponse type 4 = message public). $stype = type de sortie.
+/**
+ * Une création identique vient-elle d'avoir lieu ?
+ *
+ * Vécu le 2026-10-20 : l'accusé de réception n'est pas parvenu à Discord, qui a affiché une
+ * erreur à la personne ; elle a renvoyé le formulaire 8 s plus tard et l'activité a été
+ * postée DEUX fois, l'une devant être supprimée à la main. L'identifiant dérivant de
+ * l'horodatage à la SECONDE (`sortie_<epoch>`), rien ne s'opposait au doublon.
+ *
+ * Est donc considérée comme doublon une sortie du même auteur, même titre et même créneau
+ * créée dans les deux dernières minutes. Deux minutes couvrent largement un renvoi manuel
+ * après une erreur, et restent loin d'une seconde activité réellement voulue à l'identique.
+ * On cherche dans les DEUX stores : le choix du store dépend du type d'activité, et un
+ * renvoi doit être détecté quel que soit celui-ci.
+ */
+function sortie_doublon_recent(string $userId, string $titre, string $date, string $heure, int $fenetre = 120): ?array {
+    if ($userId === '') return null;
+    $maintenant = time();
+    foreach ([read_data()['sorties'] ?? [], read_dstore()['sorties'] ?? []] as $lot) {
+        foreach ((array)$lot as $s) {
+            if ((string)($s['discord']['user_id'] ?? '') !== $userId) continue;
+            if (trim((string)($s['titre'] ?? '')) !== $titre) continue;
+            if ((string)($s['date'] ?? '') !== $date)   continue;
+            if ((string)($s['heure'] ?? '') !== $heure) continue;
+            if (!preg_match('/(\d+)$/', (string)($s['id'] ?? ''), $m)) continue;
+            if ($maintenant - (int)$m[1] <= $fenetre) return $s;
+        }
+    }
+    return null;
+}
+
 function handle_create($body, $stype = 'epice') {
     $v = modal_values($body);
     $user = interaction_user($body);
@@ -995,6 +1025,18 @@ function handle_create($body, $stype = 'epice') {
     // Discord affiche alors son propre bandeau générique) : on répond par un message avec
     // récapitulatif, pour permettre un copier-coller rapide dans un nouveau /sortie creer.
     if ($heure === '') respond_missing_heure($v);
+
+    // Renvoi du même formulaire après une erreur d'affichage : on ne recrée rien.
+    $deja = sortie_doublon_recent((string)($user['id'] ?? ''), $titre, $date, $heure);
+    if ($deja !== null) {
+        dlog('handle_create: DOUBLON écarté — « ' . $titre . ' » existe déjà (' . $deja['id'] . '), renvoi ignoré');
+        respond_message(
+            "Cette activité vient d'être créée — son encart est déjà dans le canal.
+"
+            . "Ce second envoi a été ignoré pour éviter un doublon.",
+            true
+        );
+    }
 
     $sortie = [
         'id'          => 'sortie_' . time(),

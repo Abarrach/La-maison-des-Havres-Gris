@@ -346,7 +346,24 @@ function sn_cut($s, $n) {
 //       (rétrocompat : ancienne URL Discord toujours fonctionnelle
 //       tant qu'elle n'a pas été repointée).
 // ============================================================
-$raw = file_get_contents('php://input');
+// Corps de la requête.
+//
+// ⚠ Quand on est appelé par le dispatcher racine, il a DÉJÀ lu php://input et son `$raw`
+// est dans NOTRE portée (inclusion au niveau fichier — c'est le contrat annoncé en tête de
+// discord_commande.php : « dans son scope : $CFG, $body, $raw »). Relire le flux est alors
+// au mieux inutile, au pire destructeur : un flux déjà consommé peut revenir VIDE selon le
+// SAPI, le routage tombe sur type=0, aucune branche ne répond — et Discord affiche
+// « n'a pas répondu à temps » sans que rien n'ait planté.
+// Ce fichier était le SEUL des trois handlers à relire le flux ; les deux autres se
+// contentent du `$raw` du dispatcher.
+if (!defined('DUNE_INTERACTIONS_DISPATCHED') || !isset($raw) || $raw === '') {
+    $raw = file_get_contents('php://input');
+}
+if ($raw === '') {
+    // Signal explicite : sans lui, un corps vide ne laisse qu'un « type=0 » anodin dans le
+    // journal, qu'on ne relie pas au message d'erreur vu côté Discord.
+    dlog('ALERTE : corps de requête VIDE — aucun routage possible, Discord restera sans réponse');
+}
 
 if (!defined('DUNE_INTERACTIONS_DISPATCHED')) {
     $signature = $_SERVER['HTTP_X_SIGNATURE_ED25519']   ?? '';

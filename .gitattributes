@@ -2,3 +2,5 @@
 * text=auto
 # Un .cmd ne s'execute que si ses fins de ligne sont CRLF.
 *.cmd text eol=crlf
+# Un script shell doit rester en LF, sinon /bin/sh refuse de le lire.
+*.sh text eol=lf

@@ -74,6 +74,15 @@
             display: block;
         }
 
+        /* Pastille « à traiter » pour les admins (champ badge de pages.js) */
+        .card-badge {
+            position: absolute; top: 10px; left: 10px; z-index: 3;
+            min-width: 26px; height: 26px; padding: 0 7px; box-sizing: border-box;
+            border-radius: 13px; background: #d9534f; color: #fff; border: 2px solid #1a0d06;
+            font: bold 13px/22px 'Segoe UI', sans-serif; text-align: center;
+            box-shadow: 0 0 0 2px rgba(217,83,79,0.35), 0 4px 10px rgba(0,0,0,0.6);
+        }
+
         .card:hover {
             transform: translateY(-8px);
             box-shadow: 0 20px 50px rgba(205, 164, 52, 0.2), 0 0 0 1px rgba(205,164,52,0.15);
@@ -313,6 +322,18 @@ function esc(s) {
     }).join('');
 
     document.getElementById('cards-container').innerHTML = html;
+
+    // Pastilles « à traiter » (champ `badge` de pages.js) : admins seulement.
+    // Une erreur réseau ou un endpoint absent ne doit jamais casser le menu.
+    if (isAdmin) (window.MENU_PAGES || []).filter(p => p.badge).forEach(async p => {
+        try {
+            const j = await (await fetch(p.badge, { credentials: 'same-origin' })).json();
+            const n = j && j.ok ? +j.count : 0;
+            const card = document.querySelector('.card[data-page="' + p.key + '"]');
+            if (n > 0 && card) card.insertAdjacentHTML('beforeend',
+                `<span class="card-badge" data-tip="${n} à valider">${n}</span>`);
+        } catch (e) {}
+    });
 })();
 </script>
 </body>

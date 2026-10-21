@@ -28,57 +28,9 @@ $input  = (PHP_SAPI === 'cli') ? [] : (json_decode(file_get_contents('php://inpu
 $action = $input['action'] ?? ($_GET['action'] ?? '');
 
 // ---- Jeux connus (id => config anti-triche + méta) ----
-const GAMES = [
-    'orni_flap' => [
-        'name'      => 'Ornithopter Flap',
-        'max_score' => 9999,
-        'cooldown'  => 2,
-    ],
-    'spice_runner' => [
-        'name'      => 'Spice Runner',
-        'max_score' => 99999,
-        'cooldown'  => 3,
-    ],
-    'sandstorm_memory' => [
-        'name'      => 'Sandstorm Memory',
-        'max_score' => 50000,
-        'cooldown'  => 2,
-    ],
-    // Le score n'a PAS de borne : points de distance = (vitesse/8) × multiplicateur,
-    // et le multiplicateur monte de +5 % par épice SANS PLAFOND (`spiceMultiplier()`),
-    // dans un jeu sans fin. Repères à 60 im/s, vitesse max : sans épice ≈ 52 pts/s ;
-    // avec 40 épices (×3) ≈ 157 pts/s, soit ≈ 142 000 en un quart d'heure de course.
-    // C'est exactement ce qui est arrivé le 2026-09-08 : un score RÉEL de 142 640 est
-    // passé au-dessus de l'ancien plafond de 99 999 et a été rejeté en silence — ni
-    // classement, ni annonce Discord, alors que le jeu affichait fièrement le record
-    // (il vient du localStorage, écrit AVANT l'appel serveur).
-    // 300 000 = environ deux fois la meilleure course humaine connue. Ne pas serrer.
-    'worm_rider' => [
-        'name'      => 'Worm Rider',
-        'max_score' => 300000,
-        'cooldown'  => 3,
-    ],
-    'muaddib_rescue' => [
-        'name'      => "Muad'Dib Rescue",
-        'max_score' => 50000,
-        'cooldown'  => 2,
-    ],
-    // Jeu de rythme : 100 pts par empreinte × multiplicateur de série (max 5), plus
-    // 1250 par éveil du ver déjoué. Les étapes s'enchaînent SANS FIN, donc le score
-    // n'a aucune borne théorique. Repères calculés (parcours sans la moindre faute) :
-    //   6 étapes → 84 500 · 10 étapes → 167 500 · 14 étapes → 266 500
-    // Une partie réaliste (4-6 étapes, ~85 % de précision) tourne autour de 25 000.
-    // Le plafond est donc posé à 300 000 : il couvre un parcours sans-faute d'une
-    // quinzaine d'étapes — au-delà, personne ne tiendra un jeu de rythme d'affilée —
-    // tout en rejetant encore les scores manifestement forgés. Ne PAS le serrer :
-    // un score au-dessus du plafond est rejeté sec (`invalid_score`) sans que le
-    // joueur en soit averti, et c'est le meilleur joueur qu'on pénalise en silence.
-    'sandwalk' => [
-        'name'      => 'La Marche du Désert',
-        'max_score' => 300000,
-        'cooldown'  => 2,
-    ],
-];
+// Lu depuis le catalogue partagé — `define` et non `const` : une constante de
+// classe ne peut pas être initialisée par un require.
+define('GAMES', require __DIR__ . '/games_catalog.php');
 
 // ---- Journal des refus ----
 // Un score refusé ne laissait AUCUNE trace côté serveur : le joueur ne voyait qu'un
@@ -204,6 +156,24 @@ function podium_rank(array $podium, string $player): ?int {
         if (($e['player'] ?? '') === $player) return $i + 1;
     }
     return null;
+}
+
+// ---- Plafond de plausibilité ----
+// Un plafond ÉCRIT À LA MAIN finit toujours par manger un vrai record : ces jeux sont
+// sans fin et leurs multiplicateurs ne sont pas bornés, donc la meilleure course
+// humaine n'est limitée que par la patience du joueur. On l'a appris deux fois :
+//   2026-09-08 — plafond 99 999  → le 142 640 de Neuroch rejeté en silence ;
+//   2026-09-16 — plafond 300 000 → le 361 704 de Bahlor rejeté en silence.
+// Relever encore le chiffre ne ferait que fixer la date de la troisième fois. Donc
+// `max_score` de GAMES n'est plus qu'un PLANCHER — il ne sert que tant que personne
+// n'a marqué — et au-dessus la barre suit la communauté : 3 × le record établi. Un
+// score forgé à 10× reste refusé ; un joueur qui progresse ne l'est plus jamais.
+const SCORE_CEILING_FACTOR = 3;
+
+function score_ceiling(string $gameId): int {
+    $base   = (int)(GAMES[$gameId]['max_score'] ?? 0);
+    $record = (int)(podium_top3(read_scores('alltime'), $gameId)[0]['score'] ?? 0);
+    return max($base, $record * SCORE_CEILING_FACTOR);
 }
 
 // ---- Webhook Discord (podium) ----
@@ -456,9 +426,10 @@ if ($action === 'submit') {
 
     // Anti-triche : plafond. `max` dans la réponse pour que l'appelant puisse dire au
     // joueur POURQUOI son score saute, au lieu de le perdre sans un mot.
-    if ($score <= 0 || $score > $g['max_score']) {
-        log_rejected_score($gameId, $user, $score, 'invalid_score (plafond ' . $g['max_score'] . ')');
-        echo json_encode(['ok' => false, 'error' => 'invalid_score', 'max' => $g['max_score']]); exit;
+    $plafond = score_ceiling($gameId);
+    if ($score <= 0 || $score > $plafond) {
+        log_rejected_score($gameId, $user, $score, 'invalid_score (plafond ' . $plafond . ')');
+        echo json_encode(['ok' => false, 'error' => 'invalid_score', 'max' => $plafond]); exit;
     }
 
     // Anti-triche : hash = sha256(game + score + duration + secret)

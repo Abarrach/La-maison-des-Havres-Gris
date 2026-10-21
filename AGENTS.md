@@ -78,6 +78,7 @@ se répartir par **domaine**, pas par tâche :
 | Auth / comptes / admin | `discord_oauth.php`, `save.php`, `account*.{html,php}`, `page-guard.js`, `auth-guard.js` |
 | Optimiseur / plans | `optimiseur.html`, `plans*.{html,js,php}`, `stuff_*.json` |
 | Épice (sorties, débrief) | `epice/**` |
+| BD de guilde | `bd/**` (session via `epice/auth_epice.php` ; validation = admins) |
 
 `README.md` est touché par tout le monde : **écrire dans sa propre section**, ne pas
 réorganiser le fichier.
@@ -185,13 +186,115 @@ Tous constatés en production ou en test, pas théoriques.
 - Les contrôles de placement (`socketPlaceableReason`) ne concernent que machines et
   véhicules ; les structures se superposent librement, c'est voulu.
 
+### Épice — base avancée et manuel
+- Le manuel visible peut venir de `epice/data/sop_content.json` et différer complètement du HTML livré. Le lire connecté avant toute modification de doctrine ; ne jamais le remplacer par le défaut du dépôt. Le bloc Base avancée est ajouté avec un marqueur stable, puis reste éditable.
+- **Assaut = propriété d’un défenseur cardinal**, cumulable avec CaC, pas un cinquième pilote. Il est groupé en jeu avec Récolte ; les deux buggys sont groupés avec deux patrouilleurs. Les rôles tactiques et les groupes en jeu se recoupent : ne pas compter ces personnes deux fois. Conserver les anciens rôles lors de la lecture des historiques.
+- La page épice dépend désormais de `epice/raid-groups.js` : livrer les deux ensemble, avec `data-api.php` et `discord_sortie.php` pour cette évolution. **Si ce fichier manque ou part en 404, la page débrief est entièrement morte**, pas dégradée : `SOP_DEFAULT_HTML` appelle `RaidGroups.withBaseSop()` au chargement, et la `ReferenceError` tue tout le script inline. Envoyer le JS AVANT le HTML, et bouger le `?v=` à chaque modif du module.
+
+### Bot Sorties — routage des composants
+- **`discord_interactions.php` est un dispatcher à LISTE BLANCHE de préfixes.** Ajouter un
+  bouton ou un menu à l'encart de sortie sans ajouter son préfixe ici renvoie un **400** :
+  Discord affiche « n'a pas répondu à temps », `epice/discord_sortie.php` n'est jamais
+  atteint et **son journal reste muet** — on cherche le bug dans le handler alors qu'il
+  n'a jamais tourné. Arrivé au menu de créneaux le 2026-09-19.
+- Un filet rattrape désormais tout `:<id de sortie>` final (`/:sortie_\d+$/`), mais **le
+  journal du dispatcher** (`epice/data/discord_interactions.log`) reste le premier endroit
+  où regarder quand un composant ne répond pas : il écrit `route inconnue → 400`.
+- Corollaire de diagnostic : **deux journaux, deux étages**. Rien dans
+  `discord_sortie.log` mais l'interaction part quand même → le problème est en amont,
+  dans le routage, pas dans le handler.
+- ⚠ **Le découpage d'un rally en créneaux est écrit DEUX FOIS** : en PHP dans
+  `epice/discord_sortie.php` (`creneaux_sortie` / `creneau_couverture`, ce que Discord
+  affiche et ce qui ÉCRIT les données) et en JS dans `epice/debrief.html`
+  (`creneauxSortie` / `creneauCouverture`, la grille de l'onglet Assignation).
+  `data-api.php` ne peut pas inclure `discord_sortie.php`, qui s'exécute au chargement.
+  **Toucher à l'un des deux → lancer `node epice/creneaux_parite.test.cjs`**, qui confronte
+  les deux implémentations sur 154 cas communs. En cas de divergence, **le PHP fait foi**.
+  Le test lit les constantes `RALLY_*` dans le fichier au lieu de les redéfinir, donc un
+  seuil changé d'un seul côté le fait rougir.
+- ⚠ **Une sortie longue a UNE COMPO PAR CRÉNEAU**, et leur rangement est asymétrique
+  **à dessein** : créneau 0 dans `sortie.assignation`, suivants dans `sortie.assignations`.
+  Ne pas « harmoniser » en dupliquant le créneau 0 des deux côtés — les lecteurs
+  historiques (Manuel de combat, historique, participants) n'ont rien à savoir des rallys,
+  et chaque compo ne doit vivre qu'à un endroit. `node epice/compos_creneaux.test.cjs`
+  verrouille le modèle, y compris le fait qu'un client d'avant le déploiement, qui n'envoie
+  que `assignation`, ne doit PAS effacer les relèves.
+- ⚠ **Le partage de la récolte se calcule à UN SEUL endroit** : `parts_presence()` dans
+  `epice/data-api.php`. L'écran d'admin et le message Discord le lisent de là, le navigateur
+  ne recalcule rien. C'est le seul chiffre du portail qui se traduit en ressources dans la
+  poche des joueurs — pas de second exemplaire, jamais. `php epice/parts_presence.test.php`.
+  Rappel de cadrage : un message Discord plafonne à **2000 caractères** et est rejeté EN
+  ENTIER au-delà ; le budget d'un tableau se MESURE (`1900 - strlen(en-tête) - strlen(pied)`),
+  il ne s'estime pas en nombre de lignes — `─` et `…` pèsent 3 octets chacun.
+- **Le relevé de présence** (`epice/rally_presence.php`, cron 30 min) interroge Discord
+  utilisateur par utilisateur : notre bot est un endpoint HTTP, il n'a pas de gateway, et
+  l'API REST n'expose pas la liste des occupants d'un salon vocal. Voir les visiteurs
+  non inscrits demande l'intent privilégié « Server Members ».
+- **La proposition automatique d'organisation** (`epice/raid-auto.js`, bouton de l'onglet
+  Assignation) ne doit JAMAIS combler un poste critique par défaut : sans transporteur
+  déclaré ni habituel, la case reste vide. Remplir ferait passer un créneau intenable pour
+  complet. Même principe pour le Chef de Sortie. `node epice/raid-auto.test.cjs`.
+  Les habitudes viennent de `action=role_stats`, calculé côté serveur et renvoyé sous les
+  pseudos exacts envoyés par le client — c'est ce qui évite une seconde normalisation
+  `Lorhelyne✨` ↔ `Lorhelyne` à garder d'accord.
+
+### Tournois PvP
+- **L'arbre n'est calculé qu'à un endroit : `epice/tournoi-engine.js`, côté navigateur.**
+  `tournois-api.php` stocke joueurs et résultats bruts, plus le podium envoyé par la page à la
+  clôture. Ne pas écrire de miroir PHP « pour valider côté serveur » : c'est exactement la
+  double implémentation des rallys. Toucher au moteur → `node epice/tournoi-engine.test.cjs`
+  (rejoue un vrai tournoi Challonge et doit en retrouver le podium exact).
+- **Points et saisons sont aussi dans le moteur** (`pointsTournoi`, `classementSaison`,
+  `conseilMontee`) : l'API ne fait que renvoyer l'arbre des tournois terminés. Les points
+  viennent de la PLACE, jamais des victoires (décision prise avec les joueurs, à ne pas
+  « simplifier »). Les saisons commencent les mois PAIRS (oct.–nov.…), pas en janvier.
+- **Un résultat stocke les deux joueurs qu'il opposait**, et c'est voulu : après une correction
+  en amont, un résultat dont l'affiche a changé est ignoré puis purgé. Ne pas « simplifier » en
+  ne gardant que le vainqueur, on perdrait l'invalidation automatique.
+- **Tournoi par équipes** (`options.equipe` = 2 à 4) : l'arbre oppose des **équipes**
+  (`participants()`), donc résultats, podium et ajustements portent l'**identifiant d'équipe**,
+  pas celui d'un joueur. `joueurs` reste la liste des individus. Pas de points de saison
+  (`pointsTournoi()` rend `[]`) — ne pas les « rajouter » sans décision : comparer le comparable.
+- ⚠ **Le banc des remplaçants ne doit jamais être choisi par l'équilibrage** : à coût égal ou
+  meilleur, l'optimiseur y envoyait un Fort (le champion) pour égaliser les équipes. Le banc
+  est fixé AVANT de composer (désignés par l'organisateur, sinon derniers inscrits).
+
 ### Mini-jeux et scores
 - **Un plafond `max_score` trop bas fait disparaître un record en silence** : la
   soumission sort avant enregistrement ET avant notification. C'est mécaniquement le
-  meilleur joueur qu'on pénalise, et personne ne s'en aperçoit. Tous ces jeux sont
-  **sans fin**, donc tout plafond finira par être dépassé : les refus sont désormais
+  meilleur joueur qu'on pénalise, et personne ne s'en aperçoit. Les refus sont
   journalisés dans `jeux/data/scores_rejected.log` — **le consulter avant de conclure
   qu'un joueur ment**.
+- **Ne jamais "corriger" ce bug en réécrivant le nombre.** Ça a été fait deux fois
+  (99 999 → 300 000 → dépassé neuf jours plus tard) : ces jeux sont sans fin, tout
+  chiffre fixe a une date de péremption. `max_score` n'est qu'un **plancher** ; la barre
+  réelle est `score_ceiling()` = `max(plancher, record all-time × 3)` et suit donc la
+  communauté. Si un score légitime saute encore, c'est le FACTEUR qu'on discute.
+- **Un compteur « par vague » ne doit jamais mélanger deux horloges.** Le bonus de
+  précision de Dernier Rempart comptait le TIR à l'appui sur la détente et son UTILITÉ à
+  l'explosion : un tir lâché en fin de vague tombait des deux côtés de la bascule et le
+  taux dépassait 100 % (reproduit à 200 %, 1 600 points pour un plafond de 400).
+  Règle : rattacher l'événement à la vague où il **s'achève**, pas où il commence — et se
+  méfier d'un `min()` correctif, qui masque ce genre de bug au lieu de le corriger.
+- **Un nouveau jeu se déclare à UN seul endroit** : `jeux/games_catalog.php` (un simple
+  `return [...]`, sans aucune inclusion — le cron de reset doit pouvoir le lire sans
+  démarrer de session ni dépendre de l'OAuth). `scores_api.php` le charge par
+  `define('GAMES', require …)` ; `const` ne peut pas être initialisée par un `require`.
+  Le catalogue a existé en **cinq exemplaires** et chaque copie oubliée donnait une panne
+  silencieuse différente : champion de la semaine jamais annoncé (`weekly_reset.php`),
+  record absent de la tuile du hub (`loadRecords`), identifiant brut dans Mon Compte
+  (`account.html`). Tous lisent ou dérivent la source désormais — `require_once` côté PHP,
+  `action=games` ou le DOM côté navigateur. **Ne jamais recopier le catalogue.**
+  Restent à la main dans `hub.html` : `GAME_NAMES` et la liste des onglets de classement.
+- **Un nouveau jeu doit arriver dans la palette du hub**, pas avec la sienne : `--bg:#0a0402`,
+  `--gold:#cda434`, `--text:#f5deb3`, `--muted:#7c5e2a`, titres `'Cinzel', Georgia, serif`
+  (la police n'est pas chargée, elle retombe sur Georgia — c'est voulu et commun aux six jeux).
+  Un fond STATIQUE trahit aussi l'intrus : tous les autres ont un ciel qui bouge.
+- **Tester un jeu canvas dans le pane navigateur est impossible en l'état** : l'onglet reste
+  caché, donc `requestAnimationFrame` ne se déclenche jamais et l'écran est noir. Le
+  contournement qui marche : une page jetable qui avance moteur et vue À LA MAIN puis appelle
+  `draw()` une seule fois depuis `img.onload` (pas de rAF). On peut alors photographier
+  n'importe quelle vague. Ne pas conclure « le jeu est cassé » sur un canvas noir.
 - Le secret anti-triche est **servi au client** : le hash ne protège de rien face à
   quelqu'un de déterminé. C'est le plafond qui fait le garde-fou réel.
 - L'affichage « meilleur score » des jeux vient du `localStorage`, écrit **avant** l'appel
@@ -264,9 +367,10 @@ Ne pas les reproposer sans élément nouveau.
 - **Bannières d'activité du bot Sorties** : 25 images à générer.
 - **Plans manquants / lieux de drop** : 8 régions récoltées, ~70 % de couverture ;
   restent 92 emplacements non identifiés et l'export FR d'une table de localisation.
-- **Plafonds `max_score` des autres mini-jeux** (`orni_flap` 9 999, `spice_runner` 99 999,
-  `sandstorm_memory` 50 000, `muaddib_rescue` 50 000) : mêmes jeux sans fin, même risque
-  qu'avec Worm Rider. Le journal des refus dira lequel coince en premier.
+- **Refus côté joueur toujours muet** : `submit` renvoie bien `max`, mais les six jeux se
+  contentent d'un `console.warn`, et le « MEILLEUR SCORE » affiché vient du `localStorage`
+  écrit avant l'appel serveur. Un joueur peut donc voir un record que le classement ignore —
+  c'est ce qui a fait croire deux fois à une triche ou à un bug de classement.
 - **Trois scripts non versionnés** dans `dunelogger/` sur le poste de l'utilisateur :
   `fix_frozen_data.py` (outil de secours réutilisable, le plus utile), `dune_logger_multi.py`
   (ancien scraper, remplacé) et `analyze_dune.py`.

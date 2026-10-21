@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comment parier — Tournois PvP — Maison des Havres Gris</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* Guide des paris des tournois : une colonne de lecture, captures pleine largeur.
+       Mêmes couleurs, polices et barre de navigation que epice/tournois.html. */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:#0B0805; --surface:#181008; --surface-2:#221508; --border:#3C2C14;
+      --accent:#C89210; --accent-dim:#7A5A0A; --text:#E8DEC8; --text-muted:#A8977A;
+      --vert:#7CD08A; --rouge:#E09080;
+      color-scheme: dark;
+    }
+    html { background:var(--bg); color:var(--text); font-family:'Inter',system-ui,sans-serif; }
+    body {
+      min-height:100vh; font-size:16px; line-height:1.65;
+      background:
+        radial-gradient(ellipse 90% 60% at 20% 20%,rgba(120,70,10,.18) 0%,transparent 55%),
+        radial-gradient(ellipse 70% 50% at 80% 90%,rgba(80,40,5,.22) 0%,transparent 50%),
+        var(--bg);
+    }
+    a { color:var(--accent); }
+
+    /* NAV — même gabarit que la page des tournois */
+    .nav { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.75rem; padding:.85rem 1.75rem; border-bottom:1px solid var(--border); background:rgba(11,8,5,.9); backdrop-filter:blur(6px); position:sticky; top:0; z-index:50; }
+    .nav-brand { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
+    .guild-name { font-family:'Cinzel',serif; font-size:.75rem; letter-spacing:.3em; text-transform:uppercase; color:var(--accent); font-weight:600; }
+    .nav-div { width:1px; height:18px; background:var(--border); }
+    .nav-sub { font-size:.68rem; letter-spacing:.2em; text-transform:uppercase; color:var(--text-muted); }
+    .nav-tab { padding:.45rem 1rem; border-radius:2px; font-size:.65rem; font-weight:700; cursor:pointer; border:1px solid var(--border); background:transparent; color:var(--text-muted); letter-spacing:.12em; text-transform:uppercase; text-decoration:none; }
+    .nav-tab:hover { border-color:var(--accent-dim); color:var(--text); }
+
+    .page { max-width:860px; margin:0 auto; padding:2.5rem 20px 4.5rem; display:flex; flex-direction:column; gap:2.75rem; }
+    h1, h2, h3 { font-family:'Cinzel',Georgia,serif; text-wrap:balance; line-height:1.25; letter-spacing:.02em; }
+    h1 { font-size:clamp(1.8rem, 5vw, 2.4rem); }
+    h2 { font-size:1.45rem; }
+    h3 { font-size:1.05rem; color:var(--accent); }
+    p { max-width:65ch; }
+    strong { color:var(--text); }
+    .etiquette { font-size:.72rem; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--accent); }
+    section, header.intro { display:flex; flex-direction:column; gap:1rem; }
+    .intro p { color:var(--text-muted); font-size:1.05rem; }
+    .rule { width:64px; height:3px; background:var(--accent); }
+
+    .essentiel { display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:.75rem; }
+    .essentiel div { background:var(--surface); border:1px solid var(--border); padding:.9rem 1rem; display:flex; flex-direction:column; gap:.25rem; min-width:0; }
+    .essentiel b { font-family:'Cinzel',serif; font-size:1.15rem; color:var(--accent); }
+    .essentiel span { color:var(--text-muted); font-size:.9rem; }
+
+    .comparatif { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-size:.93rem; min-width:520px; background:var(--surface); border:1px solid var(--border); }
+    th, td { text-align:left; padding:.7rem .9rem; border-bottom:1px solid var(--border); vertical-align:top; }
+    thead th { font-family:'Cinzel',serif; font-size:1rem; color:var(--accent); background:var(--surface-2); }
+    tbody th { font-weight:600; color:var(--text-muted); width:28%; }
+    tbody tr:last-child th, tbody tr:last-child td { border-bottom:none; }
+
+    .niveau { border-top:3px solid var(--accent); padding-top:1.25rem; }
+    .niveau-tete { display:flex; align-items:baseline; gap:.9rem; flex-wrap:wrap; }
+    .niveau-num { font-family:'Cinzel',serif; font-size:.85rem; color:var(--bg); background:var(--accent); padding:2px 10px; font-weight:700; letter-spacing:.08em; }
+    ol.etapes { padding-left:1.3em; display:flex; flex-direction:column; gap:.4rem; max-width:65ch; }
+    ol.etapes li::marker { color:var(--accent); font-weight:700; }
+
+    figure { display:flex; flex-direction:column; gap:.5rem; }
+    figure img { display:block; width:100%; max-width:100%; height:auto; border:1px solid var(--border); }
+    figcaption { font-size:.85rem; color:var(--text-muted); }
+
+    .exemple { background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--accent); padding:1rem 1.1rem; display:flex; flex-direction:column; gap:.6rem; }
+    .calcul { font-variant-numeric:tabular-nums; display:grid; grid-template-columns:auto 1fr; gap:.25rem 1rem; font-size:.95rem; }
+    .calcul dt { color:var(--text-muted); }
+    .plus { color:var(--vert); font-weight:600; } .moins { color:var(--rouge); font-weight:600; }
+
+    .regles { list-style:none; display:flex; flex-direction:column; gap:.6rem; }
+    .regles li { padding-left:22px; position:relative; max-width:65ch; }
+    .regles li::before { content:''; position:absolute; left:4px; top:.7em; width:8px; height:8px; background:var(--accent); transform:rotate(45deg); }
+    .repartition { display:flex; gap:.5rem; flex-wrap:wrap; }
+    .repartition span { background:var(--surface-2); border:1px solid var(--border); padding:.4rem .75rem; font-variant-numeric:tabular-nums; }
+    .repartition b { color:var(--accent); }
+    .retour { align-self:flex-start; }
+    footer { color:var(--text-muted); font-size:.85rem; border-top:1px solid var(--border); padding-top:1rem; }
+
+    @media (max-width: 640px) {
+      .nav { padding:.75rem 16px; }
+      .page { padding:1.5rem 16px 3.5rem; }
+      .calcul { grid-template-columns:1fr; }
+      .calcul dd { margin-bottom:.4rem; }
+    }
+  </style>
+</head>
+<body>
+<script src="../auth-guard.js"></script>
+<!-- Même clé d'accès que la page des tournois (« debrief ») : qui voit les tournois voit leur guide. -->
+<script src="../page-guard.js" data-page="debrief" data-root="../"></script>
+
+<nav class="nav">
+  <div class="nav-brand">
+    <a href="tournois.html" class="nav-tab">← Tournois PvP</a>
+    <div class="nav-div"></div>
+    <span class="guild-name">Havres Gris</span>
+    <div class="nav-div"></div>
+    <span class="nav-sub">Comment parier</span>
+  </div>
+</nav>
+
+<main class="page">
+  <header class="intro">
+    <span class="etiquette">Tournois PvP · Paris</span>
+    <h1>Parier sur les tournois</h1>
+    <div class="rule"></div>
+    <p>Pendant un tournoi, toute la guilde peut parier des <strong>Solaris</strong>, qu'on soit inscrit ou non. Il y a deux sortes de paris : <strong>le vainqueur du tournoi</strong>, à choisir avant le début, et <strong>chaque combat</strong>, jusqu'à ce qu'il commence.</p>
+    <p>Pour y aller : bouton <strong>« 🏆 Suivre le tournoi et parier »</strong> sous l'annonce Discord du tournoi, ou la page <a href="tournois.html">Tournois PvP</a>, puis l'onglet <strong>🎲 Paris</strong> du tournoi. Ou sans quitter Discord : les boutons du message <strong>🎲 Paris</strong> du bot (voir <a href="#discord">Parier depuis Discord</a>).</p>
+    <p>Les paris sont un choix de l'organisateur, tournoi par tournoi : un tournoi ouvert aux paris porte la pastille <strong>🎲 Paris</strong> dans la liste.</p>
+  </header>
+
+  <section>
+    <div class="essentiel">
+      <div><b>Vrais Solaris</b><span>Ceux du jeu. Le site tient seulement les comptes.</span></div>
+      <div><b>10 000 max</b><span>par pari.</span></div>
+      <div><b>Banquier</b><span>l'organisateur du tournoi : c'est avec lui qu'on règle à la fin.</span></div>
+    </div>
+    <figure>
+      <img src="img/paris/1-onglet.png" alt="Onglet Paris d'un tournoi, avec le rappel des règles : vrais Solaris, 10 000 au plus par pari, banquier, cagnotte partagée">
+      <figcaption>L'onglet 🎲 Paris rappelle les règles en haut de page.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>Les deux niveaux en un coup d'œil</h2>
+    <div class="comparatif">
+      <table>
+        <thead><tr><th></th><th>① Vainqueur du tournoi</th><th>② Chaque combat</th></tr></thead>
+        <tbody>
+          <tr><th>Quand parier</th><td>Dès que l'organisateur dévoile l'arbre, jusqu'au lancement</td><td>Dès que les deux adversaires sont connus</td></tr>
+          <tr><th>Combien de paris</th><td>Un seul par personne</td><td>Un par combat</td></tr>
+          <tr><th>Changer d'avis</th><td>Non : le pari est définitif</td><td>Oui : modifier ou retirer, tant que le combat n'a pas commencé</td></tr>
+          <tr><th>Fermeture</th><td>Au lancement du tournoi</td><td>À la fin du compte à rebours : 2 min après que le combat est prêt (réglable par l'orga)</td></tr>
+          <tr><th>Gagné ou perdu</th><td>Au dernier combat du tournoi</td><td>Dès que le résultat du combat est saisi</td></tr>
+          <tr><th>Où parier</th><td colspan="2">Sur le site (onglet 🎲 Paris) ou directement sur Discord : c'est le même pari</td></tr>
+          <tr><th>On règle</th><td colspan="2">À la fin du tournoi, avec le banquier, pour tous ses paris d'un coup</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="discord">
+    <h2>Parier depuis Discord</h2>
+    <p>Le bot poste un message <strong>🎲 Paris</strong> dans le salon des tournois dès que l'on peut parier, et le tient à jour tout au long de la soirée : combats ouverts avec leur compte à rebours, montants misés sur chaque camp et cotes, combats en cours, derniers résultats, puis le podium.</p>
+    <ul class="regles">
+      <li><strong>« 🎲 Match N »</strong> (ou <strong>« 🏆 Parier sur le vainqueur »</strong>) ouvre un petit formulaire : choisis sur qui tu paries, tape ta mise (<code>2000</code>, <code>2 000</code> ou <code>2k</code>). Pour changer d'avis, reclique et change la mise ; <strong>0</strong> retire ton pari.</li>
+      <li><strong>« 📋 Mes paris »</strong> te montre tes paris de la soirée et s'ils sont gagnés ou perdus, puis ton solde une fois les résultats publiés.</li>
+      <li>À la fin, le bot t'envoie <strong>ton solde en message privé</strong> : ce que tu dois au banquier, ou ce qu'il va te verser.</li>
+      <li>Les réponses du bot ne sont visibles que de toi. Le message, lui, ne montre que des montants, jamais qui a misé.</li>
+      <li>Ton compte Discord est relié au site : un pari posé sur Discord apparaît sur le site, et inversement. Les règles sont les mêmes partout (10 000 au plus, jamais contre soi, fermeture à la fin du compte à rebours).</li>
+    </ul>
+    <figure>
+      <img src="img/paris/8-discord.png" alt="Message 🎲 Paris du bot sur Discord : banquier, paris sur le vainqueur fermés depuis le lancement, Match 1 et Match 2 ouverts avec leur heure de fermeture et les mises par équipe, boutons Match 1, Match 2, Mes paris et Voir sur le site" loading="lazy">
+      <figcaption>Le message du bot pendant le tournoi. L'heure de fermeture est exacte à la seconde ; Discord affiche le temps restant à la minute près, puis en secondes pendant la dernière minute.</figcaption>
+    </figure>
+  </section>
+
+  <section class="niveau">
+    <div class="niveau-tete"><span class="niveau-num">NIVEAU 1</span><h2>Le vainqueur du tournoi</h2></div>
+    <p>Le pari risqué : on choisit avant le premier combat l'équipe (ou le joueur, en duel) qui remportera tout. Un seul pari, impossible à changer ensuite. C'est ce qui le rend payant quand on voit juste.</p>
+    <ol class="etapes">
+      <li>Dans le tableau, repère l'équipe de ton choix. <strong>Misé</strong> indique combien de Solaris sont déjà sur elle, <strong>Cote</strong> combien rapporte 1 Solaris si elle gagne.</li>
+      <li>Clique <strong>Parier</strong>, tape ta mise : la fenêtre te dit tout de suite combien tu toucherais.</li>
+      <li>Valide avec <strong>Parier (définitif)</strong>.</li>
+    </ol>
+    <figure>
+      <img src="img/paris/2-vainqueur.png" alt="Tableau des paris sur le vainqueur : six équipes, montants misés, nombre de parieurs, cotes de ×1,60 à ×16,00 et boutons Parier" loading="lazy">
+      <figcaption>Plus une équipe est délaissée, plus sa cote monte : ici ×16 sur Gurney & Harah, ×1,60 sur la favorite Stilgar & Alia.</figcaption>
+    </figure>
+    <figure>
+      <img src="img/paris/3-vainqueur-mise.png" alt="Fenêtre de pari sur le vainqueur : mise de 2 000 sur Gurney & Harah, gain annoncé de 8 000 Solaris, bouton Parier (définitif)" loading="lazy">
+      <figcaption>Le gain affiché est celui du moment : il bouge si d'autres parient après toi.</figcaption>
+    </figure>
+  </section>
+
+  <section class="niveau">
+    <div class="niveau-tete"><span class="niveau-num">NIVEAU 2</span><h2>Chaque combat</h2></div>
+    <p>Les paris intermédiaires, au fil de la soirée. Chaque combat apparaît dans l'onglet Paris dès que ses deux adversaires sont connus. Ses paris restent ouverts <strong>2 minutes</strong> (compte à rebours sur la carte) : tu peux parier, changer d'équipe, changer de mise ou retirer ton pari jusqu'à zéro.</p>
+    <ol class="etapes">
+      <li>Clique sur l'équipe que tu vois gagner, tape ta mise, valide.</li>
+      <li>Ton pari s'affiche sous le combat (cadre doré). Le lien <strong>retirer</strong> l'annule tant que les paris sont ouverts.</li>
+      <li>À la fin du compte à rebours, la carte passe en « Paris fermés » (⚔ dans l'arbre) : plus personne ne peut parier ni changer, le combat se joue. L'organisateur peut accorder une minute de plus ou fermer plus tôt.</li>
+    </ol>
+    <figure>
+      <img src="img/paris/4-combats.png" alt="Deux cartes de combat : Match 2 avec paris ouverts, compte à rebours 1:48 et un pari de 1 500 sur Jamis & Liet ; Match 3 marqué Paris fermés" loading="lazy">
+      <figcaption>À gauche, paris ouverts encore 1 min 48 (ton pari en doré). À droite, le temps est écoulé : paris fermés, le combat se joue.</figcaption>
+    </figure>
+    <figure>
+      <img src="img/paris/5-combat-mise.png" alt="Fenêtre de pari sur un combat : pari actuel de 1 500 remplacé par 2 500 sur Jamis & Liet, gain annoncé de 5 000 Solaris, bouton Modifier mon pari" loading="lazy">
+      <figcaption>Recliquer sur une équipe remplace ton pari : même équipe avec une autre mise, ou l'équipe d'en face.</figcaption>
+    </figure>
+    <figure>
+      <img src="img/paris/6-orga-combat-lance.png" alt="Console de l'organisateur : Match 2 paris ouverts avec compte à rebours et boutons Vainqueur, Fermer et +1 min ; Match 3 paris fermés avec Rouvrir" loading="lazy">
+      <figcaption>Côté organisateur, la console : il touche le vainqueur de chaque combat dès qu'il se termine, et peut fermer plus tôt ou ajouter une minute. Ta page se met à jour toute seule pendant le tournoi.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>Combien on gagne : la cagnotte partagée</h2>
+    <p>Toutes les mises d'un même pari forment une cagnotte. Ceux qui ont vu juste se la partagent, chacun au prorata de ce qu'il a misé. Le banquier ne garde rien.</p>
+    <div class="exemple">
+      <h3>Exemple : le Match 2 de la capture</h3>
+      <dl class="calcul">
+        <dt>Cagnotte</dt><dd>5 000 Solaris : 3 000 sur Gurney & Harah, 2 000 sur Jamis & Liet</dd>
+        <dt>Ta mise</dt><dd>1 500 sur Jamis & Liet</dd>
+        <dt>Jamis & Liet gagnent</dt><dd>tu touches 1 500 × 5 000 ÷ 2 000 = <span class="plus">3 750</span>, soit <span class="plus">+2 250</span> de bénéfice</dd>
+        <dt>Ils perdent</dt><dd>tu dois ta mise : <span class="moins">−1 500</span></dd>
+      </dl>
+      <p>C'est la cote affichée (×2,50) : 1 Solaris misé en rapporte 2,50, mise comprise.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>À la fin du tournoi : le règlement</h2>
+    <p>Un pari compte dès qu'il est posé, mais rien ne se paie avant la fin. Ton encart indique ton solde de toute la soirée : ce que tu dois envoyer au banquier en jeu, ou ce qu'il va te verser.</p>
+    <p>Si personne n'a parié sur le gagnant d'un pari, sa cagnotte va aux <strong>lots du podium</strong> :</p>
+    <div class="repartition"><span>🥇 <b>50 %</b> au vainqueur</span><span>🥈 <b>30 %</b> au 2ᵉ</span><span>🥉 <b>20 %</b> au 3ᵉ</span></div>
+    <figure>
+      <img src="img/paris/7-solde.png" alt="Encart Ton solde : +2 000 Solaris à recevoir, puis Lots des paris : 10 000 Solaris répartis 5 000, 3 000 et 2 000 entre les trois équipes du podium" loading="lazy">
+      <figcaption>Ici, personne n'avait misé sur l'équipe victorieuse : les 10 000 Solaris du pari « vainqueur » reviennent au podium.</figcaption>
+    </figure>
+  </section>
+
+  <section>
+    <h2>Les règles du jeu</h2>
+    <ul class="regles">
+      <li>Les participants parient aussi, mais <strong>jamais contre eux-mêmes</strong> : dans leurs propres combats, seulement sur leur équipe (sur eux-mêmes en duel). Le vainqueur du tournoi et les autres combats leur sont ouverts comme à tout le monde.</li>
+      <li><strong>10 000 Solaris au plus</strong> par pari : que ça reste un jeu.</li>
+      <li>Chacun voit combien est misé sur chaque équipe. <strong>Qui</strong> a misé quoi, seul l'organisateur le voit, puisqu'il encaisse.</li>
+      <li>Si un score est corrigé, les gains se recalculent tout seuls. Un pari posé sur un combat qui n'a finalement pas lieu est annulé.</li>
+      <li>L'organisateur peut annuler un pari mal saisi (10 000 au lieu de 1 000, par exemple).</li>
+    </ul>
+    <a class="nav-tab retour" href="tournois.html">← Retour aux tournois</a>
+  </section>
+
+  <footer>Captures faites sur un tournoi de test : les équipes portent des noms fictifs.</footer>
+</main>
+</body>
+</html>

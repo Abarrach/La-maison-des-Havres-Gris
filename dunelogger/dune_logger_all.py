@@ -113,6 +113,18 @@ def fetch_official_battlegroups(session: requests.Session) -> List[dict]:
     missing = OFFICIAL_SERVERS - {b['displayName'] for b in matched}
     if missing:
         logger.warning(f"⚠️ Serveurs de la whitelist absents de la réponse API : {sorted(missing)}")
+    # L'autre sens, celui qui manquait : un serveur que l'API renvoie et que la whitelist
+    # ignore était écarté SANS UN MOT. Un afflux de joueurs pousse l'éditeur à rouvrir des
+    # mondes ; sans cet avertissement ils restent invisibles des mois, et la courbe
+    # s'aplatit au moment précis où elle devrait monter. Diagnostiqué le 2026-09-21 —
+    # le ratio était passé de 87/94 (juillet) à 87/97 sans que rien ne le signale.
+    unknown = sorted({b.get('displayName', '?') for b in battlegroups} - OFFICIAL_SERVERS)
+    if unknown:
+        logger.warning(
+            f"⚠️ {len(unknown)} serveur(s) renvoyé(s) par l'API et ABSENT(S) de la whitelist "
+            f"— non collectés : {unknown}. Si ce sont de vrais mondes (et non du dev/QA "
+            f"Funcom), les ajouter à OFFICIAL_SERVERS ; cf. dunelogger/diag_couverture.py."
+        )
     return matched
 
 

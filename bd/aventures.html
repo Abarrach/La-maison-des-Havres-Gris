@@ -1,0 +1,1783 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Havres Gris Stories</title>
+<link rel="stylesheet" href="../style.css">
+<script src="../auth-guard.js"></script>
+<script src="../dune-tip.js" defer></script>
+<script src="../page-guard.js" data-page="aventures" data-root="../"></script>
+<style>
+:root {
+    --bg: #0a0402; --panel: rgba(10,5,2,0.88); --line: #3d2b16; --line2: #5a4a2a;
+    --gold: #cda434; --yellow: #ffcc00; --text: #f5deb3; --muted: #7c5e2a; --soft: #a89060;
+    --red: #d9534f;
+    --serif: 'Cinzel', Georgia, serif;
+}
+/* `hidden` doit toujours gagner : sans ça, un bloc stylé en display:grid/block (panneau
+   de motif, aperçu d'image…) reste visible malgré l'attribut — arrivé au panneau
+   « Dépublier » des admins, qui s'affichait chez les joueurs. */
+[hidden] { display: none !important; }
+html { overflow: auto; }
+body {
+    display: flex; flex-direction: column; align-items: center;
+    min-height: 100vh; margin: 0; overflow-y: auto;
+    font-family: 'Segoe UI', sans-serif; color: var(--text);
+    background-color: var(--bg);
+    background-image: url('../menu_bg.png');
+    background-size: cover; background-position: center top; background-attachment: fixed;
+}
+body::before { content:''; position:fixed; inset:0; background:rgba(8,4,2,0.7); pointer-events:none; z-index:0; }
+body::after { display: none; }
+body.reading { overflow: hidden; }
+
+/* ---- En-tête (gabarit du Hub Jeux ; classes préfixées pour ne pas croiser style.css) ---- */
+.bd-topbar {
+    align-self: stretch !important; position: relative !important; z-index: 20 !important;
+    height: 80px !important; min-height: 80px !important;
+    display: flex !important; align-items: center !important; justify-content: center !important;
+    background: rgba(0,0,0,0.85); border-bottom: 1px solid var(--line2);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.7);
+}
+.bd-topbar h1 {
+    color: var(--yellow); font-size: 1.5em; text-transform: uppercase; font-family: var(--serif);
+    letter-spacing: 3px; margin: 0; text-shadow: 0 0 10px rgba(205,164,52,0.3);
+}
+.bd-topbar-controls {
+    position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
+    display: flex; align-items: center; gap: 12px;
+}
+.bd-btn-menu {
+    background: linear-gradient(180deg, #443311 0%, #221100 100%);
+    border: 1px solid var(--gold); color: var(--gold); padding: 10px 20px;
+    text-decoration: none; font-size: 0.85em; font-weight: bold; border-radius: 4px;
+    transition: all 0.3s ease; text-transform: uppercase; white-space: nowrap;
+}
+.bd-btn-menu:hover { background: var(--gold); color: #000; }
+
+.bd-wrap { position: relative; z-index: 1; width: 100%; max-width: 1180px; padding: 30px 20px 60px; box-sizing: border-box; }
+
+/* ---- Bandeau d'introduction ---- */
+.bd-hero { text-align: center; margin: 0 auto 26px; max-width: 760px; }
+.bd-hero h2 { font-family: var(--serif); color: var(--gold); font-weight: normal; letter-spacing: 6px; text-transform: uppercase; font-size: 0.95em; margin: 0 0 10px; }
+.bd-hero p { color: var(--soft); font-style: italic; line-height: 1.6; margin: 0; }
+.bd-hero .rule { width: 160px; height: 1px; margin: 16px auto 0; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
+
+/* ---- Onglets ---- */
+.bd-tabs { display: flex; justify-content: center; gap: 4px; margin-bottom: 18px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.bd-tab {
+    background: none; border: none; border-bottom: 2px solid transparent; color: var(--soft); cursor: pointer;
+    padding: 10px 18px; font-size: 0.85em; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; font-family: inherit; margin-bottom: -1px;
+}
+.bd-tab:hover { color: var(--text); }
+.bd-tab.on { color: var(--yellow); border-bottom-color: var(--gold); }
+.bd-tab .cnt:empty { display: none; }
+.bd-tab .cnt { display: inline-block; min-width: 18px; padding: 1px 6px; margin-left: 4px; border-radius: 9px; background: rgba(205,164,52,0.18); color: var(--gold); font-size: 0.85em; letter-spacing: 0; }
+.bd-tab .cnt.alert { background: var(--red); color: #fff; }
+
+/* ---- Barre d'outils ---- */
+.bd-tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; min-width: 0; }
+#btn-new { align-self: flex-start; }
+.chip {
+    background: rgba(0,0,0,0.45); border: 1px solid var(--line); color: var(--soft);
+    padding: 5px 12px; border-radius: 14px; font-size: 0.8em; cursor: pointer; transition: all .2s;
+}
+.chip:hover { border-color: var(--muted); color: var(--text); }
+.chip.on { background: rgba(205,164,52,0.16); border-color: var(--gold); color: var(--yellow); }
+.btn {
+    background: linear-gradient(180deg, #443311, #221100); border: 1px solid var(--gold); color: var(--gold);
+    padding: 9px 18px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.82em;
+    text-transform: uppercase; letter-spacing: .5px; transition: all .2s; font-family: inherit;
+}
+.btn:hover:not(:disabled) { background: var(--gold); color: #000; }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn.ghost { background: rgba(0,0,0,0.4); border-color: var(--line2); color: var(--soft); }
+.btn.ghost:hover:not(:disabled) { background: rgba(205,164,52,0.12); color: var(--text); border-color: var(--gold); }
+.btn.danger { background: rgba(60,10,8,0.6); border-color: #8a2a24; color: #f0a39b; }
+.btn.danger:hover:not(:disabled) { background: var(--red); color: #fff; }
+.btn.gold { background: linear-gradient(180deg, #cda434, #8a6a1e); color: #1a1007; border-color: #f0d27a; }
+.btn.gold:hover:not(:disabled) { background: #ffcc00; color: #000; }
+
+/* ---- Grille des épisodes ---- */
+.bd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 26px 22px; }
+.ep {
+    position: relative; cursor: pointer; display: flex; flex-direction: column;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 4px; overflow: hidden;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.6); transition: transform .25s, border-color .25s, box-shadow .25s;
+}
+.ep:hover, .ep:focus-visible { transform: translateY(-5px); border-color: var(--gold); box-shadow: 0 16px 40px rgba(205,164,52,0.18); outline: none; }
+.ep-cover { position: relative; aspect-ratio: 1061 / 1500; background: #140b05; overflow: hidden; }
+.ep-cover img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .5s; }
+.ep:hover .ep-cover img { transform: scale(1.04); }
+.ep-cover .empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 0.85em; font-style: italic; padding: 20px; text-align: center; }
+.ep-num {
+    position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.78); border: 1px solid var(--gold);
+    color: var(--yellow); font-family: var(--serif); font-size: 0.75em; letter-spacing: 2px; padding: 4px 9px; text-transform: uppercase;
+}
+.ep-num.draft { border-color: #8a6a2a; color: #e2b05a; border-style: dashed; }
+.ep-num.wait { border-color: #5f8fb8; color: #a9cdf0; }
+.ep-num.back { border-color: var(--red); color: #f0a39b; }
+.ep-motif { margin-top: 6px; padding: 6px 8px; border-left: 2px solid var(--red); background: rgba(217,83,79,0.08); color: #f0c4bf; font-size: 0.78em; line-height: 1.4; }
+.ep-motif b { color: #f0a39b; }
+.ep-info .by { color: var(--muted); font-size: 0.75em; }
+.ep-info .serie, .fv-side .serie, .r-story .serie { color: var(--gold); font-size: 0.76em; letter-spacing: .3px; }
+.chips .sep { width: 100%; height: 0; }
+.chips .lbl { color: var(--muted); font-size: 0.72em; text-transform: uppercase; letter-spacing: 1px; align-self: center; margin-right: 2px; }
+.serie-admin { width: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 4px; padding: 8px 10px; border: 1px dashed var(--line2); border-radius: 4px; font-size: 0.8em; color: var(--soft); }
+.serie-admin b { color: var(--text); }
+.serie-admin select { background: rgba(0,0,0,0.5); border: 1px solid var(--line2); color: var(--text); border-radius: 3px; padding: 4px 6px; font-family: inherit; }
+.ep-new { position: absolute; top: 10px; right: 10px; background: var(--red); color: #fff; font-size: 0.68em; font-weight: bold; padding: 3px 8px; border-radius: 3px; letter-spacing: 1px; text-transform: uppercase; }
+.ep-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(0,0,0,0.6); }
+.ep-bar i { display: block; height: 100%; background: var(--gold); }
+.ep-info { padding: 12px 14px 14px; flex: 1; display: flex; flex-direction: column; gap: 4px; background: linear-gradient(180deg, #1a1008, #0d0705); }
+.ep-info h3 { margin: 0; color: var(--yellow); font-family: var(--serif); font-size: 1em; letter-spacing: .5px; line-height: 1.3; }
+.ep-info .sub { color: var(--soft); font-size: 0.8em; font-style: italic; }
+.ep-info .meta { color: var(--muted); font-size: 0.75em; margin-top: auto; padding-top: 6px; display: flex; justify-content: space-between; gap: 8px; }
+.ep-info .meta b { color: var(--gold); font-weight: normal; }
+.ep-edit {
+    position: absolute; right: 8px; bottom: 12px; z-index: 2; background: rgba(0,0,0,0.75); border: 1px solid var(--line2);
+    color: var(--soft); border-radius: 3px; font-size: 0.75em; padding: 4px 9px; cursor: pointer;
+}
+.ep-edit:hover { color: var(--yellow); border-color: var(--gold); }
+
+.bd-empty { text-align: center; padding: 60px 20px; border: 1px dashed var(--line2); border-radius: 6px; background: rgba(10,5,2,0.6); color: var(--soft); }
+.bd-empty .big { font-family: var(--serif); color: var(--gold); font-size: 1.2em; margin-bottom: 8px; letter-spacing: 1px; }
+.bd-status { text-align: center; color: var(--soft); padding: 40px; font-style: italic; }
+
+/* ---- Fenêtre d'édition ---- */
+.modal-bg { position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,0.78); display: none; align-items: flex-start; justify-content: center; overflow-y: auto; padding: 30px 12px; box-sizing: border-box; }
+.modal-bg.open { display: flex; }
+.modal { width: 100%; max-width: 860px; background: #120a04; border: 1px solid var(--gold); border-radius: 6px; box-shadow: 0 20px 60px rgba(0,0,0,0.8); }
+.modal-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--line); }
+.modal-head h3 { margin: 0; font-family: var(--serif); color: var(--yellow); letter-spacing: 1px; font-weight: normal; }
+.x { background: none; border: none; color: var(--soft); font-size: 1.5em; cursor: pointer; line-height: 1; padding: 0 4px; }
+.x:hover { color: var(--yellow); }
+.modal-body { padding: 18px; display: grid; gap: 14px; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+label.f { display: flex; flex-direction: column; gap: 5px; font-size: 0.78em; color: var(--soft); text-transform: uppercase; letter-spacing: .5px; }
+label.f small { text-transform: none; letter-spacing: 0; color: var(--muted); font-style: italic; }
+.f input, .f textarea {
+    background: rgba(0,0,0,0.5); border: 1px solid var(--line2); color: var(--text); border-radius: 3px;
+    padding: 9px 10px; font-size: 1.15em; font-family: inherit; text-transform: none; letter-spacing: 0;
+}
+.f input:focus, .f textarea:focus { outline: none; border-color: var(--gold); }
+.f textarea { min-height: 150px; resize: vertical; line-height: 1.5; font-size: 1.1em; }
+.statut { display: flex; gap: 8px; }
+.statut label { flex: 1; display: flex; align-items: center; gap: 8px; border: 1px solid var(--line2); border-radius: 3px; padding: 9px 12px; cursor: pointer; font-size: 0.85em; color: var(--soft); }
+.statut label:has(input:checked) { border-color: var(--gold); color: var(--yellow); background: rgba(205,164,52,0.08); }
+.statut input { accent-color: var(--gold); }
+.sec-title { font-family: var(--serif); color: var(--gold); letter-spacing: 1px; font-size: 0.95em; margin: 4px 0 0; padding-top: 12px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.sec-title small { font-family: 'Segoe UI', sans-serif; color: var(--muted); font-size: 0.78em; letter-spacing: 0; font-style: italic; }
+.drop {
+    border: 2px dashed var(--line2); border-radius: 6px; padding: 22px; text-align: center; color: var(--soft);
+    cursor: pointer; transition: all .2s; font-size: 0.9em; background: rgba(0,0,0,0.3);
+}
+.drop:hover, .drop.over { border-color: var(--gold); color: var(--yellow); background: rgba(205,164,52,0.06); }
+.drop.off { opacity: .45; pointer-events: none; }
+.drop b { color: var(--gold); }
+.queue { font-size: 0.8em; color: var(--soft); display: grid; gap: 4px; }
+.queue .err { color: #f0a39b; }
+.queue .ok { color: #8fcf7a; }
+.pages { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; }
+.pg { position: relative; border: 1px solid var(--line2); border-radius: 3px; background: #000; cursor: grab; }
+.pg.dragging { opacity: .35; }
+.pg.target { outline: 2px solid var(--gold); }
+.pg img { width: 100%; aspect-ratio: 1061 / 1500; object-fit: cover; display: block; pointer-events: none; }
+.pg .n { position: absolute; top: 4px; left: 4px; background: rgba(0,0,0,0.8); color: var(--yellow); font-size: 0.72em; padding: 2px 6px; border-radius: 2px; }
+.pg .acts { display: flex; justify-content: space-between; background: rgba(0,0,0,0.85); }
+.pg .acts button { flex: 1; background: none; border: none; color: var(--soft); cursor: pointer; padding: 5px 0; font-size: 0.85em; }
+.pg .acts button:hover:not(:disabled) { color: var(--yellow); }
+.pg .acts button.del:hover { color: #f0a39b; }
+.pg .acts button:disabled { opacity: .25; cursor: default; }
+.ed-state { border: 1px solid var(--line2); border-left-width: 3px; border-radius: 3px; padding: 10px 12px; font-size: 0.85em; line-height: 1.5; color: var(--soft); background: rgba(0,0,0,0.35); }
+.ed-state b { color: var(--text); }
+.ed-state.wait { border-left-color: #5f8fb8; }
+.ed-state.back { border-left-color: var(--red); }
+.ed-state.pub { border-left-color: var(--gold); }
+.ed-state .motif { display: block; margin-top: 4px; color: #f0c4bf; font-style: italic; }
+.modal.locked .f input, .modal.locked .f textarea { opacity: .6; }
+.modal.locked .drop, .modal.locked .pg .acts button:not([data-view]) { display: none; }
+.modal.locked .pg { cursor: default; }
+.renvoi { padding: 0 18px 14px; display: grid; gap: 10px; }
+.renvoi textarea { min-height: 70px; }
+.renvoi-acts { display: flex; justify-content: flex-end; gap: 10px; }
+.modal-foot { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; padding: 14px 18px; border-top: 1px solid var(--line); }
+.modal-foot .msg { font-size: 0.82em; color: var(--soft); flex: 1; min-width: 160px; }
+.modal-foot .msg.err { color: #f0a39b; }
+
+/* ============================================================
+   HISTOIRES FLASH
+   ============================================================ */
+.ep-num.flash { border-color: #e2b05a; color: #ffdf8a; }
+/* Galerie : mosaïque à colonnes, l'image entière (pas de recadrage). */
+.fl-grid { columns: 270px; column-gap: 16px; }
+.fl-grid > .bd-empty, .fl-grid > .bd-status { column-span: all; }
+.fl-item {
+    break-inside: avoid; margin: 0 0 16px; position: relative; cursor: pointer; display: block; width: 100%;
+    border: 1px solid var(--line); border-radius: 4px; overflow: hidden; background: #140b05; padding: 0;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.6); transition: border-color .25s, transform .25s; font-family: inherit; text-align: left; color: inherit;
+}
+.fl-item:hover, .fl-item:focus-visible { border-color: var(--gold); transform: translateY(-3px); outline: none; }
+/* Panorama très allongé : hauteur plancher, recadré au centre (l'image entière reste dans la visionneuse). */
+.fl-item img { display: block; width: 100%; height: auto; min-height: 160px; object-fit: cover; }
+.fl-item .cap {
+    position: absolute; left: 0; right: 0; bottom: 0; padding: 30px 12px 10px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.92));
+}
+.fl-item .cap b { display: block; color: var(--yellow); font-family: var(--serif); font-weight: normal; font-size: 0.98em; line-height: 1.25; }
+.fl-item .cap span { color: var(--soft); font-size: 0.74em; }
+.fl-item .lieu { position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,0.78); border: 1px solid var(--line2); color: var(--gold); font-size: 0.7em; padding: 3px 8px; border-radius: 10px; }
+
+/* Fiche */
+.fl-form { display: grid; grid-template-columns: 260px 1fr; gap: 16px; align-items: start; }
+.fl-pick {
+    border: 2px dashed var(--line2); border-radius: 6px; min-height: 260px; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; background: rgba(0,0,0,0.35); overflow: hidden; position: relative; transition: border-color .2s;
+}
+.fl-pick:hover, .fl-pick.over { border-color: var(--gold); }
+.fl-pick img { width: 100%; height: auto; display: block; }
+.fl-pick-txt { text-align: center; color: var(--soft); font-size: 0.88em; line-height: 1.7; padding: 16px; }
+.fl-pick-txt b { color: var(--gold); }
+.fl-pick.has .fl-pick-txt { display: none; }
+.fl-fields { display: grid; gap: 12px; }
+.f select { background: rgba(0,0,0,0.5); border: 1px solid var(--line2); color: var(--text); border-radius: 3px; padding: 9px 10px; font-size: 1.1em; font-family: inherit; text-transform: none; letter-spacing: 0; }
+.f select:focus { outline: none; border-color: var(--gold); }
+.fl-desc-big { min-height: 120px; }
+.fl-check { list-style: none; margin: 0; padding: 10px 12px; display: flex; flex-wrap: wrap; gap: 6px 16px; border: 1px solid var(--line); border-radius: 3px; background: rgba(0,0,0,0.3); font-size: 0.82em; }
+.fl-check li { color: #f0a39b; }
+.fl-check li.ok { color: #8fcf7a; }
+.fl-check li.titre { color: var(--soft); width: 100%; font-style: italic; }
+
+/* Visionneuse */
+.fv { position: fixed; inset: 0; z-index: 110; background: #050201; display: none; }
+.fv.open { display: flex; }
+.fv-img { flex: 1; min-width: 0; position: relative; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
+.fv-img img { max-width: 100%; max-height: 100%; object-fit: contain; box-shadow: 0 0 50px rgba(0,0,0,0.9); }
+.fv-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 46px; height: 76px; background: rgba(0,0,0,0.55); border: 1px solid var(--line2); color: var(--gold); font-size: 1.7em; cursor: pointer; border-radius: 3px; }
+.fv-nav:hover { border-color: var(--gold); }
+.fv-nav.prev { left: 14px; } .fv-nav.next { right: 14px; }
+.fv-nav:disabled { visibility: hidden; }
+.fv-side { flex: none; width: 380px; max-width: 92vw; background: #0d0703; border-left: 1px solid var(--line); overflow-y: auto; padding: 56px 24px 30px; box-sizing: border-box; }
+.fv-side .lieu { display: inline-block; border: 1px solid var(--line2); color: var(--gold); font-size: 0.72em; padding: 3px 9px; border-radius: 10px; margin-bottom: 10px; }
+.fv-side h4 { font-family: var(--serif); color: var(--yellow); font-weight: normal; font-size: 1.35em; margin: 0 0 6px; letter-spacing: .5px; }
+.fv-side .date { color: var(--muted); font-size: 0.8em; margin-bottom: 12px; }
+.fv-side .persos { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 14px; }
+.fv-side .persos span { border: 1px solid var(--line2); color: var(--gold); font-size: 0.72em; padding: 2px 8px; border-radius: 10px; }
+.fv-side .txt p { margin: 0 0 12px; line-height: 1.65; color: #e8d3a8; font-size: 0.95em; }
+.fv-side .count { color: var(--muted); font-size: 0.75em; margin-top: 18px; }
+.fv-side .acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+.fv-side .acts .btn { padding: 7px 12px; font-size: 0.74em; }
+.fv-side .renvoi { padding: 12px 0 0; }
+.fv-close { position: absolute; top: 12px; right: 12px; z-index: 2; }
+.toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 200; max-width: min(560px, calc(100vw - 32px));
+    background: #1a1008; border: 1px solid var(--gold); color: var(--text); padding: 11px 18px; border-radius: 4px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.8); font-size: 0.88em; line-height: 1.45;
+}
+.toast.err { border-color: var(--red); color: #f0c4bf; }
+
+/* ============================================================
+   LECTEUR
+   ============================================================ */
+.reader { position: fixed; inset: 0; z-index: 100; background: #050201; display: none; flex-direction: column; color: var(--text); }
+.reader.open { display: flex; }
+.r-top {
+    flex: none; height: 52px; display: flex; align-items: center; gap: 10px; padding: 0 12px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.95), rgba(0,0,0,0.75)); border-bottom: 1px solid var(--line);
+    transition: transform .25s, opacity .25s; z-index: 3;
+}
+.r-title { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 10px; overflow: hidden; }
+.r-title .ep-tag { color: var(--gold); font-family: var(--serif); font-size: 0.75em; letter-spacing: 2px; text-transform: uppercase; white-space: nowrap; }
+.r-title .name { color: var(--yellow); font-family: var(--serif); font-size: 1.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.r-count { color: var(--soft); font-size: 0.85em; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.r-btn {
+    background: rgba(0,0,0,0.5); border: 1px solid var(--line2); color: var(--soft); border-radius: 3px;
+    height: 34px; min-width: 34px; padding: 0 10px; cursor: pointer; font-size: 0.85em; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-family: inherit;
+}
+.r-btn:hover { border-color: var(--gold); color: var(--yellow); }
+.r-btn.on { border-color: var(--gold); color: var(--yellow); background: rgba(205,164,52,0.14); }
+.r-btn svg { width: 17px; height: 17px; fill: currentColor; }
+.r-main { flex: 1; min-height: 0; display: flex; position: relative; }
+.r-stage { flex: 1; min-width: 0; position: relative; overflow: hidden; user-select: none; -webkit-user-select: none; }
+
+/* Mode page par page */
+.r-page { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 10px; box-sizing: border-box; }
+.r-page img { max-width: 100%; max-height: 100%; object-fit: contain; box-shadow: 0 0 40px rgba(0,0,0,0.9); opacity: 0; transition: opacity .18s; }
+.r-page img.ready { opacity: 1; }
+.r-stage.zoom { overflow-y: auto; overflow-x: hidden; }
+.r-stage.zoom .r-page { position: static; display: block; padding: 0; }
+.r-stage.zoom .r-page img { display: block; max-height: none; width: min(100%, 1400px); margin: 0 auto; }
+.r-zone { position: absolute; top: 0; bottom: 0; width: 28%; z-index: 2; cursor: pointer; }
+.r-zone.prev { left: 0; cursor: w-resize; }
+.r-zone.next { right: 0; cursor: e-resize; }
+.r-stage.zoom .r-zone { display: none; }
+.r-arrow {
+    position: absolute; top: 50%; transform: translateY(-50%); z-index: 3; width: 44px; height: 70px;
+    background: rgba(0,0,0,0.55); border: 1px solid var(--line2); color: var(--gold); font-size: 1.6em; cursor: pointer; border-radius: 3px;
+    opacity: .0; transition: opacity .2s;
+}
+.r-stage:hover .r-arrow { opacity: .85; }
+.r-arrow:hover { opacity: 1 !important; border-color: var(--gold); }
+.r-arrow.prev { left: 12px; } .r-arrow.next { right: 12px; }
+.r-arrow:disabled { visibility: hidden; }
+.r-stage.zoom .r-arrow { position: fixed; top: calc(50% + 26px); }
+
+/* Mode lecture continue */
+.r-scroll { position: absolute; inset: 0; overflow-y: auto; display: none; padding: 16px 0 40px; box-sizing: border-box; }
+.r-stage.continu .r-scroll { display: block; }
+.r-stage.continu .r-page, .r-stage.continu .r-zone, .r-stage.continu .r-arrow { display: none; }
+.r-scroll img { display: block; width: min(100% - 20px, 1100px); margin: 0 auto 14px; aspect-ratio: var(--ar, 1061 / 1500); background: #120a04; box-shadow: 0 0 30px rgba(0,0,0,0.9); }
+.r-stage.continu.zoom .r-scroll img { width: calc(100% - 20px); }
+
+/* Fin d'épisode */
+.r-end { position: absolute; inset: 0; z-index: 4; display: none; align-items: center; justify-content: center; padding: 20px; background: radial-gradient(ellipse at center, rgba(40,22,8,0.96), rgba(5,2,1,0.98)); }
+.r-end.show { display: flex; }
+.r-end-box { text-align: center; max-width: 520px; }
+.r-end-box .k { font-family: var(--serif); color: var(--muted); letter-spacing: 6px; text-transform: uppercase; font-size: 0.8em; }
+.r-end-box h4 { font-family: var(--serif); color: var(--yellow); font-size: 1.8em; font-weight: normal; margin: 10px 0 6px; letter-spacing: 2px; }
+.r-end-box p { color: var(--soft); font-style: italic; margin: 0 0 24px; }
+.r-end-box .acts { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.r-end-box .next-ep { display: flex; gap: 12px; align-items: center; text-align: left; border: 1px solid var(--line2); background: rgba(0,0,0,0.5); padding: 10px; border-radius: 4px; cursor: pointer; width: 100%; box-sizing: border-box; color: var(--text); font-family: inherit; }
+.r-end-box .next-ep:hover { border-color: var(--gold); }
+.r-end-box .next-ep img { width: 54px; aspect-ratio: 1061 / 1500; object-fit: cover; }
+.r-end-box .next-ep small { display: block; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; font-size: 0.7em; }
+.r-end-box .next-ep b { color: var(--yellow); font-family: var(--serif); font-weight: normal; }
+
+/* Panneau du récit */
+.r-story {
+    flex: none; width: 380px; max-width: 90vw; border-left: 1px solid var(--line); background: #0d0703;
+    overflow-y: auto; display: none; padding: 20px 22px 40px; box-sizing: border-box;
+}
+.reader.story .r-story { display: block; }
+.r-story h4 { font-family: var(--serif); color: var(--yellow); margin: 0 0 4px; font-weight: normal; font-size: 1.15em; letter-spacing: 1px; }
+.r-story .sub { color: var(--soft); font-style: italic; font-size: 0.88em; margin-bottom: 4px; }
+.r-story .date { color: var(--muted); font-size: 0.78em; margin-bottom: 14px; }
+.r-story .persos { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 16px; }
+.r-story .persos span { border: 1px solid var(--line2); color: var(--gold); font-size: 0.72em; padding: 2px 8px; border-radius: 10px; }
+.r-story .txt p { margin: 0 0 12px; line-height: 1.65; color: #e8d3a8; font-size: 0.92em; }
+.r-story .none { color: var(--muted); font-style: italic; font-size: 0.88em; }
+
+/* Bande de vignettes */
+.r-strip {
+    flex: none; display: flex; gap: 8px; padding: 8px 12px; overflow-x: auto; background: rgba(0,0,0,0.9);
+    border-top: 1px solid var(--line); transition: transform .25s, opacity .25s; scrollbar-width: thin;
+}
+.r-strip button { flex: none; width: 46px; padding: 0; border: 2px solid transparent; background: #000; cursor: pointer; opacity: .55; transition: all .15s; position: relative; }
+.r-strip button:hover { opacity: .9; }
+.r-strip button:first-child { margin-left: auto; } .r-strip button:last-child { margin-right: auto; }
+.r-strip button.cur { border-color: var(--gold); opacity: 1; }
+.r-strip img { width: 100%; aspect-ratio: 1061 / 1500; object-fit: cover; display: block; }
+.r-strip span { position: absolute; bottom: 1px; right: 2px; font-size: 0.65em; color: #fff; text-shadow: 0 0 3px #000; }
+.reader.clean .r-top { transform: translateY(-100%); opacity: 0; position: absolute; left: 0; right: 0; top: 0; }
+.reader.clean .r-strip { transform: translateY(100%); opacity: 0; position: absolute; left: 0; right: 0; bottom: 0; }
+.r-help { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 5; background: rgba(0,0,0,0.82); border: 1px solid var(--line2); color: var(--soft); padding: 7px 14px; border-radius: 16px; font-size: 0.78em; pointer-events: none; transition: opacity .6s; white-space: nowrap; }
+.r-help.gone { opacity: 0; }
+
+@media (max-width: 760px) {
+    /* Titre et boutons côte à côte : en absolu, les boutons recouvraient le titre. */
+    .bd-topbar { justify-content: space-between !important; gap: 10px; padding: 0 10px 0 14px; box-sizing: border-box; }
+    .bd-topbar h1 { font-size: 0.86em; letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+    .bd-topbar-controls { position: static; transform: none; flex: none; gap: 6px; }
+    .bd-btn-menu { padding: 7px 7px; font-size: 0.7em; }
+    .bd-wrap { padding: 20px 12px 40px; }
+    .bd-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 16px 12px; }
+    .row { grid-template-columns: 1fr; }
+    .r-label { display: none; }
+    .r-title .ep-tag { display: none; }
+    .r-arrow { display: none; }
+    /* Sur téléphone la planche est déjà à la largeur de l'écran : le zoom double. */
+    .r-stage.zoom { overflow-x: auto; }
+    .r-stage.zoom .r-page img { width: 200%; max-width: none; }
+    .r-stage.continu.zoom .r-scroll { overflow-x: auto; }
+    .r-stage.continu.zoom .r-scroll img { width: 200%; max-width: none; margin-left: 0; }
+    .r-zone { width: 34%; }
+    .r-story { position: absolute; inset: 0; width: auto; max-width: none; z-index: 6; border-left: none; }
+    .r-help { white-space: normal; width: max-content; max-width: 86vw; text-align: center; }
+    .fl-grid { columns: 2 150px; column-gap: 10px; }
+    .fl-form { grid-template-columns: 1fr; }
+    .fl-pick { min-height: 170px; }
+    .fv.open { flex-direction: column; }
+    .fv-img { flex: none; height: 55vh; padding: 10px; }
+    .fv-nav { width: 38px; height: 60px; }
+    .fv-side { width: auto; max-width: none; flex: 1; border-left: none; border-top: 1px solid var(--line); padding: 16px 16px 30px; }
+}
+</style>
+</head>
+<body>
+
+<header class="bd-topbar">
+    <h1>Havres Gris Stories</h1>
+    <div class="bd-topbar-controls">
+      <a href="../account.html" class="user-account-widget" id="ua-widget">
+        <div class="ua-avatar" id="ua-avatar">?</div>
+        <span class="ua-pseudo" id="ua-pseudo">…</span>
+      </a>
+      <a href="../menu.html" class="bd-btn-menu">Retour Menu</a>
+    </div>
+</header>
+<script>(function(){var u=localStorage.getItem("user")||"?";document.getElementById("ua-pseudo").textContent=u;var av=document.getElementById("ua-avatar");var img=localStorage.getItem("avatar");if(img){var src=/^https?:\/\//.test(img)||img.charAt(0)==='/'?img:'../'+img;av.style.background="transparent";av.innerHTML='<img src="'+src+'" style="width:42px;height:42px;margin:-1px;object-fit:cover;border-radius:50%;">';}else{av.textContent=u.charAt(0).toUpperCase();var h=0;for(var i=0;i<u.length;i++)h=((h<<5)-h)+u.charCodeAt(i);av.style.background="hsl("+(Math.abs(h)%360)+",55%,32%)";}})();</script>
+
+<main class="bd-wrap">
+    <section class="bd-hero">
+        <h2>Chroniques illustrées de la guilde</h2>
+        <p>Nos soirées sur Arrakis, racontées planche après planche. Ce qui s'est passé dans le désert
+           ne reste pas dans le désert&nbsp;: ça finit ici. Chacun peut raconter la sienne, en BD
+           (relue par les admins avant d'entrer dans la saga) ou en une seule image avec les ⚡&nbsp;Flash.</p>
+        <div class="rule"></div>
+    </section>
+
+    <div class="bd-tabs" id="tabs" role="tablist">
+        <button class="bd-tab on" data-tab="biblio" role="tab">Bibliothèque</button>
+        <button class="bd-tab" data-tab="flash" role="tab">⚡ Flash</button>
+        <button class="bd-tab" data-tab="miennes" role="tab">Mes histoires <span class="cnt" id="cnt-miennes"></span></button>
+        <button class="bd-tab" data-tab="valider" role="tab" hidden>À valider <span class="cnt alert" id="cnt-valider"></span></button>
+    </div>
+    <div class="bd-tools">
+        <div class="chips" id="chips"></div>
+        <button class="btn" id="btn-new">＋ Nouvelle histoire</button>
+    </div>
+
+    <div id="grid" class="bd-grid"></div>
+    <div id="status" class="bd-status">Chargement des chroniques…</div>
+</main>
+
+<!-- ===== Fenêtre d'édition (auteur sur son brouillon, admins partout) ===== -->
+<div class="modal-bg" id="ed-bg">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ed-title">
+    <div class="modal-head">
+        <h3 id="ed-title">Nouvelle histoire</h3>
+        <button class="x" id="ed-close" data-tip="Fermer">×</button>
+    </div>
+    <div class="modal-body">
+        <div class="ed-state" id="ed-state" hidden></div>
+        <label class="f">Titre
+            <input id="f-titre" maxlength="120" placeholder="Le Dernier Convoi du Sable Rose">
+        </label>
+        <div class="row">
+            <label class="f">Sous-titre <small>facultatif</small>
+                <input id="f-sous" maxlength="160" placeholder="Une expédition dans le Désert Profond">
+            </label>
+            <label class="f">Date de la soirée
+                <input id="f-date" type="date">
+            </label>
+        </div>
+        <label class="f">Personnages <small>séparés par des virgules — servent aussi de filtre dans la bibliothèque</small>
+            <input id="f-persos" placeholder="Lorhelyne, Frya, Sarazin…">
+        </label>
+        <div class="row">
+            <label class="f">Série <small>une suite ? rattache-la à sa série</small>
+                <select id="f-serie"></select>
+            </label>
+            <label class="f" id="f-serie-nouv-wrap" hidden>Nom de la nouvelle série
+                <input id="f-serie-nouv" maxlength="80" placeholder="Le Sable Rose">
+            </label>
+        </div>
+        <label class="f">Récit <small>le texte de la soirée (le post Discord par exemple) — affiché à côté des planches</small>
+            <textarea id="f-recit" placeholder="Ce qui devait être une simple expédition…"></textarea>
+        </label>
+        <div class="sec-title">Planches <small id="pg-hint">enregistre l'histoire pour pouvoir ajouter ses planches</small></div>
+        <div class="drop off" id="drop" tabindex="0">
+            Glisse les planches ici ou <b>clique pour les choisir</b><br>
+            <small style="color:var(--muted)">JPEG, PNG ou WebP · ajoutées dans l'ordre alphabétique des fichiers · réordonnables ensuite</small>
+        </div>
+        <input type="file" id="file" accept="image/jpeg,image/png,image/webp" multiple hidden>
+        <div class="queue" id="queue"></div>
+        <div class="pages" id="pages"></div>
+    </div>
+    <div class="renvoi" id="ed-renvoi" hidden>
+        <label class="f">Motif du renvoi <small>l'auteur le lira dans « Mes histoires » — dis-lui quoi revoir</small>
+            <textarea id="f-motif" maxlength="600" placeholder="La planche 3 est floue, et il manque le récit de la soirée."></textarea>
+        </label>
+        <div class="renvoi-acts">
+            <button class="btn ghost" id="renvoi-annuler">Annuler</button>
+            <button class="btn danger" id="renvoi-ok">Renvoyer à l'auteur</button>
+        </div>
+    </div>
+    <div class="modal-foot">
+        <button class="btn danger" id="ed-del" hidden>Supprimer</button>
+        <span class="msg" id="ed-msg"></span>
+        <button class="btn ghost" id="ed-preview" hidden>Aperçu</button>
+        <button class="btn ghost" id="ed-retract" hidden>Annuler la soumission</button>
+        <button class="btn ghost" id="ed-return" hidden>Renvoyer…</button>
+        <button class="btn ghost" id="ed-announce" hidden>📣 Annoncer sur Discord</button>
+        <button class="btn" id="ed-save">Enregistrer</button>
+        <button class="btn gold" id="ed-submit" hidden>Soumettre à validation</button>
+        <button class="btn gold" id="ed-publish" hidden>Publier</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Fiche d'une histoire flash (1 image = 1 histoire) ===== -->
+<div class="modal-bg" id="fl-bg">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="fl-title">
+    <div class="modal-head">
+        <h3 id="fl-title">Nouvelle histoire flash</h3>
+        <button class="x" id="fl-close" data-tip="Fermer">×</button>
+    </div>
+    <div class="modal-body">
+        <div class="ed-state" id="fl-state" hidden></div>
+        <div class="fl-form">
+            <div class="fl-pick" id="fl-pick" tabindex="0" role="button" aria-label="Choisir l'image">
+                <img id="fl-preview" alt="" hidden>
+                <div class="fl-pick-txt" id="fl-pick-txt">⚡<br>Glisse ton image ici<br>ou <b>clique pour la choisir</b><br><small>JPEG, PNG ou WebP</small></div>
+            </div>
+            <input type="file" id="fl-file" accept="image/jpeg,image/png,image/webp" hidden>
+            <div class="fl-fields">
+                <label class="f">Titre
+                    <input id="fl-titre" maxlength="120" placeholder="Le ver qui n'avait pas faim">
+                </label>
+                <div class="row">
+                    <label class="f">Date du moment
+                        <input id="fl-date" type="date">
+                    </label>
+                    <label class="f">Lieu / activité
+                        <select id="fl-lieu"></select>
+                    </label>
+                </div>
+                <label class="f">Personnages <small>facultatif — séparés par des virgules</small>
+                    <input id="fl-persos" placeholder="Lorhelyne, Frya…">
+                </label>
+                <div class="row">
+                    <label class="f">Série <small>facultatif — coulisses d'une série</small>
+                        <select id="fl-serie"></select>
+                    </label>
+                    <label class="f" id="fl-serie-nouv-wrap" hidden>Nom de la nouvelle série
+                        <input id="fl-serie-nouv" maxlength="80" placeholder="Le Sable Rose">
+                    </label>
+                </div>
+                <label class="f">Description <small>ce qui s'est passé : dans six mois, on doit encore comprendre</small>
+                    <textarea id="fl-desc" maxlength="4000" placeholder="On venait de poser la moissonneuse quand…"></textarea>
+                </label>
+            </div>
+        </div>
+        <ul class="fl-check" id="fl-check" aria-live="polite"></ul>
+    </div>
+    <div class="modal-foot">
+        <button class="btn danger" id="fl-del" hidden>Supprimer</button>
+        <span class="msg" id="fl-msg"></span>
+        <button class="btn gold" id="fl-save" disabled>⚡ Publier</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Visionneuse des histoires flash ===== -->
+<div class="fv" id="fv" aria-hidden="true">
+    <div class="fv-img">
+        <img id="fv-img" alt="">
+        <button class="fv-nav prev" id="fv-prev" aria-label="Flash précédente">‹</button>
+        <button class="fv-nav next" id="fv-next" aria-label="Flash suivante">›</button>
+    </div>
+    <aside class="fv-side" id="fv-side"></aside>
+    <button class="r-btn fv-close" id="fv-close" data-tip="Fermer (Échap)">✕</button>
+</div>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<!-- ===== Lecteur BD ===== -->
+<div class="reader" id="reader" aria-hidden="true">
+    <div class="r-top">
+        <div class="r-title"><span class="ep-tag" id="r-ep"></span><span class="name" id="r-name"></span></div>
+        <span class="r-count" id="r-count"></span>
+        <button class="r-btn" id="r-mode" data-tip="Basculer entre page par page et lecture continue (C)">
+            <svg viewBox="0 0 24 24"><path d="M4 4h16v2H4zm0 4h16v12H4zm2 2v8h12v-8z"/></svg><span class="r-label" id="r-mode-l">Continu</span>
+        </button>
+        <button class="r-btn" id="r-zoom" data-tip="Ajuster à la largeur pour lire les petits textes (Z)">
+            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zm.5-7H9v2H7v1h2v2h1v-2h2V9h-2z"/></svg><span class="r-label">Zoom</span>
+        </button>
+        <button class="r-btn" id="r-story-b" data-tip="Afficher le récit de la soirée (R)">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg><span class="r-label">Récit</span>
+        </button>
+        <button class="r-btn" id="r-full" data-tip="Plein écran (F)">
+            <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+        </button>
+        <button class="r-btn" id="r-close" data-tip="Fermer (Échap)">✕</button>
+    </div>
+    <div class="r-main">
+        <div class="r-stage" id="r-stage">
+            <div class="r-page"><img id="r-img" alt=""></div>
+            <div class="r-zone prev" id="r-zprev"></div>
+            <div class="r-zone next" id="r-znext"></div>
+            <button class="r-arrow prev" id="r-prev" aria-label="Planche précédente">‹</button>
+            <button class="r-arrow next" id="r-next" aria-label="Planche suivante">›</button>
+            <div class="r-scroll" id="r-scroll"></div>
+            <div class="r-end" id="r-end"></div>
+            <div class="r-help gone" id="r-help"></div>
+        </div>
+        <aside class="r-story" id="r-story"></aside>
+    </div>
+    <div class="r-strip" id="r-strip"></div>
+</div>
+
+<script>
+(function () {
+'use strict';
+
+var API = 'bd_api.php';
+var albums = [];          // histoires visibles, dans l'ordre de la saga
+var isAdmin = false;      // seuls les admins valident (décision de l'utilisateur)
+var maxBrouillons = 3;
+var filtre = '';          // personnage sélectionné
+var SERIES = [];          // séries visibles : {id, nom, publiees}
+var serieFiltre = '';     // série sélectionnée dans la bibliothèque
+var onglet = 'biblio';    // biblio | flash | miennes | valider
+try { if (/^(biblio|flash|miennes|valider)$/.test(sessionStorage.getItem('bd_tab'))) onglet = sessionStorage.getItem('bd_tab'); } catch (e) {}
+
+// ------------------------------------------------------------ utilitaires
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function dateFr(d) {
+    if (!d) return '';
+    var x = new Date(d + 'T12:00:00');
+    return isNaN(x) ? d : x.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+}
+function api(action, opts) {
+    opts = opts || {};
+    var url = API + '?action=' + action + (opts.query || '');
+    var init = { credentials: 'same-origin' };
+    if (opts.body instanceof FormData) { init.method = 'POST'; init.body = opts.body; }
+    else if (opts.body) { init.method = 'POST'; init.headers = { 'Content-Type': 'application/json' }; init.body = JSON.stringify(opts.body); }
+    return fetch(url, init).then(function (r) {
+        // nginx refuse un corps trop gros AVANT PHP : pas de JSON dans ce cas.
+        if (r.status === 413) throw new Error("Image refusée par le serveur (trop lourde pour nginx : client_max_body_size).");
+        return r.text().then(function (t) {
+            var j; try { j = JSON.parse(t); } catch (e) { throw new Error('Réponse inattendue du serveur (' + r.status + ').'); }
+            if (!j.ok) throw new Error(j.error || 'Erreur inconnue.');
+            return j;
+        });
+    });
+}
+
+// Résultat de l'annonce Discord renvoyé par une publication (bd_annonce_id côté PHP).
+// La publication réussit même si Discord refuse : on le dit, sans bloquer.
+function annonceTxt(j) {
+    if (!j) return '';
+    if (j.annonce === 'ok') return ' Annonce postée sur Discord.';
+    if (j.annonce_erreur) return ' ⚠ Annonce Discord non envoyée : ' + j.annonce_erreur + '.';
+    return '';
+}
+function toast(t, err) {
+    var el = $('toast');
+    el.textContent = t; el.className = 'toast' + (err ? ' err' : ''); el.hidden = false;
+    clearTimeout(toast.t); toast.t = setTimeout(function () { el.hidden = true; }, err ? 9000 : 5000);
+}
+
+// Progression de lecture : confort propre à chaque lecteur, rien de plus.
+var PKEY = 'bd_progress';
+function progLoad() { try { return JSON.parse(localStorage.getItem(PKEY)) || {}; } catch (e) { return {}; } }
+function progSave(id, page, total) {
+    try {
+        var p = progLoad(), cur = p[id] || {};
+        p[id] = { p: page, max: Math.max(cur.max || 0, page), n: total, lu: cur.lu || page >= total - 1 };
+        localStorage.setItem(PKEY, JSON.stringify(p));
+    } catch (e) { /* stockage indisponible : on lit sans mémoire */ }
+}
+
+// ------------------------------------------------------------ bibliothèque
+function load() {
+    // Aperçu joueur (bouton d'auth-guard.js) : le serveur répond comme à un joueur.
+    var apercu = false;
+    try { apercu = localStorage.getItem('previewPlayer') === '1'; } catch (e) {}
+    return api('list', { query: apercu ? '&apercu=1' : '' }).then(function (j) {
+        albums = j.albums || [];
+        isAdmin = !!j.est_admin;
+        maxBrouillons = j.max_brouillons || 3;
+        LIEUX = j.lieux || {};
+        SERIES = j.series || [];
+        render();
+        return albums;
+    }).catch(function (e) {
+        $('status').textContent = 'Impossible de charger les histoires : ' + e.message;
+        $('status').hidden = false;
+    });
+}
+
+function cover(a) { return a.pages && a.pages.length ? a.pages[0].thumb : ''; }
+
+// « 📚 Le Sable Rose · Partie 2 » (BD publiée), « · coulisses » (flash), nom seul sinon.
+function serieTxt(a) {
+    if (!a.serie_nom) return '';
+    return '📚 ' + a.serie_nom + (a.partie ? ' · Partie ' + a.partie : a.type === 'flash' ? ' · coulisses' : '');
+}
+// Liste déroulante de série (éditeur BD : prefix 'f', fiche flash : 'fl').
+var NOUV = '__nouvelle';
+function fillSerie(prefix, valeur) {
+    var sel = $(prefix + '-serie');
+    sel.innerHTML = '<option value="">— Aucune (histoire isolée) —</option>' +
+        SERIES.map(function (se) { return '<option value="' + esc(se.id) + '">' + esc(se.nom) + '</option>'; }).join('') +
+        '<option value="' + NOUV + '">＋ Nouvelle série…</option>';
+    sel.value = valeur && SERIES.some(function (se) { return se.id === valeur; }) ? valeur : '';
+    $(prefix + '-serie-nouv').value = '';
+    $(prefix + '-serie-nouv-wrap').hidden = true;
+}
+function serieChamps(prefix) {
+    var v = $(prefix + '-serie').value;
+    return v === NOUV ? { serie: '', serie_nouvelle: $(prefix + '-serie-nouv').value.trim() } : { serie: v, serie_nouvelle: '' };
+}
+['f', 'fl'].forEach(function (prefix) {
+    $(prefix + '-serie').addEventListener('change', function () {
+        var nouv = this.value === NOUV;
+        $(prefix + '-serie-nouv-wrap').hidden = !nouv;
+        if (nouv) $(prefix + '-serie-nouv').focus();
+    });
+});
+function publiees() { return albums.filter(function (a) { return a.statut === 'publie' && a.type !== 'flash'; }); }
+function miennes() { return albums.filter(function (a) { return a.mien; }); }
+function aValider() { return albums.filter(function (a) { return a.statut === 'soumis'; }); }
+
+// Badge d'état d'une histoire, tel que l'auteur et les admins le voient.
+function badge(a) {
+    if (a.type === 'flash' && a.statut === 'publie') return '<span class="ep-num flash">⚡ Flash</span>';
+    if (a.statut === 'publie') return '<span class="ep-num">Épisode ' + a.numero + '</span>';
+    if (a.statut === 'soumis') return '<span class="ep-num wait">En attente</span>';
+    if (a.motif_renvoi) return '<span class="ep-num back">À revoir</span>';
+    return '<span class="ep-num draft">Brouillon</span>';
+}
+
+function render() {
+    var mine = miennes(), todo = aValider();
+    // Onglets : « À valider » n'existe que pour les admins.
+    document.querySelector('[data-tab=valider]').hidden = !isAdmin;
+    if (onglet === 'valider' && !isAdmin) onglet = 'biblio';
+    $('cnt-miennes').textContent = mine.length || '';
+    $('cnt-valider').textContent = todo.length || '';
+    document.querySelectorAll('.bd-tab').forEach(function (b) { b.classList.toggle('on', b.dataset.tab === onglet); });
+    $('btn-new').textContent = onglet === 'flash' ? '⚡ Nouvelle flash' : '＋ Nouvelle histoire';
+    $('grid').className = onglet === 'flash' ? 'fl-grid' : 'bd-grid';
+    if (onglet === 'flash') { renderFlash(); return; }
+
+    var base = onglet === 'miennes' ? mine : onglet === 'valider' ? todo : publiees();
+
+    // Filtres (bibliothèque seulement) : séries, puis personnages.
+    var persos = {};
+    if (onglet === 'biblio') base.forEach(function (a) { (a.personnages || []).forEach(function (p) { persos[p] = (persos[p] || 0) + 1; }); });
+    var noms = Object.keys(persos).sort(function (x, y) { return persos[y] - persos[x] || x.localeCompare(y, 'fr'); });
+    if (filtre && !persos[filtre]) filtre = '';
+    var series = onglet === 'biblio' ? SERIES.filter(function (se) { return se.publiees > 0; }) : [];
+    if (serieFiltre && !series.some(function (se) { return se.id === serieFiltre; })) serieFiltre = '';
+    var chips = '';
+    if (series.length) {
+        chips += '<span class="lbl">Séries</span><button class="chip' + (serieFiltre ? '' : ' on') + '" data-s="">Toute la saga</button>' +
+            series.map(function (se) { return '<button class="chip' + (serieFiltre === se.id ? ' on' : '') + '" data-s="' + esc(se.id) + '">' + esc(se.nom) + ' (' + se.publiees + ')</button>'; }).join('');
+    }
+    if (noms.length >= 2) {
+        chips += (chips ? '<span class="sep"></span>' : '') +
+            '<span class="lbl">Personnages</span><button class="chip' + (filtre ? '' : ' on') + '" data-p="">Tout le monde</button>' +
+            noms.map(function (n) { return '<button class="chip' + (filtre === n ? ' on' : '') + '" data-p="' + esc(n) + '">' + esc(n) + '</button>'; }).join('');
+    }
+    // Admins : renommer / fusionner la série sélectionnée.
+    var cur = serieFiltre && SERIES.filter(function (se) { return se.id === serieFiltre; })[0];
+    if (cur && isAdmin) {
+        chips += '<div class="serie-admin">Série <b>« ' + esc(cur.nom) + ' »</b> :' +
+            '<button class="btn ghost" data-sa="renommer" style="padding:4px 10px;font-size:.9em">Renommer</button>' +
+            '<select data-sa="fusionner"><option value="">Fusionner dans…</option>' +
+            SERIES.filter(function (se) { return se.id !== cur.id; }).map(function (se) { return '<option value="' + esc(se.id) + '">' + esc(se.nom) + '</option>'; }).join('') +
+            '</select></div>';
+    }
+    $('chips').innerHTML = chips;
+
+    var prog = progLoad();
+    var vis = base.filter(function (a) {
+        return (!filtre || (a.personnages || []).indexOf(filtre) >= 0) && (!serieFiltre || a.serie === serieFiltre);
+    });
+    // Une série se lit dans l'ordre (partie 1 d'abord). Bibliothèque : le plus récent en
+    // premier. À valider : le plus ancien soumis d'abord.
+    if (onglet === 'valider') vis = vis.slice().sort(function (x, y) { return (x.soumis_le || '') < (y.soumis_le || '') ? -1 : 1; });
+    else if (!serieFiltre) vis = vis.slice().reverse();
+
+    $('status').hidden = true;
+    if (!vis.length) {
+        var vide = {
+            biblio:  ['Aucune histoire n\'a encore été contée', 'Ta soirée mérite peut-être d\'être la première : bouton « Nouvelle histoire ».'],
+            miennes: ['Tu n\'as encore rien raconté', 'Crée une histoire, ajoute tes planches, puis soumets-la : un admin la relira avant de l\'ajouter à la saga.'],
+            valider: ['Rien à valider', 'Aucune histoire n\'attend de relecture.']
+        }[onglet];
+        $('grid').innerHTML = filtre ? '<div class="bd-status" style="grid-column:1/-1">Aucune histoire avec ce personnage.</div>'
+            : '<div class="bd-empty" style="grid-column:1/-1"><div class="big">' + vide[0] + '</div>' + vide[1] + '</div>';
+        return;
+    }
+    var now = Date.now();
+    $('grid').innerHTML = vis.map(function (a) {
+        var n = (a.pages || []).length, pr = prog[a.id], c = cover(a), pub = a.statut === 'publie';
+        var recent = pub && a.publie_le && (now - new Date(a.publie_le).getTime()) < 14 * 864e5 && !pr;
+        var pct = pub && pr && n ? Math.round(100 * Math.min(n, (pr.max || 0) + 1) / n) : 0;
+        var etat = a.type === 'flash' ? esc(lieuLabel(a.lieu)) : !n ? 'aucune planche' : pub && pr && pr.lu ? '<b>Lu ✓</b>' : pub && pr ? '<b>Reprendre p. ' + (pr.p + 1) + '</b>' : n + ' planche' + (n > 1 ? 's' : '');
+        // Bouton d'action : « Examiner » pour l'admin sur l'histoire soumise d'un autre.
+        var act = '';
+        if (a.peut_modifier) act = (isAdmin && a.statut === 'soumis' && !a.mien) ? '🔍 Examiner' : '✎ Modifier';
+        else if (a.mien && a.statut === 'soumis') act = '⏳ Voir';
+        return '<article class="ep" tabindex="0" data-id="' + esc(a.id) + '" aria-label="' + esc(a.titre) + '">' +
+            '<div class="ep-cover">' +
+                (c ? '<img src="' + esc(c) + '" alt="" loading="lazy">' : '<div class="empty">Pas encore de planche</div>') +
+                badge(a) +
+                (recent ? '<span class="ep-new">Nouveau</span>' : '') +
+                (pct ? '<div class="ep-bar"><i style="width:' + pct + '%"></i></div>' : '') +
+                (act ? '<button class="ep-edit" data-edit="' + esc(a.id) + '">' + act + '</button>' : '') +
+            '</div>' +
+            '<div class="ep-info"><h3>' + esc(a.titre) + '</h3>' +
+                (a.sous_titre ? '<div class="sub">' + esc(a.sous_titre) + '</div>' : '') +
+                (a.serie_nom ? '<div class="serie">' + esc(serieTxt(a)) + '</div>' : '') +
+                (a.createur && !a.mien ? '<div class="by">Racontée par ' + esc(a.createur) + '</div>' : '') +
+                (a.mien && a.motif_renvoi && a.statut === 'brouillon' ? '<div class="ep-motif"><b>À revoir :</b> ' + esc(a.motif_renvoi) + '</div>' : '') +
+                '<div class="meta"><span>' + esc(dateFr(a.date)) + '</span><span>' + etat + '</span></div>' +
+            '</div>' +
+        '</article>';
+    }).join('');
+}
+
+$('tabs').addEventListener('click', function (e) {
+    var b = e.target.closest('.bd-tab'); if (!b) return;
+    onglet = b.dataset.tab; filtre = ''; lieuFiltre = ''; serieFiltre = '';
+    try { sessionStorage.setItem('bd_tab', onglet); } catch (er) {}
+    render();
+});
+$('chips').addEventListener('click', function (e) {
+    var sa = e.target.closest('[data-sa=renommer]');
+    if (sa) {
+        var se = SERIES.filter(function (x) { return x.id === serieFiltre; })[0];
+        var nom = se && prompt('Nouveau nom de la série :', se.nom);
+        if (!nom || !nom.trim() || nom.trim() === se.nom) return;
+        api('serie_renommer', { body: { id: se.id, nom: nom.trim() } }).then(load).catch(function (er) { alert(er.message); });
+        return;
+    }
+    var b = e.target.closest('.chip'); if (!b) return;
+    if (b.dataset.l !== undefined) lieuFiltre = b.dataset.l;
+    else if (b.dataset.s !== undefined) serieFiltre = b.dataset.s;
+    else filtre = b.dataset.p;
+    render();
+});
+$('chips').addEventListener('change', function (e) {
+    if (!e.target.matches('[data-sa=fusionner]') || !e.target.value) return;
+    var src = SERIES.filter(function (x) { return x.id === serieFiltre; })[0];
+    var dst = SERIES.filter(function (x) { return x.id === e.target.value; })[0];
+    if (!src || !dst || !confirm('Fusionner « ' + src.nom + ' » dans « ' + dst.nom + ' » ?\nToutes ses histoires rejoignent « ' + dst.nom + ' », et « ' + src.nom + ' » disparaît.')) { e.target.value = ''; return; }
+    api('serie_fusionner', { body: { source: src.id, cible: dst.id } }).then(function () { serieFiltre = dst.id; return load(); })
+        .catch(function (er) { alert(er.message); e.target.value = ''; });
+});
+$('grid').addEventListener('click', function (e) {
+    var fi = e.target.closest('.fl-item');
+    if (fi) { openViewer(fi.dataset.flash); return; }
+    var edb = e.target.closest('[data-edit]');
+    if (edb) {
+        e.stopPropagation();
+        var x = byId(edb.dataset.edit);
+        if (x && x.type === 'flash') openFlash(x.id); else openEditor(edb.dataset.edit);
+        return;
+    }
+    var card = e.target.closest('.ep'); if (!card) return;
+    var a = byId(card.dataset.id);
+    if (!a) return;
+    if (a.type === 'flash') { if (a.statut === 'publie') openViewer(a.id); else openFlash(a.id); return; }
+    // Une histoire non publiée s'ouvre dans l'éditeur (statut, motif, actions) ; on la lit par « Aperçu ».
+    if (a.statut !== 'publie' || !(a.pages || []).length) { if (a.mien || isAdmin) openEditor(a.id); return; }
+    var pr = progLoad()[a.id];
+    openReader(a.id, pr && !pr.lu ? pr.p : 0);
+});
+$('grid').addEventListener('keydown', function (e) {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('ep')) { e.preventDefault(); e.target.click(); }
+});
+function byId(id) { for (var i = 0; i < albums.length; i++) if (albums[i].id === id) return albums[i]; return null; }
+
+// ------------------------------------------------------------ éditeur
+var ed = null; // histoire en cours d'édition (copie locale)
+
+$('btn-new').addEventListener('click', function () {
+    if (onglet === 'flash') { openFlash(null); return; }
+    var enCours = miennes().filter(function (a) { return a.statut !== 'publie'; }).length;
+    if (!isAdmin && enCours >= maxBrouillons) {
+        alert('Tu as déjà ' + maxBrouillons + ' histoires en cours (brouillon ou en attente). Termine ou supprime l\'une d\'elles avant d\'en commencer une autre.');
+        onglet = 'miennes'; render(); return;
+    }
+    openEditor(null);
+});
+$('ed-close').addEventListener('click', closeEditor);
+$('ed-bg').addEventListener('mousedown', function (e) { if (e.target === this) closeEditor(); });
+
+function openEditor(id) {
+    var a = id ? byId(id) : null;
+    ed = a ? JSON.parse(JSON.stringify(a)) : { id: '', titre: '', sous_titre: '', date: new Date().toISOString().slice(0, 10), recit: '', personnages: [], statut: 'brouillon', pages: [], mien: true, peut_modifier: true, peut_supprimer: true };
+    $('f-titre').value = ed.titre;
+    $('f-sous').value = ed.sous_titre || '';
+    $('f-date').value = ed.date || '';
+    $('f-persos').value = (ed.personnages || []).join(', ');
+    $('f-recit').value = ed.recit || '';
+    fillSerie('f', ed.serie || '');
+    $('queue').innerHTML = '';
+    $('ed-renvoi').hidden = true;
+    edMsg('');
+    renderEditor();
+    $('ed-bg').classList.add('open');
+    if (ed.peut_modifier) setTimeout(function () { $('f-titre').focus(); }, 30);
+}
+function closeEditor() {
+    if (uploading) { edMsg('Envoi en cours, patiente jusqu\'à la fin.', true); return; }
+    $('ed-bg').classList.remove('open');
+    ed = null;
+}
+function edMsg(t, err) { var m = $('ed-msg'); m.textContent = t; m.className = 'msg' + (err ? ' err' : ''); }
+
+// Bandeau d'état + boutons selon le statut et le rôle.
+function renderEditor() {
+    var has = !!ed.id, st = ed.statut, lock = has && !ed.peut_modifier;
+    $('ed-title').textContent = !has ? 'Nouvelle histoire' : lock ? ed.titre : (isAdmin && !ed.mien && st === 'soumis' ? 'Relecture' : 'Modifier l\'histoire');
+    document.querySelector('.modal').classList.toggle('locked', lock);
+    ['f-titre', 'f-sous', 'f-date', 'f-persos', 'f-recit', 'f-serie-nouv'].forEach(function (k) { $(k).readOnly = lock; });
+    $('f-serie').disabled = lock;
+
+    var box = $('ed-state'), html = '', cls = '';
+    if (!has) {
+        html = isAdmin ? 'Tu es admin : tu pourras publier directement une fois les planches en place.'
+                       : 'Ton histoire reste <b>privée</b> tant que tu ne la soumets pas. Un admin la relira, puis l\'ajoutera à la saga.';
+    } else if (st === 'brouillon' && ed.motif_renvoi) {
+        cls = 'back';
+        html = '<b>Renvoyée par ' + esc(ed.renvoye_par || 'un admin') + '</b> — corrige puis soumets-la de nouveau.<span class="motif">« ' + esc(ed.motif_renvoi) + ' »</span>';
+    } else if (st === 'brouillon') {
+        html = ed.mien && !isAdmin ? '<b>Brouillon</b> — visible de toi seul. Ajoute tes planches, puis « Soumettre à validation ».' : '<b>Brouillon</b> — visible de toi seul.';
+    } else if (st === 'soumis') {
+        cls = 'wait';
+        html = ed.mien && !isAdmin ? '<b>En attente de validation</b> — un admin va la relire. Pour la retoucher, annule la soumission.'
+                                   : '<b>Soumise par ' + esc(ed.createur || '?') + '</b>' + (ed.soumis_le ? ' le ' + esc(dateFr(ed.soumis_le.slice(0, 10))) : '') + ' — lis-la avec « Aperçu », puis publie-la ou renvoie-la avec un motif.';
+    } else if (st === 'publie') {
+        cls = 'pub';
+        html = '<b>Publiée — Épisode ' + ed.numero + '</b>' + (ed.publie_par ? ', validée par ' + esc(ed.publie_par) : '') + '.' +
+               (isAdmin ? ' Tu peux la retoucher ; « Dépublier… » la renvoie à son auteur.' : ' Elle est verrouillée : demande à un admin pour toute correction.');
+    }
+    box.className = 'ed-state' + (cls ? ' ' + cls : '');
+    box.innerHTML = html; box.hidden = !html;
+
+    $('ed-save').hidden = lock;
+    $('ed-save').textContent = has ? 'Enregistrer' : 'Créer le brouillon';
+    $('ed-del').hidden = !(has && ed.peut_supprimer);
+    $('ed-submit').hidden = !(has && st === 'brouillon' && ed.mien && !isAdmin);
+    $('ed-retract').hidden = !(has && st === 'soumis' && ed.mien);
+    $('ed-publish').hidden = !(has && isAdmin && st !== 'publie');
+    $('ed-return').hidden = !(has && isAdmin && st !== 'brouillon');
+    $('ed-return').textContent = st === 'publie' ? 'Dépublier…' : 'Renvoyer…';
+    $('ed-announce').hidden = !(has && isAdmin && st === 'publie' && !ed.annonce_le);
+    renderPages();
+}
+
+function renderPages() {
+    var has = !!ed.id;
+    $('drop').classList.toggle('off', !has);
+    $('pg-hint').textContent = has ? 'glisser-déposer pour réordonner · la première sert de couverture' : 'enregistre l\'histoire pour pouvoir ajouter ses planches';
+    $('ed-preview').hidden = !(has && ed.pages.length);
+    var n = ed.pages.length;
+    $('pages').innerHTML = ed.pages.map(function (p, i) {
+        return '<div class="pg" draggable="' + (ed.peut_modifier ? 'true' : 'false') + '" data-i="' + i + '">' +
+            '<img src="' + esc(p.thumb) + '" alt="Planche ' + (i + 1) + '"><span class="n">' + (i + 1) + '</span>' +
+            '<div class="acts">' +
+                '<button data-mv="-1" data-tip="Avancer"' + (i ? '' : ' disabled') + '>◀</button>' +
+                '<button data-view data-tip="Lire depuis cette planche">👁</button>' +
+                '<button class="del" data-del data-tip="Retirer cette planche">✕</button>' +
+                '<button data-mv="1" data-tip="Reculer"' + (i < n - 1 ? '' : ' disabled') + '>▶</button>' +
+            '</div></div>';
+    }).join('');
+}
+
+function formData() {
+    return {
+        id: ed.id,
+        titre: $('f-titre').value.trim(),
+        sous_titre: $('f-sous').value.trim(),
+        date: $('f-date').value,
+        personnages: $('f-persos').value.split(',').map(function (s) { return s.trim(); }).filter(Boolean),
+        recit: $('f-recit').value,
+        serie: serieChamps('f').serie,
+        serie_nouvelle: serieChamps('f').serie_nouvelle
+    };
+}
+
+// Recharge la liste puis remet l'éditeur sur l'histoire id (fermé si elle n'est plus visible).
+function refresh(id, msg) {
+    return load().then(function () {
+        var a = byId(id);
+        if (!a) { closeEditor(); return; }
+        ed = JSON.parse(JSON.stringify(a));
+        fillSerie('f', ed.serie || ''); // une « Nouvelle série » tapée devient la série choisie
+        renderEditor();
+        if (msg) edMsg(msg);
+    });
+}
+function saveText() {
+    var d = formData();
+    if (!d.titre) { $('f-titre').focus(); return Promise.reject(new Error('Il faut un titre.')); }
+    if ($('f-serie').value === NOUV && !d.serie_nouvelle) { $('f-serie-nouv').focus(); return Promise.reject(new Error('Donne un nom à la nouvelle série.')); }
+    return api('save', { body: d }).then(function (j) { ed.id = j.id; return j.id; });
+}
+
+$('ed-save').addEventListener('click', function () {
+    var creation = !ed.id, b = this;
+    b.disabled = true; edMsg('Enregistrement…');
+    saveText().then(function (id) {
+        return refresh(id, creation ? 'Brouillon créé : ajoute maintenant les planches.' : 'Enregistré.');
+    }).catch(function (e) { edMsg(e.message, true); })
+      .then(function () { b.disabled = false; });
+});
+
+// Transitions : on enregistre d'abord le texte en cours (sauf si verrouillé).
+function transition(action, okMsg, btn) {
+    btn.disabled = true; edMsg('…');
+    var pre = ed.peut_modifier ? saveText() : Promise.resolve(ed.id);
+    return pre.then(function (id) { return api(action, { body: { id: id } }).then(function (j) { return [id, j]; }); })
+        .then(function (r) { return refresh(r[0], typeof okMsg === 'function' ? okMsg(r[1]) : okMsg); })
+        .catch(function (e) { edMsg(e.message, true); })
+        .then(function () { btn.disabled = false; });
+}
+$('ed-submit').addEventListener('click', function () {
+    if (!ed.pages.length) { edMsg('Ajoute au moins une planche avant de soumettre.', true); return; }
+    transition('soumettre', 'Soumise ! Un admin va la relire — suis son statut dans « Mes histoires ».', this);
+});
+$('ed-retract').addEventListener('click', function () {
+    transition('retirer', 'Soumission annulée : tu peux de nouveau la modifier.', this);
+});
+$('ed-publish').addEventListener('click', function () {
+    if (!ed.pages.length) { edMsg('Impossible de publier une histoire sans planche.', true); return; }
+    if (!confirm('Publier « ' + ($('f-titre').value || ed.titre) + ' » pour toute la guilde ?')) return;
+    transition('publier', function (j) { return 'Publiée : elle est dans la bibliothèque.' + annonceTxt(j); }, this);
+});
+$('ed-announce').addEventListener('click', function () {
+    var id = ed.id, b = this;
+    b.disabled = true; edMsg('Annonce en cours…');
+    api('annoncer', { body: { id: id } }).then(function () { return refresh(id, 'Annonce postée sur Discord.'); })
+        .catch(function (e) { edMsg(e.message, true); })
+        .then(function () { b.disabled = false; });
+});
+$('ed-return').addEventListener('click', function () {
+    $('ed-renvoi').hidden = false; $('f-motif').value = ''; $('f-motif').focus();
+});
+$('renvoi-annuler').addEventListener('click', function () { $('ed-renvoi').hidden = true; });
+$('renvoi-ok').addEventListener('click', function () {
+    var motif = $('f-motif').value.trim();
+    if (!motif) { $('f-motif').focus(); edMsg('Indique à l\'auteur ce qu\'il doit revoir.', true); return; }
+    var id = ed.id, b = this;
+    b.disabled = true;
+    api('renvoyer', { body: { id: id, motif: motif } }).then(function () {
+        $('ed-renvoi').hidden = true;
+        // L'histoire redevient un brouillon privé : l'admin ne la voit plus (sauf la sienne).
+        return refresh(id, 'Renvoyée à son auteur avec ton motif.');
+    }).then(function () { if (!ed) alert('Histoire renvoyée à son auteur : il verra ton motif dans « Mes histoires ».'); })
+      .catch(function (e) { edMsg(e.message, true); })
+      .then(function () { b.disabled = false; });
+});
+
+$('ed-del').addEventListener('click', function () {
+    if (!ed || !ed.id) return;
+    if (!confirm('Supprimer définitivement « ' + ed.titre + ' » et ses ' + ed.pages.length + ' planche(s) ?')) return;
+    api('delete', { body: { id: ed.id } }).then(function () { ed = null; $('ed-bg').classList.remove('open'); load(); })
+        .catch(function (e) { edMsg(e.message, true); });
+});
+$('ed-preview').addEventListener('click', function () { if (ed && ed.id) openReader(ed.id, 0); });
+
+// Actions sur les vignettes : déplacer, voir, retirer
+$('pages').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b || b.disabled) return;
+    var i = +b.closest('.pg').dataset.i;
+    if ('view' in b.dataset) { openReader(ed.id, i); return; }
+    if (!ed.peut_modifier) return;
+    if (b.dataset.mv) { move(i, i + (+b.dataset.mv)); return; }
+    if ('del' in b.dataset) {
+        if (!confirm('Retirer la planche ' + (i + 1) + ' ?')) return;
+        api('delete_page', { body: { id: ed.id, page: ed.pages[i].id } }).then(function () {
+            ed.pages.splice(i, 1); renderPages(); syncAlbum(); edMsg('Planche retirée.');
+        }).catch(function (er) { edMsg(er.message, true); });
+    }
+});
+
+// Glisser-déposer pour réordonner
+var dragFrom = null;
+$('pages').addEventListener('dragstart', function (e) {
+    var pg = e.target.closest('.pg'); if (!pg || !ed.peut_modifier) return;
+    dragFrom = +pg.dataset.i; pg.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    try { e.dataTransfer.setData('text/plain', 'pg'); } catch (er) {}
+});
+$('pages').addEventListener('dragover', function (e) {
+    if (dragFrom === null) return;
+    var pg = e.target.closest('.pg'); if (!pg) return;
+    e.preventDefault();
+    document.querySelectorAll('.pg.target').forEach(function (x) { x.classList.remove('target'); });
+    pg.classList.add('target');
+});
+$('pages').addEventListener('drop', function (e) {
+    if (dragFrom === null) return;
+    var pg = e.target.closest('.pg'); if (!pg) return;
+    e.preventDefault(); e.stopPropagation();
+    var to = +pg.dataset.i, from = dragFrom; dragFrom = null;
+    if (from !== to) move(from, to); else renderPages();
+});
+$('pages').addEventListener('dragend', function () {
+    dragFrom = null;
+    document.querySelectorAll('.pg').forEach(function (x) { x.classList.remove('dragging', 'target'); });
+});
+
+function move(from, to) {
+    if (to < 0 || to >= ed.pages.length) return;
+    var before = ed.pages.slice();
+    var p = ed.pages.splice(from, 1)[0]; ed.pages.splice(to, 0, p);
+    renderPages();
+    api('reorder', { body: { id: ed.id, ordre: ed.pages.map(function (x) { return x.id; }) } })
+        .then(function () { syncAlbum(); edMsg('Ordre enregistré.'); })
+        .catch(function (e) { ed.pages = before; renderPages(); edMsg(e.message, true); });
+}
+// Reporte les planches de l'éditeur dans la bibliothèque sans tout recharger.
+function syncAlbum() {
+    var a = ed && byId(ed.id);
+    if (a) { a.pages = JSON.parse(JSON.stringify(ed.pages)); render(); }
+}
+
+// ---- Envoi des planches
+var drop = $('drop'), uploading = false;
+drop.addEventListener('click', function () { $('file').click(); });
+drop.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('file').click(); } });
+drop.addEventListener('dragover', function (e) { if (dragFrom !== null) return; e.preventDefault(); drop.classList.add('over'); });
+drop.addEventListener('dragleave', function () { drop.classList.remove('over'); });
+drop.addEventListener('drop', function (e) {
+    if (dragFrom !== null) return;
+    e.preventDefault(); drop.classList.remove('over');
+    enqueue(e.dataTransfer.files);
+});
+$('file').addEventListener('change', function () { enqueue(this.files); this.value = ''; });
+
+function enqueue(fileList) {
+    if (!ed || !ed.id || uploading || !ed.peut_modifier) return;
+    var files = Array.prototype.filter.call(fileList, function (f) { return /^image\/(jpeg|png|webp)$/.test(f.type); });
+    if (!files.length) { edMsg('Aucune image JPEG, PNG ou WebP dans la sélection.', true); return; }
+    // Ordre « naturel » des noms : page2 avant page10.
+    files.sort(function (a, b) { return a.name.localeCompare(b.name, 'fr', { numeric: true, sensitivity: 'base' }); });
+    var q = $('queue');
+    q.innerHTML = files.map(function (f, i) { return '<div id="q' + i + '">⏳ ' + esc(f.name) + '</div>'; }).join('');
+    uploading = true; $('ed-save').disabled = true;
+    var albumId = ed.id, okCount = 0;
+    files.reduce(function (chain, f, i) {
+        return chain.then(function () {
+            var line = $('q' + i);
+            line.textContent = '⚙ ' + f.name + ' — préparation…';
+            return prepare(f).then(function (prep) {
+                line.textContent = '⬆ ' + f.name + ' — envoi (' + Math.round(prep.page.size / 1024) + ' Ko)…';
+                var fd = new FormData();
+                fd.append('page', prep.page, 'page.' + prep.ext);
+                fd.append('thumb', prep.thumb, 'thumb.' + prep.text);
+                return api('upload', { query: '&id=' + encodeURIComponent(albumId), body: fd });
+            }).then(function (j) {
+                okCount++;
+                line.className = 'ok'; line.textContent = '✔ ' + f.name;
+                if (ed && ed.id === albumId) { ed.pages.push(j.page); renderPages(); }
+            }).catch(function (e) {
+                line.className = 'err'; line.textContent = '✖ ' + f.name + ' — ' + e.message;
+            });
+        });
+    }, Promise.resolve()).then(function () {
+        uploading = false; $('ed-save').disabled = false;
+        syncAlbum();
+        if (ed) renderEditor();
+        edMsg(okCount + ' planche' + (okCount > 1 ? 's' : '') + ' ajoutée' + (okCount > 1 ? 's' : '') + '.' +
+              (ed && ed.statut === 'brouillon' && okCount ? (isAdmin ? ' « Publier » quand tout est prêt.' : ' « Soumettre à validation » quand tout est prêt.') : ''));
+    });
+}
+
+// Prépare une planche pour l'envoi : garde l'original s'il est assez léger,
+// sinon le réencode (WebP si le navigateur sait, JPEG sinon) sous ~880 Ko pour
+// tenir dans la limite par défaut de nginx (1 Mo pour TOUTE la requête).
+var PAGE_MAX = 880 * 1024, LONG_MAX = 2600, THUMB_W = 360;
+function loadImg(file) {
+    return new Promise(function (res, rej) {
+        var url = URL.createObjectURL(file), im = new Image();
+        im.onload = function () { res(im); };
+        im.onerror = function () { URL.revokeObjectURL(url); rej(new Error('image illisible')); };
+        im.src = url;
+    });
+}
+function encode(im, w, h, q) {
+    var cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+    var cx = cv.getContext('2d'); cx.imageSmoothingQuality = 'high'; cx.drawImage(im, 0, 0, w, h);
+    return new Promise(function (res) {
+        cv.toBlob(function (b) {
+            if (b && b.type === 'image/webp') return res(b);
+            cv.toBlob(function (j) { res(j); }, 'image/jpeg', q); // Safari ancien : pas d'encodeur WebP
+        }, 'image/webp', q);
+    });
+}
+function extOf(b) { return b.type === 'image/webp' ? 'webp' : b.type === 'image/png' ? 'png' : 'jpg'; }
+function prepare(file, thumbW) {
+    return loadImg(file).then(function (im) {
+        var W = im.naturalWidth, H = im.naturalHeight;
+        // Vignette plus large pour les flash : elles s'affichent en grand dans la galerie.
+        var tw = Math.min(thumbW || THUMB_W, W), th = Math.round(H * tw / W);
+        return encode(im, tw, th, 0.8).then(function (thumb) {
+            var keep = file.size <= PAGE_MAX && Math.max(W, H) <= LONG_MAX * 1.2;
+            if (keep) return { page: file, ext: extOf(file), thumb: thumb, text: extOf(thumb) };
+            var scale = Math.min(1, LONG_MAX / Math.max(W, H));
+            var tries = [0.9, 0.84, 0.78, 0.7], k = 0;
+            function attempt() {
+                var w = Math.round(W * scale), h = Math.round(H * scale);
+                return encode(im, w, h, tries[k]).then(function (b) {
+                    if (b.size <= PAGE_MAX) return b;
+                    if (++k >= tries.length) { k = 0; scale *= 0.85; }
+                    if (scale < 0.25) throw new Error('impossible de réduire l\'image sous 880 Ko');
+                    return attempt();
+                });
+            }
+            return attempt().then(function (page) { return { page: page, ext: extOf(page), thumb: thumb, text: extOf(thumb) }; });
+        }).then(function (r) { URL.revokeObjectURL(im.src); return r; });
+    });
+}
+
+// ------------------------------------------------------------ histoires flash
+// 1 image = 1 histoire. Publication directe d'une fiche COMPLÈTE (règle vérifiée
+// par le serveur, la page ne fait qu'afficher ce qui manque).
+var LIEUX = {};           // clé → libellé, fourni par l'API (source unique : BD_LIEUX)
+var lieuFiltre = '';
+var flashList = [];       // ordre de la galerie affichée, pour ← → dans la visionneuse
+
+function cleFlash(a) { return (a.date || '') + (a.cree_le || ''); }
+function flashes() {
+    return albums.filter(function (a) { return a.type === 'flash' && a.statut === 'publie'; })
+        .sort(function (x, y) { return cleFlash(y) < cleFlash(x) ? -1 : 1; }); // la plus récente d'abord
+}
+function lieuLabel(k) { return LIEUX[k] || ''; }
+function paras(t) {
+    return String(t || '').split(/\n+/).map(function (s) { return s.trim(); }).filter(Boolean)
+        .map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('');
+}
+
+function renderFlash() {
+    var all = flashes(), lieux = {}, persos = {};
+    all.forEach(function (a) {
+        if (a.lieu) lieux[a.lieu] = (lieux[a.lieu] || 0) + 1;
+        (a.personnages || []).forEach(function (p) { persos[p] = (persos[p] || 0) + 1; });
+    });
+    if (lieuFiltre && !lieux[lieuFiltre]) lieuFiltre = '';
+    if (filtre && !persos[filtre]) filtre = '';
+    var ordreLieux = Object.keys(LIEUX).filter(function (k) { return lieux[k]; });
+    var noms = Object.keys(persos).sort(function (x, y) { return persos[y] - persos[x] || x.localeCompare(y, 'fr'); });
+    $('chips').innerHTML =
+        (ordreLieux.length < 2 ? '' :
+            '<button class="chip' + (lieuFiltre ? '' : ' on') + '" data-l="">Tous les lieux</button>' +
+            ordreLieux.map(function (k) { return '<button class="chip' + (lieuFiltre === k ? ' on' : '') + '" data-l="' + esc(k) + '">' + esc(LIEUX[k]) + '</button>'; }).join('')) +
+        (noms.length < 2 ? '' :
+            (ordreLieux.length < 2 ? '' : '<span style="width:100%"></span>') +
+            '<button class="chip' + (filtre ? '' : ' on') + '" data-p="">Tout le monde</button>' +
+            noms.map(function (n) { return '<button class="chip' + (filtre === n ? ' on' : '') + '" data-p="' + esc(n) + '">' + esc(n) + '</button>'; }).join(''));
+
+    flashList = all.filter(function (a) {
+        return (!lieuFiltre || a.lieu === lieuFiltre) && (!filtre || (a.personnages || []).indexOf(filtre) >= 0);
+    });
+    $('status').hidden = true;
+    if (!flashList.length) {
+        $('grid').innerHTML = all.length ? '<div class="bd-status">Aucune flash avec ces filtres.</div>'
+            : '<div class="bd-empty"><div class="big">Aucune histoire flash pour l\'instant</div>Une image, quelques lignes pour raconter un moment : bouton « ⚡ Nouvelle flash ».</div>';
+        return;
+    }
+    $('grid').innerHTML = flashList.map(function (a) {
+        var p = (a.pages || [])[0] || {};
+        var ar = p.w && p.h ? ' style="aspect-ratio:' + p.w + ' / ' + p.h + '"' : '';
+        return '<button class="fl-item" data-flash="' + esc(a.id) + '" aria-label="' + esc(a.titre) + '">' +
+            '<img src="' + esc(p.thumb || p.src || '') + '" alt="" loading="lazy"' + ar + '>' +
+            (a.lieu ? '<span class="lieu">' + esc(lieuLabel(a.lieu)) + '</span>' : '') +
+            '<span class="cap"><b>' + esc(a.titre) + '</b><span>' + esc(dateFr(a.date)) + (a.createur ? ' · ' + esc(a.createur) : '') + '</span></span>' +
+        '</button>';
+    }).join('');
+}
+
+// ---- Visionneuse
+var FV = { list: [], i: 0 };
+var fv = $('fv');
+
+function openViewer(id, direct) {
+    var src = flashList.some(function (a) { return a.id === id; }) ? flashList : flashes();
+    if (!src.some(function (a) { return a.id === id; })) { var a = byId(id); if (!a) return; src = [a]; }
+    FV.list = src;
+    FV.i = src.findIndex(function (a) { return a.id === id; });
+    fv.classList.add('open'); fv.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('reading');
+    showFlash(true, direct);
+}
+function closeViewer(fromHistory) {
+    if (!fv.classList.contains('open')) return;
+    fv.classList.remove('open'); fv.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('reading');
+    if (!fromHistory) {
+        if (history.state && history.state.fv === 'push') history.back();
+        else history.replaceState(null, '', location.pathname + location.search);
+    }
+}
+function showFlash(first, direct) {
+    var a = FV.list[FV.i], p = (a.pages || [])[0] || {}, n = FV.list.length;
+    $('fv-img').src = p.src || '';
+    $('fv-img').alt = a.titre;
+    $('fv-prev').disabled = FV.i <= 0;
+    $('fv-next').disabled = FV.i >= n - 1;
+    $('fv-side').innerHTML =
+        (a.lieu ? '<span class="lieu">' + esc(lieuLabel(a.lieu)) + '</span>' : '') +
+        '<h4>' + esc(a.titre) + '</h4>' +
+        (a.serie_nom ? '<div class="serie">' + esc(serieTxt(a)) + '</div>' : '') +
+        '<div class="date">' + esc(dateFr(a.date)) + (a.createur ? ' · racontée par ' + esc(a.createur) : '') + '</div>' +
+        ((a.personnages || []).length ? '<div class="persos">' + a.personnages.map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('') + '</div>' : '') +
+        '<div class="txt">' + paras(a.recit) + '</div>' +
+        (n > 1 ? '<div class="count">' + (FV.i + 1) + ' / ' + n + ' · ' + (matchMedia('(pointer: coarse)').matches ? 'balaye l\'image pour passer à la suivante' : '← → pour passer à la suivante') + '</div>' : '') +
+        '<div class="acts">' +
+            '<button class="btn ghost" data-fv="lien">🔗 Copier le lien</button>' +
+            (a.peut_modifier ? '<button class="btn ghost" data-fv="modifier">✎ Modifier</button>' : '') +
+            (isAdmin && a.statut === 'publie' && !a.annonce_le ? '<button class="btn ghost" data-fv="annoncer">📣 Annoncer sur Discord</button>' : '') +
+            (isAdmin && a.statut === 'publie' ? '<button class="btn danger" data-fv="depublier">Dépublier…</button>' : '') +
+        '</div>' +
+        '<div class="renvoi" id="fv-renvoi" hidden>' +
+            '<label class="f">Motif <small>l\'auteur le lira dans « Mes histoires »</small><textarea id="fv-motif" maxlength="600"></textarea></label>' +
+            '<div class="renvoi-acts"><button class="btn ghost" data-fv="annuler">Annuler</button><button class="btn danger" data-fv="confirmer">Dépublier</button></div>' +
+        '</div>';
+    $('fv-side').scrollTop = 0;
+    var h = '#flash=' + encodeURIComponent(a.id);
+    // Ouverte depuis la galerie : une entrée d'historique (« Précédent » la ferme).
+    // Lien direct ou flash suivante : on remplace.
+    if (first && !direct && location.hash.indexOf('#flash=') !== 0) history.pushState({ fv: 'push' }, '', h);
+    else history.replaceState({ fv: (history.state && history.state.fv) || 'direct' }, '', h);
+    var nx = FV.list[FV.i + 1];
+    if (nx && nx.pages && nx.pages[0]) { var pre = new Image(); pre.src = nx.pages[0].src; }
+}
+function fvStep(d) {
+    var j = FV.i + d;
+    if (j < 0 || j >= FV.list.length) return;
+    FV.i = j; showFlash(false);
+}
+$('fv-prev').addEventListener('click', function () { fvStep(-1); });
+$('fv-next').addEventListener('click', function () { fvStep(1); });
+$('fv-close').addEventListener('click', function () { closeViewer(); });
+$('fv-img').addEventListener('click', function () { fvStep(1); });
+$('fv-side').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-fv]'); if (!b) return;
+    var a = FV.list[FV.i], act = b.dataset.fv;
+    if (act === 'lien') {
+        var url = location.origin + location.pathname + '#flash=' + encodeURIComponent(a.id);
+        var ok = function () { b.textContent = '✔ Lien copié'; setTimeout(function () { b.textContent = '🔗 Copier le lien'; }, 2000); };
+        if (navigator.clipboard) navigator.clipboard.writeText(url).then(ok, function () { prompt('Lien à copier :', url); });
+        else prompt('Lien à copier :', url);
+    } else if (act === 'modifier') {
+        closeViewer(); openFlash(a.id);
+    } else if (act === 'annoncer') {
+        b.disabled = true;
+        api('annoncer', { body: { id: a.id } }).then(function () {
+            a.annonce_le = new Date().toISOString(); b.remove(); toast('Annonce postée sur Discord.');
+        }).catch(function (er) { b.disabled = false; toast(er.message, true); });
+    } else if (act === 'depublier') {
+        $('fv-renvoi').hidden = false; $('fv-motif').focus();
+    } else if (act === 'annuler') {
+        $('fv-renvoi').hidden = true;
+    } else if (act === 'confirmer') {
+        var motif = $('fv-motif').value.trim();
+        if (!motif) { $('fv-motif').focus(); return; }
+        b.disabled = true;
+        api('renvoyer', { body: { id: a.id, motif: motif } }).then(function () {
+            closeViewer(); return load();
+        }).catch(function (er) { alert(er.message); b.disabled = false; });
+    }
+});
+var fvx = null;
+fv.addEventListener('touchstart', function (e) { if (e.touches.length === 1) fvx = e.touches[0].clientX; }, { passive: true });
+fv.addEventListener('touchend', function (e) {
+    if (fvx === null) return;
+    var dx = e.changedTouches[0].clientX - fvx; fvx = null;
+    if (Math.abs(dx) > 60 && e.target.closest('.fv-img')) fvStep(dx < 0 ? 1 : -1);
+}, { passive: true });
+
+// ---- Fiche
+var fl = null, flFile = null, flUrl = null, flBusy = false;
+
+function openFlash(id) {
+    var a = id ? byId(id) : null;
+    fl = a ? JSON.parse(JSON.stringify(a)) : { id: '', titre: '', recit: '', date: new Date().toISOString().slice(0, 10), lieu: '', personnages: [], pages: [] };
+    flFile = null;
+    if (flUrl) { URL.revokeObjectURL(flUrl); flUrl = null; }
+    $('fl-title').textContent = a ? 'Modifier la flash' : 'Nouvelle histoire flash';
+    $('fl-lieu').innerHTML = '<option value="">— choisir —</option>' + Object.keys(LIEUX).map(function (k) {
+        return '<option value="' + esc(k) + '">' + esc(LIEUX[k]) + '</option>';
+    }).join('');
+    $('fl-titre').value = fl.titre || '';
+    $('fl-date').value = fl.date || '';
+    $('fl-lieu').value = fl.lieu || '';
+    $('fl-persos').value = (fl.personnages || []).join(', ');
+    $('fl-desc').value = fl.recit || '';
+    fillSerie('fl', fl.serie || '');
+    var p = (fl.pages || [])[0];
+    setPreview(p ? p.src : '');
+    var st = $('fl-state');
+    if (a && a.statut !== 'publie' && a.motif_renvoi) {
+        st.className = 'ed-state back';
+        st.innerHTML = '<b>Dépubliée par ' + esc(a.renvoye_par || 'un admin') + '</b> — corrige puis republie-la.<span class="motif">« ' + esc(a.motif_renvoi) + ' »</span>';
+        st.hidden = false;
+    } else if (!a) {
+        st.className = 'ed-state';
+        st.innerHTML = 'Une image, un moment. La flash est <b>publiée dès que la fiche est complète</b> ; les admins peuvent la dépublier si besoin.';
+        st.hidden = false;
+    } else st.hidden = true;
+    $('fl-save').textContent = !a ? '⚡ Publier' : a.statut === 'publie' ? 'Enregistrer' : '⚡ Republier';
+    $('fl-del').hidden = !(a && a.peut_supprimer);
+    flMsg('');
+    checkFlash();
+    $('fl-bg').classList.add('open');
+    setTimeout(function () { (a ? $('fl-titre') : $('fl-pick')).focus(); }, 30);
+}
+function closeFlash() {
+    if (flBusy) { flMsg('Envoi en cours, patiente jusqu\'à la fin.', true); return; }
+    $('fl-bg').classList.remove('open');
+    if (flUrl) { URL.revokeObjectURL(flUrl); flUrl = null; }
+    fl = null; flFile = null;
+}
+function flMsg(t, err) { var m = $('fl-msg'); m.textContent = t; m.className = 'msg' + (err ? ' err' : ''); }
+function setPreview(src) {
+    $('fl-preview').hidden = !src;
+    if (src) $('fl-preview').src = src; else $('fl-preview').removeAttribute('src');
+    $('fl-pick').classList.toggle('has', !!src);
+}
+
+// « Fiche non complétée, on ne peut pas proposer » : la liste dit ce qui manque.
+function checkFlash() {
+    if (!fl) return;
+    var d = $('fl-date').value;
+    var items = [
+        ['Image', !!(flFile || (fl.pages && fl.pages.length))],
+        ['Titre', !!$('fl-titre').value.trim()],
+        ['Description', !!$('fl-desc').value.trim()],
+        ['Date', /^\d{4}-\d{2}-\d{2}$/.test(d)],
+        ['Lieu / activité', !!$('fl-lieu').value]
+    ];
+    var manque = items.filter(function (x) { return !x[1]; }).length;
+    $('fl-check').innerHTML = '<li class="titre">' + (manque
+            ? 'Fiche incomplète — il manque encore ' + manque + ' élément' + (manque > 1 ? 's' : '') + ' avant de pouvoir publier :'
+            : 'Fiche complète : prête à publier.') + '</li>' +
+        items.map(function (x) { return '<li class="' + (x[1] ? 'ok' : '') + '">' + (x[1] ? '✔ ' : '✖ ') + x[0] + '</li>'; }).join('');
+    $('fl-save').disabled = manque > 0 || flBusy;
+}
+['fl-titre', 'fl-date', 'fl-lieu', 'fl-persos', 'fl-desc'].forEach(function (k) {
+    $(k).addEventListener('input', checkFlash);
+    $(k).addEventListener('change', checkFlash);
+});
+$('fl-close').addEventListener('click', closeFlash);
+$('fl-bg').addEventListener('mousedown', function (e) { if (e.target === this) closeFlash(); });
+
+function setFlashFile(f) {
+    if (!f) return;
+    if (!/^image\/(jpeg|png|webp)$/.test(f.type)) { flMsg('Image JPEG, PNG ou WebP uniquement.', true); return; }
+    flFile = f;
+    if (flUrl) URL.revokeObjectURL(flUrl);
+    flUrl = URL.createObjectURL(f);
+    setPreview(flUrl);
+    flMsg('');
+    checkFlash();
+}
+var pick = $('fl-pick');
+pick.addEventListener('click', function () { $('fl-file').click(); });
+pick.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('fl-file').click(); } });
+pick.addEventListener('dragover', function (e) { e.preventDefault(); pick.classList.add('over'); });
+pick.addEventListener('dragleave', function () { pick.classList.remove('over'); });
+pick.addEventListener('drop', function (e) { e.preventDefault(); pick.classList.remove('over'); setFlashFile(e.dataTransfer.files[0]); });
+$('fl-file').addEventListener('change', function () { setFlashFile(this.files[0]); this.value = ''; });
+
+$('fl-save').addEventListener('click', function () {
+    if (this.disabled || !fl) return;
+    if ($('fl-serie').value === NOUV && !$('fl-serie-nouv').value.trim()) { flMsg('Donne un nom à la nouvelle série.', true); $('fl-serie-nouv').focus(); return; }
+    flBusy = true; checkFlash();
+    var id = fl.id;
+    flMsg(flFile ? 'Préparation de l\'image…' : 'Enregistrement…');
+    (flFile ? prepare(flFile, 640) : Promise.resolve(null)).then(function (prep) {
+        var fd = new FormData();
+        fd.append('id', id);
+        fd.append('titre', $('fl-titre').value.trim());
+        fd.append('description', $('fl-desc').value);
+        fd.append('date', $('fl-date').value);
+        fd.append('lieu', $('fl-lieu').value);
+        fd.append('personnages', $('fl-persos').value);
+        var sc = serieChamps('fl');
+        fd.append('serie', sc.serie);
+        fd.append('serie_nouvelle', sc.serie_nouvelle);
+        if (prep) {
+            fd.append('page', prep.page, 'page.' + prep.ext);
+            fd.append('thumb', prep.thumb, 'thumb.' + prep.text);
+            flMsg('Envoi de l\'image (' + Math.round(prep.page.size / 1024) + ' Ko)…');
+        }
+        return api('flash_save', { body: fd });
+    }).then(function (j) {
+        flBusy = false;
+        closeFlash();
+        onglet = 'flash'; lieuFiltre = ''; filtre = '';
+        try { sessionStorage.setItem('bd_tab', onglet); } catch (e) {}
+        return load().then(function () {
+            openViewer(j.id);
+            var t = annonceTxt(j).trim();
+            if (t) toast(t, !!j.annonce_erreur);
+        });
+    }).catch(function (e) {
+        flBusy = false; flMsg(e.message, true); checkFlash();
+    });
+});
+$('fl-del').addEventListener('click', function () {
+    if (!fl || !fl.id) return;
+    if (!confirm('Supprimer définitivement la flash « ' + fl.titre + ' » ?')) return;
+    api('delete', { body: { id: fl.id } }).then(function () { fl = null; $('fl-bg').classList.remove('open'); load(); })
+        .catch(function (e) { flMsg(e.message, true); });
+});
+
+// ------------------------------------------------------------ lecteur
+var R = { a: null, i: 0, continu: false, zoom: false, end: false };
+var reader = $('reader'), stage = $('r-stage'), rImg = $('r-img');
+try { R.continu = localStorage.getItem('bd_mode') === 'continu'; } catch (e) {}
+
+function openReader(id, page) {
+    var a = byId(id);
+    if (!a || !(a.pages || []).length) return;
+    R.a = a; R.end = false;
+    $('r-ep').textContent = a.numero ? 'Épisode ' + a.numero : 'Brouillon';
+    $('r-name').textContent = a.titre;
+    renderStory(); renderStrip(); buildScroll();
+    reader.classList.add('open'); reader.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('reading');
+    applyMode();
+    go(Math.max(0, Math.min(page || 0, a.pages.length - 1)), true);
+    // Ouvert depuis la bibliothèque : une entrée d'historique, que « Précédent » referme.
+    // Ouvert par un lien direct : on remplace, sinon fermer renverrait hors du site.
+    if (location.hash.indexOf('#ep=') !== 0) history.pushState({ bd: 'push' }, '', hashFor());
+    else history.replaceState({ bd: (history.state && history.state.bd) || 'direct' }, '', hashFor());
+    hint();
+}
+function closeReader(fromHistory) {
+    if (!reader.classList.contains('open')) return;
+    if (document.fullscreenElement) document.exitFullscreen().catch(function () {});
+    reader.classList.remove('open', 'story', 'clean'); reader.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('reading');
+    $('r-scroll').innerHTML = '';
+    R.a = null;
+    if (!fromHistory) {
+        if (history.state && history.state.bd === 'push') history.back();
+        else history.replaceState(null, '', location.pathname + location.search);
+    }
+    render(); // progression à jour sur les cartes
+}
+function hashFor() { return '#ep=' + encodeURIComponent(R.a.id) + '&p=' + (R.i + 1); }
+
+function go(i, first) {
+    var a = R.a, n = a.pages.length;
+    if (i >= n) { showEnd(); return; }
+    if (i < 0) return;
+    R.end = false; $('r-end').classList.remove('show');
+    R.i = i;
+    if (R.continu) {
+        if (first) {
+            var el = $('r-scroll').children[i];
+            if (el) { $('r-scroll').scrollTop = i ? el.offsetTop - 10 : 0; }
+        }
+    } else {
+        var p = a.pages[i];
+        if (rImg.getAttribute('src') !== p.src) {
+            rImg.classList.remove('ready');
+            rImg.onload = function () { rImg.classList.add('ready'); };
+            rImg.src = p.src;
+            if (rImg.complete) rImg.classList.add('ready');
+        }
+        rImg.alt = 'Planche ' + (i + 1) + ' sur ' + n;
+        stage.scrollTop = 0;
+        [i + 1, i - 1].forEach(function (k) { if (a.pages[k]) { var pre = new Image(); pre.src = a.pages[k].src; } });
+    }
+    $('r-prev').disabled = i === 0;
+    updCount();
+    progSave(a.id, i, n);
+    if (!first) history.replaceState(history.state, '', hashFor());
+}
+function updCount() {
+    var n = R.a.pages.length;
+    $('r-count').textContent = R.end ? 'Fin' : (R.i + 1) + ' / ' + n;
+    var bs = $('r-strip').children;
+    for (var k = 0; k < bs.length; k++) bs[k].classList.toggle('cur', k === R.i && !R.end);
+    var cur = bs[R.i];
+    if (cur && cur.scrollIntoView) cur.scrollIntoView({ block: 'nearest', inline: 'center' });
+}
+function next() { if (R.end) return; go(R.i + 1); }
+function prev() { if (R.end) { R.end = false; $('r-end').classList.remove('show'); updCount(); return; } go(R.i - 1); }
+
+function showEnd() {
+    var a = R.a, idx = albums.indexOf(a), suiv = null, suite = null;
+    var lisible = function (x) { return x.type !== 'flash' && x.pages && x.pages.length && x.statut === 'publie'; };
+    for (var k = idx + 1; k < albums.length; k++) { if (lisible(albums[k])) { suiv = albums[k]; break; } }
+    // Suite de la série : partie suivante, proposée AVANT l'épisode suivant de la saga.
+    if (a.serie && a.partie) suite = albums.filter(function (x) { return lisible(x) && x.serie === a.serie && x.partie === a.partie + 1; })[0] || null;
+    if (suite && suiv && suite.id === suiv.id) suiv = null;
+    var carte = function (x, label) {
+        return '<button class="next-ep" data-next="' + esc(x.id) + '"><img src="' + esc(cover(x)) + '" alt=""><span><small>' + label + '</small><b>' + esc(x.titre) + '</b></span></button>';
+    };
+    var texte = suite ? 'La suite de « ' + a.serie_nom + ' » vous attend…'
+              : a.serie_nom ? 'La suite de « ' + a.serie_nom + ' » reste à écrire… peut-être par toi ?'
+              : suiv ? 'L\'histoire continue…' : 'La suite s\'écrira à la prochaine soirée.';
+    R.end = true;
+    progSave(a.id, a.pages.length - 1, a.pages.length);
+    $('r-end').innerHTML = '<div class="r-end-box"><div class="k">Fin de l\'épisode</div><h4>' + esc(a.titre) + '</h4>' +
+        '<p>' + esc(texte) + '</p><div class="acts">' +
+        (suite ? carte(suite, 'Suite · ' + a.serie_nom + ' · Partie ' + suite.partie) : '') +
+        (suiv ? carte(suiv, 'Épisode suivant de la saga') : '') +
+        '<button class="btn ghost" data-restart>↺ Relire depuis le début</button>' +
+        '<button class="btn" data-lib>Retour à la bibliothèque</button></div></div>';
+    $('r-end').classList.add('show');
+    updCount();
+}
+$('r-end').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    if (b.dataset.next) { var id = b.dataset.next; R.a = null; openReader(id, 0); }
+    else if ('restart' in b.dataset) go(0, true);
+    else if ('lib' in b.dataset) closeReader();
+});
+
+function renderStrip() {
+    $('r-strip').innerHTML = R.a.pages.map(function (p, i) {
+        return '<button data-i="' + i + '" aria-label="Planche ' + (i + 1) + '"><img src="' + esc(p.thumb) + '" alt="" loading="lazy"><span>' + (i + 1) + '</span></button>';
+    }).join('');
+}
+$('r-strip').addEventListener('click', function (e) {
+    var b = e.target.closest('button'); if (!b) return;
+    var i = +b.dataset.i;
+    if (R.continu) { var el = $('r-scroll').children[i]; if (el) $('r-scroll').scrollTo({ top: el.offsetTop - 10, behavior: 'smooth' }); }
+    else go(i);
+});
+
+function renderStory() {
+    var a = R.a;
+    var paras = String(a.recit || '').split(/\n+/).map(function (s) { return s.trim(); }).filter(Boolean);
+    $('r-story').innerHTML = '<h4>' + esc(a.titre) + '</h4>' +
+        (a.sous_titre ? '<div class="sub">' + esc(a.sous_titre) + '</div>' : '') +
+        (a.serie_nom ? '<div class="serie">' + esc(serieTxt(a)) + (a.serie_total > 1 ? ' sur ' + a.serie_total : '') + '</div>' : '') +
+        '<div class="date">Soirée du ' + esc(dateFr(a.date)) + (a.createur ? ' · racontée par ' + esc(a.createur) : '') + '</div>' +
+        ((a.personnages || []).length ? '<div class="persos">' + a.personnages.map(function (p) { return '<span>' + esc(p) + '</span>'; }).join('') + '</div>' : '') +
+        (paras.length ? '<div class="txt">' + paras.map(function (p) { return '<p>' + esc(p) + '</p>'; }).join('') + '</div>' : '<div class="none">Pas de récit écrit pour cet épisode : les planches parlent d\'elles-mêmes.</div>');
+    $('r-story').scrollTop = 0;
+}
+
+// Lecture continue : toutes les planches empilées, chargées à l'approche.
+function buildScroll() {
+    var box = $('r-scroll');
+    box.innerHTML = R.a.pages.map(function (p, i) {
+        var ar = p.w && p.h ? p.w + ' / ' + p.h : '1061 / 1500';
+        return '<img data-i="' + i + '" src="' + esc(p.src) + '" loading="lazy" alt="Planche ' + (i + 1) + '" style="--ar:' + ar + '">';
+    }).join('');
+}
+// Planche courante = la dernière dont le haut a passé les 40 % de la hauteur visible.
+// Calcul au défilement plutôt qu'un IntersectionObserver : déterministe, et
+// vérifiable dans un onglet masqué (où les observateurs ne se déclenchent pas).
+function trackScroll() {
+    if (!R.continu || !R.a) return;
+    var box = $('r-scroll'), y = box.scrollTop + box.clientHeight * 0.4, i = 0;
+    for (var k = 0; k < box.children.length; k++) { if (box.children[k].offsetTop <= y) i = k; }
+    if (i === R.i) return;
+    R.i = i; updCount(); progSave(R.a.id, i, R.a.pages.length);
+    history.replaceState(history.state, '', hashFor());
+}
+$('r-scroll').addEventListener('scroll', function () {
+    if (trackScroll.t) return;
+    trackScroll.t = setTimeout(function () { trackScroll.t = null; trackScroll(); }, 120);
+}, { passive: true });
+
+function applyMode() {
+    stage.classList.toggle('continu', R.continu);
+    stage.classList.toggle('zoom', R.zoom);
+    $('r-mode').classList.toggle('on', R.continu);
+    $('r-mode-l').textContent = R.continu ? 'Page' : 'Continu';
+    $('r-zoom').classList.toggle('on', R.zoom);
+}
+function toggleMode() {
+    R.continu = !R.continu;
+    try { localStorage.setItem('bd_mode', R.continu ? 'continu' : 'page'); } catch (e) {}
+    if (R.end) { R.end = false; $('r-end').classList.remove('show'); }
+    applyMode(); go(R.i, true);
+}
+function toggleZoom() {
+    R.zoom = !R.zoom;
+    if (!R.continu) { applyMode(); stage.scrollTop = 0; return; }
+    // En continu, garder la même portion de la saga sous les yeux malgré le changement de largeur.
+    var sc = $('r-scroll'), ratio = sc.scrollHeight ? sc.scrollTop / sc.scrollHeight : 0;
+    applyMode();
+    sc.scrollTop = ratio * sc.scrollHeight;
+}
+function toggleStory() { reader.classList.toggle('story'); $('r-story-b').classList.toggle('on', reader.classList.contains('story')); }
+function toggleFull() {
+    if (document.fullscreenElement) document.exitFullscreen().catch(function () {});
+    else if (reader.requestFullscreen) reader.requestFullscreen().catch(function () {});
+}
+
+$('r-close').addEventListener('click', function () { closeReader(); });
+$('r-mode').addEventListener('click', toggleMode);
+$('r-zoom').addEventListener('click', toggleZoom);
+$('r-story-b').addEventListener('click', toggleStory);
+$('r-full').addEventListener('click', toggleFull);
+$('r-prev').addEventListener('click', prev);
+$('r-next').addEventListener('click', next);
+$('r-zprev').addEventListener('click', prev);
+$('r-znext').addEventListener('click', next);
+// Clic au centre : masquer/afficher l'interface (ou dézoomer).
+rImg.addEventListener('click', function () { if (R.zoom) { toggleZoom(); } else reader.classList.toggle('clean'); });
+rImg.addEventListener('dblclick', function (e) { e.preventDefault(); });
+
+document.addEventListener('keydown', function (e) {
+    if (fv.classList.contains('open')) {
+        if (e.target.matches && e.target.matches('input, textarea, select')) return;
+        if (e.key === 'Escape') closeViewer();
+        else if (e.key === 'ArrowRight') fvStep(1);
+        else if (e.key === 'ArrowLeft') fvStep(-1);
+        return;
+    }
+    if (!reader.classList.contains('open')) {
+        if (e.key === 'Escape' && $('fl-bg').classList.contains('open')) closeFlash();
+        else if (e.key === 'Escape' && $('ed-bg').classList.contains('open')) closeEditor();
+        return;
+    }
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    var k = e.key;
+    if (k === 'Escape') { if (reader.classList.contains('story') && window.innerWidth < 760) toggleStory(); else if (!document.fullscreenElement) closeReader(); return; }
+    if (k === 'c' || k === 'C') { toggleMode(); return; }
+    if (k === 'r' || k === 'R') { toggleStory(); return; }
+    if (k === 'f' || k === 'F') { toggleFull(); return; }
+    if (k === 'z' || k === 'Z') { toggleZoom(); return; }
+    if (R.continu) return; // le défilement natif fait le travail
+    if (k === 'ArrowRight' || k === 'PageDown' || (k === ' ' && !R.zoom)) { e.preventDefault(); next(); }
+    else if (k === 'ArrowLeft' || k === 'PageUp') { e.preventDefault(); prev(); }
+    else if (k === 'Home') { e.preventDefault(); go(0); }
+    else if (k === 'End') { e.preventDefault(); go(R.a.pages.length - 1); }
+});
+
+// Balayage tactile (mode page, hors zoom)
+var tx = null, ty = null;
+stage.addEventListener('touchstart', function (e) { if (e.touches.length === 1) { tx = e.touches[0].clientX; ty = e.touches[0].clientY; } }, { passive: true });
+stage.addEventListener('touchend', function (e) {
+    if (tx === null || R.continu || R.zoom) { tx = null; return; }
+    var dx = e.changedTouches[0].clientX - tx, dy = e.changedTouches[0].clientY - ty; tx = null;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) { dx < 0 ? next() : prev(); }
+}, { passive: true });
+
+function hint() {
+    var h = $('r-help');
+    var tactile = matchMedia('(pointer: coarse)').matches;
+    h.textContent = tactile ? 'Balaye pour tourner les pages · touche le centre pour masquer les menus'
+                            : '← → pour tourner · Z zoom · C lecture continue · R récit · F plein écran';
+    h.classList.remove('gone');
+    clearTimeout(hint.t); hint.t = setTimeout(function () { h.classList.add('gone'); }, 3500);
+}
+
+// Liens directs (#ep=…&p=…) : partageables sur Discord.
+function fromHash() {
+    var f = /^#flash=([^&]+)/.exec(location.hash);
+    if (f) {
+        var fid = decodeURIComponent(f[1]);
+        if (fv.classList.contains('open') && FV.list[FV.i] && FV.list[FV.i].id === fid) return;
+        if (byId(fid)) { if (onglet !== 'flash') { onglet = 'flash'; render(); } openViewer(fid, true); }
+        return;
+    }
+    closeViewer(true);
+    var m = /^#ep=([^&]+)(?:&p=(\d+))?/.exec(location.hash);
+    if (!m) { closeReader(true); return; }
+    var id = decodeURIComponent(m[1]), p = Math.max(0, (+m[2] || 1) - 1);
+    if (R.a && R.a.id === id) { if (p !== R.i && !R.continu) go(p, true); return; }
+    if (byId(id)) openReader(id, p);
+}
+window.addEventListener('popstate', fromHash);
+
+load().then(fromHash);
+})();
+</script>
+</body>
+</html>

@@ -185,6 +185,48 @@ Rapport autonome (HTML + Plotly) destiné à la guilde, documentant le regroupem
 - Synthèse rédigée + classement des mondes conservés par palier de population
 - Bouton « ← Retour aux Analytiques » vers `dune_analytics.html`
 
+#### ⚠ Ce que la page mesure VRAIMENT (2026-09-21)
+
+**Les mondes officiels européens, et rien d'autre.** Jusqu'au 17 septembre 2026 c'était sans
+conséquence — la mesure collait à la population européenne totale. Depuis la **mise à jour 1.5**
+(18/09/2026), qui a largement ouvert la personnalisation des serveurs auto-hébergés et loués, ce
+n'est plus vrai du tout :
+
+| Date | Page | dunestatus Europe | Rapport |
+|---|---|---|---|
+| 15 sept | ~2 200 | ~2 300 | **96 %** |
+| 20 sept 18:45 | 3 484 | 6 531 | **53 %** |
+| 21 sept 17:08 | 2 939 | 5 904 | **50 %** |
+
+```
+15 sept   Europe totale 2 300   officiels 2 200   privés    ~100
+20 sept   Europe totale 6 531   officiels 3 484   privés  ~3 047
+```
+
+Les mondes officiels ont fait ×1,6 sur la semaine ; les privés sont passés de quasi vides à **la
+moitié de la population européenne**. La page n'est pas fausse, son **périmètre a cessé d'être
+représentatif** — d'où la correction des libellés (« tous mondes EU » → « mondes **officiels** EU »,
+« Population Mondiale » → « Population des Mondes ») et la note datée sous le titre du graphe.
+
+**Décision prise : on ne collecte PAS les serveurs privés.** 280 mondes européens au lieu de 97, soit
+près de trois fois le temps de collecte et le volume de CSV (déjà 91 Mo parsés par le navigateur),
+pour une population qui n'intéresse pas la guilde. Le libellé suffit.
+
+Contre-vérification qui clôt le dossier : sur la semaine, **SteamDB fait ×3,8 et le total mondial de
+dunestatus ×3,9**. Les deux concordent, l'afflux est réel et mondial — seul le périmètre européen
+officiel a moins bougé.
+
+⚠ **Deux erreurs de diagnostic à ne pas refaire**, toutes deux nées d'un relevé pris au mauvais
+moment :
+- Un premier relevé à 05:00 UTC donnait « Europe 390 / 4 131 mondial », d'où la conclusion que le jeu
+  était massivement nord-américain. **Faux** : à l'heure de pointe européenne, l'Europe est la plus
+  grosse région (6 693 contre 5 597 pour l'Amérique du Nord le 20/09 à 19:10). Un relevé de nuit ne
+  dit rien d'une répartition.
+- Deux points pris le même jour montraient un rapport « stable » de 50-53 %, d'où la conclusion que
+  la forme de la courbe était juste à l'échelle près. **Faux aussi** : les deux points étaient APRÈS
+  la bascule. Sur la semaine le rapport passe de 96 % à 50 %. **Une série se lit sur sa durée, pas
+  sur deux points voisins.**
+
 ### Collecte de données (`dune_logger_all.py`)
 
 Script Python/Playwright tournant en cron toutes les heures sur le serveur. Scrape [gaming.tools/server-status](https://dune.gaming.tools/server-status) et alimente `dune_counts.csv`.
@@ -587,7 +629,187 @@ Outil de **préparation, débrief et analyse** des sorties de récolte d'épice 
 - **Rôles** (auth serveur par session — voir *Authentification*) : *consultation* = membre connecté ; *organiser* = **admin OU organisateur** (pseudo listé dans `epice/data/organizers.json`, géré par les admins via le sous-onglet « Organisateurs » — **sélecteur de comptes connus**, plus de saisie libre) ; un organisateur ne peut **assigner / clôturer / supprimer** que **ses propres** sorties.
 - Stockage JSON (`epice/data/debriefs.json`) ; clé Gemini hors Git (`epice/config.php`) ; protection compo : édition possible uniquement si une soirée est ouverte.
 
+#### Base avancée et assaut cardinal (2026-09-13)
+
+- **Inscription Discord épice** : poste `base_avancee` « Équipe Base avancée — Génie et appui lourd ». L’encart et la description du choix précisent : **1 constructeur pilote de buggy + 1 pilote de buggy. 2 buggys roquettes à fournir.** Le sous-fief disponible est rappelé séparément dans l’encart. Ce poste commun recueille les volontaires, l’organisateur distribue les deux fonctions sur le site. Les autres activités restent inchangées.
+- **Assignation** : bloc optionnel `base_avancee` (`active`, `constructeur`, `buggy`, `sous_fief`, `patrouilleurs[2]`). Les deux patrouilleurs sont sélectionnés parmi ceux du groupe à distance et conservent leur rôle tactique ; ils rejoignent les deux buggys dans un même groupe en jeu. Le **Chef de base (CB)** (`commandement.cb`) est un membre de ce groupe, peut cumuler un autre commandement et apparaît dans Organisation, Historique et « Ce soir ». Il est traité **exactement comme CS/CDR/CP** : son pseudo compte comme déjà posé (il n'est plus reproposé dans les autres rôles), et les champs Commandement comme les Groupes en jeu continuent de proposer des joueurs déjà affectés — c'est le principe même du cumul.
+- **DR** : `assaut` est une propriété de chacun des quatre cardinaux, indépendante et cumulable avec `cac`. Au moins un assaut est demandé. Il intervient au retrait suite à une attaque pour s’interposer entre les tirs et le transporteur. Les anciens `defense[].assauts[]` restent lisibles et modifiables mais aucun nouveau pilote séparé n’est ajouté par l’interface.
+- **Groupes en jeu** : `raid-groups.js` préremplit Récolte = Transporteur + Moissonneur + Scout + un Assaut cardinal ; Base = Constructeur/pilote + second pilote buggy + deux patrouilleurs désignés. Les trois autres cardinaux restent dans un groupe DR. Une personne est placée une seule fois en jeu, tous les renforts sont conservés et répartis par quatre. Avec plusieurs récoltes, assauts et scouts sont pris dans l’ordre d’assignation ; les groupes restent ajustables à la main. Aucun plafond de dix joueurs.
+- **Préparation** : le bandeau distingue les postes Récolte/DR manquants des autres points à vérifier ; une alerte Base avancée ne présente plus la Récolte/DR comme incomplète. Signalements du sous-fief non confirmé, du chef de base manquant, de patrouilleurs absents/dupliqués et des groupes incomplets ou incohérents. **Tant qu'aucun groupe en jeu n'est pré-rempli** — l'état normal en cours de préparation — une seule ligne le dit ; une fois les groupes commencés, les joueurs restés dehors sont listés **sur une ligne unique**, pseudo tel qu'il est saisi. Sans cela la vue Organisation, que tout le monde lit, se couvrait d'une alerte rouge par personne. Une compo en cours peut être sauvegardée. Les anciennes compositions n’appliquent pas rétroactivement ces exigences ; une nouvelle sauvegarde inscrit `tactical_version: 2`.
+- **Manuel personnalisé préservé** : le bloc Base avancée est ajouté **après** le contenu enregistré, jamais à sa place. Marqueur `data-sop-block="base-avancee"` pour éviter les doublons ; le bloc reste éditable/sauvegardable avec le mécanisme existant, sans écriture automatique dans `sop_content.json`. Le reste du manuel, les axes du questionnaire et le prompt IA sont conservés. Deux rôles Base avancée sont ajoutés au choix du retour joueur ; leurs membres sont inclus dans le roster serveur.
+- **Déploiement ciblé `/v2` d’abord** : `epice/debrief.html`, `epice/raid-groups.js`, `epice/data-api.php`, `epice/discord_sortie.php`. Charger le nouveau JS avant la page HTML, puis Ctrl+F5. Ne jamais envoyer `epice/data/` ni les configurations. Pas de réenregistrement de la commande : le menu est construit à chaque rendu d’encart. Un ancien post reçoit le nouveau choix lors de sa prochaine interaction (ou Modifier puis Enregistrer). Aucun envoi Discord n’a été effectué par les tests locaux.
+- **Vérification** : `node --test epice/raid-groups.test.cjs`, syntaxe des scripts de page, `php -l` sur les deux fichiers PHP ; contrôle local du préremplissage et des sauvegardes composition/manuel. Le HTML public a été comparé au dépôt avant modification ; le manuel personnalisé a été lu dans le navigateur connecté.
+
 #### Bot Sorties Discord (`epice/discord_sortie.php`)
+
+##### Rally — inscription par créneaux (2026-09-19) — ✅ EN PROD
+
+> ⚠ **Le menu ne répondait pas, et le handler n'y était pour rien.** `discord_interactions.php` route les interactions vers les handlers via une **liste blanche de préfixes de `custom_id`** ; `creneaux:` n'y figurait pas, donc le dispatcher répondait **400** et `epice/discord_sortie.php` n'était jamais inclus. Symptôme trompeur : Discord affiche « n'a pas répondu à temps » et **le journal du handler reste vide**, ce qui envoie chercher un plantage là où aucun code n'a tourné. Deux corrections : le préfixe ajouté, et un **filet** qui route vers `sortie` tout `custom_id` finissant par un id de sortie (`/:sortie_\d+$/`), pour qu'un futur composant ne retombe jamais dans ce piège. Le diagnostic a coûté trois allers-retours parce que le `custom_id` n'était journalisé que pour les modals (type 5) — il l'est désormais pour les composants (type 3) avec les valeurs choisies.
+
+
+Né d'un besoin concret : organiser une récolte d'épice de **8 h à 16 h** et savoir *avant* le jour J si c'est tenable. La coche ✅/❌ d'un message classique dit **combien** de monde vient, jamais **quand** — or personne ne tient huit heures d'affilée et tout le monde tourne.
+
+- **Rien à saisir de plus.** Trois durées longues s'ajoutent au formulaire (`6`, `8`, `10` h). Dès que la durée atteint **`RALLY_SEUIL_H` = 6 h**, `creneaux_sortie()` découpe la sortie en blocs de **`RALLY_BLOC_H` = 2 h** à partir de l'heure de début. Sous ce seuil, **rien ne change** : ni menu, ni tableau. Heure ou durée illisible → aucun créneau, la sortie reste une sortie classique.
+- **Le choix d'un poste ouvre un MODAL qui réclame les créneaux** (`sortie_creneaux_modal()`), obligatoires (`required: true`, `min_values` 1). C'est le seul moyen de **garantir** qu'un inscrit d'un rally a déclaré ses disponibilités : deux composants d'un message sont des interactions **indépendantes**, Discord ne sait pas « valider l'un seulement quand l'autre est saisi ». Un modal se soumet d'un bloc, et poste + créneaux sont enregistrés ensemble.
+  - **Bénéfice secondaire décisif** : un modal est construit **pour un joueur**, pas pour le message — ses créneaux déjà cochés y sont donc **pré-sélectionnés** (`default: true`). Un menu d'encart, partagé par tout le monde, en est incapable. Pour modifier ses créneaux, on re-choisit son poste et le modal se rouvre pré-coché.
+  - `custom_id` = `creneauxmodal:<poste>:<id de sortie>` : il **finit par l'id de sortie**, donc le filet de routage de `discord_interactions.php` le reconnaît sans qu'on ait à lui ajouter un préfixe (c'est exactement ce pour quoi ce filet a été posé). Le poste ne contient jamais de `:`, le découpage est donc sans ambiguïté.
+  - **`modal_values()` ne renvoie que la PREMIÈRE valeur** d'un composant — suffisant pour les listes simples du formulaire de sortie, mais ça perdrait trois créneaux sur quatre. D'où `modal_values_multi()`.
+  - Le menu « Mes créneaux » **a été retiré de l'encart** : il permettait de s'inscrire à un poste sans jamais déclarer ses disponibilités, soit exactement ce qu'on veut empêcher. `handle_creneaux()` reste en place pour les encarts **déjà publiés**, qui portent encore l'ancien menu. L'encart redescend à **3 rangées de composants** sur les 5 autorisées.
+- **Tableau de couverture en tête de l'encart**, avant les listes de noms, en bloc de code pour rester aligné :
+
+  > ✅ **08–10** · 7 présents — complet
+  > ⚠ **10–12** · 6 présents — manque 2 pilotes
+  > ⚠ **12–14** · 4 présents — manque moissonneur, 3 pilotes
+  > ✖ **14–16** · 1 présent (+1 ?) — manque transporteur, moissonneur, 3 pilotes
+
+  ⚠ **Ne pas remettre ça dans un bloc de code.** Trois essais perdus à vouloir aligner des colonnes en chasse fixe : trop long (68 caractères, ça passait à la ligne et l'alignement s'effondrait), puis trop cryptique (`manque M·3P`, illisible sans légende), puis encore trop long (45 caractères). La largeur utile d'un champ d'encart tourne autour de **41 caractères** sur un client de bureau et bien moins sur téléphone — c'est un combat perdu d'avance. En **texte courant**, une ligne trop longue se replie proprement : il n'y a plus de colonnes à casser, les noms de rôles tiennent en toutes lettres, et le symbole de tête (✅ complet / ⚠ il manque peu / ✖ moins de la moitié de l'effectif) suffit à balayer les créneaux du regard.
+
+  ⚠ **Un champ d'encart Discord est ÉTROIT.** Le premier jet écrivait « manque transporteur, moissonneur, 4 pilotes » en toutes lettres avec une barre de progression : au-delà d'une trentaine de caractères la ligne passe à la ligne et l'alignement du bloc de code s'effondre — illisible, surtout sur mobile. D'où les initiales et le format `présents/minimum`, qui tiennent en **30 caractères au pire**. Le titre du champ résume : « ⏱️ Couverture — 1 créneau complet sur 4 ». Tout le monde voit le trou de midi **avant** samedi et quelqu'un peut décaler sa pause.
+- **Chacun relit ses propres créneaux dans l'encart**, **derrière son nom** dans les colonnes de postes : `• Abarrach · 08–12`. **Arbitrage de la cheffe de guilde**, qui lit cet encart plus souvent que quiconque : la couverture répond à *« est-ce que ça tient »*, les colonnes répondent à *« qui est là »* — mélanger les deux brouillait les deux. C'est le **seul endroit possible** — un menu déroulant Discord appartient au message, pas au lecteur, donc il ne peut pas être pré-coché différemment pour chaque personne. Sans ça on coche et on ne sait plus ensuite ce qu'on a mis.
+
+  > ⚠ **08–10** · 5 présents — manque 1 pilote
+  > *Abarrach, Lorhelyne, Bahlor, Desta, Merlin*
+  > ⚠ **12–14** · 3 présents — manque transporteur, moissonneur, 1 pilote
+  > *Bahlor, Neuroch, Merlin*
+  >
+  > 🚚 **Transporteur (1)** · 🦅 **Pilote Ornithoptère (4)**
+  > • Abarrach · 08–12 · • Bahlor · 08–16 · • Desta · 08–10, 14–16 · • Merlin
+
+  **Les deux lectures coexistent**, et la redondance est assumée : le verdict répond à *« est-ce que ça tient »*, les présents juste en dessous à *« qui est là »*, et la plage derrière chaque nom à *« qu'est-ce que j'avais coché »*. Trois questions posées à trois moments différents — et l'organisateur ne veut pas dérouler l'encart pour savoir qui couvre midi. **Garde-fou de longueur** : un champ d'encart plafonne à 1024 caractères et un message rejeté l'est *en entier*, donc le budget de noms par créneau est **adaptatif** (`900 / nb_créneaux − 80`), tronqué en « … +N » au-delà. Mesuré à 25 inscrits partout : 823 octets sur 4 créneaux, 789 sur 5, 755 sur 6. ⚠ `strlen()` et **jamais `mb_strlen()`** — pas de mbstring sur ce serveur.
+
+  **Trois formes essayées avant d'en arriver là**, et chaque échec vaut d'être noté :
+  1. *Plage derrière chaque nom* — jugée trop chargée à l'essai : ces colonnes sont `inline`, donc larges d'un tiers d'encart, et une plage non contiguë y passe à la ligne. **On ne peut pas élargir un encart** (la largeur appartient au client Discord) ; le seul levier est `inline`.
+  2. *Champ pleine largeur groupé par plage* (`08–12 · Abarrach, Desta`). Plus court dans les cas favorables mais **non borné** : avec quatre blocs il existe **quinze combinaisons**, donc douze inscrits pouvaient produire douze lignes.
+  3. *Présents listés sous chaque ligne de couverture.* Borné, mais mélangeait deux questions dans un même champ.
+
+  **Forme retenue : 1 + 3 ensemble**, sur arbitrage de la cheffe de guilde puis de l'organisateur. La forme 1 est chargée dans l'absolu, mais `creneaux_resume()` fusionne les blocs consécutifs et le cas courant (« je suis là le matin ») tient en sept caractères : `· 08–12`. Le vrai enseignement est ailleurs — **ce sont les gens qui lisent l'encart tous les jours qui tranchent une question de lisibilité**, pas le raisonnement sur la largeur des colonnes. Les blocs consécutifs sont **fusionnés en plages** (`creneaux_resume()`) parce que les gens pensent en tranches continues (« je suis là le matin »), pas en blocs de deux heures : `[0,1]` → `08–12`, `[0,1,2,3]` → `08–16`, `[0,3]` → `08–10, 14–16`. Un index hors plage (durée raccourcie depuis) est ignoré silencieusement. Rien d'affiché quand rien n'est déclaré — l'absence vaut « disponible partout », inutile de l'écrire sous chaque nom.
+- **Règle de viabilité** : celle de la formation minimale du site — **1 transporteur + 1 moissonneur + 4 pilotes d'ornithoptère**. Volontairement simple ; l'organisateur arbitre avec les inscrits. Un « Présent (poste à définir) » compte dans l'effectif mais **ne comble aucun poste**.
+- **Une inscription sans créneau déclaré compte dans TOUS les blocs.** Un joueur qui ne précise rien est réputé disponible : le faire disparaître des colonnes donnerait une couverture faussement catastrophique, et ça rend la fonction rétrocompatible avec les inscriptions existantes.
+- ⚠ **Les créneaux sont stockés en INDEX** (`signup.creneaux = [0,2,3]`), pas en horaires absolus. Conséquence à connaître : si l'organisateur **modifie l'heure de début** après des inscriptions, les blocs se décalent avec la sortie et chacun garde « le 1ᵉʳ bloc, le 3ᵉ… » plutôt que « 8 h–10 h ». Si la durée **raccourcit**, les index hors plage sont simplement ignorés. C'est le comportement le moins surprenant dans le cas courant (décalage global d'une sortie), mais il faut le savoir avant de déplacer un rally de 8 h à 10 h.
+- Vérifié sur banc : découpage (8 h → 4 blocs, 7 h 30 → dernier bloc tronqué à 14–15, passage de minuit 22–00/00–02), cas limites (heure vide, durée vide, durée courte → 0 créneau), et rendu du tableau sur un jeu d'inscriptions réaliste.
+
+##### Grille joueurs × créneaux, côté site (`epice/debrief.html`, onglet Assignation)
+
+- **En tête du builder d'assignation**, avant le Commandement : sur un rally, « qui est là à quelle heure » conditionne toutes les affectations en dessous. **Chaîne vide hors rally** — une sortie de 4 h n'affiche rien, aucune case à décocher, aucun réglage.
+- **Une ligne par inscrit, une colonne par bloc de 2 h.** L'encart Discord répond à *« est-ce que ça tient »* ; la grille sert à préparer les **relèves**, donc il faut le tableau entier d'un coup d'œil — qui part à midi, qui arrive à 14 h. Deux lignes de pied reprennent l'**effectif** et le **verdict** avec les seuils exacts de l'encart, pour que les deux ne se contredisent jamais sur la même sortie.
+- **Lecture** : `✓` créneau coché · `·` pas disponible · `○` aucun créneau déclaré (compté partout, cas des inscriptions antérieures au mode rally) · ligne grisée en italique = « peut-être » · les absents ne figurent pas. Tri par poste (l'ordre des clés de `POSTE_SHORT`) puis par pseudo, pour que transporteur et moissonneur — les deux postes qui bloquent un créneau — soient toujours les deux premières lignes.
+- ⚠ **`creneauxSortie()` / `creneauCouverture()` sont un MIROIR JS de `discord_sortie.php`**, et c'est signalé dans le code. `data-api.php` ne peut pas inclure `discord_sortie.php` : c'est un endpoint qui **s'exécute au chargement**. Si le découpage change côté Discord — `RALLY_SEUIL_H`, `RALLY_BLOC_H`, `RALLY_MINIMUM`, la formation minimale — il faut le changer **aux deux endroits**, sinon l'encart et la grille disent deux choses différentes sur la même sortie, ce qui est pire que pas de grille du tout.
+
+  **Garde-fou : `node epice/creneaux_parite.test.cjs`.** Il confronte les deux implémentations sur **154 cas** (14 horaires × 11 tablées) et compare les sorties JSON. Trois choix de conception valent d'être expliqués :
+  - **Il ne contrôle pas « les deux fichiers ont-ils été modifiés »** mais « répondent-ils la même chose ». Un contrôle de co-modification hurlerait à chaque virgule déplacée et finirait désactivé ; celui-ci ne rougit que sur une vraie divergence de comportement.
+  - **Il relit les constantes `RALLY_*` DANS `discord_sortie.php`** au lieu de les redéfinir. Un bouchon qui impose ses propres valeurs resterait vert en mentant pendant qu'on change `RALLY_BLOC_H` en production.
+  - **Sans `php` dans le PATH, il échoue** au lieu de passer en silence. Un garde-fou qu'on ne voit pas s'éteindre ne garde rien. Le bouchon PHP est écrit dans le dossier temporaire, **jamais déposé dans `epice/`** : un fichier qui évalue du code extrait n'a rien à faire dans un répertoire servi par nginx.
+
+  **Vérifié par mutation** : huit sabotages (les trois constantes d'un côté puis de l'autre, la formation minimale des deux côtés, un `manques.push` supprimé, une fonction PHP renommée, le repère d'extraction JS déplacé) font tous rougir le test ; l'arbre intact le laisse vert.
+
+  **Il a trouvé un vrai écart dès le premier lancement** : `cr.map(Number)` côté JS contre `array_map('intval', …)` côté PHP. Sur un index illisible, PHP rend `0` (donc « présent au premier créneau ») et `2` sur `« 2x »`, là où `Number()` rend `NaN` et fait disparaître la personne de la grille. Corrigé côté JS — le PHP fait foi, c'est lui qui écrit les données. Inatteignable depuis Discord, qui n'envoie que des index propres, mais c'est exactement le genre d'écart de lecture qu'on ne trouve pas à la relecture.
+- **Aucun changement d'API** : `data-api.php` renvoyait déjà la sortie entière (`signups[].creneaux` compris) ; seul `loadAssignSortie()` la retenait à moitié. Un `currentSortie` global suffisait.
+- **`POSTE_SHORT` a été hissé** hors de la fermeture `rosterPop` pour servir aux deux. Un catalogue en deux exemplaires finit toujours par diverger — celui des jeux en comptait cinq, et trois pannes silencieuses.
+- Vérifié sur banc (22 assertions) : découpage, couverture, tri, absents exclus, « peut-être » marqués, `○` partout pour un inscrit sans créneau, hors-rally vide, aucun inscrit. Rendu réel contrôlé au navigateur en 4 et 5 colonnes, et à 375 px de large (le tableau défile horizontalement dans `.cren-wrap` au lieu de casser la page).
+
+##### Une compo PAR CRÉNEAU (2026-09-19) — ✅ EN PROD
+
+Une journée de 8 h n'a pas une composition, elle en a quatre : c'est le sens même d'une relève. **On clique une tranche, on obtient la compo de cette tranche.**
+
+- **La tranche EST le sélecteur.** Pas d'onglets en plus : les en-têtes de colonnes de la grille de disponibilités deviennent cliquables, la colonne active est teintée et un `•` signale les créneaux déjà composés. On voit donc *qui est disponible* et *quelle relève on est en train d'écrire* au même endroit. Une barre sous la grille rappelle le créneau affiché — sans elle on édite 14–16 en croyant travailler sur le matin.
+- **Un créneau jamais ouvert REPREND le dernier créneau composé** (`basculerCreneau`), par copie profonde et jamais par référence. Une relève se règle en changeant deux ou trois noms ; ressaisir quatre compos complètes pour une journée aurait condamné la fonction. Un bouton `⟲ Recopier <créneau précédent>` permet de resynchroniser après coup, avec confirmation puisqu'il écrase.
+- **Un seul enregistrement pour tous les créneaux.** `saveAssign()` envoie la carte entière. Enregistrer créneau par créneau perdrait le travail de celui qu'on vient de quitter, et sur une journée on passe son temps à les comparer.
+- ⚠ **Stockage volontairement ASYMÉTRIQUE.** Le créneau 0 — et toute sortie qui n'est pas un rally — reste dans `sortie.assignation` ; les suivants vont dans `sortie.assignations` (`{"1": compo, "3": compo}`). Deux raisons, et il ne faut pas « ranger » ça plus tard : les lecteurs historiques (Manuel de combat, historique, `a_compo`, participants) n'ont **rien** à apprendre sur les rallys, et chaque compo n'est stockée **qu'à un endroit**. Recopier le créneau 0 des deux côtés pour faire symétrique rouvrirait exactement la classe de divergence qu'on traque partout ailleurs.
+- **Les participants sont l'union des créneaux** (`roster_from_sortie`). Sans ça, quelqu'un qui n'a joué que de 14 h à 16 h serait absent de la liste déroulante et ne pourrait pas déposer son retour.
+- ⚠ **Un client d'avant le déploiement ne détruit pas les relèves.** Une page laissée ouverte depuis la veille n'envoie que `assignation` ; `apply_compos()` met alors à jour le créneau 0 **sans toucher** à `assignations`. Sinon un onglet oublié effacerait la journée d'un organisateur.
+- **Côté joueur** (onglet Organisation) : une rangée de boutons de tranches, et un créneau non composé **hérite** du dernier composé avec la mention « Même disposition qu'à 08–10 » plutôt qu'un « non défini » trompeur. La **grille de disponibilités reste côté admin** — un joueur n'a pas à savoir qui a coché quelles heures (cf. la doctrine « pas de flicage »).
+- Vérifié sur banc : `node epice/compos_creneaux.test.cjs` — 9 assertions couvrant le rangement, la disparition des relèves retirées, le créneau vide non persisté, le vieux client inoffensif, la lecture par créneau, l'union des participants, la copie vers l'avant (et son indépendance : modifier la relève ne remonte pas sur l'original) et l'héritage côté joueur.
+##### Relevé de présence et partage de la récolte (2026-09-25) — ✅ EN PROD
+
+> **Première vraie journée : le rally du 2026-09-26, 10 h → 20 h, 9 récoltants, 1 902 253 de sable partagés.**
+> Trois pannes, toutes de PERMISSIONS Discord, toutes réglées en cours de route :
+> - **Le salon écouté était le mauvais** (Général au lieu de DD farm) **et le bot n'y avait pas accès** — 403 journalisés toutes les 30 min depuis 01:02, découverts à 10:38. Deux demi-heures perdues, rattrapées à la main. Le relevé vérifie désormais le salon au démarrage et nomme la cause ; avant, les trois erreurs possibles (identifiant erroné, salon textuel, autre serveur) donnaient le même « 0 présent » muet.
+> - **La publication a échoué** sur *activités-discussion* : le bot ne voyait pas le salon (« Missing Access »). Le message d'erreur reprend maintenant ce que Discord répond.
+> - **Un trou de 12:30 à 13:30** qui n'en était pas un : le salon était vide à l'heure du déjeuner, et une demi-heure sans personne n'est pas écrite. C'est voulu — la remplir donnerait des points pour du temps que personne n'a passé. L'outil de rattrapage pose la question au lieu de crier à la panne.
+>
+> **Ce que la journée a appris** : une panne qui ne se signale que dans un fichier journal n'est pas signalée. L'alerte Discord en cas d'échec du relevé reste à faire, et elle aurait fait gagner huit heures.
+
+Sur une sortie longue, la récolte ne se partage plus à parts égales : **un relevé toutes les 30 minutes dans le salon vocal, présent = 1 point**, et la récolte se divise par le total des points. La valeur d'un point est donc indifférente au nombre de participants — propriété nécessaire quand l'effectif change à chaque demi-heure, et c'est elle qu'on a promise à la guilde.
+
+- **`epice/rally_presence.php`** — cron toutes les 30 min. Pour chaque sortie **ouverte dont la fenêtre horaire couvre l'instant**, il note qui est dans le salon vocal et enregistre un tick (`presence.ticks["2026-09-26T08:30"] = [ids]`).
+- ⚠ **Pourquoi c'est si contourné** : notre bot est un endpoint HTTP d'interactions, **pas** un bot connecté à la gateway — aucun événement temps réel, donc impossible d'« écouter » les entrées/sorties du salon. Et Discord n'expose en REST que l'état vocal d'**un** utilisateur (`GET /guilds/{g}/voice-states/{u}`), jamais la liste des occupants d'un salon. Il faut donc une liste de candidats et les interroger un par un.
+- **Candidats** : les membres de la guilde (`GET /guilds/{g}/members`), ce qui couvre les **visiteurs** non inscrits — mais cela demande l'intent privilégié **« Server Members »**, à activer dans le portail développeur. À défaut, repli sur les inscrits de la sortie, et **l'échec est journalisé** : sinon on croirait relever tout le monde en ne voyant que les inscrits.
+- **Le fichier est relu SOUS VERROU** avant écriture : `debriefs.json` est partagé avec le site et le bot, réécrire la copie chargée trente secondes plus tôt effacerait une inscription arrivée entre-temps.
+- **Écran d'admin** (onglet Assignation, sous la grille des créneaux) : grille joueurs × demi-heures, **cliquable pour corriger**, bouton ✕ pour retirer un visiteur, saisie du volume, calcul, puis publication Discord. Colonne Points en 2ᵉ position et colonne Joueur en `position:sticky` — avec 16 demi-heures le tableau défile, et ce sont les deux colonnes qu'on ne doit jamais perdre.
+- ⚠ **Le navigateur ne calcule JAMAIS les parts.** Il envoie la grille corrigée, le serveur renvoie les parts (`parts_presence()` dans `data-api.php`). C'est le seul chiffre du portail qui se traduit en ressources dans une poche : il n'existe qu'à un endroit, et l'écran comme le message Discord le lisent de là. Un miroir JS aurait été le troisième du lot, après celui des créneaux.
+- **Parts arrondies à la centaine inférieure** (le raffinage consomme par lots de 100 ; une part de 7 437 laisse 37 unités mortes). Le reliquat retourne au pot commun, et il est affiché.
+- **Aucun prélèvement** : ornis, roquettes et buggys restent à la charge de la guilde, par dons ou sorties dédiées. Décision de l'organisateur.
+
+**Vérifié sur banc** — `php epice/parts_presence.test.php`, 25 assertions. Deux défauts trouvés là et invisibles à la relecture :
+- **Un joueur listé deux fois dans le même tick comptait double.** Le relevé et la sauvegarde dédoublonnent déjà, mais la fonction qui distribue des ressources ne doit dépendre de la propreté de personne.
+- **Le message Discord dépassait les 2000 caractères** avec 40 pseudos longs — et un message trop long est rejeté **en entier**. Première correction : plafond à 40 lignes (insuffisant). Deuxième : budget fixe de 1750 (insuffisant aussi, il ignorait le poids de l'en-tête et des caractères multi-octets, `─` et `…` pesant 3 octets). **Le budget se mesure, il ne s'estime pas** : `1900 - strlen(en-tête) - strlen(pied)`.
+
+La fenêtre horaire et le découpage en demi-heures sont vérifiés à part (12 assertions) : une journée de 8 h donne exactement 16 ticks, `08:29` tombe dans le tick `08:00`, une durée `6h30` finit à 02:30 le lendemain, et une date en texte libre (ancien format « Dimanche 28/06/26 21h ») rend `null` sans rien casser.
+
+- **Une sortie qui déborde s'allonge APRÈS coup**, pas à la déclaration : le bouton
+  « ＋ Une demi-heure de plus » ajoute une colonne à la fin en reprenant les présents de la
+  précédente, puis on décoche ceux qui étaient partis. Une colonne entièrement décochée
+  disparaît à l'enregistrement, ce qui annule un ajout de trop.
+  ⚠ Des durées de 12 et 14 h ont été ajoutées puis **retirées** : déclarer une sortie à
+  rallonge par précaution allonge la grille des créneaux et les compos pour tout le monde,
+  alors que le débordement est l'exception. Le radio group de la durée retrouve donc ses
+  9 options — il plafonne à 10, et c'est ce plafond qui avait imposé un passage en liste
+  déroulante, désormais inutile.
+  ⚠ L'arithmétique de la demi-heure suivante se fait **en UTC** alors que les clés sont des
+  heures locales : on ne manipule qu'une étiquette, et passer par l'heure locale du
+  navigateur ferait intervenir son fuseau et ses changements d'heure dans un calcul qui n'en
+  a que faire. Vérifié sur les passages de minuit, de mois, d'année et d'heure d'hiver.
+
+- **Alerte en MESSAGE PRIVÉ quand le relevé tombe en panne pendant une sortie**
+  (`alerte_user_id`). En MP et à une seule personne, sur décision de l'organisateur : les
+  autres ne peuvent rien y faire, et une alerte technique dans un salon de guilde n'y
+  produit que du bruit. **Une alerte par panne, pas une par passage** — un rappel toutes
+  les 30 min serait ignoré aussi sûrement qu'un fichier journal, ce qui est exactement
+  l'erreur qu'on corrige. Un marqueur (`data/rally_alerte.json`) retient la dernière cause,
+  resignale au bout de 6 h, et disparaît dès qu'un relevé réussit.
+  ⚠ La vérification du salon a été **déplacée après** le tri des sorties : hors fenêtre il
+  n'y a rien à relever, donc rien à vérifier — et surtout rien à signaler pour une panne
+  qui ne fait perdre aucun point. Économise aussi un appel Discord toutes les 30 min la nuit.
+  `php epice/rally_presence.php --alerte-test` envoie un MP de contrôle : **une alerte
+  qu'on n'a jamais vue arriver n'est pas une alerte.**
+- **`epice/apercu_partage.php`** lit le message de partage tel que Discord le recevrait,
+  sans rien envoyer. Né d'un vrai coût : faute de pouvoir relire le message, un déploiement
+  a été retardé par prudence. Il extrait les fonctions du fichier **déployé** plutôt que
+  d'inclure `data-api.php`, qui démarre une session et exige une authentification.
+
+**Mise en service** — trois préalables, dont deux hors du code :
+1. `rally_voice_channel_id` **et** `guild_id` renseignés dans `epice/discord_sortie_config.php` (`guild_id` était jusqu'ici facultatif : il ne l'est plus).
+2. L'intent **« Server Members »** activé dans le portail développeur, sans quoi seuls les inscrits sont vus.
+3. Le bot doit pouvoir **voir et rejoindre** le salon vocal (Discord exige la permission de connexion pour lire l'état vocal d'autrui).
+
+```bash
+php /srv/dune-map/epice/rally_presence.php --test   # n'écrit rien, affiche qui serait compté
+```
+
+```
+*/30 * * * *  php /srv/dune-map/epice/rally_presence.php >> /srv/dune-map/epice/data/rally_presence.log 2>&1
+```
+
+##### Proposition automatique d'organisation (2026-09-20) — ✅ EN PROD
+
+Composer une journée à la main, c'est quatre fois le même travail avec trois noms qui changent. Le bouton **✨ Proposition automatique** remplit **tous les créneaux d'un coup**, chacun avec les gens disponibles à cette heure-là. Moteur isolé et testable : `epice/raid-auto.js`.
+
+- **Trois sources, dans cet ordre de légitimité** : (1) le **poste choisi sur Discord** — c'est le choix de la personne pour cette sortie-là, il prime sur tout ; (2) l'**habitude**, tirée des compos passées ; (3) le remplissage. À légitimité égale, le plus expérimenté dans le rôle, puis le plus assidu, puis l'ordre alphabétique — pour que deux exécutions donnent le même résultat (testé en inversant la liste d'entrée).
+- ⚠ **Le moteur ne comble JAMAIS un poste critique par défaut.** Sans transporteur déclaré ni transporteur habituel dans le créneau, la case reste **vide**. Un outil qui promeut d'office un pilote ferait passer un créneau intenable pour un créneau complet — exactement l'inverse du service rendu. Même règle pour le moissonneur et le Chef de Sortie (un chef ne s'improvise pas ; CDR et CP, eux, ont un repli structurel, il faut bien que quelqu'un mène l'escouade et la patrouille).
+- **Un « peut-être » ne fonde pas une organisation** : il n'est pas placé, il est listé en renfort. Un absent n'apparaît nulle part.
+- **La base avancée ne s'active qu'à partir de DEUX volontaires** — un constructeur seul n'est pas une base avancée, c'est un joueur isolé sur un îlot. `sous_fief` reste **faux** : personne ne peut le deviner, et l'avertissement est là pour qu'on aille le demander.
+- **Pas de cumul de commandements** tant qu'une autre personne est disponible — cumuler CS et CDR prive l'escouade de son interlocuteur. Le garde-fou cède quand il n'y a littéralement personne d'autre (testé à deux joueurs).
+- **`action=role_stats` (POST, organisateur)** calcule les habitudes **côté serveur** et les renvoie sous les pseudos **exactement tels que le client les a envoyés**. C'est ce qui permet de rapprocher `Lorhelyne✨` (Discord) de `Lorhelyne` (tapé à la main dans une vieille compo) sans garder deux normalisations d'accord : `pseudo_key()` ne conserve que `[a-z0-9]`, ce qui retire emojis, accents et ponctuation **en travaillant sur les octets** — donc sans mbstring, absente du serveur. Appliquée des deux côtés, la perte d'un accent est sans effet (`Sté` → `st` partout).
+- La sortie en cours est **exclue** du calcul (`sauf`) : se recommander soi-même ferait passer un brouillon à moitié rempli pour une habitude établie.
+- **Le vocabulaire des habitudes est plus fin que celui des postes Discord** : `cardinal` et `patrouille` sont deux métiers, là où Discord ne connaît que « pilote d'ornithoptère ». C'est précisément là que l'historique sert — il **départage** des gens qui ont tous coché le même poste.
+- **Rien n'est enregistré.** Le bouton produit un brouillon, la confirmation le dit, la note finale le répète. Les consignes du soir (`briefing_notes`) sont préservées : elles sont écrites à la main et n'ont rien à voir avec la répartition des rôles.
+- ⚠ **`.btn` sans variante sortait BLANC.** La classe déclarait `border:1px solid` sans couleur ni fond : le navigateur appliquait son style natif, soit un bouton blanc au milieu d'une charte ocre sur noir. `.btn` a désormais une apparence par défaut tenable (fond transparent, bordure `--border`, texte `--text-muted`), et une variante `.btn-outline` (bordure `--accent-dim`, texte `--accent`) sert aux actions offertes — moins que l'or plein d'« Enregistrer », plus qu'un `btn-ghost`. Le correctif vaut pour tout bouton futur, pas seulement celui-ci.
+- **Le bouton se masque si `raid-auto.js` manque** (`typeof RaidAuto === 'undefined'`) — leçon de `raid-groups.js`, dont l'absence tuait la page entière.
+- Vérifié sur banc : `node epice/raid-auto.test.cjs` — 15 assertions. Et **en bout en bout sur le jeu d'essai** (15 inscrits, 4 créneaux, vrai historique des 6 sorties passées) : les quatre compos sortent cohérentes, sans doublon, le créneau 14–16 laisse le transporteur vide et signale le manque, et `RaidGroups.issues()` ne renvoie plus que l'avertissement de sous-fief — qui est un fait, pas un défaut.
+- ⚠ Deux défauts que seul l'essai grandeur nature a montrés, invisibles en lecture : le CS se retrouvait aussi CDR (d'où la règle de non-cumul), et le compteur du rapport annonçait « 0 d'après l'historique » alors que l'historique classait bel et bien les cardinaux — il ne comptait que la branche de repli. Il compte désormais les affectations **appuyées sur un précédent**, toutes branches confondues.
+
+- ⚠ Piège attrapé au vol : `renderAssignBuilder()` figeait `const c = currentCompo` **avant** d'appeler la grille, qui peut rebasculer le créneau courant quand la durée a été raccourcie — le builder aurait rendu la compo qu'on venait de quitter pendant que la grille en surlignait une autre. Le recadrage se fait désormais en tout premier.
+
 
 > **État au 2026-08-13 — ✅ EN PRODUCTION.** Le **catalogue à trois niveaux** (34 activités) et le **formulaire refondu** ont été testés sur `/v2` via l'app « DuneMap Dev », puis déployés à la racine.
 >
@@ -636,6 +858,91 @@ Créer une sortie épice **directement depuis Discord** et gérer les inscriptio
 - **Bannière de l'encart**, dans l'ordre : `banners[<type>]` → **la bannière d'« Activité Guilde »** (`BANNIERE_DEFAUT_TYPE`, le fourre-tout : son image convient à n'importe quelle sortie) → `banner_url` → **`BANNIERE_DEFAUT_FICHIER`** (`/epice/img/sortieactdivers.jpg`, résolu avec `site_url`). Une activité a donc **toujours** une illustration, config vierge comprise ; le seul cas sans image est un fichier par défaut absent du serveur. ⚠ `site_url` renseigné sur `.../v2` fait chercher le fichier dans `/v2/epice/img/` — il doit alors y être déposé ; laissé vide, il pointe sur la racine et reste visible depuis `/v2`. ⚠ Le repli teste la valeur **vide**, pas seulement la clé absente : avec `??`, une entrée présente mais vide — ce que produit le gabarit de config pour les 9 types historiques — bloquait le repli, si bien que ces types n'affichaient aucune bannière alors qu'un défaut était configuré, tandis que les activités sans entrée du tout l'obtenaient. Deux comportements pour la même intention ; corrigé 2026-08.
 - **Config** : `epice/discord_sortie_config.php` (**gitignoré** — `bot_token` secret ; `app_id`/`public_key` publics ; `guild_id` optionnel). Gabarit = `discord_sortie_config.example.php`.
 - **Mise en place** : `discord_register.php` (déclare la commande `/sortie` et ses sous-commandes `creer` / `panneau`, à lancer à chaque changement de commande — gardé sur le serveur volontairement, pratique en cas de future modification). ⚠ **Le passage aux catégories exige un re-`register`** : c'est un changement de définition de commande (retrait de l'option `type`, ajout de la sous-commande `panneau`). Sans lui, les clients continuent d'afficher le champ `type` et `/sortie panneau` n'existe pas. Par tolérance, le handler accepte encore un `type` valide envoyé par un client resté sur l'ancienne définition pendant la propagation. ⚠ **Les deux scripts d'enregistrement doivent POSTer, jamais PUTer** : `PUT /applications/{id}/commands` **remplace la totalité** des commandes de l'application. Chaque script ne déclarant que la sienne, un PUT efface silencieusement l'autre — c'est arrivé, `/commande` a disparu du serveur après une simple mise à jour du libellé d'un type de sortie. `POST` crée ou met à jour uniquement la commande nommée. Corollaire : **rien ne supprime plus une commande devenue obsolète**, il faut la retirer à la main via l'API (`DELETE .../commands/{command_id}`). `discord_probe.php` (sonde de diagnostic ponctuelle) a été retiré du serveur après usage. Nécessite **HTTPS** sur le domaine (Let's Encrypt) car Discord refuse les URL `http`. URL d'interactions à déclarer dans le portail Discord (General Information → Interactions Endpoint URL) → **`https://.../discord_interactions.php`** (dispatcher racine). Journal du dispatcher : `epice/data/discord_interactions.log` (niveau routage) ; celui du handler sortie reste `epice/data/discord_sortie.log`.
+
+---
+
+### Tournois PvP (`epice/tournois.html`) — ✅ EN PROD (2026-10-04)
+
+Organisation de tournois en duel façon **Challonge**, entièrement sur le site. Trois activités ajoutées au bot Sorties, dans une nouvelle sous-catégorie **PvP › Tournois** : `tournoi_deb` (🌱 Débutants), `tournoi_int` (⚔️ Intermédiaires), `tournoi_exp` (🔥 Vétérans — clé `expert` conservée, seul le libellé affiché a été adouci). Inscription par RSVP simple (Présent / Peut-être / Absent) ; l'encart porte un **bouton-lien « 🏆 Suivre le tournoi et parier »** (ex-« Arbre du tournoi ») vers `tournois.html?sortie=<id>`.
+
+- **Sortie liée** : le formulaire de création ne propose QUE les sorties des trois activités « Tournoi PvP » des 3 dernières semaines (les autres types en second choix noyaient la liste ; un tournoi improvisé se monte sans sortie).
+- **Parcours** : sortie « Tournoi PvP » sur Discord → les joueurs cliquent Présent → l'organisateur ouvre l'arbre (bouton de l'encart ou « Nouveau tournoi ») → les présents sont importés (« peut-être » en option) → ajouts **à la main** des non-inscrits, ordre des têtes de série (▲▼ ou tirage au sort) → **Lancer** (liste figée) → saisie des scores au clic sur un match → bandeau « dernier match joué » → **Clôturer** (podium figé) → **Publier les vainqueurs sur Discord**. « Annoncer sur Discord » poste les matchs à jouer maintenant et le lien vers l'arbre.
+- **Formats** : **double élimination** (tableau des perdants, grande finale avec **revanche** si le finaliste des perdants gagne — ou finale unique, au choix) et **simple élimination** (petite finale pour la 3ᵉ place, optionnelle). Manches par match : 1, BO3, BO5 (indicatif, le score saisi = manches gagnées). Nombre de joueurs quelconque (2 à 128) : les **exemptions** tombent sur les meilleures têtes de série, placement standard 1-8 / 4-5 / 2-7 / 3-6.
+- **Onglets du tournoi** : Arbre (survol d'un joueur = tout son parcours s'allume), Joueurs, Classement (rang, V/D ; **ex æquo assumés** pour les éliminés d'un même tour — rien ne les départage, on n'invente pas d'ordre), Journal (qui a saisi quoi, quand). Onglets de la page : Tournois (en cours / en préparation / derniers résultats), **Historique** (filtrable par niveau), **Palmarès / Hall of Fame** (médailles de toujours, **un tableau par niveau** : la vue « Tous niveaux » juxtapose les trois classements au lieu de les additionner — l'ancienne version mélangée plaçait deux victoires chez les débutants devant deux victoires chez les vétérans ; identité des joueurs comme pour la saison).
+- **Ajouter n'importe quel membre du Discord**, même un ancien qui n'a jamais touché au site ni au bot : le champ d'ajout de l'onglet Joueurs propose **tous les membres du serveur** pendant la frappe (surnom de serveur, sinon nom Discord ; recherche insensible aux accents, sur le nom comme sur le `@pseudo`). Un nom tapé librement reste possible pour un invité hors Discord. Trois origines affichées : *Inscrit à la sortie*, *Membre Discord*, *Ajouté à la main*. Action `membres` de l'API : `GET /guilds/{g}/members` par le bot Sorties, serveur = `membres_guild_id` du bot s'il est renseigné (**à régler sur `/v2`** : le bot de dev n'est pas sur la vraie guilde, Discord répond 404 « Unknown Guild »), sinon `guild_id` de **`discord_oauth_config.php`** (la vraie guilde, par construction — **ne jamais le changer pour ça**, la connexion au site en dépend), sinon ceux du bot ; cache d'une heure (`epice/data/tournois_membres_cache.json`, gitignoré, lien « Actualiser » sous le champ). ⚠ **Demande l'intent privilégié « Server Members »** (portail développeur → Bot → Privileged Gateway Intents), le même que le relevé de présence : sans lui Discord répond 403, et la page **le dit sous le champ** au lieu d'afficher une liste vide trompeuse.
+- **Qui passe le 1ᵉʳ tour sans jouer** (remarque de Bahlor : sans 4, 8 ou 16 joueurs, des têtes de série sont qualifiées d'office) : ni contrainte sur le nombre de joueurs (personne ne reste sur le banc parce qu'on est 6), ni remplissage avec des absents (forfaits). Avant le lancement, l'onglet Joueurs **nomme** les exemptés — toujours les premières têtes de série (`nbExemptes()`) — et chaque joueur porte une coche **« passe le 1ᵉʳ tour »** : cocher l'échange avec le dernier exempté, décocher avec le premier non exempté (le nombre reste juste). **« 🏅 Classer selon les résultats »** (`ordreParResultats()`) range les têtes de série d'après les points de la saison, les titres puis les médailles de toujours au même niveau : les meilleurs passent le 1ᵉʳ tour et sont répartis dans l'arbre, les autres jouent un match de plus. **« Compléter à 8 »** reste en option secondaire, pour des retardataires bien présents : il propose les « peut-être » de la sortie (cochés) et les habitués du niveau (à cocher), sans rien ajouter seul.
+- **Lots** pour les 3 premières places : saisis à la création ou après, affichés sur le podium et dans l'annonce Discord.
+- **Droits** : consultation = tout membre connecté ; création, scores, publication = **organisateurs** (`epice_can_organize()`, même liste que l'Activité Guilde) ; suppression = admin ou créateur.
+- **Droits PAR TOURNOI (2026-10)** : **qui crée un tournoi le gère**, sans être organisateur. Cas réel : Neuroch a créé une sortie « Tournoi PvP » sur Discord et restait bloqué devant son tournoi, l'admin a dû lui donner le rôle. Gèrent un tournoi (`t_peut_gerer()`) : un organisateur, son créateur sur le site (`cree_par`), ou le créateur de la sortie Discord rattachée (`epice_is_creator()`, par pseudo ou compte Discord). Un membre **monte le tournoi de SA sortie** (le formulaire ne lui propose que ses sorties ; un tournoi sans sortie reste aux organisateurs) — depuis le bouton de l'encart, la page lui ouvre directement le formulaire (`droits_sortie`). Ensuite il fait tout sur ce tournoi-là : joueurs, équipes, lancement, scores, annonces Discord, et il en est le **banquier** des paris. Il n'a aucun droit sur les tournois des autres. Seul le classement de saison (`publish_saison`, tous tournois confondus) reste réservé aux organisateurs. Une sortie ne porte qu'un tournoi (la création d'un second est refusée). Côté API, les actions de gestion ne demandent plus que la connexion à l'entrée ; le droit se vérifie sur le tournoi visé (`t_exige_gerer()`). Côté page, `EST_ORGA` (rôle) est distinct de `PEUT_GERER` (droit sur le tournoi ouvert).
+- **Ce que voit un membre (2026-10)** : les onglets **Joueurs** (composition, forces F/M/N) et **Journal** sont réservés à ceux qui gèrent le tournoi. Le **serveur** ne les envoie d'ailleurs pas (`t_vue_membre()` dans `get` : ni journal ni forces ; la liste `list` retire aussi les forces à qui ne gère aucun tournoi) — masquer dans la page ne suffisait pas, le JSON se lit dans le navigateur. **Arbre caché pendant la préparation** tant que l'orga ne l'a pas dévoilé (bouton « 👁 Dévoiler l'arbre aux membres » / « 🙈 Cacher », champ `devoile`, faux par défaut) : il peut essayer plusieurs compositions sans rien révéler. Caché, un membre ne reçoit ni les équipes ni l'ordre des têtes de série (joueurs rangés par nom, sans rang, `masque: true`) et l'onglet Arbre affiche un cadenas. Le lancement le rend visible de toute façon ; un **retour en préparation le recache**. Les **paris sur le vainqueur n'ouvrent qu'une fois l'arbre dévoilé** (on ne parie pas sur ce qu'on ne voit pas), et on ne peut plus le recacher dès qu'un tel pari existe.
+- **Aperçu « vue joueur » des admins** : `auth-guard.js` ne fait que changer le rôle lu dans le navigateur (`previewPlayer`), le serveur répond toujours en admin. La page des tournois coupe donc elle-même les droits venus du serveur en aperçu (`APERCU`) ; sans ça, l'aperçu montrait toute la barre d'orga. Toute page qui tient ses droits du serveur doit faire pareil.
+- **Pas de tuile dans le menu** (choix de l'utilisateur, pour ne pas multiplier les tuiles) : la page est un sous-menu d'**Activité Guilde** — onglet-lien « 🏆 Tournois PvP » dans `epice/debrief.html`, retour « ← Activité Guilde » côté tournois — et elle **suit sa visibilité** (`page-guard.js` avec la clé `debrief`). Description de la tuile Activité Guilde élargie aux tournois. L'entrée principale reste le bouton de l'encart Discord.
+
+**Architecture — le moteur est UNIQUE et côté navigateur.** `epice/tournoi-engine.js` (module pur, sans DOM) déduit l'arbre du nombre de joueurs, du format et des options ; **l'arbre ne se stocke pas**. Seuls les résultats sont stockés, chacun avec les **deux joueurs qu'il opposait** : si une correction en amont change l'affiche d'un match, son ancien résultat ne correspond plus et tombe tout seul — aucun effacement en cascade à écrire, donc aucun à rater. `epice/tournois-api.php` **ne recalcule rien** : il stocke joueurs, résultats et le podium envoyé par la page à la clôture, et c'est ce podium que l'annonce publie. Pas de miroir PHP, volontairement (cf. le double découpage des rallys et son test de parité). Banc d'essai : **`node epice/tournoi-engine.test.cjs`** — rejoue le tournoi « Veteran » de Challonge (8 joueurs, double élimination) et doit retrouver son podium exact (Fenros 4-0, Neuroch 4-2, Bahlor 2-2), puis mène au bout tous les effectifs de 2 à 17 dans les deux formats.
+
+- **Stockage** : `epice/data/tournois.json` (**gitignoré**, protégé par le `deny` nginx de `epice/data/`). Écriture en **lecture-modification-écriture sous un seul verrou**, plus un **numéro de version** : deux organisateurs saisissant en même temps ne s'écrasent pas, le second est invité à recharger.
+- **Garde-fous serveur** : liste des joueurs figée après le lancement (renommer reste possible), format modifiable seulement en préparation, retour en préparation = résultats effacés (l'arbre va changer), clôture refusée sans podium.
+- **Les inscrits sont COPIÉS dans le tournoi** à l'import : la sortie Discord peut être supprimée ou purgée ensuite, le tournoi garde ses joueurs. Corollaire : « Importer les nouveaux inscrits » ne marche que tant que la sortie existe.
+- **Publication** : par le bot Sorties (`bot_token` de `epice/discord_sortie_config.php`), dans `tournoi_channel_id` → `partage_channel_id` → salon de la sortie rattachée. Le motif de refus Discord est relayé tel quel (« Missing Access » ≠ « Missing Permissions »).
+- **Bouton-lien sur l'encart** : un bouton de style 5 (URL) n'émet **aucune interaction**, donc rien à ajouter à la liste blanche de `discord_interactions.php`. Pas de re-`register` non plus : la commande `/sortie` n'a pas d'option, le sélecteur lit `SORTIE_TYPES`.
+
+- **Exemptions reconnues dès le départ** : un match dont une case est vide pour de bon (exempt) n'aura jamais lieu, même si l'autre joueur n'est pas encore connu — le moteur le marque tout de suite. Avec 6 joueurs, tout le premier tour des perdants n'est fait que d'exemptions : il est **masqué et les tours renumérotés**, comme sur Challonge (`toursPerdants()`), au lieu d'afficher une colonne de cases « Exempt ».
+- **Reprise des tournois Challonge** : `php epice/importer_challonge.php` (ligne de commande, **une seule fois**) ajoute à l'historique les deux tournois joués avant la page — « Veteran » (8 joueurs, Fenros / Neuroch / Bahlor) et le « Tournoi des nouveaux » (6 joueurs, Shean / Frya / Militarus). Relançable sans doublon. Les résultats ont été produits par le moteur à partir des arbres relevés ; ce que Challonge n'affichait pas n'est **pas inventé** (pas de score là où il montrait 0-0, pas de date ni d'organisateur pour le tournoi des nouveaux — à compléter par ✎ Modifier). Niveaux choisis à l'import : Veteran = Vétérans, nouveaux = Débutants. Le script remet le fichier en 664 (lancé par `dune`, il naîtrait en 644 et la page ne pourrait plus écrire).
+
+- **Points et saisons** (décisions de l'utilisateur après discussion avec les joueurs, 2026-10) : chaque tournoi clôturé rapporte des points selon la **place finale** — barème fixe `1ᵉʳ 5 · 2ᵉ 4 · 3ᵉ 3 · 4ᵉ 2 · les autres 1`, les ex æquo prennent les points de leur rang. **Jamais selon les matchs gagnés** : en double élimination le rescapé des perdants gagne autant de matchs que le champion (Veteran : Neuroch 4 victoires = Fenros 4 victoires, 2ᵉ et 1ᵉʳ) — c'est la remarque de Bahlor qui a tranché. Onglet **Saison** : classement **par niveau** (aucun mélange), saisons de **deux mois calées sur les mois pairs** (oct.–nov., déc.–janv., févr.–mars…) pour que la première démarre au lancement au lieu de s'arrêter quatre semaines plus tard ; appartenance lue sur la **date du tournoi** (un tournoi sans date n'entre dans aucune saison). Seuls les **3 meilleurs résultats** d'un joueur comptent (sinon on finit premier en étant présent partout) ; égalité départagée par les titres puis les podiums, au-delà rang partagé. Un vainqueur de tournoi peut donc ne pas mener la saison — voulu, d'où la colonne *Titres*. Identité d'un joueur d'un tournoi à l'autre : son identifiant Discord, sinon son nom sans casse ni accents. **Correction manuelle** des points dans l'onglet Classement d'un tournoi clôturé : raison obligatoire, affichée au survol avec le calcul d'origine, inscrite au Journal ; champ vidé = retour au calcul. **Conseil de montée** (badge au survol) : les joueurs choisissent leur niveau, ce n'est qu'un avis, toujours positif, lu sur leurs 3 derniers tournois à ce niveau — une victoire ou deux podiums : « prêt à monter », un podium : « en progression ». Publication du classement sur Discord (`publish_saison`, lien direct vers le niveau). Tout le calcul est dans le moteur (`classementSaison`, `pointsTournoi`, `conseilMontee`) ; la liste de l'API emporte l'arbre complet des tournois terminés pour ça. Barème, nombre de résultats retenus et seuils du conseil : constantes en tête de la section POINTS ET SAISONS de `tournoi-engine.js`.
+- **Entraînements par niveau** (demande de la GM, 2026-10) : la sous-catégorie PvP › Entraînement propose désormais `pvp_train_deb` / `pvp_train_int` / `pvp_train_vet` (Débutants, Intermédiaires, Vétérans — mêmes rôles de combat que l'ancien, mêmes icônes que les tournois). L'ancien `pvp_train` n'est **pas renommé** (sa clé est stockée dans les sorties passées) : il est marqué **`'retire' => true`**, nouveau drapeau de `SORTIE_TYPES` qui le cache du sélecteur (`sortie_proposee()`) tout en le gardant pour les encarts publiés et l'historique. C'est désormais **la** façon de remplacer une activité. Le champ **`'banniere'`** désigne l'activité dont reprendre l'image à défaut de la sienne : les trois niveaux reprennent celle de `pvp_train` (`sortietrainpvp.jpg`).
+- **Tournois par équipes** (demande de Neuroch, 2026-10 : « un 2v2 avec équipes aléatoires parmi les inscrits », équilibrées, « que Bahlor et Fenros ne soient pas dans la même équipe ») — **pas encore déployé**. Réglage **Combats** du formulaire : en duel, ou par équipes de **2, 3 ou 4** (`options.equipe`, figé au lancement comme le format). Rien ne change côté bot : les inscriptions passent par les mêmes sorties « Tournoi PvP ». **Le site propose, l'organisateur dispose** :
+  - **Force de chaque joueur** : **F** Fort · **M** Moyen · **N** Novice (3 / 2 / 1 pour le calcul). Proposée (en pointillé, justification au survol) d'après, dans l'ordre : le **dernier choix d'un organisateur** à un tournoi par équipes clôturé (un jugement humain l'emporte sur la formule), sinon les **résultats en duel** — podium Vétérans ou victoire Intermédiaires : Fort ; a joué Vétérans/Intermédiaires ou gagné chez les Débutants : Moyen ; Débutants seulement : Novice. **Sans aucun résultat : « ? »**, on n'invente pas — compté comme Moyen tant que l'organisateur n'a pas tranché, et la page le signale. Un clic sur une lettre la fixe (`joueurs[].force`, **seul un choix humain est stocké**), un second clic rend la main à la proposition.
+  - **⚖ Composer des équipes équilibrées** (`composerEquipes()` du moteur) : coût lexicographique — 1) deux Forts ensemble alors qu'on pouvait les séparer, 2) écart de force entre la meilleure et la moins bonne équipe, 3) Novices regroupés, 4) variance ; départs aléatoires + échanges deux à deux, puis **tirage au hasard parmi les meilleures compositions** — **🎲 Autre tirage** en donne une autre aussi équilibrée. Équipes rangées de la plus forte à la plus faible (les premières passent le 1ᵉʳ tour s'il y a des places vides, comme en duel ; ▲▼ pour changer). Nom par défaut = les membres (« Bahlor & Neuroch »), renommable (✎, `nom_libre`, membres alors ajoutés aux annonces Discord).
+  - **Échanges d'un clic** : un joueur puis un autre (entre deux équipes, ou avec un remplaçant), une place libre ou la zone des remplaçants pour déplacer. **Après le lancement**, seul un remplaçant peut entrer à la place d'un membre (l'équipe garde son identifiant, l'arbre ne bouge pas).
+  - ⚠ **Le banc ne dépend JAMAIS de la force** : laissé à l'équilibrage, il envoyait un Fort sur le banc — **Fenros, le champion**, constaté au banc d'essai — parce que ça rendait les quatre équipes parfaitement égales. Remplaçants = ceux déjà désignés par l'organisateur s'ils sont en bon nombre (« Autre tirage »), sinon les **derniers inscrits** (« Recomposer » repart de zéro).
+  - **Modèle** : `joueurs` reste la liste des INDIVIDUS (import Discord, recherche de membres, retrait… inchangés) ; `equipes = [{id, nom, nom_libre, membres:[idJoueur]}]` ; le moteur fait s'affronter des **participants** (`participants()` : joueurs en duel, équipes sinon). Résultats, podium et corrections de points portent donc l'**identifiant d'équipe** — l'API les valide contre les équipes (`t_clean_equipes`, équipes complètes exigées au lancement, ordre figé ensuite).
+  - **Aucun point de saison** pour un tournoi par équipes (`pointsTournoi()` rend `[]`, conseil de montée et têtes de série les ignorent) : une victoire portée par un coéquipier fort ne se compare pas à une victoire en duel. Au **Palmarès**, un tableau « 👥 par équipes » à part, par niveau, où **chaque membre** de l'équipe médaillée reçoit la médaille.
+  - Banc d'essai : 6 tests de plus dans `node epice/tournoi-engine.test.cjs` (Forts séparés sur 30 tirages, banc indépendant de la force, autre tirage différent sans perte d'équilibre, forces proposées sur des tournois type Challonge, arbre entre équipes sans points de saison). Composition : ~25 ms pour 16 joueurs, ~150 ms pour 128.
+
+#### Paris sur les tournois (onglet 🎲 Paris) — 2026-10
+
+Idée de Fenros, cadrée avec Lorhelyne et l'utilisateur sur Discord : **toute la guilde** parie, pas seulement les inscrits. Règles décidées par l'utilisateur :
+
+- **Option PAR TOURNOI, désactivée par défaut** (champ `paris` du tournoi, case « 🎲 Ouvrir les paris » du formulaire de création / ✎ Modifier). Un tournoi existant sans ce champ a ses paris fermés. Activable et désactivable **à tout moment** : éteints, l'API refuse tout nouveau pari (`parier`), l'onglet Paris disparaît s'il n'y a aucun pari, sinon il reste en **lecture seule** avec un bandeau (les paris déjà posés restent à régler, le banquier garde « Combat lancé », Annuler et Réglé). Pastille « 🎲 Paris » sur la carte du tournoi dans la liste. Côté Discord, l'encart de la sortie ne dit « Suivre le tournoi **et parier** » (et la phrase sur les paris) que si son tournoi a les paris ouverts (`sortie_tournoi_paris()`, lecture de `tournois.json`) ; l'annonce de lancement pareil. L'encart ne se met à jour qu'à sa prochaine modification (une inscription par exemple).
+
+- **De vrais Solaris du jeu.** Le site ne tient que le **carnet** : aucun argent ne transite par lui. Le **banquier est l'organisateur du tournoi** (`cree_par`). Un pari **compte dès qu'il est posé** : rien à payer d'avance, tout se règle à la fin (les perdants envoient leur mise en jeu au banquier, qui verse ensuite les gains).
+- **Deux sortes de paris.** **Vainqueur du tournoi** : ouvert pendant la préparation, **un seul par membre et définitif**, fermé au lancement. **Chaque combat** : ouvert dès que les deux combattants sont connus, **modifiable ou retirable** pendant une **fenêtre de pari** (2 min par défaut, `fenetre_paris` réglable par tournoi de 1 à 30 min), compte à rebours visible de tous ; à zéro, paris fermés (marqué ⚔ dans l'arbre). Saisir un résultat ferme aussi les paris du match (verrou posé discrètement) : sans ça, effacer ensuite le résultat rouvrirait un combat déjà vu.
+- **Refonte « soirée » (2026-10-11, après deux tournois réels)** : les orgas devaient manier l'outil tout en gérant le tournoi en jeu. Historique des essais, dans l'ordre : bouton « Combat lancé » caché dans la fenêtre de score et l'onglet Paris (personne ne s'en servait) → bandeau « Top départ » dans l'arbre → 1ᵉʳ clic « Lancer le combat » puis clic de saisie → **minuteur automatique** (retenu). Principe : **l'orga n'a plus rien à faire pour les paris**, il ne saisit que les vainqueurs.
+  - **Fenêtres** : stockées dans `paris.json` (`ouvertures` : `{idMatch: {a, b, le, fin}}`, secondes epoch). Le serveur ne connaît pas l'arbre : c'est la **page de l'orga** qui envoie les combats devenus prêts (`paris_ouvrir`, au lancement, après chaque résultat, à chaque relecture) ; une fenêtre déjà ouverte pour la même affiche n'est jamais réinitialisée. Le serveur refuse tout pari après `fin`. L'orga peut **⏹ Fermer** (verrou + `fin` = maintenant), **+1 min** (`paris_prolonger`, rouvre si besoin, 30 min max devant) ou **🔓 Rouvrir** (nouvelle fenêtre complète). Un retour en préparation efface fenêtres et verrous (sinon, au relancement, elles seraient déjà écoulées). La page corrige l'horloge du navigateur avec l'heure du serveur (`maintenant` renvoyé par `paris`), le module `tournoi-paris.js` reçoit `ouvertures` + `maintenant` et ferme la cagnotte à l'heure.
+  - **Console de soirée** (onglet « 🎮 Console », gestionnaires, tournoi en cours, onglet par défaut de l'orga) : rien que les combats à jouer, deux gros boutons « Vainqueur » par combat (un toucher = résultat enregistré, barre « ↩ Annuler » 10 s), compte à rebours, Fermer / +1 min / Rouvrir, « Détail » (saisie complète), derniers résultats avec « Corriger ». **Sur téléphone** (≤ 760 px, l'orga pilote d'une main en arbitrant en jeu), le mode console ne garde que le nom du tournoi, les onglets sur une ligne qui défile (collés en haut), les combats à saisir et l'arbre en lecture : barre de navigation, retour, infos, lots, barre d'organisation et texte d'explication disparaissent ; « Clôturer le tournoi » apparaît dans la console quand le dernier combat est joué. **Sur ordinateur**, rien n'est masqué (en-tête complet, barre d'organisation). La saisie par clic dans l'arbre reste possible. Retours du test sur /v2 (2026-10-11) : on y arrive aussi juste après « ▶ Lancer le tournoi » ; **pas de vainqueur pendant que les paris sont ouverts** (un combat qui a un vainqueur s'est joué pendant qu'on pouvait encore parier) — boutons « Vainqueur » grisés jusqu'à la fin du compte à rebours, « ⏹ Fermer » les débloque, et la saisie complète demande confirmation (`parisEnCours()`) ; **avancement** (« N combats joués sur M ») et **arbre complet** sous la console (copie de l'onglet Arbre, cliquable), pour savoir où on en est sans changer d'onglet.
+  - **Co-organisateurs** (`coorgas`, 4 au plus, `{nom, discord_id}`) : ils gèrent le tournoi comme son créateur (`t_peut_gerer()`), typiquement un non-joueur qui tient la console pendant que l'orga arbitre en jeu. **Banquier** distinct (`banquier`, vide = le créateur) : il voit le carnet et note les règlements (`t_exige_banque()` pour `paris_regle` / `paris_annuler`, `peut_banque` côté page) sans gérer le tournoi. Saisis dans le formulaire avec la liste des membres Discord (le compte Discord fait foi pour les droits, sinon le nom).
+- **Parier depuis Discord** (2026-10-11, demande de l'utilisateur après la refonte soirée) : le bot poste **un message de paris par tournoi** dans le salon des tournois (`tournoi_channel_id`, sinon `partage_channel_id`, sinon celui de la sortie) dès qu'on peut parier — **arbre dévoilé** en préparation, ou **lancement** — puis le **réédite à chaque événement** (fenêtre ouverte, pari posé d'où que ce soit, Fermer / +1 min / Rouvrir, résultat, clôture, paris désactivés). Contenu : vainqueur (cagnotte, 5 favoris avec cote) en préparation ; en cours, les **combats ouverts** avec compte à rebours Discord (`<t:fin:R>`, vivant sans réédition) et mises par camp avec cote, les combats lancés, les 3 derniers résultats ; à la fin, le podium. Anonyme comme la page (montants par camp, jamais de noms). Boutons : « 🎲 Match N » par combat ouvert / « 🏆 Parier sur le vainqueur » → **formulaire** « Sur qui ? » (menu) + « Mise » (`2000`, `2 000`, `2k`, `2,5k` acceptés ; 0 = retirer) ; « 📋 Mes paris » (ses paris et leur état, en privé) ; « Voir sur le site ». Toutes les réponses sont **éphémères**.
+  - **Une seule copie des règles** : `p_parier()` dans `tournois-api.php`, appelée par l'action `parier` du site ET par `epice/discord_paris.php`, qui inclut l'API en **mode bibliothèque** (`define('TOURNOIS_LIB')` : pas d'en-tête ni de switch, `tout()` lève une exception). Le parieur Discord = son **pseudo du site** retrouvé par son compte Discord (`users_SECURE_9x.json`), sinon son nom Discord ; un pari est reconnu par compte Discord sinon par nom, donc **posé sur le site, modifiable depuis Discord** et inversement. Jamais contre soi : un combattant ne voit que son camp dans le menu.
+  - **Numéro et tour des combats** (« Match 3 · Demi-finales ») : le serveur ne calcule pas l'arbre, la page de l'orga les envoie avec chaque fenêtre (`repereCombat()` → `num`, `tour` dans `ouvertures`, conservés par Rouvrir / +1 min, `p_ouverture()`).
+  - **Jamais bloquant** : l'envoi part **après** la réponse à la page (`p_discord_plus_tard()` : `register_shutdown_function` + `session_write_close` + `fastcgi_finish_request`). Pas de bot configuré = pas de message, le site marche pareil. Message supprimé à la main → reposté au prochain événement (404) ; tournoi supprimé → message supprimé. Premier envoi réservé sous verrou (deux requêtes simultanées ne postent pas deux messages) ; une mise à jour qui tombe pendant ce premier envoi **attend son id** (6 s au plus) puis réédite — sans ça, au lancement, l'ouverture des premiers combats (une fraction de seconde après) était perdue et le message restait sur « aucun pari ouvert » (premier test /v2). Journal des réponses de Discord : `epice/data/paris_discord.log` (gitignoré). Un 429 court est retenté une fois. Adresse du message dans `paris.json` (`discord` : `{canal, message}`).
+  - **Retours du premier test /v2 (2026-10-11)** : un compte à rebours écoulé restait affiché « ferme il y a 29 secondes » (Discord ne réédite rien seul) → la **page de l'orga**, qui voit le compte arriver à 0, appelle `paris_discord` (réédition, réservée aux gestionnaires) et le combat passe en « lancés ». Discord n'affiche le relatif qu'à la minute près au-delà d'une minute → on ajoute l'**heure exacte** (`<t:fin:T>`, à la seconde). Paris de la revanche absents du message alors qu'ils étaient sur le site → après chaque édition, l'état est relu (`p_empreinte()`) et le message réédité s'il a bougé entre-temps (3 fois au plus) ; les 429 sont retentés 3 fois. Le message restait aussi là où il était né (au dévoilement), noyé au-dessus des annonces : l'orga ne voyait que l'annonce de lancement → au **lancement** et après chaque **« 📣 Annoncer »**, il est effacé et **reposté en bas du salon**, juste sous l'annonce (`p_discord_plus_tard($tid, true)` → `p_discord_descendre()`). **Lancement = deux posts, dans l'ordre** (demande de l'utilisateur) : « ▶ Lancer » publie automatiquement l'annonce (plus de question « Annoncer maintenant ? »), puis le message des paris arrive juste en dessous. Le serveur retient toute mise à jour du message tant que l'annonce de CE lancement n'est pas partie (`lance_le` posé au lancement, `p_attend_annonce()`, filet de 90 s si le bot est en panne) : sinon l'ouverture des premiers combats, envoyée par la page au même moment, postait les paris avant l'annonce. **Numéros des combats** : la numérotation du moteur n'est pas figée (un combat est numéroté quand ses deux camps sont connus), le numéro retenu à l'ouverture pouvait donc doubler celui d'un autre (deux « Match 5 ») → la page renvoie par `paris_ouvrir` les combats dont le numéro a bougé, le serveur met à jour `num`/`tour` sans toucher à la fenêtre. **Filet anti-message en retard** : `discord.vu` = empreinte du dernier contenu ACCEPTÉ par Discord (`p_vu()`, sans l'heure) ; `p_discord_maj()` ne fait rien si le contenu n'a pas changé, réédite sinon (échec → nouvel essai 1,5 s plus tard, 4 fois au plus), et la page de l'orga appelle `paris_discord` à chaque relecture (20 s) : un message en retard se répare tout seul, sans aucun appel à Discord quand il est à jour. Banquier présenté « (l'organisateur du tournoi) » ou « (désigné par l'organisateur) » (`p_role_banquier()`), et les comptes disent ce qu'il encaisse et verse (la banque s'équilibre) ; son MP aussi.
+  - **Comptes de fin** : à « Publier les vainqueurs », la page (seule à calculer le bilan, `tournoi-paris.js`) envoie `paris_soldes` (`[{qui, net}]`) avec `paris_lots`. Le serveur les range dans `paris.json` (`comptes`, `p_comptes()`), le message final affiche les **totaux** (à encaisser, à verser, lots du podium) — **pas les noms** : qui doit quoi reste privé comme sur le site — et le bot envoie **un MP à chaque parieur relié à Discord** (son solde, à qui le régler) et **le carnet complet au banquier** (`p_discord_mp()`). Un solde déjà envoyé n'est pas renvoyé ; republier après une correction n'envoie qu'aux soldes changés, marqués « Correction » (`mp` dans `paris.json`). « 📋 Mes paris » redonne son solde. MP refusé (MP fermés) = noté dans le journal, rien d'autre.
+  - ⚠ Routage : préfixes `tpari:` / `tparim:` / `tparimes:` déclarés dans `detect_route()` de `discord_interactions.php` → route `paris`. **Ne jamais les retirer** : les messages déjà postés gardent leurs boutons. Aucune commande slash à enregistrer.
+- **Page tenue à jour pendant le tournoi** (bug du premier vrai tournoi, 2026-10-10) : la page ne se rechargeait jamais et « Actualiser » ne relisait que les paris. Un membre qui gardait l'onglet ouvert pariait sur un arbre en retard → « Ce match est déjà joué », d'où « on n'arrive pas à parier avant la finale ». Désormais `rafraichir()` relit tournoi + paris : toutes les 20 s pendant un tournoi en cours (pas si une fenêtre de saisie est ouverte ni si l'onglet est caché), dès qu'on revient sur la page (`visibilitychange` — sur téléphone on passe sans cesse de Discord au site), après un pari refusé, et sur « Actualiser ».
+- **Plafond : 10 000 Solaris par pari** (`PLAFOND_PARI` dans l'API, `PLAFOND` dans `tournoi-paris.js` : les deux à changer ensemble).
+- **Cagnotte partagée (pari mutuel)** : toutes les mises d'un pari sont mises en commun, ceux qui ont vu juste se les partagent **au prorata de leur mise**. Les cotes affichées (×2,40…) en découlent et bougent avec les mises. Le banquier ne gagne ni ne perd rien. **Une cagnotte sans aucun gagnant va aux lots du tournoi**, ainsi que les quelques Solaris d'arrondi (chaque gain est arrondi à l'unité inférieure) : la banque tombe toujours juste (`encaissé = versé + lots`, vérifié par le banc d'essai).
+- **Répartition des lots des paris sur le podium : 50 % au vainqueur, 30 % au 2ᵉ, 20 % au 3ᵉ** (`REPARTITION_LOTS` dans `tournoi-paris.js`, `repartirLots()`). Deux 3ᵉ ex æquo (simple élimination sans petite finale) se partagent les 20 %. La part d'une place vide (tournoi à deux joueurs) et les Solaris d'arrondi reviennent au vainqueur : tout est distribué. La part de chacun s'affiche dans l'onglet Paris (le lauréat la voit dans son encart), dans le carnet du banquier avec sa case « Réglé » (clé de règlement `lot:<id joueur>`), et sous chaque place dans l'annonce Discord des résultats (la page envoie `paris_lots = {idJoueur: Solaris}`).
+- **Les participants parient, mais jamais contre eux-mêmes** (règle révisée en 2026-10 : la première version leur interdisait leurs combats et le vainqueur, « trop compliqué » dans un tournoi ouvert à tous où presque tout le monde joue). Dans **leur propre combat**, seulement sur **leur camp** (eux en duel, leur équipe sinon) ; partout ailleurs, **y compris le vainqueur du tournoi**, comme tout le monde (le vainqueur a d'abord été limité à son équipe, jugé trop strict à l'usage : Lorhelyne ne pouvait miser que sur elle). Personne n'a ainsi intérêt à perdre. `p_contre_soi()` côté API (refus au dépôt + champ `contre_soi` recalculé à chaque lecture : un joueur changé d'équipe après coup voit son pari annulé s'il vise désormais l'adversaire). Retirer son pari reste toujours possible. Le rapprochement parieur ↔ joueur se fait par compte Discord, sinon par nom. Dans la page, seuls les boutons autorisés sont cliquables (son côté de son propre combat).
+- **Tournois par équipes** (2v2, 3v3, 4v4) : on parie sur les **équipes**, participants de l'arbre (`p_participants()` côté API, `res.joueurs` côté module). Le camp d'un joueur est son équipe (`p_camp()`) ; un remplaçant sans équipe n'a pas de camp et parie librement. Les lots des paris vont à l'équipe : le banquier verse sa part, les membres se la partagent.
+- **Qui voit quoi** : un membre voit les cagnottes (montants et nombre de parieurs par combattant), ses propres paris et son solde ; **qui a misé quoi** reste aux organisateurs. L'orga a le **carnet du banquier** : solde de chaque parieur (« te doit » / « à lui verser »), case **Réglé** (le montant réglé est retenu, et un écart est signalé si une correction de score change le solde ensuite), liste de tous les paris avec **Annuler** (erreur de saisie), journal des paris.
+
+**Architecture** : même doctrine que l'arbre. `epice/tournoi-paris.js` (module pur) calcule **tout** le bilan à partir des paris bruts et de l'arbre résolu ; **rien n'est stocké d'autre que les paris**, chacun avec l'affiche qu'il visait. Une correction de score qui change l'affiche d'un match annule d'elle-même les paris posés sur l'ancienne ; une correction du vainqueur retourne le bilan ; un retour en préparation annule les paris de match. Banc d'essai : **`node epice/tournoi-paris.test.cjs`** (21 tests : prorata, cagnotte orpheline, arrondis, corrections, combattants, fenêtre de pari, 2v2, répartition des lots…). L'API (`paris`, `parier`, `paris_ouvrir`, `paris_verrou`, `paris_prolonger`, `paris_annuler`, `paris_regle`) ne fait que vérifier les règles de dépôt.
+
+- **Stockage à part** : `epice/data/paris.json` (gitignoré), **pas** dans `tournois.json`. Chaque pari ferait sinon monter le numéro de version du tournoi, et l'orga en train de saisir un score se verrait refuser sa sauvegarde (« modifié entre-temps ») à chaque mise d'un membre. Même verrou lecture-modification-écriture (`t_mutate(…, 'paris.json')`). Supprimer un tournoi supprime ses paris.
+- **Le serveur ne connaît pas l'arbre** : il ne peut pas vérifier qu'une affiche envoyée est celle du moment. Sans gravité : une affiche inventée ne correspond à aucun match réel, et le bilan l'annule.
+- **Anonymat — piège évité** : la page a besoin de savoir si un parieur combat dans ce qu'il vise. La première version envoyait l'id du combattant (`joueur: "j1"`) sur chaque pari, y compris les paris anonymisés des autres : ça trahissait **qui** avait parié. Le serveur envoie désormais un simple booléen (`contre_soi`), calculé contre l'affiche du pari (équivalent, puisqu'un pari dont l'affiche diffère du match réel est de toute façon annulé).
+- Fichier créé par PHP → `t_mutate` le passe en **664** à sa création (cf. piège n° 6 d'AGENTS.md).
+
+**Guide des paris** : `epice/paris-aide.html`, page statique avec 8 captures réelles (`epice/img/paris/*.png`, dont le message du bot sur Discord, prises sur un tournoi de test aux noms fictifs, en Chrome headless au banc d'essai). Liée depuis l'onglet « 🎲 Comment parier » de la barre de `tournois.html` et depuis l'encadré des règles de l'onglet Paris. Même clé d'accès (`debrief`) que la page des tournois. À refaire si l'onglet Paris change d'aspect.
+
+**Guide de l'organisateur** : `epice/orga-aide.html` (+ 4 captures `epice/img/orga/*.png`, dont la console), lié par le bouton « 📖 Guide de l'orga » de la barre d'organisation (visible des seuls gestionnaires). Né du premier vrai tournoi : l'orga enchaînait les combats en jeu et saisissait les scores à la fin, si bien que les combats suivants restaient « Vainqueur du match … » et que **personne ne pouvait parier**. Le guide est construit autour de cette **règle d'or** (un combat fini = son résultat saisi tout de suite, avant de lancer un combat qui en dépend) et de la boucle d'un combat : prêt → on parie → ⏱ lancer (1ᵉʳ clic) → résultat (clic suivant) → 📣 annoncer les suivants.
+
+**Déploiement des paris** : `epice/tournoi-paris.js` **avant** `epice/tournois.html` (dépendance dure : sans le module, la vue d'un tournoi ne s'affiche plus), puis `epice/tournois-api.php` (paris + droits du créateur + message Discord), `epice/discord_paris.php` **puis** `discord_interactions.php` à la racine (parier depuis Discord : le routeur seul enverrait vers un fichier absent), `epice/discord_sortie.php` (libellé du bouton et phrase de l'encart), `epice/paris-aide.html`, `epice/orga-aide.html` et les dossiers `epice/img/paris/` et `epice/img/orga/`. `epice/tournoi-engine.js` est déjà en prod (équipes), identique. Un encart déjà posté garde l'ancien libellé jusqu'à sa prochaine mise à jour (une inscription, par exemple). ⚠ La page suit la visibilité d'**Activité Guilde** (clé `debrief`) : pour que toute la guilde puisse parier, cette page doit être visible de tous les membres.
+
+**Déploiement** (dans `/v2` d'abord) : `epice/tournoi-engine.js` **avant** `epice/tournois.html` (la page meurt sans le moteur), `epice/tournois-api.php`, `epice/discord_sortie.php`, `epice/debrief.html` (onglet-lien), `pages.js` (description de la tuile Activité Guilde), `account.html` (libellés des 3 activités). Vérifier que `epice/data/` est inscriptible par `www-data`. Optionnel : `tournoi_channel_id` dans la config. **Bannière** : `epice/img/sortietournoispvp.jpg`, à envoyer avec le reste — déclarée dans le code (champ `'image'` des trois activités Tournoi, résolu avec `site_url`), donc **rien à mettre dans la config** ; une entrée `banners[tournoi_*]` reste prioritaire. Elle illustre aussi les annonces de lancement et de résultats.
+
+**Déploiement des tournois par équipes** : trois fichiers seulement, `epice/tournoi-engine.js` (**d'abord**, la page appelle `E.estEquipes` dès le chargement) puis `epice/tournois.html` (`?v=tournois-4`) et `epice/tournois-api.php`. Aucune config, aucun changement côté bot. Les tournois existants n'ont pas `options.equipe` : ils restent en duel.
 
 ---
 
@@ -695,6 +1002,51 @@ Carnet personnel des plans uniques restant à apprendre. **Page volontairement n
 
 ### Hub Jeux (`jeux/hub.html`)
 Mini-jeux de guilde entre membres, avec records et classements. Tuile dédiée dans le menu.
+- **Bonus de précision : un tir à cheval sur deux vagues (2026-09-19)** — ⚠️ **bug trouvé en relecture croisée, reproduit avant correction.** Un tir lâché en fin de vague explose souvent pendant la suivante. Le TIR était compté dans le dénominateur de la vague N (à l'appui sur la détente) et son UTILITÉ dans le numérateur de la vague N+1 (à l'explosion) : le taux pouvait donc **dépasser 100 %**. Reproduit à **200 %, soit 1 600 points de bonus pour un plafond prévu à 400** — et exploitable en rafale de fin de vague suivie d'un silence, pour ~10 000 points par vague. Plafonner le taux à 1 aurait masqué le problème sans le corriger (la vague N perdait toujours une utilité qui lui revenait).
+  - Correction à la racine : **un tir est rattaché à la vague où sa CHAÎNE S'ACHÈVE**, jamais à celle où on a appuyé. Un tir entre dans la comptabilité quand sa **dernière** explosion s'éteint (`chain.compte`, vérifié en s'assurant qu'aucune autre explosion vivante ne partage la chaîne) — numérateur et dénominateur sont alors toujours dans la même vague, et le taux est **borné par construction**, pas par un `min()`. Une chaîne de trois victimes reste **un** tir au dénominateur. Les compteurs `waveShots`/`waveUseful` sont remplacés par `tirsResolus`/`tirsUtilesResolus`.
+  - Deux tests de régression ajoutés (22 au total). L'équilibrage est inchangé — les quatre profils simulés bougent de moins de dix points —, ce qui confirme que c'était un cas de bord exploitable et non une inflation générale.
+- **Catalogue des jeux : un fichier à lui seul (2026-09-19)** — `jeux/games_catalog.php` ne fait que `return [...]`. Il n'inclut rien, ne démarre aucune session, ne dépend d'aucune configuration. C'est ce qui permet au cron de reset de le lire **sans traîner derrière lui `discord_oauth.php` et son `session_start()`** : la première version faisait `require_once scores_api.php`, ce qui marchait (c'est déjà ce que fait `add_score_admin.php`) mais donnait à un cron une dépendance à l'authentification dont il n'a aucun besoin — et un point de panne de plus pour un script dont la panne est silencieuse une semaine sur une. `scores_api.php` le charge par `define('GAMES', require …)` : `const` ne peut pas être initialisée par un `require`. Vérifié que `isset(GAMES[...])`, `score_ceiling()` et `add_score_admin.php` fonctionnent à l'identique.
+
+- **Catalogue des jeux : les DEUX dernières copies en dur supprimées (2026-09-19)** — la tuile de Dernier Rempart restait à « — » au lieu d'afficher son record. Cause : `jeux/hub.html` avait **une quatrième copie** de la liste des jeux dans `loadRecords()`, oubliée lors de l'ajout du jeu (elle contenait encore `sandwalk`). Elle est désormais **dérivée du DOM** — `document.querySelectorAll('.record-line[id^="record-"]')` — donc ajouter une tuile suffit, il n'y a plus rien à tenir à jour. Et `account.html` en avait **une cinquième** (`GAME_LABEL`) : un score de Dernier Rempart s'affichait comme `dernier_rempart` dans « Mes records ». Elle est maintenant remplie depuis l'API (`action=games`) au chargement, avec repli sur l'identifiant brut si l'appel échoue.
+  - **Bilan du chantier** : le catalogue existait en **cinq exemplaires** (`scores_api.php`, `weekly_reset.php`, deux dans `hub.html`, un dans `account.html`). Il n'en reste qu'un, `GAMES` dans `scores_api.php` ; les autres le lisent ou le dérivent. Les deux listes restantes dans `hub.html` (`GAME_NAMES` et les onglets) sont des libellés d'affichage, à vérifier si un jeu est ajouté — c'est le seul endroit où il faut encore penser.
+
+- **Reset hebdo : une seule liste de jeux (2026-09-19)** — ⚠️ **trou trouvé en intégrant Dernier Rempart.** `jeux/weekly_reset.php` tenait **sa propre copie en dur** du catalogue (`const GAMES = ['orni_flap' => …]`), distincte de celle de `jeux/scores_api.php`. Conséquence : un jeu ajouté à l'API rejoignait le classement, les records et les annonces de podium, **mais jamais l'annonce hebdomadaire** — son champion de la semaine était balayé par le reset du mardi sans avoir jamais été nommé, ni dans « Champions de la semaine », ni dans « Hall of Fame ». Exactement la même classe de disparition silencieuse que le plafond `max_score`, et invisible jusqu'au mardi suivant. `weekly_reset.php` fait désormais `require_once scores_api.php` et lit `GAMES` : **une seule source**. Un jeu déclaré mais sans aucun score s'exclut tout seul (`if ($best)`), donc déclarer un jeu en avance ne pollue rien, et le jour où il est livré il est déjà câblé. L'ordre de `GAMES` étant celui de l'annonce et de l'action `games`, le dernier jeu arrivé est placé en dernier pour suivre l'ordre des tuiles du hub.
+  - Vérifié en `--dry` avec un magasin de scores simulé : Dernier Rempart apparaît dans les deux blocs de l'annonce. Vérifié aussi que `add_score_admin.php dernier_rempart …` fonctionne, que le lien construit pour Discord est bien `…/jeux/dernier_rempart.html` et que `score_ceiling()` répond pour ce jeu.
+  - **Pour tester le webhook sans truquer un record** : `php scores_api.php --test-discord dernier_rempart` poste quatre fausses annonces (rang 1/2/3 + meneur de la semaine). ⚠️ Elles partent sur le **vrai** canal si `data/discord_webhook.txt` est présent.
+
+- **Dernier Rempart — vignette et tuile du hub (2026-09-19)** : `jeux/img/thumb_dernier_rempart.jpg` (731 × 487, 225 Ko), générée par l'utilisateur dans **le style des cinq autres vignettes** — caricature à l'encre en camaïeu d'ocre, pas le concept art réaliste du décor de jeu. La distinction compte : la carte du hub pointait jusque-là sur `rempart_arrakis.webp`, c'est-à-dire la plaque de fond photoréaliste, et détonnait au milieu de cinq dessins humoristiques. **La vignette est commitée**, pas seulement déposée sur le serveur (cf. le piège de déploiement des images Sandstorm Memory plus bas). Le hub compte désormais six tuiles et six onglets de classement.
+  - `sandwalk` reste dans `GAME_NAMES` sans carte ni onglet : c'est volontaire. La Marche du Désert est en pause et ne doit pas être comptée dans les mini-jeux du hub, mais garder son nom dans la table évite d'afficher un identifiant brut si un score de test traîne.
+
+- **Dernier Rempart — carte de démarrage et scintillement (2026-09-19)** — ✅ EN PROD : le panneau latéral détaillait les quatre menaces avec leurs valeurs en points et trois paragraphes de règles — **trop précis, et ce n'est pas ce qu'on voit dans un jeu**. Il est ramené au seul **classement de guilde**, comme l'encart « Cette semaine » des cinq autres jeux. Les règles passent dans une **carte de démarrage** à l'intérieur de la scène, sur le modèle d'Orni Flap / Spice Runner / Muad'Dib Rescue : titre, une phrase de consigne, les quatre silhouettes de menaces avec leur seul nom (aucun chiffre), le bouton, et une ligne d'aide portant le record personnel. Les icônes sont les **mêmes canvas** qu'avant (`[data-munition]`, rendues par `RempartView.munition()`), simplement déplacées — donc aucune divergence possible entre la légende et le moteur de rendu. Grille à 4 colonnes et **pas** de `flex-wrap` : en flex la rangée se réorganisait en 3+1 dès que le panneau se resserrait. La ligne d'aide n'est plus masquée sous 550 px puisqu'elle porte maintenant le record. Les deux paragraphes de règles sous la scène sont remplacés par la seule ligne de commandes, comme ailleurs dans le hub.
+  - **Grains de sable scintillants** : 330 particules au lieu de 70, en deux populations — le sable ordinaire, et **30 % d'« éclats »** pris dans la lumière rasante. Chaque grain a sa **phase et sa fréquence propres** : le scintillement est un battement individuel, jamais un clignotement global (sinon tout l'écran pulse ensemble et ça se lit comme un défaut d'affichage). Un facteur `rasance` fait accrocher davantage les grains proches de l'horizon, là où le soleil couchant est bas. **Pas de halo, et des grains sous le pixel** : une première version dessinait chaque éclat en deux disques (auréole + cœur clair) de 1,4 à 2,6 px — le retour utilisateur a été immédiat et juste, « on dirait des lucioles ». C'est l'auréole qui fait la bestiole : un grain de sable dans la lumière rasante est un **éclat sec**, pas une source lumineuse. Version retenue : un simple `fillRect` de 0,55 à 1,25 px, **allongé dans le sens du vent** (`lx ≈ taille × 1,7-2,9`, `ly = taille × 0,75`) pour la traînée, et le scintillement porté uniquement par le battement d'opacité. Le battement des éclats est en **puissance 3** : en puissance 6 le glint était juste mais si bref que presque aucun grain n'était allumé à un instant donné, et le ciel redevenait vide — le réglage se joue entre « luciole » et « désert mort ». **Attention en réglant** : le banc d'aperçu réduit le canvas de 960 px à ~760 px, alors qu'en jeu il est *agrandi* vers 1 200 px. Les grains y paraissent donc plus petits qu'ils ne le seront — ne pas surcompenser sur la capture.
+
+- **Dernier Rempart — refonte du barème (2026-09-19)** — ✅ EN PROD : audit chiffré (8 parties simulées par profil de joueur, quatre politiques de tir) avant de toucher quoi que ce soit. Constat : **le score était à 66-79 % un simple compteur de destructions**, le bonus de chaîne pesait 10-17 %, la survie 6-9 %. Trois incohérences dont deux inversions franches :
+  - le **multiplicateur ×6 annoncé à l'écran d'accueil exigeait seize victimes d'une seule explosion**, alors que les meilleures parties plafonnent vers cinq — une promesse inatteignable ;
+  - **`fast` payait 100, comme `normal`**, en allant 48 % plus vite : la cible la plus dure payait comme la plus facile. **`armored` payait 150 pour DEUX tirs**, soit 75/tir contre 100/tir pour un normal — la cible la plus impressionnante était le pire rendement du jeu, et elle est en plus **plus lente** (×0,82), donc pas difficile, juste épaisse ;
+  - **une ogive laissée se séparer rapportait plus que la même ogive interceptée** (200, voire 300 avec les sauvetages, contre 125) alors que la légende du jeu dit « interceptez avant la séparation ». Le barème payait l'inverse de la consigne, et récompensait le joueur de prendre le risque qu'on lui dit d'éviter (les deux enfants visent **deux bâtiments différents**).
+  - Enfin le **« % utiles » affiché dans le HUD n'entrait jamais dans le score** : deux joueurs à 28 000 pouvaient avoir 50 % et 79 % de tirs utiles sans que le classement les sépare.
+
+  Barème retenu : `VALEUR = {normal 100, fast 150, split 250, armored 200}` + `VALEUR_DEBRIS = 60` (un enfant d'ogive est un débris, pas une cible neuve → intercepter vaut 250 contre 120) ; chaîne `1 + ⌊(n−1)/2⌋` plafonnée à **×4**, calée sur l'atteignable, et l'écran d'accueil annonce enfin la vraie valeur ; sauvetage `+50 × multi` au lieu de `+50` fixe (à plat il devenait du bruit dès que la chaîne montait, alors que c'est l'interception la plus risquée) ; fin de vague scindée en **deux lignes annoncées séparément** — `tenue = bâtiments debout × 75 × vague` (à 150 fixe, survivre à la vague 11 et ses 62 missiles payait comme la vague 1 et ses 22) et `précision = 400 × (tirs utiles de la vague / tirs de la vague)²`. Le carré est volontaire : 90 % → 324, 60 % → 144, 40 % → 64, il récompense la maîtrise et non la moyenne.
+
+  Effet mesuré sur les mêmes 8 graines : l'écart entre le joueur pressé (50 % de tirs utiles) et le joueur discipliné (79 %) passe de **×1,83 à ×2,06**, et la précision devient une ligne visible toutes les 15 s dans le bandeau de vague — en rouge sous 50 %, en or au-dessus de 75 %. **Point resté ouvert et assumé** : le profil « très patient » (meilleures chaînes, 5,1 de moyenne) marque toujours moins que le profil discipliné, parce qu'attendre les groupes coûte plus de destructions que le bonus n'en rapporte. C'est défendable — l'attente oisive doit perdre — mais si on veut que la patience gagne, c'est le palier de chaîne qu'il faudra descendre encore, pas les valeurs de base. **Aucun score n'a jamais été enregistré pour ce jeu**, donc aucune rétrocompatibilité de classement à préserver. Quatre tests ajoutés (20 au total) : valeur par type, interception d'ogive strictement gagnante, sauvetage suivant le multiplicateur, et les deux lignes de fin de vague. Ressources JS en `?v=7`.
+
+- **Dernier Rempart — passe direction artistique (2026-09-19)** — ✅ EN PROD : le prototype arrivait avec sa propre identité (bleu glacier `#93e5ee`, gris ardoise, Georgia) qui ne ressemblait à aucun des cinq autres jeux. Reprise sur la palette commune du hub (`--bg:#0a0402`, `--gold:#cda434`, `--text:#f5deb3`, `--muted:#7c5e2a`, titre `'Cinzel', Georgia, serif`), **le bleu froid n'étant plus qu'une couleur de jeu réservée à l'impulsion Holtzman** — c'est le seul élément à l'écran qui n'est ni poussière ni feu, et le garder unique le rend lisible au premier coup d'œil. Couleurs de munitions réchauffées (`#ff7a55` / `#ffc94f` / `#e08ad0` / `#d8cbb4`) en gardant quatre teintes distinctes : la légende de l'aside suit les mêmes valeurs que le moteur de rendu, à ne pas laisser diverger.
+  - **Le fond est devenu animé.** La plaque peinte `rempart_arrakis.webp` est conservée mais réchauffée en `soft-light` (un aplat `source-over` écrase le modelé du rocher), puis surmontée de couches procédurales dans l'esprit du `drawSky()` de Worm Rider : étoiles scintillantes cantonnées au ciel dégagé (jamais sur les falaises latérales), halo de lune en respiration lente, nappes de poussière haute en **dégradé radial** — un dégradé linéaire horizontal laisse les bords haut/bas francs et neuf ellipses de ce type lisent comme des bandes de balayage —, brume d'horizon, crêtes de sable et 70 grains en suspension. Le vent est la somme de deux sinus déphasés avec des rafales en puissance cubique : aucun défilement mécanique, aucune boucle perceptible.
+  - **La tempête raconte la difficulté** : `tempete = (vague / 8) ^ 0,55` fait monter quatre rideaux de poussière depuis l'horizon et assombrit le haut du ciel via un **dégradé** vertical. La courbe est calée sur les parties **réelles**, pas sur la vague maximale théorique : un premier jet linéaire `(vague − 2) / 9` ne devenait spectaculaire qu'en vague 11, que presque personne n'atteint — l'immense majorité des parties se jouait donc dans un décor vide. Avec la racine, l'ambiance est déjà installée en vague 1 (0,32), l'essentiel du changement visible se joue entre 1 et 5 (0,32 → 0,77) et la saturation n'arrive qu'en vague 8. Règle à retenir pour les autres jeux : **une progression visuelle doit être calée sur la partie médiane, pas sur le record**. Premier essai en aplat plein écran : tout le relief des falaises disparaissait en bouillie ocre — à ne pas refaire. Le décor est entièrement figé sous `prefers-reduced-motion`, et les nappes hors champ ne paient pas leur dégradé.
+  - **Vérifié à l'image**, pas au jugé : le pane navigateur n'exécute jamais `requestAnimationFrame` sur un onglet caché, donc un jeu canvas ne s'y teste pas en l'état (cf. AGENTS.md). Contournement retenu : une page jetable qui instancie moteur + vue, avance la partie à la main (`g.step`/`v.advance`, base rendue invulnérable pour atteindre la vague voulue) et appelle `v.draw()` **une seule fois** depuis `img.onload`. Captures comparées en vague 1, 6 et 11, en 960 px et en 375 px.
+
+- **Dernier Rempart — édition guilde 1.0 (2026-09-19)** — ✅ EN PROD : chauffe abaissée de 22 à 19 par tir (~14 %), soit six tirs rapides depuis froid au lieu de cinq avant blocage, refroidissement inchangé. Le reste de l'équilibrage V2 est conservé. Architecture industrielle minérale illustrée via jeux/img/rempart_buildings.png (atlas transparent original ImageGen, 3 cases, 1,84 Mo), habillage laiton/pierre, écran de bilan en six indicateurs et classement accessible sur mobile. Le rendu procédural reste le repli si l'atlas manque. Les scores refusés restent renvoyables après une relance, en mémoire pour la session de page (pas après fermeture). Version JS ?v=3. Sons de synthèse existants conservés, aucun enregistrement officiel extrait. **Guide de livraison : jeux/DERNIER_REMPART_LIVRAISON.md**, à lire avant remplacement de hub/API. Ne pas confondre « édition 1.0 » et validation réelle du classement authentifié, qui reste à faire dans /v2.
+  - Tests : 20 tests moteur, tests interface (dont renvoi après relance), lint JS/PHP. Résultats sur 24 graines : balayage 17 s, tirs dirigés 42 s, anticipation espacée 82 s. Vérification du rendu de l'atlas dans le navigateur. Les paragraphes V1/V2 ci-dessous sont l'historique, pas les paramètres de la version 1.0. Le serveur d'aperçu sert maintenant six fichiers ; port optionnel : node tools/preview_rempart.cjs 8769.
+- **Dernier Rempart — passe maîtrise V2 (non déployée)** : le retour humain sur V1 (« cliquer partout suffit ») a invalidé le test de hasard pur comme seul critère. Ajout de politiques de balayage continu et d'arrosage dirigé. Chauffe +22 par tir, refroidissement 48/s après 0,12 s sans tir, blocage à 100 jusqu'à 30 (~1,6 s), sans supprimer l'impulsion de secours. Tir espacé de 0,62 s soutenable sans surchauffe. Explosion initiale rayon 44 / durée 0,48 s (V1 : 70 / 0,95), propagation 42 / 0,5 s ; suppression du remboursement d'énergie par victime. Bonus supplémentaire par chaîne issue du même tir : +50 à la deuxième victime, puis +50 de plus par victime jusqu'à +250 ; cinq missiles normaux en une chaîne valent 1 200 contre 500 par cinq tirs isolés, hors sauvetages. Un tir qui brise seulement un blindage compte comme utile. Jauge de température/blocage visible, taux de tirs utiles, surchauffes et bonus dans le bilan. Les scores V1/V2 ne sont pas comparables ; aucun score live n'a été envoyé pour ces prototypes. Ressources JS passées en `?v=2`.
+  - **Validation V2** : 20 tests moteur + tests interface, 120 simulations sur 24 graines par politique, limite 180 s sans utiliser l'impulsion. Moyennes : inaction 14 s ; hasard et balayage 16 s ; arrosage dirigé 40 s ; anticipation avec tirs espacés 82 s. Ce sont des stratégies automatisées, pas une estimation de la durée d'une partie humaine. Vérifier le ressenti avec l'utilisateur : pas d'accélération des ennemis dans cette passe. Les réglages historiques V1 ci-dessous sont conservés pour comprendre l'itération, les valeurs de ce paragraphe les remplacent.
+- **Dernier Rempart — prototype isolé, NON DÉPLOYÉ (2026-09-18)** : nouveau jeu de défense arcade inspiré de [Missile Command: Recharged](https://atari.com/products/missile-command-recharged), branche `codex/dernier-rempart`. Souris/tactile : viser devant les missiles, clic ou maintien pour tirer ; Espace/bouton : impulsion de secours ; P/Échap : pause. Trois bâtiments de 3 PV, trois lanceurs automatiques, 12 intercepteurs avec recharge de 3,1/s. Les explosions propagent des chaînes (multiplicateur plafonné à ×6), les sauvetages près du sol donnent +50, les interceptions rechargent l'impulsion. Aucun avantage permanent ni attente entre parties. La Marche du Désert reste conservée mais sa carte et son onglet de classement sont remplacés dans cette branche ; aucune suppression de son code ou de ses scores.
+  - **Tourelles articulées (2026-09-19, non déployé)** : socle fixe issu du bas du sprite, tête blindée et deux tubes dessinés en canvas, rotation amortie vers la souris/le doigt, recul et éclair au tir (effets réduits selon préférence). Tourelle centrale décalée à x=385 pour ne plus masquer la vie/le nom Énergie. Positions partagées par le moteur et le rendu ; tirs émis à la bouche du canon et orientation synchronisée au tir. Cela modifie légèrement les temps de trajet, pas la chauffe ni la cadence. Test dédié jeux/tests/dernier_rempart_turrets.test.cjs à 30/60/120 Hz. Cache JS ?v=5, aucun nouvel asset à envoyer.
+  - **Habillage des armes (2026-09-19, non déployé)** : sprite original ImageGen dans jeux/img/rempart_battery.png. Remplacement des flèches par roquettes, dards rapides, ogives à sous-munitions et obus blindés ; silhouettes canvas identiques dans le ciel et dans la légende. Blindage indiqué par deux plaques latérales, pas un bouclier énergétique. Adaptations arcade, pas des objets officiels extraits. Ajouter impérativement le PNG à la livraison. Sources et prompt dans jeux/img/rempart_art.md.
+  - **Cadence / variété** : premières menaces à 0,25 s, vagues initiales de 18 s sans interruption de la simulation. Dards rapides dès la vague 2, charges se divisant dès la 3, blindés demandant deux explosions DISTINCTES dès la 4. Éventail, tirs croisés, siège ciblé ; chaque cinquième vague comporte 8 menaces supplémentaires. Après la quatrième vague, intervalle progressivement réduit jusqu'à 12 s. Un point réparé par vague sur le bâtiment vivant le plus endommagé, jamais de résurrection.
+  - **Architecture / pièges** : simulation indépendante du DOM (`dernier_rempart_engine.js`), rendu (`dernier_rempart_view.js`), interface/audio/scores (`dernier_rempart.js`), page HTML. Sous-pas 120 Hz et collision balayée ; chaque explosion mémorise les cibles déjà touchées, sinon le blindage serait consommé en deux images. L'impulsion ne se recharge pas avec ses propres victimes. Limites de particules et de menaces, pause automatique sur perte de focus/onglet masqué ; le temps de pause ne compte pas dans la durée soumise. Sons synthétisés distincts, volume modéré, pas de sons extraits du jeu officiel. Effets sans secousse de visée, réduction des effets selon la préférence système.
+  - **Scores** : ajout à `GAMES` uniquement, plafond dynamique existant conservé. Le record personnel affiché provient du serveur, pas d'un score local non accepté. Refus et panne réseau visibles, bouton de nouvelle tentative. Mode local sans aucun appel à l'API. L'intégration réelle avec session Discord et classement doit encore être validée par l'humain dans `/v2` (ne pas envoyer de scores de test en production).
+  - **Vérifications** : `node jeux/tests/dernier_rempart.test.cjs` (15 tests et 72 simulations de 180 s maximum), `node jeux/tests/dernier_rempart_ui.test.cjs` (DOM/canvas simulés, contrôles et réponses API acceptée/refusée/hors réseau), `C:\php\php.exe -l jeux/scores_api.php`. Sur 24 graines : inaction ~14 s, tir aléatoire ~43 s ; la visée anticipée est nettement supérieure. Ce banc d'essai ne mesure PAS le plaisir humain ni la difficulté ressentie. Aperçu navigateur vérifié au bureau et en portrait 390 px, pause et relance vérifiées.
+  - **Essai / livraison** : `node tools/preview_rempart.cjs` puis `http://127.0.0.1:8768/jeux/dernier_rempart.html`. Le serveur est lié exclusivement à 127.0.0.1, avec liste blanche de cinq fichiers ; garde retirée de la réponse locale en mémoire, jamais du fichier livré. Pour `/v2`, envoyer les **trois JS, le HTML et `jeux/img/rempart_arrakis.webp`**, puis `jeux/scores_api.php` et `jeux/hub.html` pour le classement/l'accès. Vérifier les différences de hub/API avec la version réellement en ligne avant remplacement (main ≠ prod), préserver `jeux/data/`, puis Ctrl+F5. Pas de déploiement effectué. Fond original généré via ImageGen, ~100 Ko, prompt et provenance : `jeux/img/rempart_art.md`.
 - **5 mini-jeux en ligne** : Orni Flap, Sandstorm Memory, Spice Runner, Worm Rider, Muad'Dib Rescue. **La Marche du Désert existe dans le dépôt mais n'est PAS déployée** — cf. son statut plus bas.
 - **Scores** : sauvegarde automatique par joueur (`jeux/scores_api.php`), un score soumis alimente **deux classements en parallèle** : `jeux/data/scores.json` (**Hall of Fame**, all-time, jamais remis à zéro) et `jeux/data/scores_weekly.json` (**classement hebdomadaire**, semaine en cours). Anti-triche (hash + cooldown) tranché **une seule fois** sur le store all-time, pour ne pas pouvoir contourner le cooldown juste après un reset hebdo.
 - **Remise à zéro hebdomadaire** (2026-07-14) : `jeux/weekly_reset.php`, lancé par CRON **chaque mardi 05:00 UTC** (= 7h Paris été, 6h Paris hiver — le serveur tourne en UTC et on n'y touche pas, les resets carte/DD sont calés dessus ; le hub affiche « à l'aube » plutôt qu'une heure fixe pour ne pas se contredire avec la tempête in-game). Sous prétexte lore qu'**une tempête de Coriolis vient de balayer Arrakis**, calcule le champion de la semaine par jeu, poste l'annonce dans Discord (webhook `jeux/data/discord_webhook.txt`, même fichier que les records) avec **deux blocs séparés** (`fields` Discord) : « 🏆 Champions de la semaine » (frais, remis à zéro) et « 🏛️ Hall of Fame — le score à détrôner » (repère all-time, lecture seule de `scores.json`, jamais modifié par ce script — donne un objectif à viser plutôt qu'un classement froid). Archive l'état sortant dans `jeux/data/weekly_archive/<année>-W<semaine>.json` (jamais écrasé), puis vide `scores_weekly.json`. `--dry` pour tester sans rien écrire/poster. **Contrôle avant vol** (ajouté après la panne silencieuse du 21/07/2026) : refuse de poster l'annonce si le fichier n'est pas inscriptible, cf. droits ci-dessous.
@@ -718,16 +1070,42 @@ Mini-jeux de guilde entre membres, avec records et classements. Tuile dédiée d
 > ⚠ À noter : le secret anti-triche est **servi au client** (`action: 'token'`), donc le hash ne
 > protège de rien face à quelqu'un de déterminé — c'est le plafond qui fait le vrai garde-fou.
 > Le relever a un coût, ne pas le relever aussi ; l'arbitrage se documente ici.
+>
+> **2026-09-17 — deuxième fois, donc on arrête d'écrire des chiffres à la main.** Le 361 704 de
+> Bahlor sur *Worm Rider* a sauté exactement comme le 142 640 de Neuroch, contre le plafond de
+> 300 000 posé neuf jours plus tôt — et pendant ce temps un score inférieur (284 390) était annoncé
+> 1ᵉʳ sur Discord. Relever le nombre n'aurait fait que fixer la date de la troisième fois.
+> Désormais `max_score` de `GAMES` n'est plus qu'un **plancher** — il ne vaut que tant que
+> personne n'a marqué — et au-delà la barre **suit la communauté** : `score_ceiling($jeu)` =
+> `max(plancher, record all-time × SCORE_CEILING_FACTOR)`, facteur **3**. Un joueur qui progresse
+> n'est plus jamais refusé ; un score forgé à 10× le record l'est toujours. La règle vaut pour
+> **tous** les jeux d'un coup, y compris ceux dont le plancher n'a jamais été revu.
+> `add_score_admin.php` applique la même barre : pour inscrire un score très au-dessus du record,
+> inscrire d'abord le score intermédiaire, ou relever le plancher — jamais contourner le contrôle.
+> Reste ouvert : côté client, un refus est **toujours** un simple `console.warn`, donc le joueur
+> continue de voir son record à l'écran sans savoir qu'il n'est pas parti.
 
 - **Ajout manuel d'un score** : `jeux/add_score_admin.php` (CLI uniquement, à lancer en tant que
   `dune`). Réutilise les fonctions de `scores_api.php` — mêmes verrous, mêmes sauvegardes, mêmes
   droits 664, mêmes annonces Discord —, alimente les **deux** classements, refuse un score au-dessus
-  du plafond (sinon on rouvre à la main le trou qu'on vient de boucher), et n'écrase jamais un
+  du plafond **calculé** `score_ceiling()` (sinon on rouvre à la main le trou qu'on vient de boucher), et n'écrase jamais un
   meilleur score existant. `--dry` simule, `--annonce` poste sur Discord.
   ```
   php add_score_admin.php worm_rider Neuroch 142640 --annonce
   ```
   Le nom du joueur est celui de `$_SESSION['user']` (compte du site), pas le pseudo Discord.
+  **`--annonce` ne poste qu'UN message**, comme une soumission normale (chaîne `if/elseif` de
+  l'API : le record all-time prime sur le meneur de la semaine) — sinon un rattrapage manuel se
+  reconnaît à ce qu'il fait le double de bruit d'un vrai record.
+- **`--reannonce`** : reposte l'annonce de record d'un score **déjà enregistré**, sans toucher à
+  aucun classement. Sert quand l'annonce s'est perdue, ou quand un rattrapage remet le récit du
+  canal dans l'ordre (réannoncer le tenant, puis inscrire celui qui le détrône). N'invente rien :
+  l'« ancien record » affiché est le **second du podium**, exactement ce qu'aurait dit l'annonce
+  d'origine. Refuse si le joueur n'est pas 1ᵉʳ ou si le score ne correspond pas à ce qui est
+  enregistré — on reposte un fait, pas une version arrangée.
+  ```
+  php add_score_admin.php worm_rider Lorhelyne 284390 --reannonce
+  ```
 
 - **Notif Discord « meneur de la semaine »** (2026-07-14) : en plus du message all-time existant (record battu → embed doré), un **second message distinct** (embed bleu Discord, `notify_discord_weekly_record` dans `scores_api.php`) se déclenche quand un score dépasse le **meneur hebdomadaire** en cours — sans ça, personne ne sait qu'un défi de la semaine est en jeu et personne ne le relève (principe d'interaction demandé). Ne se déclenche que si aucune notif podium (rank 1/2/3 all-time) ne part pour la même soumission (pas de double post).
 - **Hub** (`hub.html`) : panneau classement avec bascule **🗓️ Cette semaine** (défaut) / **🏆 Hall of Fame**, note explicative avec compte à rebours avant le prochain reset (calculé en UTC → juste toute l'année). Les badges « record » sur les cartes de jeux restent **toujours all-time** (valeur de prestige stable). Le mini-classement **dans chaque jeu** (`orni_flap.html` etc., panneau « 🗓️ Cette semaine ») est lui aussi passé en **hebdomadaire** (`scope=weekly`) — sinon un nouveau joueur ne s'y voit jamais, écrasé par les scores historiques.
@@ -748,6 +1126,168 @@ Mini-jeux de guilde entre membres, avec records et classements. Tuile dédiée d
   - **Tremblement d'écran uniquement en phase d'alerte**, où l'on martèle et où la précision rythmique ne compte plus (application directe de la doctrine établie sur Orni Flap).
   - Fenêtres volontairement ~3× plus permissives que les références du genre (PARFAIT ±15-30 ms) : c'est un jeu de guilde au clavier ou au doigt, pas une borne d'arcade. `max_score` serveur à **300 000** — le jeu étant sans fin, le plafond couvre un sans-faute d'une quinzaine d'étapes plutôt que de rejeter en silence la partie du meilleur joueur.
 - Chaque jeu est une page HTML autonome (`jeux/<jeu>.html`) protégée par `../auth-guard.js`.
+
+---
+
+### Havres Gris Stories — BD de guilde (`bd/aventures.html`) — ❌ PAS DÉPLOYÉ
+Nos soirées racontées en planches de BD (générées par IA), ajoutées au fil de l'eau et lues dans
+un lecteur intégré. Tuile « Havres Gris Stories » (clé `aventures`) dans `pages.js` (donc pilotable depuis Mon Compte > Gestion
+des pages : la mettre « en travaux » le temps de poser le premier épisode).
+
+- **Une histoire** = titre, sous-titre, date de la soirée, personnages (servent de filtre), récit
+  (le post Discord d'origine, affiché à côté des planches) et ses planches dans l'ordre de lecture.
+  La première planche sert de couverture, l'auteur est crédité (« Racontée par … »). Numérotation
+  « Épisode N » calculée sur les seules histoires **publiées**, dans l'ordre des dates de soirée :
+  une histoire en cours ne décale jamais ce que voient les joueurs.
+- **Tout joueur raconte, seuls les admins valident** (décidé avec l'utilisateur le 2026-10-17 :
+  pas de liste de modérateurs, admins uniquement). Circuit :
+  `brouillon` (privé, auteur seul) → **Soumettre** → `soumis` (auteur + admins, texte verrouillé ;
+  l'auteur peut **annuler la soumission**) → admin **Publier** → `publie`. L'admin peut aussi
+  **Renvoyer avec un motif obligatoire** : retour en brouillon, motif affiché à l'auteur dans
+  « Mes histoires » et en tête de l'éditeur ; il s'efface à la soumission suivante. Depuis
+  `publie`, le même bouton s'appelle « Dépublier… ».
+  - Une histoire **publiée est verrouillée pour son auteur** (ni texte, ni planches, ni
+    suppression) : seuls les admins la retouchent. L'auteur supprime librement tant qu'elle
+    n'est pas publiée.
+  - Un admin **ne voit pas les brouillons des autres** (seulement les soumis) : une histoire
+    renvoyée disparaît donc de sa vue jusqu'à la nouvelle soumission. C'est voulu — un brouillon
+    est privé.
+  - **3 histoires en cours** maximum par joueur (brouillon ou en attente), admins exemptés :
+    tout le monde peut désormais envoyer des fichiers sur le serveur.
+  - Retour à l'auteur **uniquement sur le site** (statut + motif) : jamais de message privé
+    Discord (doctrine guilde).
+  - Les transitions ont chacune leur action (`soumettre`, `retirer`, `publier`, `renvoyer`) ;
+    `save` ne touche **jamais** au statut. Les droits sont vérifiés côté serveur sur la session
+    (`$_SESSION['role']`), jamais sur un champ envoyé par la page.
+- **Onglets** : Bibliothèque (BD publiées, filtre par personnage), **⚡ Flash** (voir plus bas),
+  **Mes histoires** (BD et flash de l'auteur avec leur statut : Brouillon / À revoir / En attente /
+  Épisode N / ⚡ Flash), **À valider** (admins, la plus ancienne soumission en premier, « Examiner »).
+- **Histoires flash** (ajoutées le 2026-10-17) : **1 image = 1 histoire**, pour un moment de soirée
+  sans monter une BD. Même fichier et même API que les BD (`type: "flash"`, une seule entrée dans
+  `pages`), mais des règles à part, décidées avec l'utilisateur :
+  - **Fiche complète obligatoire** : image, titre, description, date du moment, lieu/activité.
+    Personnages facultatifs (un paysage sans joueur existe). Pas de longueur minimale pour la
+    description. Le bouton « Publier » reste grisé et une liste ✔/✖ dit ce qui manque ; **le
+    serveur refait la vérification** (`flash_save`) et répond « Fiche incomplète : il manque … ».
+  - **Publication directe**, sans validation. Un admin peut **dépublier avec un motif**
+    (bouton dans la visionneuse, même action `renvoyer` que les BD) ; l'auteur voit « À revoir »
+    dans Mes histoires et republie après correction, sans avoir à renvoyer l'image.
+  - L'auteur garde la main sur sa flash (modifier, remplacer l'image — l'ancienne est effacée du
+    disque —, supprimer). Une flash **ne compte ni dans la numérotation des épisodes**, ni dans
+    la limite de 3 histoires en cours, ni dans « À valider ».
+  - **Une seule voie d'écriture** : `flash_save` (multipart : titre, description, date, lieu,
+    personnages « a, b », page + thumb). Les actions BD (`save`, `upload`, `soumettre`…)
+    refusent une flash, pour qu'aucune ne se retrouve sans image ou en attente d'une validation
+    qui n'existe pas.
+  - **Lieux** = constante `BD_LIEUX` de `bd_api.php`, renvoyée par `list` : la page ne garde
+    aucune copie de la liste. Ajouter un lieu = une ligne côté PHP.
+  - **Galerie** en mosaïque (colonnes CSS, image entière ; hauteur plancher de 160 px recadrée
+    pour les panoramas extrêmes), filtres par lieu et par personnage. **Visionneuse** : image en
+    grand + fiche, ← → / balayage, « Copier le lien » (`bd/aventures.html#flash=<id>`, à coller
+    sur Discord). Vignettes de 640 px de large (contre 360 pour les planches BD).
+- **Alerte des admins** : action `a_valider` → `{count}` (0 pour un non-admin). Elle alimente le
+  compteur de l'onglet ET une **pastille rouge sur la tuile du menu**, via un mécanisme générique :
+  champ facultatif `badge` d'une entrée de `pages.js` (URL renvoyant `{ok, count}`), lu par
+  `menu.html` pour les admins seulement. Une erreur sur cet appel ne casse jamais le menu.
+- **Flux d'écriture** : « Nouvelle histoire » → « Créer le brouillon » → glisser les planches
+  (plusieurs à la fois, triées par nom de fichier en ordre naturel : `page2` avant `page10`) →
+  réordonner (glisser-déposer ou ◀ ▶) → « Soumettre à validation » (un admin publie
+  directement). Le serveur refuse de soumettre ou publier une histoire sans planche, et de
+  retirer la dernière planche d'une histoire publiée ou soumise.
+- **Séries** (2026-10-17) — structure : la **Saga des Havres Gris** (tout ce qui est publié,
+  numérotation globale « Épisode N ») contient des **séries** (arcs : « Le Sable Rose »…) dont
+  les histoires sont des **parties**. Décisions de l'utilisateur : tout joueur peut lancer une
+  série ET écrire la suite de n'importe quelle série ; bibliothèque restée chronologique avec
+  **badge** « 📚 Série · Partie N » et **filtre par série** ; **pas de thèmes** pour l'instant.
+  - Registre `series` dans `albums.json` (`{id, nom, cree_par, cree_le}`), l'histoire pointe par
+    `serie`. Choix dans l'éditeur BD et la fiche flash : Aucune / série existante / « ＋ Nouvelle
+    série… » (nom libre, 80 car.).
+  - **Partie N = rang parmi les BD publiées de la série, par date de soirée**, calculé à la
+    lecture (`bd_view`), jamais stocké : une suite racontée en retard se range seule, un
+    brouillon ne décale rien. Une flash rattachée est « coulisses » (pas de numéro de partie).
+  - **Anti-doublon** : un nom identique à casse et espaces près REJOINT la série existante.
+    ⚠ Les **accents ne sont pas neutralisés** (pas de mbstring/intl sur le serveur) :
+    « Operation » et « Opération » font deux séries → c'est le rôle de « Fusionner ».
+  - **Visibilité** : un joueur ne voit une série qu'à travers une histoire qu'il voit (publiée,
+    ou la sienne) — le nom tapé dans le brouillon d'un autre reste privé, et un id forcé est
+    refusé (« Série introuvable »). Les **admins voient toutes les séries** : sans ça, ils ne
+    pouvaient pas ranger l'histoire qu'ils valident dans une série qui n'existait encore que
+    dans des brouillons (trouvé en test). En aperçu joueur, l'admin retombe sur la vue joueur.
+  - **Admins** : barre sous les filtres quand une série est sélectionnée → Renommer (refusé si
+    le nom appartient à une autre série : il faut fusionner) / Fusionner dans… (`serie_fusionner`
+    déplace les histoires et supprime la source).
+  - **Lecteur** : filtre série = ordre de lecture (partie 1 d'abord) ; carte de fin « Suite ·
+    Série · Partie N+1 » proposée AVANT l'épisode suivant de la saga ; récit « Partie 1 sur 3 ».
+    **Annonce Discord** : « 📖 Nouvel épisode — Épisode 5 · Le Sable Rose, partie 2 » /
+    « ⚡ Nouvelle histoire flash · Le Sable Rose (coulisses) ».
+- **Annonce Discord à la publication** (2026-10-17) : chaque BD **validée** par un admin et
+  chaque flash **publiée** est annoncée par le bot Sorties — encart avec titre (« 📖 Nouvel
+  épisode — Épisode N » / « ⚡ Nouvelle histoire flash »), début du récit coupé sur un mot,
+  auteur, date, lieu, personnages, **image en grand** (couverture ou image flash, PAR URL
+  publique) et lien direct `#ep=` / `#flash=`. Décisions : **une seule annonce par histoire**
+  (drapeau `annonce_le` : corriger, dépublier puis republier ne repostent rien), **aucun ping**
+  (`allowed_mentions: parse []`), BD **et** flash annoncées.
+  - Code dans `bd/bd_discord.php` (fonctions seules, aucun effet à l'inclusion) : l'embed se
+    construit et se vérifie en CLI sans rien envoyer à Discord.
+  - Salon : `stories_channel_id` dans `epice/discord_sortie_config.php`, repli sur
+    `partage_channel_id`. L'URL du site vient de `site_url` (donc `/v2` en test).
+  - **Un refus de Discord ne bloque jamais la publication** : l'API renvoie `annonce_erreur`, la
+    page l'affiche (« ⚠ Annonce Discord non envoyée : … », avec l'aide « Missing Access » /
+    « Missing Permissions » reprise des tournois).
+  - Bouton admin **« 📣 Annoncer sur Discord »** (éditeur BD + visionneuse flash) tant qu'une
+    histoire publiée n'a jamais été annoncée : rattrapage d'un échec, et annonce des histoires
+    publiées AVANT cette fonction (le Sable Rose au lancement).
+- **Lecteur** : page par page (clic sur les bords, ← →, balayage au doigt), **zoom** à la largeur
+  pour lire les bulles (Z — marche aussi en lecture continue : 1 100 px → pleine largeur, 200 %
+  sur téléphone, en gardant la planche en cours sous les yeux), **lecture continue** façon webtoon (C, choix mémorisé), panneau du
+  **récit** (R), plein écran (F), bande de vignettes, carte de fin avec l'épisode suivant.
+  Progression mémorisée par lecteur (`localStorage`, badge « Reprendre p. 2 » / « Lu ✓ » /
+  « Nouveau » 14 jours). **Liens directs** `bd/aventures.html#ep=<id>&p=<page>` : à coller sur
+  Discord pour envoyer quelqu'un sur une planche précise.
+- **Taille des planches — le piège nginx** : sans directive, nginx plafonne le corps d'une requête
+  à **1 Mo** (`client_max_body_size`) et répond 413 **avant** PHP, donc sans rien dans les journaux
+  PHP. Le navigateur envoie donc **une planche par requête** et réduit toute image de plus de 880 Ko
+  (WebP, JPEG si le navigateur ne sait pas encoder le WebP ; côté long ≤ 2 600 px). Mesuré : un PNG de
+  25,7 Mo en 3183×4500 part en WebP 1839×2600 de 682 Ko + vignette de 59 Ko. Une planche déjà
+  légère (les pages IA de ~450 Ko en 1061×1500) part **telle quelle**, sans recompression. Si un
+  413 apparaît quand même, la page l'affiche en clair : relever `client_max_body_size` (ex. `8m`).
+- **Sécurité des envois** : type vérifié par la signature réelle (`getimagesize`), pas par
+  l'extension ni le type déclaré ; JPEG / PNG / WebP uniquement ; 12 Mo max ; noms de fichiers et
+  identifiants générés par le serveur (un id d'épisode hors `[a-z0-9_]` est refusé avant tout chemin).
+- **Stockage** : `bd/data/albums.json` (écriture sous un seul verrou, même motif que
+  `tournois-api.php`) et `bd/pages/<épisode>/<id>.<ext>` + `<id>_t.<ext>` (vignette). Les planches
+  sont servies en statique et donc **publiques par URL** (noms aléatoires) : c'est voulu, une future
+  annonce Discord devra pouvoir les afficher (doctrine « images par URL »).
+
+> [!IMPORTANT]
+> **Déploiement** : envoyer `bd/aventures.html`, `bd/bd_api.php`, `bd/bd_discord.php`,
+> `bd/aventures.jpg`, `pages.js` et `menu.html` (pastille des admins). **`bd_discord.php` est une
+> dépendance dure** : absent, `bd_api.php` meurt au `require_once` et toute la page tombe.
+> Annonces : ajouter `'stories_channel_id' => '<id du salon>'` dans
+> `epice/discord_sortie_config.php` (fichier du serveur, gitignoré) ; sans lui, repli sur
+> `partage_channel_id`.
+>
+> **Piège « aperçu joueur »** : le bouton 👁 d'`auth-guard.js` ne change que le rôle AFFICHÉ
+> (`localStorage.role = "user"`, `previewPlayer = "1"`) ; la session PHP reste admin. Une page qui
+> demande ses droits au serveur (ici `est_admin`, `peut_modifier`) montre donc l'interface admin
+> en plein aperçu — l'onglet « À valider » apparaissait. Remède : la page appelle
+> `list&apercu=1` quand `previewPlayer` vaut 1, et l'API calcule CETTE lecture comme pour un joueur
+> (`$BD_APERCU`, lu par `bd_admin()`). Seule `list` le pose : aucune écriture n'est affectée.
+> À reproduire sur toute future page dont l'affichage dépend d'une réponse serveur.
+>
+> **Piège CSS rencontré** : un bloc stylé `display: grid` (le panneau « Dépublier » des admins)
+> restait visible malgré l'attribut `hidden` — l'auteur d'une règle CSS l'emporte sur le style par
+> défaut du navigateur. La page force donc `[hidden] { display: none !important; }`. Ne pas
+> retirer cette règle : sans elle, des boutons d'admin s'affichent chez les joueurs.
+> `bd/bd_api.php` a besoin de `epice/auth_epice.php`, déjà en prod. Puis créer les deux dossiers de
+> données, inscriptibles par PHP **et** par le compte `dune` :
+> ```
+> mkdir -p bd/data bd/pages && sudo chown dune:www-data bd/data bd/pages && sudo chmod 2775 bd/data bd/pages
+> ```
+> Le `umask(0002)` de l'API donne ensuite des fichiers 664 / dossiers 775 qui héritent du groupe.
+> Recommandé (pas indispensable, rien de secret dedans) : ajouter `location ^~ /bd/data/ { deny all; }`
+> (et `/v2/bd/data/`) à côté de ceux d'`epice/data/`. **Ne jamais écraser `bd/data/` ni `bd/pages/`**
+> lors d'un redéploiement : ce sont les épisodes de la guilde.
 
 ---
 
@@ -1158,6 +1698,13 @@ DuneMap/
 │   ├── discord_sortie_config.example.php # Gabarit (bot_token) — config hors Git
 │   └── data/             # debriefs.json + organizers.json (runtime, hors Git)
 │
+├── bd/                   # « Havres Gris Stories » — BD de guilde
+│   ├── aventures.html    # Bibliothèque + éditeur des planches + lecteur BD
+│   ├── bd_api.php        # Épisodes et planches (droits = ceux des organisateurs épice)
+│   ├── aventures.jpg     # Vignette de la tuile du menu
+│   ├── data/             # albums.json (runtime, hors Git)
+│   └── pages/            # Planches envoyées depuis le site (runtime, hors Git)
+│
 ├── avatars/              # Avatars presets + uploads joueurs (préfixe u_pseudo_)
 ├── uploads/              # Images des demandes de craft
 ├── images/               # Ressources statiques (404_bg.jpg, etc.)
@@ -1363,6 +1910,69 @@ archives, `data/`) et la clé API restent dehors (`dunelogger/.gitignore`).
 | `dune_archiver.py` | déplace les vieilles lignes vers `history/*.csv.gz` | serveur, cron `0 3 * * 1` |
 | `build_daily_summary.py` | produit les 3 fichiers agrégés lus par la page | serveur, cron `10 * * * *` |
 | `recover_history.py` | récupération **ponctuelle** du 2026-09-05, déjà passée | **PC uniquement, jamais le serveur** |
+| `diag_couverture.py` | sonde : combien de joueurs le collecteur ne voit pas | serveur, **à la main** |
+
+#### ⚠ Deux angles morts du collecteur, tous deux SILENCIEUX
+
+Constatés le **2026-09-21**, en comparant la page à SteamDB : le compte mondial de Steam a été
+multiplié par ~4 sur la semaine (patch du 17-18 septembre), la courbe de la page par ~1,6 seulement.
+
+1. **La whitelist `OFFICIAL_SERVERS` est figée** (extraite le 2026-05-14, revérifiée le 2026-07-05).
+   Le filtre `matched = [b for b in battlegroups if b['displayName'] in OFFICIAL_SERVERS]` **n'alerte
+   que dans un sens** : il prévient quand un serveur de la liste a disparu de l'API, jamais quand
+   l'API renvoie un serveur que la liste ignore — celui-là est écarté sans un mot. Or un afflux de
+   joueurs pousse l'éditeur à **rouvrir des mondes**, qui tombent alors dans ce trou : la courbe
+   s'aplatit au moment précis où elle devrait monter. Même motif que le catalogue des jeux — une
+   liste tenue à l'écart du code qui la remplit.
+2. **`REGION_ID = "Europe"` est en dur**, sur **sept régions** existantes. L'Amérique du Nord en
+   occupe trois à elle seule (US East / West / Central, ~40 mondes). Corollaire à ne pas oublier au
+   moment de comparer : le pic 24 h de SteamDB est un pic **mondial**, atteint en soirée américaine,
+   quand le pic de la page est **européen** — deux maxima qui ne tombent pas à la même heure.
+
+Et une différence de nature, celle-là irréductible : **SteamDB compte les clients Steam qui ont le
+jeu lancé** (menus, création de personnage, chargement, file d'attente), là où le collecteur lit
+`activePlayers`, soit les joueurs **placés dans un sietch**. L'écart s'élargit mécaniquement pendant
+un afflux, puisque les files d'attente grossissent. Ordre de grandeur relevé le 2026-09-21 :
+dunestatus annonçait 4 131 joueurs en monde toutes régions confondues quand SteamDB affichait
+7 103 clients — deux relevés non simultanés, à prendre comme un ordre de grandeur.
+
+**Historique du ratio, lu dans le journal le 2026-09-21** — il raconte l'histoire mieux qu'un
+raisonnement :
+
+```
+2026-06-24  87/227     avant : l'API renvoyait TOUT (officiels + privés + dev)
+2026-07-05  87/94      serviceHostFilter=Official posé ce jour-là — pas une perte
+2026-07-30  87/95
+2026-09-01  87/96
+2026-09-19  87/97      une seule entrée nouvelle pendant l'afflux
+```
+
+Donc **trois entrées apparues depuis juillet**, pas dix mondes rouverts en catastrophe : les sept
+autres sont le dev/QA identifié à l'époque. À ~40 joueurs par monde au pic, le manque vaut **3 à 4 %**
+— réel et permanent, mais il n'explique PAS un écart de croissance de 1,6× contre 4×. Une première
+estimation à +11 % avait supposé, à tort, que les dix serveurs en trop étaient de vrais mondes.
+
+⚠ **Comparer à un site tiers ne veut rien dire à n'importe quelle heure.** Relevé du 2026-09-21 :
+la page affichait 301 joueurs à 05:00 UTC, dunestatus 930 pour l'Europe à 06:05 — sauf qu'à cette
+heure-là la courbe remonte de son creux en pente raide (192 à 04:00, 301 à 05:00). Une heure d'écart
+vaut un facteur deux. **La comparaison se fait à une heure de plateau (20 h-22 h locales) et à la
+minute près**, sinon elle ne prouve rien.
+
+En revanche elle déplace une hypothèse : **dunestatus mesure la même chose que le collecteur** (des
+joueurs présents dans des mondes, lus dans le navigateur de serveurs, avec des capacités « 22 / 1500 »),
+et non des clients Steam. Si l'écart se confirme à heure stable, ce n'est donc pas une différence de
+nature entre les deux métriques — c'est un défaut de couverture.
+
+`diag_couverture.py` répond en chiffres plutôt qu'en hypothèses : nombre de serveurs écartés en
+silence, **joueurs qu'ils portent**, part de sous-estimation, et (avec `--regions`) les noms de
+régions que l'API accepte. Elle imprime **toujours** le total Europe, même quand la whitelist est à
+jour : c'est le seul chiffre comparable à dunestatus à la même minute, et sans lui « 0 perdu » ne
+prouverait rien. Elle importe la whitelist et la clé du collecteur au lieu de les recopier,
+n'écrit aucun CSV et ne modifie rien.
+
+```bash
+cd /home/dune && /home/dune/.venvs/dune_logger_env/bin/python diag_couverture.py --regions
+```
 
 ⚠ `recover_history.py` ne doit pas être déployé : ses sources sont des chemins Windows locaux
 (`J:\Download\Serveur\...`, copies éparpillées de l'ancien `dune_counts.csv`), il écrit dans un

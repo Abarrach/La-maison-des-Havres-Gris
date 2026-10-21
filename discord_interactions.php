@@ -15,6 +15,7 @@
 //  Routes actuelles :
 //   - /sortie + composants sortie   → epice/discord_sortie.php  (existant, inchangé)
 //   - /commande + composants cmd_   → discord_commande.php      (lot 3+, pas encore livré)
+//   - composants tpari/tparim/tparimes → epice/discord_paris.php (paris des tournois PvP)
 //
 //  Sécurité : chaque requête Discord est signée. On refuse (401)
 //  tout ce qui n'est pas signé correctement. La clé publique est
@@ -116,6 +117,10 @@ function detect_route(array $body): ?string {
 
     if ($type === 3 || $type === 5) {
         $cid = (string)($body['data']['custom_id'] ?? '');
+        // Paris des tournois PvP (cf. epice/discord_paris.php) : boutons du message de
+        // paris (tpari:, tparimes:) et son formulaire (tparim:). Les messages déjà
+        // postés gardent ces boutons : ne jamais retirer ces préfixes.
+        if (preg_match('/^tpari(m|mes)?:/', $cid)) return 'paris';
         // Sortie : préfixes existants (cf. epice/discord_sortie.php)
         $sortiePrefixes = [
             'signup:', 'present:', 'maybe:', 'absent:', 'unsignup:',
@@ -126,10 +131,19 @@ function detect_route(array $body): ?string {
             // doivent rester routés indéfiniment, sinon les boutons déjà épinglés
             // cessent de répondre du jour où on les retirerait d'ici.
             'newcat:', 'newsub:', 'newpick:', 'newtype', 'newback',
+            'creneaux:',
         ];
         foreach ($sortiePrefixes as $p) {
             if (strpos($cid, $p) === 0) return 'sortie';
         }
+        // FILET : tout composant posé sur un encart de sortie a un custom_id de la
+        // forme "<action>:<id de sortie>", et les ids de sortie sont "sortie_<horodatage>".
+        // Sans ce filet, ajouter un composant à l'encart SANS penser à cette liste-ci
+        // renvoie un 400 et Discord affiche « n'a pas répondu à temps » — le handler
+        // n'est jamais atteint, son journal reste muet, et le vrai coupable est
+        // invisible. C'est exactement ce qui est arrivé au menu de créneaux le
+        // 2026-09-19 : une liste de plus, tenue à distance du code qui la remplit.
+        if (preg_match('/:sortie_\d+$/', $cid)) return 'sortie';
         // Commande : namespace réservé pour le lot 3+ (pas encore de handler).
         if (strpos($cid, 'cmd_') === 0) return 'commande';
         return null;
@@ -183,6 +197,11 @@ if ($route === 'commande') {
 
 if ($route === 'plan') {
     require __DIR__ . '/discord_plan.php';
+    exit;
+}
+
+if ($route === 'paris') {
+    require __DIR__ . '/epice/discord_paris.php';
     exit;
 }
 

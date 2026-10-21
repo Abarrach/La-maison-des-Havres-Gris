@@ -26,13 +26,16 @@ if (PHP_SAPI !== 'cli') { http_response_code(403); echo 'CLI only'; exit; }
 
 date_default_timezone_set('Europe/Paris');
 
-const GAMES = [
-    'orni_flap'        => 'Ornithopter Flap',
-    'spice_runner'     => 'Spice Runner',
-    'sandstorm_memory' => 'Sandstorm Memory',
-    'worm_rider'       => 'Worm Rider',
-    'muaddib_rescue'   => "Muad'Dib Rescue",
-];
+// Catalogue des jeux : UNE seule source, celle de l'API. Ce fichier en tenait sa
+// propre copie en dur, et un jeu ajouté à scores_api.php ne rejoignait donc jamais
+// l'annonce hebdomadaire — son champion de la semaine était balayé par le reset
+// sans avoir jamais été nommé. Constaté avec Dernier Rempart le 2026-09-19.
+// Un jeu sans aucun score est ignoré tout seul (cf. `if ($best)` plus bas), donc
+// un jeu déclaré mais pas encore livré ne pollue rien.
+// Le catalogue seul, pas toute l'API : scores_api.php inclut discord_oauth.php, qui
+// fait un session_start() au chargement. Un cron n'a aucune raison d'ouvrir une
+// session ni de dépendre de la configuration OAuth pour lire une liste de noms.
+define('NOMS_JEUX', require __DIR__ . '/games_catalog.php');
 
 $DRY = in_array('--dry', $argv ?? [], true);
 
@@ -70,7 +73,7 @@ if (!is_array($weekly)) $weekly = [];
 
 // --- Champion de la semaine par jeu (meilleur score) ---
 $champions = [];
-foreach (GAMES as $gameId => $gameName) {
+foreach (NOMS_JEUX as $gameId => $conf) {
     $best = null;
     foreach ($weekly as $e) {
         if (($e['game'] ?? '') !== $gameId) continue;
@@ -95,7 +98,7 @@ if (file_exists($ALLTIME_FILE)) {
 if (!is_array($alltime)) $alltime = [];
 
 $hallOfFame = [];
-foreach (GAMES as $gameId => $gameName) {
+foreach (NOMS_JEUX as $gameId => $conf) {
     $best = null;
     foreach ($alltime as $e) {
         if (($e['game'] ?? '') !== $gameId) continue;
@@ -129,14 +132,14 @@ function post_discord(string $webhookFile, array $champions, array $hallOfFame):
     if (!empty($champions)) {
         $lines = [];
         foreach ($champions as $gameId => $c) {
-            $lines[] = '🏆 **' . (GAMES[$gameId] ?? $gameId) . "** — {$c['player']} (**{$c['score']}**)";
+            $lines[] = '🏆 **' . (NOMS_JEUX[$gameId]['name'] ?? $gameId) . "** — {$c['player']} (**{$c['score']}**)";
         }
         $fields[] = ['name' => '🏆 Champions de la semaine', 'value' => implode("\n", $lines), 'inline' => false];
     }
     if (!empty($hallOfFame)) {
         $lines = [];
         foreach ($hallOfFame as $gameId => $c) {
-            $lines[] = '👑 **' . (GAMES[$gameId] ?? $gameId) . "** — {$c['player']} (**{$c['score']}**)";
+            $lines[] = '👑 **' . (NOMS_JEUX[$gameId]['name'] ?? $gameId) . "** — {$c['player']} (**{$c['score']}**)";
         }
         $fields[] = ['name' => '🏛️ Hall of Fame — le score à détrôner', 'value' => implode("\n", $lines), 'inline' => false];
     }
@@ -169,11 +172,11 @@ if ($DRY) {
     clog('[DRY] annoncerait sur Discord :');
     clog('  Champions de la semaine :');
     foreach ($champions as $gameId => $c) {
-        clog('    ' . (GAMES[$gameId] ?? $gameId) . ' : ' . $c['player'] . ' (' . $c['score'] . ')');
+        clog('    ' . (NOMS_JEUX[$gameId]['name'] ?? $gameId) . ' : ' . $c['player'] . ' (' . $c['score'] . ')');
     }
     clog('  Hall of Fame (all-time) :');
     foreach ($hallOfFame as $gameId => $c) {
-        clog('    ' . (GAMES[$gameId] ?? $gameId) . ' : ' . $c['player'] . ' (' . $c['score'] . ')');
+        clog('    ' . (NOMS_JEUX[$gameId]['name'] ?? $gameId) . ' : ' . $c['player'] . ' (' . $c['score'] . ')');
     }
 } else {
     $posted = post_discord($WEBHOOK_FILE, $champions, $hallOfFame);

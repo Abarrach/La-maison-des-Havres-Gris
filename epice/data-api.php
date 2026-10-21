@@ -12,7 +12,7 @@ $raw   = file_get_contents('php://input');
 $input = json_decode($raw, true) ?? [];
 
 // --- Contrôle d'accès serveur (basé sur la session du site, plus de token en dur) ---
-$organize_actions = ['list', 'open_sorties', 'new_soiree', 'close_soiree', 'reopen_sortie', 'save_assign', 'save_analyse', 'history', 'sortie_detail', 'delete_sortie', 'save_sop_content'];
+$organize_actions = ['list', 'open_sorties', 'new_soiree', 'close_soiree', 'reopen_sortie', 'save_assign', 'save_analyse', 'history', 'sortie_detail', 'delete_sortie', 'save_sop_content', 'role_stats', 'save_presence', 'publish_shares'];
 $member_actions   = ['init', 'get_assign', 'my_debrief', 'save_debrief', 'public_history', 'public_sortie', 'me', 'my_activity', 'get_sop_content'];
 $admin_only       = ['get_orga', 'set_orga', 'activity_report'];
 if      (in_array($action, $admin_only, true))       epice_require_admin();
@@ -91,14 +91,262 @@ function active_sortie_id(array $d): string {
     return '';
 }
 
+// ---- Partage de la récolte au prorata de la présence -------------------------
+// Un relevé toutes les 30 min dans le salon vocal ; présent = 1 point. La valeur d'un
+// point est le volume divisé par le total des points — ce qui rend la répartition
+// indifférente au nombre de participants, celui-ci pouvant varier d'une demi-heure à
+// l'autre sur une journée en relève.
+//
+// Cette fonction est le SEUL endroit où les parts sont calculées : l'écran d'admin et
+// le message Discord la partagent. Deux calculs séparés finiraient par se contredire,
+// et c'est précisément sur ce chiffre-là qu'on ne peut pas se permettre un doute.
+function parts_presence(array $s): array {
+    $p      = $s['presence'] ?? [];
+    $ticks  = is_array($p['ticks'] ?? null) ? $p['ticks'] : [];
+    $noms   = is_array($p['noms']  ?? null) ? $p['noms']  : [];
+    $volume = max(0, (int)($p['volume'] ?? 0));
+
+    $points = [];
+    foreach ($ticks as $ids) {
+        // array_unique : la présence est un booléen par demi-heure, pas un compteur.
+        // Le relevé et la sauvegarde dédoublonnent déjà, mais c'est ICI que le chiffre
+        // devient des ressources dans une poche — la fonction ne doit dépendre de la
+        // propreté de personne.
+        foreach (array_unique(array_map('strval', (array)$ids)) as $id) {
+            if ($id === '') continue;
+            $points[$id] = ($points[$id] ?? 0) + 1;
+        }
+    }
+    $total = array_sum($points);
+
+    // Les plages de présence (« 10:00–19:30 ») ont été calculées ici un temps, pour une
+    // colonne du message Discord puis du tableau des parts. Les deux ont été retirées :
+    // la grille tenant désormais en entier dans une capture d'écran, on la copie telle
+    // quelle et le détail y est déjà, demi-heure par demi-heure. Du code qui ne nourrit
+    // plus rien coûte plus cher qu'il ne rapporte, même bien testé.
+    $lignes = [];
+    foreach ($points as $id => $pts) {
+        // Arrondi à la centaine INFÉRIEURE : la petite raffinerie consomme par lots de
+        // 100, une part de 7 437 laisserait 37 unités inutilisables chez son
+        // propriétaire. Le reliquat retourne au pot commun.
+        $brut = $total > 0 ? ($volume * $pts / $total) : 0;
+        $lignes[] = [
+            'id'     => $id,
+            'nom'    => (string)($noms[$id] ?? $id),
+            'points' => $pts,
+            'part'   => (int)(floor($brut / 100) * 100),
+        ];
+    }
+    usort($lignes, function ($a, $b) {
+        return ($b['points'] <=> $a['points']) ?: strcasecmp($a['nom'], $b['nom']);
+    });
+
+    $distribue = 0;
+    foreach ($lignes as $l) $distribue += $l['part'];
+    return [
+        'lignes'       => $lignes,
+        'total_points' => $total,
+        'volume'       => $volume,
+        'par_point'    => $total > 0 ? round($volume / $total, 1) : 0,
+        'distribue'    => $distribue,
+        'reliquat'     => max(0, $volume - $distribue),
+        'nb_ticks'     => count($ticks),
+    ];
+}
+
+// Message Discord de répartition. Le bloc de code garde l'alignement des colonnes ;
+// un message Discord plafonne à 2000 caractères, d'où la troncature au-delà de 40 noms
+// (un message rejeté le serait EN ENTIER, cf. le tableau de couverture des rallys).
+function message_parts(array $s, array $r): string {
+    $nl    = chr(10);
+    $titre = trim((string)($s['titre'] ?? 'Sortie'));
+    $fmt   = function ($n) { return number_format($n, 0, ',', ' '); };
+
+    $t  = '🌾 **Partage de l’épice — ' . $titre . '**' . $nl;
+    $t .= trim(($s['date'] ?? '') . ' · ' . ($s['heure'] ?? ''), ' ·') . $nl . $nl;
+    $t .= 'Relevé automatique toutes les 30 minutes dans le salon vocal. Présent = 1 point.' . $nl . $nl;
+    $t .= 'Récolte : **' . $fmt($r['volume']) . '** · **' . $fmt($r['total_points']) . ' points** au total · '
+        . '**' . $fmt($r['par_point']) . '** par point' . $nl . $nl;
+
+    // Le pied est construit AVANT le tableau : son poids doit être retranché du budget.
+    // Les deux phrases qui expliquaient l'arrondi et l'absence de prélèvement ont été
+    // retirées : la règle est annoncée une fois à la guilde, la répéter sous chaque
+    // partage n'apprend rien à personne. Le RELIQUAT, lui, reste — c'est un chiffre,
+    // pas un rappel, et son absence ferait croire à une erreur de calcul quand la somme
+    // des parts ne retombe pas sur la récolte.
+    $pied = '```';
+    if ($r['reliquat'] > 0) $pied .= $nl . '*Reliquat de ' . $fmt($r['reliquat']) . ' au pot commun.*';
+
+    // ⚠ str_pad() compte des OCTETS. « Lorhelyne✨ » pèse trois octets de plus qu'il
+    // n'occupe de colonnes, et sa ligne se décalait. Sans mbstring (absente de ce
+    // serveur), on approche la largeur d'affichage en comptant les points de code :
+    // les octets de continuation UTF-8 (0x80-0xBF) ne sont pas des caractères.
+    // Limite assumée : un emoji est souvent rendu sur DEUX colonnes, donc une ligne
+    // qui en contient peut encore dériver d'un cran — au lieu de trois.
+    $larg = function ($x) { return strlen(preg_replace('/[\x80-\xBF]/', '', $x)); };
+    $padd = function ($x, $n) use ($larg) { $m = $n - $larg($x); return $x . ($m > 0 ? str_repeat(' ', $m) : ''); };
+    $padg = function ($x, $n) use ($larg) { $m = $n - $larg($x); return ($m > 0 ? str_repeat(' ', $m) : '') . $x; };
+
+    // Colonnes resserrées à 35 caractères : un bloc de code Discord ne se replie pas,
+    // il défile horizontalement. Sur téléphone, 43 caractères obligeaient déjà à
+    // faire glisser le tableau pour lire la colonne des parts.
+    $t .= '```' . $nl;
+    $t .= $padd('Joueur', 18) . $padg('Points', 7) . $padg('Part', 10) . $nl;
+    $t .= str_repeat('-', 35) . $nl;
+
+    // Troncature sur le BUDGET RÉEL, en octets, et non sur un nombre de lignes : un
+    // message Discord plafonne à 2000 caractères et il est rejeté EN ENTIER au-delà.
+    // Deux erreurs successives ici : d'abord une limite à 40 lignes (40 pseudos longs
+    // = 2100 octets), puis un budget fixe de 1750 qui ignorait le poids de l'en-tête
+    // et des caractères multi-octets (─ et … pèsent 3 octets chacun). Le budget se
+    // MESURE, il ne s'estime pas.
+    $budget = 1900 - strlen($t) - strlen($pied);
+    $n = 0;
+    foreach ($r['lignes'] as $l) {
+        // strlen() et non mb_strlen() : pas de mbstring sur ce serveur (cf. AGENTS.md).
+        // On coupe sur les octets, donc un pseudo accentué est tronqué un cheveu plus
+        // tôt — sans conséquence pour un alignement de colonnes.
+        // Troncature sur les points de code, pas sur les octets : couper « Lorhelyne✨ »
+        // au milieu de son emoji produirait des octets invalides dans le message.
+        $nom = $l['nom'];
+        while ($larg($nom) > 17) $nom = preg_replace('/.$/us', '', $nom);
+        if ($nom !== $l['nom']) $nom .= '…';
+        $ligne = $padd($nom, 18) . $padg((string)$l['points'], 7)
+               . $padg($fmt($l['part']), 10) . $nl;
+        $queue = '… et ' . (count($r['lignes']) - $n) . ' autres, détail sur le site' . $nl;
+        if (strlen($ligne) + strlen($queue) > $budget) { $t .= $queue; break; }
+        $t .= $ligne;
+        $budget -= strlen($ligne);
+        $n++;
+    }
+    return $t . $pied;
+}
+
+// ---- Compos par créneau (rallys) --------------------------------------------
+// Le créneau 0 — et toute sortie qui n'est PAS un rally — vit dans `assignation`,
+// les créneaux suivants dans `assignations`. Asymétrique à dessein : les lecteurs
+// historiques (Manuel de combat, historique, liste des participants, `a_compo`)
+// n'ont rien à apprendre sur les rallys, et surtout chaque compo n'est stockée
+// qu'à UN endroit. Recopier le créneau 0 dans les deux champs pour faire joli
+// ouvrirait exactement la divergence qu'on passe son temps à traquer ailleurs.
+function sortie_compo($s, $i) {
+    $i = (int)$i;
+    if ($i <= 0) return $s['assignation'] ?? null;
+    return $s['assignations'][$i] ?? null;
+}
+
+// Toutes les compos réellement posées, créneau 0 compris.
+function sortie_compos($s): array {
+    $out = [];
+    if (!empty($s['assignation'])) $out[] = $s['assignation'];
+    foreach (($s['assignations'] ?? []) as $c) if (!empty($c)) $out[] = $c;
+    return $out;
+}
+
+// ---- Habitudes de poste ------------------------------------------------------
+// Clé de rapprochement entre un pseudo Discord et un pseudo tapé à la main dans une
+// vieille compo : « Lorhelyne✨ » et « Lorhelyne » doivent se retrouver, « Sté » et
+// « Sté » aussi. On ne garde que [a-z0-9] — sur une chaîne UTF-8 cela retire les
+// emojis, les accents et la ponctuation en travaillant sur les OCTETS, donc sans
+// mbstring (absente de ce serveur, cf. AGENTS.md). Appliqué des DEUX côtés de la
+// comparaison, un « é » perdu ne gêne pas : « Sté » et « Sté » donnent tous deux « st ».
+function pseudo_key($s): string {
+    return preg_replace('/[^a-z0-9]/', '', strtolower((string)$s));
+}
+
+// Compte les rôles tenus dans UNE compo. Vocabulaire volontairement plus fin que les
+// postes Discord : « cardinal » et « patrouille » sont deux métiers différents alors
+// que Discord ne connaît que « pilote d'ornithoptère ».
+function tally_compo($c, array &$stats): void {
+    if (!is_array($c)) return;
+    $vus = [];
+    $add = function ($nom, $role) use (&$stats, &$vus) {
+        $nom = trim((string)$nom);
+        if ($nom === '') return;
+        $k = pseudo_key($nom);
+        if ($k === '') return;
+        if (!isset($stats[$k])) $stats[$k] = ['nom' => $nom, 'roles' => [], 'sorties' => 0];
+        $stats[$k]['roles'][$role] = ($stats[$k]['roles'][$role] ?? 0) + 1;
+        $vus[$k] = true;
+    };
+    foreach (($c['recolte'] ?? []) as $g) {
+        $add($g['transporteur'] ?? '', 'transporteur');
+        $add($g['moissonneur'] ?? '', 'moissonneur');
+        $add($g['defenseur_cac'] ?? '', 'cardinal');
+    }
+    // Défense rapprochée : tableau d'escouades (format courant) ou objet unique (ancien).
+    $df = $c['defense'] ?? [];
+    $squads = (is_array($df) && array_key_exists('nord', $df)) ? [$df] : (is_array($df) ? $df : []);
+    foreach ($squads as $sq) {
+        if (!is_array($sq)) continue;
+        foreach (['nord', 'sud', 'est', 'ouest'] as $k) {
+            $d = $sq[$k] ?? null;
+            $nom = is_array($d) ? ($d['nom'] ?? '') : $d;   // ancien format : la valeur EST le pseudo
+            $add($nom, 'cardinal');
+            if (is_array($d) && !empty($d['assaut'])) $add($nom, 'assaut');
+            if (is_array($d) && !empty($d['cac']))    $add($nom, 'cac');
+        }
+        foreach (($sq['assauts'] ?? []) as $p) $add($p['nom'] ?? '', 'assaut');
+    }
+    foreach ((($c['distance'] ?? [])['pilotes'] ?? []) as $p) {
+        $add($p['nom'] ?? '', 'patrouille');
+        if (!empty($p['cac'])) $add($p['nom'] ?? '', 'cac');
+    }
+    foreach ((($c['recon'] ?? [])['scouts'] ?? []) as $p) $add($p['nom'] ?? '', 'scout');
+    $b = $c['base_avancee'] ?? [];
+    if (!empty($b['active'])) {
+        $add($b['constructeur'] ?? '', 'base_constructeur');
+        $add($b['buggy'] ?? '', 'base_buggy');
+    }
+    foreach (['cs', 'cdr', 'cp', 'cb'] as $k) $add(($c['commandement'] ?? [])[$k] ?? '', $k);
+    // Une sortie compte pour UNE, quel que soit le nombre de rôles tenus dedans :
+    // c'est ce qui permet de dire « 6 fois sur 8 sorties » plutôt qu'un chiffre gonflé.
+    foreach (array_keys($vus) as $k) $stats[$k]['sorties']++;
+}
+
+// Range les compos reçues de save_assign dans la sortie. Sortie de la boucle du
+// switch pour être testable : c'est la seule transformation du lot qui peut détruire
+// des données, elle ne doit pas vivre noyée dans un case.
+function apply_compos(array $s, array $input): array {
+    // Nouveau client : la carte ENTIÈRE des créneaux, en un seul enregistrement.
+    // Enregistrer créneau par créneau perdrait le travail de celui qu'on vient de
+    // quitter — et sur une journée on passe son temps à les comparer.
+    if (isset($input['assignations']) && is_array($input['assignations'])) {
+        $compos = $input['assignations'];
+        $s['assignation'] = $compos[0] ?? [];
+        $reste = [];
+        foreach ($compos as $k => $v) if ((int)$k > 0 && !empty($v)) $reste[(int)$k] = $v;
+        if ($reste) $s['assignations'] = $reste; else unset($s['assignations']);
+        return $s;
+    }
+    // Ancien client (page ouverte avant le déploiement) : compo unique. On ne touche
+    // PAS à `assignations` — l'écraser effacerait les relèves d'un rally parce que
+    // quelqu'un a laissé un onglet ouvert depuis la veille.
+    $s['assignation'] = $input['assignation'] ?? [];
+    return $s;
+}
+
+// Participants de TOUTE la sortie, créneaux confondus : sur un rally, quelqu'un qui
+// n'a joué que de 14 h à 16 h doit pouvoir déposer son retour comme les autres.
+function roster_from_sortie($s): array {
+    $names = [];
+    foreach (sortie_compos($s) as $c) foreach (roster_from_assign($c) as $n) $names[] = $n;
+    return array_values(array_unique($names));
+}
+
 // Liste dédupliquée des participants à partir de l'assignation (pour la liste déroulante joueur)
 function roster_from_assign($a): array {
     if (!is_array($a)) return [];
     $names = [];
     $push = function ($v) use (&$names) { $v = trim((string)$v); if ($v !== '') $names[] = $v; };
     $cm = $a['commandement'] ?? [];
-    foreach (['cs','cdr','cp'] as $k) $push($cm[$k] ?? '');
+    foreach (['cs','cdr','cp','cb'] as $k) $push($cm[$k] ?? '');
     foreach (($a['recolte'] ?? []) as $g) foreach (['transporteur','moissonneur','defenseur_cac'] as $k) $push($g[$k] ?? '');
+    $base = $a['base_avancee'] ?? [];
+    if (!empty($base['active'])) {
+        $push($base['constructeur'] ?? ''); $push($base['buggy'] ?? '');
+        foreach (($base['patrouilleurs'] ?? []) as $p) $push($p);
+    }
     $df = $a['defense'] ?? [];
     // Défense Rapprochée : tableau d'escouades de 4 cardinaux (nouveau format, plusieurs
     // escouades possibles) ; rétro-compat ancien format = un seul objet à 4 cardinaux
@@ -137,7 +385,7 @@ switch ($action) {
         foreach ($d['sorties'] as $s) { if (($s['id'] ?? '') === $id) { $target = $s; break; } }
         if (!$target) out(false, [], 'Aucune soirée ouverte');
         $soiree = ['id'=>$target['id'],'date'=>$target['date'] ?? '','titre'=>$target['titre'] ?? '','zone'=>$target['zone'] ?? '','statut'=>'ouverte'];
-        out(true, ['soiree' => $soiree, 'participants' => roster_from_assign($target['assignation'] ?? null)]);
+        out(true, ['soiree' => $soiree, 'participants' => roster_from_sortie($target)]);
 
     // Retour existant d'un joueur (public — pour pré-remplir / modifier)
     case 'my_debrief':
@@ -209,7 +457,14 @@ switch ($action) {
         // sid) reste visible de tout organisateur (en-tête admin / synthèse retours).
         if ($sid !== '' && !epice_owns_sortie($sortie))
             out(false, [], 'Réservé au créateur de la sortie.');
-        out(true, ['sortie' => $sortie]);
+        // Le partage calculé est renvoyé AVEC la sortie. Il ne vivait jusqu'ici que dans
+        // le navigateur de celui qui avait cliqué « Enregistrer et calculer » : un autre
+        // organisateur qui ouvrait la page ne voyait rien et devait refaire le calcul
+        // chez lui pour lire le même résultat. Le volume étant enregistré, le calcul est
+        // déterministe — on le refait ici plutôt que de stocker un résultat qui pourrait
+        // diverger de la grille.
+        $parts = !empty($sortie['presence']['volume']) ? parts_presence($sortie) : null;
+        out(true, ['sortie' => $sortie, 'parts' => $parts]);
 
     // Sorties OUVERTES assignables : admin = toutes ; organisateur = uniquement les siennes.
     case 'open_sorties':
@@ -283,11 +538,111 @@ switch ($action) {
         if (!epice_owns_sortie($target))
             out(false, [], 'Tu ne peux modifier que la compo de tes propres sorties.');
         foreach ($d['sorties'] as &$s) {
-            if (($s['id'] ?? '') === $sid) { $s['assignation'] = $input['assignation'] ?? []; break; }
+            if (($s['id'] ?? '') !== $sid) continue;
+            $s = apply_compos($s, $input);
+            break;
         }
         unset($s);
         write_data($d);
         out(true, ['message' => 'Assignation enregistrée']);
+
+    // Corriger le relevé de présence et saisir le volume récolté.
+    // Le relevé automatique n'est qu'un point de départ : un visiteur de passage, un
+    // joueur resté en vocal sans jouer, une coupure — l'organisateur tranche. On écrase
+    // donc `ticks` avec ce que l'écran renvoie, sans fusion : la grille affichée FAIT foi.
+    case 'save_presence':
+        $d   = read_data();
+        $sid = trim($input['sid'] ?? '');
+        $trouve = false;
+        foreach ($d['sorties'] as &$s) {
+            if (($s['id'] ?? '') !== $sid) continue;
+            if (!epice_owns_sortie($s)) out(false, [], 'Réservé au créateur de la sortie.');
+            $p = is_array($s['presence'] ?? null) ? $s['presence'] : ['ticks' => [], 'noms' => []];
+            if (isset($input['ticks']) && is_array($input['ticks'])) {
+                $propre = [];
+                foreach ($input['ticks'] as $cle => $ids) {
+                    if (!is_array($ids)) continue;
+                    $ids = array_values(array_unique(array_map('strval', $ids)));
+                    if ($ids) $propre[(string)$cle] = $ids;   // un tick vidé disparaît
+                }
+                ksort($propre);
+                $p['ticks'] = $propre;
+            }
+            if (isset($input['volume'])) $p['volume'] = max(0, (int)$input['volume']);
+            $s['presence'] = $p;
+            $trouve = true;
+            break;
+        }
+        unset($s);
+        // « Sortie introuvable » tout court envoie chercher au mauvais endroit : le cas
+        // courant n'est pas un identifiant erroné mais un onglet resté ouvert sur une
+        // sortie supprimée depuis, qui affiche donc des données parfaitement crédibles.
+        if (!$trouve) out(false, [], "Sortie introuvable — elle a peut-être été supprimée depuis l'ouverture de cette page. Recharge (Ctrl+F5) pour repartir de l'état réel.");
+        write_data($d);
+        $cible = null;
+        foreach ($d['sorties'] as $s2) if (($s2['id'] ?? '') === $sid) $cible = $s2;
+        out(true, ['parts' => parts_presence($cible ?: [])]);
+
+    // Publier la répartition sur Discord, dans le canal de la sortie.
+    case 'publish_shares':
+        $d   = read_data();
+        $sid = trim($input['sid'] ?? '');
+        $cible = null;
+        foreach ($d['sorties'] as $s2) if (($s2['id'] ?? '') === $sid) $cible = $s2;
+        if (!$cible) out(false, [], 'Sortie introuvable');
+        if (!epice_owns_sortie($cible)) out(false, [], 'Réservé au créateur de la sortie.');
+
+        $r = parts_presence($cible);
+        // Garde-fous : publier une répartition fausse est bien pire que ne rien publier.
+        if ($r['volume'] <= 0)       out(false, [], 'Saisis le volume récolté avant de publier.');
+        if ($r['total_points'] <= 0) out(false, [], 'Aucune présence relevée : rien à répartir.');
+
+        $cfgPath = __DIR__ . '/discord_sortie_config.php';
+        if (!file_exists($cfgPath)) out(false, [], 'Configuration du bot absente sur le serveur.');
+        $CFG  = require $cfgPath;
+        // Canal de publication : `partage_channel_id` d'abord, sinon celui où la sortie a
+        // été créée. Le partage n'a pas sa place dans le salon des commandes du bot —
+        // c'est une annonce à lire, pas une interaction — d'où le réglage dédié.
+        $chan = trim((string)($CFG['partage_channel_id'] ?? ''));
+        if ($chan === '') $chan = (string)(($cible['discord'] ?? [])['channel_id'] ?? '');
+        if ($chan === '') out(false, [], "Aucun canal de publication : renseigne `partage_channel_id` dans discord_sortie_config.php, ou crée la sortie depuis Discord.");
+        if (empty($CFG['bot_token']))     out(false, [], 'Le bot n a pas de token configuré.');
+        if (!function_exists('curl_init')) out(false, [], 'cURL indisponible sur le serveur.');
+
+        $ch = curl_init('https://discord.com/api/v10/channels/' . $chan . '/messages');
+        curl_setopt_array($ch, [
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => json_encode(['content' => message_parts($cible, $r)], JSON_UNESCAPED_UNICODE),
+            CURLOPT_HTTPHEADER     => ['Authorization: Bot ' . $CFG['bot_token'], 'Content-Type: application/json'],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => 4,
+            CURLOPT_TIMEOUT        => 10,
+        ]);
+        $resp = curl_exec($ch);
+        $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        if ($resp === false || $code < 200 || $code >= 300) {
+            // Discord DIT ce qui manque (« Missing Access » = le bot ne voit pas le salon,
+            // « Missing Permissions » = il le voit mais ne peut pas y écrire). Jeter ce
+            // texte pour n'afficher qu'un code obligeait à relancer la requête à la main
+            // depuis le serveur pour l'obtenir — c'est arrivé.
+            $j    = json_decode((string)$resp, true);
+            $quoi = trim((string)($j['message'] ?? ''));
+            $aide = '';
+            if (stripos($quoi, 'Missing Access') !== false)
+                $aide = " — le bot ne voit pas ce salon : accorde-lui « Voir le salon » et « Envoyer des messages » dessus.";
+            elseif (stripos($quoi, 'Missing Permissions') !== false)
+                $aide = " — le bot voit le salon mais ne peut pas y écrire : accorde-lui « Envoyer des messages ».";
+            out(false, [], 'Discord a refusé le message (HTTP ' . $code
+                . ($quoi !== '' ? ' : ' . $quoi : '') . ')' . $aide);
+        }
+
+        foreach ($d['sorties'] as &$s3) {
+            if (($s3['id'] ?? '') === $sid) { $s3['presence']['publie'] = date('c'); break; }
+        }
+        unset($s3);
+        write_data($d);
+        out(true, ['message' => 'Répartition publiée sur Discord.']);
 
     // Sauvegarder l'analyse IA de la soirée active (admin)
     case 'save_analyse':
@@ -318,6 +673,28 @@ switch ($action) {
             'assignation' => $target['assignation'] ?? null
         ]);
 
+    // Habitudes de poste, tirées de TOUTES les compos passées (créneaux compris).
+    // Calculé côté serveur et renvoyé sous les pseudos EXACTEMENT tels que le client les
+    // a envoyés : le rapprochement « Lorhelyne✨ » ↔ « Lorhelyne » n'existe qu'ici, il n'y
+    // a donc pas deux normalisations à garder d'accord.
+    case 'role_stats':
+        $d = read_data();
+        $stats = [];
+        foreach ($d['sorties'] as $s) {
+            // On EXCLUT la sortie en cours de composition : se recommander soi-même
+            // ferait passer un brouillon à moitié rempli pour une habitude.
+            if (($s['id'] ?? '') === trim($input['sauf'] ?? '')) continue;
+            foreach (sortie_compos($s) as $c) tally_compo($c, $stats);
+        }
+        $noms = is_array($input['noms'] ?? null) ? $input['noms'] : [];
+        $out  = [];
+        foreach ($noms as $n) {
+            $k = pseudo_key($n);
+            if ($k !== '' && isset($stats[$k]))
+                $out[(string)$n] = ['roles' => $stats[$k]['roles'], 'sorties' => $stats[$k]['sorties']];
+        }
+        out(true, ['stats' => $out]);
+
     // Historique PUBLIC (vue joueur) — liste assainie : AUCUN retour, note ni analyse
     case 'public_history':
         $d = read_data();
@@ -339,9 +716,13 @@ switch ($action) {
         $d   = read_data();
         foreach ($d['sorties'] as $s) {
             if ($s['id'] === $sid) {
+                // heure + duree : la vue joueur en déduit le découpage en créneaux,
+                // exactement comme l'encart Discord et la grille d'assignation.
                 out(true, [
-                    'soiree'      => ['titre'=>$s['titre'],'date'=>$s['date'],'zone'=>$s['zone'],'statut'=>$s['statut']],
-                    'assignation' => $s['assignation'] ?? null
+                    'soiree'       => ['titre'=>$s['titre'],'date'=>$s['date'],'zone'=>$s['zone'],'statut'=>$s['statut'],
+                                       'heure'=>$s['heure'] ?? '','duree'=>$s['duree'] ?? ''],
+                    'assignation'  => $s['assignation'] ?? null,
+                    'assignations' => $s['assignations'] ?? null
                 ]);
             }
         }

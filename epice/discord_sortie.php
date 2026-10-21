@@ -93,6 +93,7 @@ register_shutdown_function(function () {
 //  proposé sur Discord (distribué uniquement côté admin). Présent dans la
 //  liste complète pour afficher les inscrits déjà placés dans ce rôle côté site.
 const POSTES_EPICE = [
+    'base_avancee' => 'Équipe Base avancée — Génie et appui lourd',
     'moissonneur'  => 'Moissonneur',
     'transporteur' => 'Transporteur',
     'defenseur_cac'=> 'Défenseur CaC',
@@ -106,6 +107,7 @@ const POSTES_EPICE = [
 // volontairement absent : c'est un rôle de confiance distribué à la main par
 // l'organisateur dans le builder admin, jamais choisi librement à l'inscription.
 const POSTES_EPICE_SELECTABLE = [
+    'base_avancee' => 'Équipe Base avancée — Génie et appui lourd',
     'moissonneur'  => 'Moissonneur',
     'transporteur' => 'Transporteur',
     'orni_scout'   => 'Orni Scout (repérage)',
@@ -130,6 +132,7 @@ const POSTES_PVP = [
 ];
 
 const POSTE_ICON = [
+    'base_avancee' => '🏗️',
     'moissonneur'  => '⛏️',
     'transporteur' => '🚚',
     'defenseur_cac'=> '⚔️',
@@ -162,7 +165,7 @@ function postes_selectable($stype): array {
 //  build_cat_picker() ouvre une seconde ligne.
 const SORTIE_CATEGORIES = [
     'ludique' => ['label' => 'Ludique', 'icon' => '🎲', 'desc' => 'Courses, défis, énigmes, concours'],
-    'pvp'     => ['label' => 'PvP',     'icon' => '⚔️', 'desc' => 'Entraînements, chasses, embuscades'],
+    'pvp'     => ['label' => 'PvP',     'icon' => '⚔️', 'desc' => 'Entraînements, chasses, tournois'],
     'farm'    => ['label' => 'Farm',    'icon' => '🔁', 'desc' => 'Épice, donjons, ressources, collection'],
     'guilde'  => ['label' => 'Guilde',  'icon' => '🏛️', 'desc' => 'Construction, Landsraad, progression'],
     // Le fourre-tout est une famille de PLEIN DROIT, et non une sous-catégorie enfouie :
@@ -185,6 +188,7 @@ const SORTIE_SOUS_CATEGORIES = [
     // PvP
     'p_train'    => ['cat' => 'pvp',    'label' => 'Entraînement',        'icon' => '🥋', 'desc' => 'S\'exercer entre nous'],
     'p_chasse'   => ['cat' => 'pvp',    'label' => 'Chasse & embuscade',  'icon' => '🎯', 'desc' => 'Traquer, piéger, piller'],
+    'p_tournoi'  => ['cat' => 'pvp',    'label' => 'Tournois',            'icon' => '🏆', 'desc' => 'Arbre, scores et podium sur le site'],
     // Farm
     'f_epice'    => ['cat' => 'farm',   'label' => 'Épice',            'icon' => '🏜️', 'desc' => 'La récolte, et rien d\'autre'],
     'f_donjon'   => ['cat' => 'farm',   'label' => 'Donjons & labos',  'icon' => '🧪', 'desc' => 'Explorer, apprendre'],
@@ -261,14 +265,43 @@ const SORTIE_TYPES = [
                      'sub' => 'l_concours', 'desc' => 'Speed farm des donjons de la map monde'],
 
     // --- PvP › Entraînement
+    //  Trois niveaux, comme les tournois (demande de la GM, 2026-10). Mêmes rôles de
+    //  combat (POSTES_PVP) et mêmes icônes que les tournois du même niveau.
+    //  'banniere' => 'pvp_train' : ils reprennent l'image de l'ancien entraînement
+    //  (sortietrainpvp.jpg) tant qu'on ne leur en a pas déclaré une à eux.
+    'pvp_train_deb'=>['label' => 'Entraînement PvP — Débutants', 'icon' => '🌱', 'site' => false, 'postes' => 'pvp',
+                     'sub' => 'p_train', 'banniere' => 'pvp_train', 'desc' => 'Les bases du combat air/sol, sans pression'],
+    'pvp_train_int'=>['label' => 'Entraînement PvP — Intermédiaires', 'icon' => '⚔️', 'site' => false, 'postes' => 'pvp',
+                     'sub' => 'p_train', 'banniere' => 'pvp_train', 'desc' => 'On connaît son rôle, on travaille la coordination'],
+    'pvp_train_vet'=>['label' => 'Entraînement PvP — Vétérans', 'icon' => '🔥', 'site' => false, 'postes' => 'pvp',
+                     'sub' => 'p_train', 'banniere' => 'pvp_train', 'desc' => 'Pour les combattants aguerris, au rythme soutenu'],
+    //  L'ancien entraînement unique : RETIRÉ du sélecteur ('retire'), mais PAS supprimé.
+    //  Sa clé est stockée dans les sorties passées (historique, Mon Compte) et les
+    //  encarts déjà publiés s'en servent pour retrouver leurs postes et leurs boutons.
     'pvp_train'  => ['label' => 'Entraînement PvP air/sol', 'icon' => '⚔️', 'site' => false, 'postes' => 'pvp',
-                     'sub' => 'p_train', 'desc' => 'Inscription par rôle de combat'],
+                     'sub' => 'p_train', 'retire' => true, 'desc' => 'Inscription par rôle de combat'],
 
     // --- PvP › Chasse & embuscade
     'pvp_hunt'   => ['label' => 'Chasse PvP', 'icon' => '🎯', 'site' => false, 'postes' => false,
                      'sub' => 'p_chasse', 'desc' => 'Traque et pillage dans le Deep Desert'],
     'embuscade'  => ['label' => 'Embuscade', 'icon' => '🪤', 'site' => false, 'postes' => false,
                      'sub' => 'p_chasse', 'desc' => 'Vieux transporteur ou moisso laissés en appât'],
+
+    // --- PvP › Tournois
+    //  RSVP simple : les présents deviennent les joueurs du tournoi, importés par
+    //  l'organisateur sur epice/tournois.html (arbre, scores, podium, lots).
+    //  'tournoi' = niveau, relu par tournois-api.php (TYPE_NIVEAU) et par le bouton
+    //  « Suivre le tournoi » de l'encart (« … et parier » si le tournoi a ses paris ouverts).
+    //  'image' = bannière fournie AVEC le code (epice/img/), commune aux trois niveaux :
+    //  rien à déclarer dans la config, ni en /v2 ni en prod (cf. build_sortie_message).
+    //  Le niveau `expert` s'AFFICHE « Vétérans » (moins intimidant, demande de
+    //  l'utilisateur) : seul le libellé a changé, clés et valeurs stockées restent.
+    'tournoi_deb'=> ['label' => 'Tournoi PvP — Débutants', 'icon' => '🌱', 'site' => false, 'postes' => false,
+                     'sub' => 'p_tournoi', 'tournoi' => 'debutant', 'image' => 'sortietournoispvp.jpg', 'desc' => 'Pour se lancer en duel, sans pression'],
+    'tournoi_int'=> ['label' => 'Tournoi PvP — Intermédiaires', 'icon' => '⚔️', 'site' => false, 'postes' => false,
+                     'sub' => 'p_tournoi', 'tournoi' => 'intermediaire', 'image' => 'sortietournoispvp.jpg', 'desc' => 'On connaît son build, on veut se mesurer'],
+    'tournoi_exp'=> ['label' => 'Tournoi PvP — Vétérans', 'icon' => '🔥', 'site' => false, 'postes' => false,
+                     'sub' => 'p_tournoi', 'tournoi' => 'expert', 'image' => 'sortietournoispvp.jpg', 'desc' => 'Pour les duellistes aguerris'],
 
     // --- Farm › Épice
     'epice'      => ['label' => 'Épice', 'icon' => '🏜️', 'site' => true, 'postes' => 'epice',
@@ -330,7 +363,21 @@ const DUREE_OPTIONS = [
     '2h30' => '2 h 30',
     '3'    => '3 h',
     '4'    => 'Soirée entière (4 h)',
+    // À partir de 6 h, la sortie devient un RALLY : l'encart affiche un second menu
+    // « Mes créneaux » et un tableau de couverture. Personne ne tient huit heures
+    // d'affilée, la vraie question n'est plus « qui vient » mais « qui, et quand ».
+    '6'    => 'Rally — 6 h (créneaux)',
+    '8'    => 'Rally — journée, 8 h (créneaux)',
+    '10'   => 'Rally — 10 h (créneaux)',
 ];
+
+// Durée minimale à partir de laquelle on découpe en créneaux, et taille d'un bloc.
+// Deux heures : quatre lignes pour une journée, c'est lu d'un coup d'œil. À l'heure
+// près on obtient huit lignes que plus personne ne lit.
+// Formation minimale d'un créneau : 1 transporteur + 1 moissonneur + 4 pilotes.
+const RALLY_MINIMUM = 6;
+const RALLY_SEUIL_H = 6;
+const RALLY_BLOC_H  = 2;
 
 // Activité dont la bannière sert d'illustration par défaut aux autres.
 // « Activité Guilde » (id historique 'guilde') est le fourre-tout du catalogue :
@@ -439,7 +486,13 @@ if (!defined('DUNE_INTERACTIONS_DISPATCHED')) {
 header('Content-Type: application/json; charset=utf-8');
 $body = json_decode($raw, true) ?? [];
 $type = $body['type'] ?? 0;
-dlog('signature valide, type=' . $type . ($type === 5 ? ' custom_id=' . ($body['data']['custom_id'] ?? '?') : ''));
+// Le custom_id n'était journalisé que pour les modals (type 5). Sur un clic de
+// composant (type 3) on ne savait donc pas QUEL menu ou bouton avait été actionné :
+// impossible de distinguer « le handler a planté » de « l'interaction n'est jamais
+// arrivée ». Les valeurs choisies sont journalisées avec, elles tiennent en peu de place.
+$cidLog = ($type === 3 || $type === 5) ? ' custom_id=' . ($body['data']['custom_id'] ?? '?') : '';
+if ($type === 3 && !empty($body['data']['values'])) $cidLog .= ' values=' . implode(',', (array)$body['data']['values']);
+dlog('signature valide, type=' . $type . $cidLog);
 
 // -- PING : poignée de main de Discord ------------------------
 if ($type === 1) { echo json_encode(['type' => 1]); exit; }
@@ -478,6 +531,9 @@ if ($type === 5) {
     if (strpos($cid, 'sortie_edit_modal:') === 0) {
         handle_edit_save($body, substr($cid, strlen('sortie_edit_modal:')));
     }
+    if (strpos($cid, 'creneauxmodal:') === 0) {
+        handle_creneaux_modal($body, substr($cid, strlen('creneauxmodal:')));
+    }
     if (strpos($cid, 'sortie_create_modal') === 0) {
         // Le type est encodé dans le custom_id : "sortie_create_modal:<type>".
         $stype = (strpos($cid, ':') !== false) ? substr($cid, strpos($cid, ':') + 1) : 'epice';
@@ -499,6 +555,7 @@ if ($type === 3) {
     if (strpos($cid, 'newtype') === 0)     { handle_new_type($body); }
     if (strpos($cid, 'newbackcat:') === 0) { handle_new_back_cat(substr($cid, 11)); }
     if (strpos($cid, 'newback') === 0)     { handle_new_back(); }
+    if (strpos($cid, 'creneaux:') === 0) { handle_creneaux($body, substr($cid, 9)); }
     if (strpos($cid, 'signup:') === 0)   { handle_signup($body, substr($cid, 7)); }
     if (strpos($cid, 'present:') === 0)  { handle_status($body, substr($cid, 8), 'present'); }
     if (strpos($cid, 'maybe:') === 0)    { handle_status($body, substr($cid, 6), 'maybe'); }
@@ -758,13 +815,19 @@ function ecran_2_utile(string $cat): bool {
 // on sait avant de cliquer si une piste est fournie ou quasi vide.
 function nb_activites_sub(string $sub): int {
     $n = 0;
-    foreach (SORTIE_TYPES as $id => $t) { if (sortie_sub($id) === $sub) $n++; }
+    foreach (SORTIE_TYPES as $id => $t) { if (sortie_proposee($id) && sortie_sub($id) === $sub) $n++; }
     return $n;
 }
 function nb_activites_cat(string $cat): int {
     $n = 0;
-    foreach (SORTIE_TYPES as $id => $t) { if (sortie_cat($id) === $cat) $n++; }
+    foreach (SORTIE_TYPES as $id => $t) { if (sortie_proposee($id) && sortie_cat($id) === $cat) $n++; }
     return $n;
+}
+// Une activité 'retire' reste connue (encarts publiés, historique) mais n'est plus
+// proposée à la création. C'est la seule façon de « remplacer » une activité sans
+// renommer sa clé, ce qui est interdit (cf. l'avertissement sur SORTIE_TYPES).
+function sortie_proposee(string $id): bool {
+    return empty(SORTIE_TYPES[$id]['retire']);
 }
 
 // Sous-catégories d'une famille, dans l'ordre de déclaration.
@@ -831,7 +894,7 @@ function build_activity_picker(string $sub): array {
     $tete = ['type' => 10, 'content' => "### {$s['icon']} {$s['label']}\n{$s['desc']}"];
 
     $ids = [];
-    foreach (SORTIE_TYPES as $id => $t) { if (sortie_sub($id) === $sub) $ids[] = $id; }
+    foreach (SORTIE_TYPES as $id => $t) { if (sortie_proposee($id) && sortie_sub($id) === $sub) $ids[] = $id; }
 
     if (!$ids) {
         return ['components' => [['type' => 17, 'components' => [
@@ -992,6 +1055,96 @@ function modal_when(array $v): array {
     $date  = trim((string)($v['jour'] ?? ''));
     if ($date === '' && isset($v['quand'])) return parse_when($v['quand']);
     return [$date, parse_heure($v['heure'] ?? '')];
+}
+
+// ============================================================
+//  CRÉNEAUX (sorties longues « rally »)
+// ============================================================
+
+/**
+ * Découpe une sortie longue en blocs de RALLY_BLOC_H heures.
+ * Renvoie [] pour toute sortie courte : rien ne change alors dans l'encart.
+ * Chaque créneau : ['i' => index, 'label' => '08:00 → 10:00', 'court' => '08–10'].
+ */
+function creneaux_sortie($sortie) {
+    $heure = trim((string)($sortie['heure'] ?? ''));
+    if (!preg_match('/^(\d{2}):(\d{2})$/', $heure, $m)) return [];
+    $duree = trim((string)($sortie['duree'] ?? ''));
+    // Même lecture que duree_to_hours() du script de purge : « 8 » ou « 2h30 ».
+    if (ctype_digit($duree)) $h = (float)$duree;
+    elseif (preg_match('/^(\d+)\s*h\s*(\d+)?$/i', $duree, $d)) $h = (float)$d[1] + (isset($d[2]) && $d[2] !== '' ? ((int)$d[2]) / 60 : 0);
+    else return [];
+    if ($h < RALLY_SEUIL_H) return [];
+
+    $debut = ((int)$m[1]) * 60 + ((int)$m[2]);
+    $fin   = $debut + (int)round($h * 60);
+    $out   = [];
+    for ($t = $debut, $i = 0; $t < $fin && $i < 12; $t += RALLY_BLOC_H * 60, $i++) {
+        $f = min($t + RALLY_BLOC_H * 60, $fin);
+        $fmt = function ($minutes) { return sprintf('%02d:%02d', intdiv($minutes, 60) % 24, $minutes % 60); };
+        $ct  = function ($minutes) { return sprintf('%02d', intdiv($minutes, 60) % 24); };
+        $out[] = ['i' => $i, 'label' => $fmt($t) . ' → ' . $fmt($f), 'court' => $ct($t) . '–' . $ct($f), 'h1' => $ct($t), 'h2' => $ct($f)];
+    }
+    return $out;
+}
+
+/**
+ * Résume les créneaux d'un joueur en plages lisibles : « 08–12 » plutôt que
+ * « 08–10, 10–12 ». Les gens pensent en tranches continues (« je suis là le
+ * matin »), pas en blocs de deux heures — et ça raccourcit d'autant l'affichage.
+ * Renvoie '' si rien n'est déclaré : l'absence de créneau vaut « disponible
+ * partout » (cf. creneau_couverture), inutile de l'écrire à côté de chaque nom.
+ */
+function creneaux_resume($indices, $creneaux) {
+    if (!is_array($indices) || !$indices) return '';
+    $par = [];
+    foreach ($creneaux as $c) $par[$c['i']] = $c;
+    $ids = array_values(array_unique(array_map('intval', $indices)));
+    sort($ids);
+    $ids = array_values(array_filter($ids, function ($i) use ($par) { return isset($par[$i]); }));
+    if (!$ids) return '';
+    $plages = []; $debut = $ids[0]; $prec = $ids[0];
+    foreach (array_slice($ids, 1) as $i) {
+        if ($i !== $prec + 1) { $plages[] = [$debut, $prec]; $debut = $i; }
+        $prec = $i;
+    }
+    $plages[] = [$debut, $prec];
+    $txt = [];
+    foreach ($plages as [$a, $b]) $txt[] = $par[$a]['h1'] . '–' . $par[$b]['h2'];
+    return implode(', ', $txt);
+}
+
+/**
+ * Couverture d'un créneau : qui est là, et la formation minimale est-elle tenue ?
+ * Règle (celle de la formation minimale du site) : 1 transporteur + 1 moissonneur
+ * + 4 pilotes d'ornithoptère. Les « Présent (poste à définir) » comptent dans
+ * l'effectif mais ne comblent aucun poste : c'est à l'organisateur d'arbitrer.
+ */
+function creneau_couverture($signups, $i) {
+    $presents = 0; $maybe = 0; $transp = 0; $moiss = 0; $pilotes = 0; $noms = [];
+    foreach ($signups as $su) {
+        $cr = $su['creneaux'] ?? null;
+        // Inscription sans créneau déclaré : compte partout. Un joueur qui ne précise
+        // rien est réputé disponible — ne pas le faire disparaître des colonnes.
+        if (is_array($cr) && !in_array($i, array_map('intval', $cr), true)) continue;
+        $statut = $su['statut'] ?? 'present';
+        if ($statut === 'maybe') { $maybe++; continue; }
+        if ($statut !== 'present') continue;
+        $presents++;
+        $noms[] = $su['name'] ?? '?';
+        $p = $su['poste'] ?? '';
+        if ($p === 'transporteur') $transp++;
+        elseif ($p === 'moissonneur') $moiss++;
+        elseif ($p === 'pilote_orni' || $p === 'pilote_orni_cac') $pilotes++;
+    }
+    // Abrégé mais LISIBLE : « T·M·4P » tenait dans la largeur mais ne disait rien à
+    // personne. « transp. » et « moiss. » se comprennent sans légende, et économisent
+    // quand même onze caractères sur les mots entiers — la ligne reste dans le champ.
+    $manques = [];
+    if (!$transp)     $manques[] = 'transporteur';
+    if (!$moiss)      $manques[] = 'moissonneur';
+    if ($pilotes < 4) $manques[] = (4 - $pilotes) . ' pilote' . (4 - $pilotes > 1 ? 's' : '');
+    return ['presents' => $presents, 'maybe' => $maybe, 'manques' => $manques, 'noms' => $noms];
 }
 
 // Formate la durée pour l'affichage : "2" → "2h" ; "1h30"/"2h" → tels quels ; vide → "".
@@ -1264,12 +1417,121 @@ function upsert_signup(&$s, $user, $poste, $statut) {
 // Inscription à un poste (select des types à postes). Statut « présent » + poste choisi.
 // Le poste est validé contre le jeu de postes DU TYPE de la sortie (épice ≠ PvP) :
 // on relit donc la sortie avant de muter, pour connaître son type.
+/**
+ * MODAL de créneaux, ouvert juste après le choix d'un poste sur une sortie longue.
+ *
+ * Pourquoi un modal et pas un second menu sur l'encart : deux composants d'un
+ * message sont des interactions INDÉPENDANTES — Discord ne sait pas « valider
+ * l'un seulement quand l'autre est saisi ». Un modal, lui, se soumet d'un bloc et
+ * ses champs peuvent être obligatoires. C'est le seul moyen de garantir qu'un
+ * inscrit d'un rally a déclaré ses disponibilités.
+ *
+ * Bénéfice secondaire, et pas le moindre : un modal est construit POUR un joueur,
+ * pas pour le message. Ses créneaux déjà cochés y sont donc pré-sélectionnés —
+ * ce qu'un menu d'encart, partagé par tout le monde, ne peut pas faire.
+ */
+function sortie_creneaux_modal($sortieId, $poste, $blocs, $deja = []) {
+    $deja = array_map('intval', is_array($deja) ? $deja : []);
+    $options = [];
+    foreach ($blocs as $b) {
+        $o = ['label' => $b['label'], 'value' => (string)$b['i']];
+        if (in_array($b['i'], $deja, true)) $o['default'] = true;
+        $options[] = $o;
+    }
+    // custom_id en "creneauxmodal:<poste>:<id de sortie>" : il se termine par l'id de
+    // sortie, donc le filet de routage de discord_interactions.php le reconnaît sans
+    // qu'on ait à lui ajouter un préfixe de plus (cf. AGENTS.md).
+    return ['type' => 9, 'data' => [
+        'custom_id'  => 'creneauxmodal:' . $poste . ':' . $sortieId,
+        'title'      => sn_cut('Tes créneaux — ' . (POSTES_EPICE_SELECTABLE[$poste] ?? $poste), 45),
+        'components' => [[
+            'type' => 18,
+            'label' => 'Quand seras-tu là ?',
+            'description' => 'Coche tous les blocs où tu peux être présent.',
+            'component' => [
+                'type' => 3, 'custom_id' => 'creneaux', 'required' => true,
+                'placeholder' => 'Choisis un ou plusieurs créneaux',
+                'min_values' => 1, 'max_values' => count($blocs),
+                'options' => $options,
+            ],
+        ]],
+    ]];
+}
+
+/**
+ * Soumission du modal : le poste ET les créneaux arrivent ensemble, donc on
+ * enregistre les deux d'un coup. C'est tout l'intérêt du détour par le modal.
+ */
+function handle_creneaux_modal($body, $reste) {
+    $sep = strpos($reste, ':');
+    if ($sep === false) respond_message("Formulaire de créneaux invalide.", true);
+    $poste    = substr($reste, 0, $sep);
+    $sortieId = substr($reste, $sep + 1);
+    $sortie = find_sortie($sortieId);
+    if (!$sortie) respond_message("Cette sortie n'existe plus.", true);
+    if (!array_key_exists($poste, postes_all($sortie['type'] ?? 'epice'))) respond_message("Poste inconnu.", true);
+    $valeurs = array_map('intval', modal_values_multi($body)['creneaux'] ?? []);
+    $user = interaction_user($body);
+    $updated = mutate_sortie($sortieId, function (&$s) use ($user, $poste, $valeurs) {
+        upsert_signup($s, $user, $poste, 'present');
+        foreach ($s['signups'] as &$su) {
+            if (($su['id'] ?? '') === $user['id']) { $su['creneaux'] = array_values(array_unique($valeurs)); sort($su['creneaux']); }
+        }
+        unset($su);
+    });
+    if (!$updated) respond_message("Cette sortie n'existe plus.", true);
+    dlog('creneaux (modal) ' . $user['name'] . ' · ' . $poste . ' -> [' . implode(',', $valeurs) . ']');
+    echo json_encode(['type' => 7, 'data' => build_sortie_message($updated)]);
+    exit;
+}
+
+/**
+ * Enregistre les créneaux d'un joueur sur une sortie longue.
+ * Exige une inscription préalable à un poste : sans poste, la couverture ne
+ * saurait pas quoi compter, et un joueur « disponible pour rien » brouille la
+ * lecture au lieu de l'aider.
+ */
+function handle_creneaux($body, $sortieId) {
+    $valeurs = array_map('intval', $body['data']['values'] ?? []);
+    $sortie  = find_sortie($sortieId);
+    if (!$sortie) respond_message("Cette sortie n'existe plus.", true);
+    $user = interaction_user($body);
+    $inscrit = false;
+    foreach ($sortie['signups'] ?? [] as $su) {
+        if (($su['id'] ?? '') === $user['id'] && ($su['statut'] ?? 'present') === 'present') { $inscrit = true; break; }
+    }
+    if (!$inscrit) respond_message("Choisis d'abord ton poste dans le menu du dessus, puis tes créneaux.", true);
+    $updated = mutate_sortie($sortieId, function (&$s) use ($user, $valeurs) {
+        foreach ($s['signups'] as &$su) {
+            if (($su['id'] ?? '') === $user['id']) { $su['creneaux'] = array_values(array_unique($valeurs)); sort($su['creneaux']); }
+        }
+        unset($su);
+    });
+    if (!$updated) respond_message("Cette sortie n'existe plus.", true);
+    $reponse = json_encode(['type' => 7, 'data' => build_sortie_message($updated)]);
+    dlog('creneaux ' . $user['name'] . ' -> [' . implode(',', $valeurs) . '] · réponse ' . strlen($reponse) . ' octets'
+        . ($reponse === false ? ' · ERREUR json_encode : ' . json_last_error_msg() : ''));
+    echo $reponse;
+    exit;
+}
+
 function handle_signup($body, $sortieId) {
     $poste  = $body['data']['values'][0] ?? '';
     $sortie = find_sortie($sortieId);
     if (!$sortie) respond_message("Cette sortie n'existe plus.", true);
     if (!array_key_exists($poste, postes_all($sortie['type'] ?? 'epice'))) respond_message("Poste inconnu.", true);
     $user = interaction_user($body);
+    // Sortie longue : on n'enregistre PAS tout de suite. Le modal réclame les créneaux,
+    // et c'est sa soumission qui inscrit poste et disponibilités ensemble.
+    $blocs = creneaux_sortie($sortie);
+    if ($blocs) {
+        $deja = [];
+        foreach ($sortie['signups'] ?? [] as $su) {
+            if (($su['id'] ?? '') === $user['id']) { $deja = $su['creneaux'] ?? []; break; }
+        }
+        echo json_encode(sortie_creneaux_modal($sortieId, $poste, $blocs, $deja));
+        exit;
+    }
     $updated = mutate_sortie($sortieId, function (&$s) use ($user, $poste) {
         upsert_signup($s, $user, $poste, 'present');
     });
@@ -1591,6 +1853,20 @@ function discord_delete_message_api($channelId, $messageId) {
 // ============================================================
 //  RENDU DE L'ENCART (embed + composants)
 // ============================================================
+// Le tournoi monté sur le site depuis cette sortie a-t-il ses paris ouverts ?
+// (option de l'organisateur, désactivée par défaut). Lecture seule de
+// epice/data/tournois.json : pas de tournoi encore monté = pas de paris annoncés.
+function sortie_tournoi_paris(string $sid): bool {
+    if ($sid === '') return false;
+    $f = __DIR__ . '/data/tournois.json';
+    if (!file_exists($f)) return false;
+    $d = json_decode((string)file_get_contents($f), true);
+    foreach ((is_array($d) ? ($d['tournois'] ?? []) : []) as $t) {
+        if (($t['sortie_id'] ?? '') === $sid) return !empty($t['paris']);
+    }
+    return false;
+}
+
 function build_sortie_message($sortie) {
     $desc = '';
     if (trim($sortie['description'] ?? '') !== '') $desc .= $sortie['description'] . "\n\n";
@@ -1608,12 +1884,67 @@ function build_sortie_message($sortie) {
     $nb = 0;
     foreach ($signups as $su) { if ($st($su) === 'present') $nb++; }
     $desc .= "👥 **{$nb}** inscrit" . ($nb > 1 ? 's' : '');
+    $parisOuverts = false;
+    if (!empty(sortie_type($sortie['type'] ?? 'epice')['tournoi'])) {
+        $parisOuverts = sortie_tournoi_paris((string)($sortie['id'] ?? ''));
+        $desc .= "
+🏆 Les présents deviennent les combattants : arbre, scores et lots sur le site (bouton ci-dessous)."
+            . ($parisOuverts ? "\n🎲 Toute la guilde peut y parier des Solaris : sur le vainqueur avant le lancement, puis sur chaque combat." : '');
+    }
+    if (($sortie['type'] ?? 'epice') === 'epice') {
+        $desc .= "\n🏗️ **Base avancée (si prévue)** : 1 constructeur pilote de buggy + 1 pilote de buggy *(buggys roquettes à fournir)*. Sous-fief disponible requis pour le constructeur.";
+    }
 
     $stype     = $sortie['type'] ?? 'epice';
     $t         = sortie_type($stype);
     $usePostes = (bool)$t['postes'];
 
     $fields = [];
+
+    // ---- Couverture par créneau (sorties longues seulement) ----
+    // C'est LA question d'un rally : pas « qui vient » mais « à quelle heure
+    // sommes-nous assez nombreux ». Le tableau est en tête des champs pour être
+    // lu avant les listes de noms, et en bloc de code pour rester aligné.
+    $creneaux = $usePostes ? creneaux_sortie($sortie) : [];
+    if ($creneaux) {
+        $lignes = []; $complets = 0;
+        foreach ($creneaux as $c) {
+            $cov = creneau_couverture($signups, $c['i']);
+            if (!$cov['manques']) $complets++;
+            // DEUX lectures du même créneau, et c'est voulu : la ligne de verdict répond
+            // à « est-ce que ça tient », les présents juste en dessous à « qui est là », et
+            // les colonnes de postes gardent la plage derrière chaque nom pour que chacun
+            // relise ce qu'il a coché. Redondant sur le papier, mais les trois questions se
+            // posent à des moments différents — et l'organisateur ne veut pas dérouler
+            // l'encart pour savoir qui couvre midi.
+            $marque = !$cov['manques'] ? '✅' : ($cov['presents'] * 2 < RALLY_MINIMUM ? '✖' : '⚠');
+            $effectif = $cov['presents'] . ' présent' . ($cov['presents'] > 1 ? 's' : '')
+                      . ($cov['maybe'] ? ' (+' . $cov['maybe'] . ' ?)' : '');
+            $verdict  = !$cov['manques'] ? 'complet' : 'manque ' . implode(', ', $cov['manques']);
+            $lignes[] = $marque . ' **' . $c['court'] . '** · ' . $effectif . ' — ' . $verdict;
+            if ($cov['noms']) {
+                // Un champ d'encart plafonne à 1024 caractères et un message rejeté l'est
+                // EN ENTIER : le budget de noms se partage donc entre tous les créneaux.
+                // strlen() et non mb_strlen() : pas de mbstring sur le serveur (cf. AGENTS.md).
+                // On compte des octets, ce qui tronque un cheveu plus tôt sur les prénoms
+                // accentués — sans conséquence pour un garde-fou.
+                $budget = max(60, intdiv(900, count($creneaux)) - 80);
+                $liste = implode(', ', $cov['noms']);
+                if (strlen($liste) > $budget) {
+                    $court = [];  $n = 0;
+                    foreach ($cov['noms'] as $nom) { if (strlen(implode(', ', $court) . $nom) > $budget - 20) break; $court[] = $nom; $n++; }
+                    $liste = implode(', ', $court) . ' … +' . (count($cov['noms']) - $n);
+                }
+                $lignes[] = '*' . $liste . '*';
+            }
+        }
+        $fields[] = [
+            'name'   => '⏱️ Couverture — ' . $complets . ' créneau' . ($complets > 1 ? 'x complets' : ' complet') . ' sur ' . count($creneaux),
+            'value'  => implode("\n", $lignes),
+            'inline' => false,
+        ];
+    }
+
     if ($usePostes) {
         // TYPES À POSTES (épice, entraînement PvP) : un champ par poste (présents regroupés)
         $selectable = postes_selectable($stype);
@@ -1630,7 +1961,13 @@ function build_sortie_message($sortie) {
             foreach ($signups as $su) {
                 if ($st($su) !== 'present' || $bucket($su) !== $pid) continue;
                 // 🎖️ : a candidaté comme Chef de section (drapeau optionnel, cf handle_toggle_chef).
-                $names[] = $su['name'] . (!empty($su['chef_section']) ? ' 🎖️' : '');
+                // Plage de disponibilité derrière le nom. Ces colonnes sont étroites (un
+                // tiers d'encart) donc une plage non contiguë — « 08–10, 14–16 » — passe à
+                // la ligne. C'est assumé : creneaux_resume() fusionne les blocs consécutifs,
+                // et le cas courant (« je suis là le matin ») tient en sept caractères.
+                $plage = $creneaux ? creneaux_resume($su['creneaux'] ?? null, $creneaux) : '';
+                $names[] = $su['name'] . (!empty($su['chef_section']) ? ' 🎖️' : '')
+                         . ($plage ? ' · ' . $plage : '');
             }
             // Poste retiré du menu (ex. Défenseur CaC) ET personne dessus : le "0" n'a
             // aucun sens puisque plus personne ne peut le choisir → colonne masquée.
@@ -1699,20 +2036,22 @@ function build_sortie_message($sortie) {
     // configuré, tandis que les types sans entrée du tout l'obtenaient. Vide = « pas
     // renseigné », donc traité comme absent.
     global $CFG;
+    // `site_url` distingue prod (racine) et test (/v2) ; vide = prod, ce qui rend
+    // l'image visible depuis /v2 aussi. Renseigner site_url sur '.../v2' fait
+    // chercher le fichier dans /v2/epice/img/ — il doit alors y être déposé.
+    $base = rtrim(trim((string)($CFG['site_url'] ?? '')) ?: 'https://havresgris.ddns.net', '/');
     $banner = '';
-    foreach ([$stype, BANNIERE_DEFAUT_TYPE] as $cle) {
+    // 1. config : la bannière du type, puis celle de l'activité dont il hérite ;
+    foreach (array_filter([$stype, $t['banniere'] ?? '']) as $cle) {
         $banner = trim((string)($CFG['banners'][$cle] ?? ''));
         if ($banner !== '') break;
     }
+    // 2. l'image livrée avec le code pour cette activité ('image', dans epice/img/) ;
+    if ($banner === '' && !empty($t['image'])) $banner = $base . '/epice/img/' . rawurlencode($t['image']);
+    // 3. les replis génériques : Activité Guilde, banner_url, fichier par défaut.
+    if ($banner === '') $banner = trim((string)($CFG['banners'][BANNIERE_DEFAUT_TYPE] ?? ''));
     if ($banner === '') $banner = trim((string)($CFG['banner_url'] ?? ''));
-    if ($banner === '') {
-        // `site_url` distingue prod (racine) et test (/v2) ; vide = prod, ce qui rend
-        // l'image visible depuis /v2 aussi. Renseigner site_url sur '.../v2' fait
-        // chercher le fichier dans /v2/epice/img/ — il doit alors y être déposé.
-        $base = trim((string)($CFG['site_url'] ?? ''));
-        if ($base === '') $base = 'https://havresgris.ddns.net';
-        $banner = rtrim($base, '/') . BANNIERE_DEFAUT_FICHIER;
-    }
+    if ($banner === '') $banner = $base . BANNIERE_DEFAUT_FICHIER;
     if ($banner !== '') $embed['image'] = ['url' => $banner];
 
     $sid = $sortie['id'];
@@ -1720,20 +2059,30 @@ function build_sortie_message($sortie) {
         // TYPES À POSTES : menu déroulant de postes + boutons peut-être / absent / désinscription.
         $options = [];
         foreach (postes_selectable($stype) as $pid => $plabel) {
-            $options[] = ['label' => $plabel, 'value' => $pid, 'emoji' => ['name' => POSTE_ICON[$pid] ?? '✅']];
+            $option = ['label' => $plabel, 'value' => $pid, 'emoji' => ['name' => POSTE_ICON[$pid] ?? '✅']];
+            if ($pid === 'base_avancee') $option['description'] = '1 constructeur pilote de buggy + 1 pilote de buggy (buggys roquettes à fournir).';
+            $options[] = $option;
         }
         $components = [
             ['type' => 1, 'components' => [[
                 'type' => 3, 'custom_id' => "signup:{$sid}",
                 'placeholder' => "M'inscrire à un poste", 'options' => $options,
             ]]],
+        ];
+        // Plus de menu de créneaux ici : il permettait de s'inscrire à un poste SANS
+        // jamais déclarer ses disponibilités, ce qui est exactement ce qu'on veut
+        // empêcher sur un rally. Le choix d'un poste ouvre désormais un modal qui les
+        // réclame (cf. handle_signup). Pour les modifier, on re-choisit son poste : le
+        // modal se rouvre pré-coché. handle_creneaux() reste en place pour les encarts
+        // déjà publiés, qui portent encore l'ancien menu.
+        $components = array_merge($components, [
             ['type' => 1, 'components' => [
                 ['type' => 2, 'style' => 1, 'label' => 'Peut-être',      'emoji' => ['name' => '❓'], 'custom_id' => "maybe:{$sid}"],
                 ['type' => 2, 'style' => 4, 'label' => 'Absent',         'emoji' => ['name' => '✖️'], 'custom_id' => "absent:{$sid}"],
                 ['type' => 2, 'style' => 2, 'label' => 'Me désinscrire', 'custom_id' => "unsignup:{$sid}"],
                 ['type' => 2, 'style' => 2, 'label' => 'Chef de section', 'emoji' => ['name' => '🎖️'], 'custom_id' => "chef:{$sid}"],
             ]],
-        ];
+        ]);
     } else {
         // AUTRES TYPES : RSVP simple (Présent / Peut-être / Absent / Me désinscrire).
         $components = [
@@ -1748,10 +2097,20 @@ function build_sortie_message($sortie) {
 
     // Rangée gestion : Modifier / Supprimer (boutons visibles par tous, mais
     // n'agissent QUE pour le créateur — Discord ne sait pas masquer par utilisateur).
-    $components[] = ['type' => 1, 'components' => [
+    $gestion = [
         ['type' => 2, 'style' => 2, 'label' => 'Modifier',  'emoji' => ['name' => '✏️'], 'custom_id' => "edit:{$sid}"],
         ['type' => 2, 'style' => 4, 'label' => 'Supprimer', 'emoji' => ['name' => '🗑️'], 'custom_id' => "del:{$sid}"],
-    ]];
+    ];
+    // Tournoi : lien vers l'arbre sur le site. Bouton LIEN (style 5) : il n'émet
+    // aucune interaction, donc rien à déclarer dans la liste blanche de
+    // discord_interactions.php. La page retrouve le tournoi par l'id de la sortie,
+    // ou propose à l'organisateur de le créer s'il n'existe pas encore.
+    if (!empty($t['tournoi'])) {
+        $base = trim((string)($CFG['site_url'] ?? '')) ?: 'https://havresgris.ddns.net';
+        array_unshift($gestion, ['type' => 2, 'style' => 5, 'label' => $parisOuverts ? 'Suivre le tournoi et parier' : 'Suivre le tournoi', 'emoji' => ['name' => '🏆'],
+                                 'url' => rtrim($base, '/') . '/epice/tournois.html?sortie=' . rawurlencode($sid)]);
+    }
+    $components[] = ['type' => 1, 'components' => $gestion];
 
     return ['embeds' => [$embed], 'components' => $components];
 }
@@ -1807,6 +2166,27 @@ function respond_update($text) {
 // Et deux façons de porter la valeur : une liste ou un radio renvoient `values`
 // (TABLEAU), un champ texte renvoie `value`. Lire seulement `value` renverrait
 // des jour/heure/durée vides, donc une sortie créée sans date.
+/**
+ * Comme modal_values(), mais renvoie TOUTES les valeurs d'un composant à choix
+ * multiple (modal_values() ne garde que la première, ce qui suffit aux listes
+ * simples du formulaire de sortie mais perdrait trois créneaux sur quatre).
+ */
+function modal_values_multi($body) {
+    $out  = [];
+    $walk = function ($c) use (&$out, &$walk) {
+        if (!is_array($c)) return;
+        if (isset($c['component'])) { $walk($c['component']); return; }
+        if (isset($c['components']) && is_array($c['components'])) {
+            foreach ($c['components'] as $x) $walk($x);
+            return;
+        }
+        $id = (string)($c['custom_id'] ?? '');
+        if ($id !== '' && isset($c['values']) && is_array($c['values'])) $out[$id] = $c['values'];
+    };
+    foreach ($body['data']['components'] ?? [] as $c) $walk($c);
+    return $out;
+}
+
 function modal_values($body) {
     $out  = [];
     $walk = function ($c) use (&$out, &$walk) {

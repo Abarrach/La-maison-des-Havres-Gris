@@ -1503,6 +1503,41 @@ Interface entièrement thématisée autour de l'univers de Dune :
 
 ---
 
+## Diagnostiquer les pannes « le bot n'a pas répondu à temps »
+
+Trois sondes, dans `tools/`. Elles **ne modifient rien** : elles mesurent, chacune un
+segment différent de la chaîne. Ensemble, elles ne laissent aucun maillon aveugle.
+Aucune n'est déployée par git — `tools/` ne part pas sur le serveur, il faut les envoyer
+par WinSCP puis `sed -i 's/\r$//' fichier && chmod +x fichier`.
+
+| Sonde | Où l'installer | Ce qu'elle répond |
+|---|---|---|
+| `surveille_ddns.sh` | la VM, cron `*/2 * * * *` | le nom public pointe-t-il encore vers la box ? |
+| `sonde_externe.sh` | une machine **hors** du réseau de la box | le serveur est-il joignable depuis Internet ? |
+| `sonde_handshake.sh` | la VM, `sudo nohup … &` | combien de poignées de main TCP échouent, et quand ? |
+
+`surveille_ddns.sh` compare l'IP publique réelle à ce que le nom renvoie **vu d'un
+résolveur public** — le cache local répondrait juste même quand le reste du monde a
+l'ancienne adresse. Quatre méthodes en cascade (`dig`, `nslookup`, `host`, puis
+DNS-over-HTTPS) parce que la VM n'a ni `dig` ni `nslookup`, et que le port 53 sortant
+peut être filtré. La méthode retenue est notée entre parenthèses sur chaque ligne `ok`.
+
+`sonde_externe.sh` demande une connexion **neuve** à chaque passage, comme Discord quand
+il revient après une pause, et attend un **401** — la bonne réponse du dispatcher à une
+requête sans signature, donc un test de bout en bout.
+
+`sonde_handshake.sh` écrit une ligne par minute : `syn=… synack=… retrans=…`. Un SYN-ACK
+**retransmis** signifie que notre réponse n'a pas été accusée : poignée de main en échec.
+Sur une nuit, on obtient une courbe au lieu d'une anecdote.
+
+**Les journaux Discord sont dans `epice/data/`**, pas à la racine : c'est le seul dossier
+dont on soit sûr qu'il est accessible en écriture à www-data. Ils horodatent en **UTC**.
+⚠ L'écriture y est préfixée d'un `@` : un défaut de droits rendrait le journal muet
+**sans aucun signe**, donc « rien dans le journal » ne prouve rien tant qu'on n'a pas
+vérifié que l'écriture passe.
+
+---
+
 ## Licence
 
 Voir le fichier [LICENSE](LICENSE).

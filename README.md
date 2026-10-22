@@ -36,7 +36,7 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 - Panneau d'administration pour approuver, modifier ou supprimer des bases
 
 #### Hagga — Gestion multi-sietchs
-- Liste fixe de **25 sietchs** (serveur Galacia)
+- Liste fixe de **27 sietchs** (serveur Galacia) — Sietch Matar et Sietch Thueban ajoutés le 2026-10-22 : ils apparaissaient dans la collecte de l'Œil du Mentat (`dune_counts.csv`) mais pas dans la liste. C'est la collecte qui fait foi pour la contrôler (`SIETCHS` en tête de `script.js`)
 - Sélecteur de sietch au-dessus de la carte pour filtrer la vue
 - **Boutons rapides** apparaissant uniquement pour les sietchs qui ont au moins une base
 - Bouton **Tous** en tête de barre : affiche toutes les bases d'un coup avec le total des joueurs

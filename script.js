@@ -17,9 +17,9 @@ const mapConfig = {
 const SIETCHS = [
   'Sietch Abbir', 'Sietch al-Mut', 'Sietch Alraab', 'Sietch Barkan', 'Sietch Coanua', 'Sietch Eaqrab',
   'Sietch Fajr', 'Sietch Gara Kulon', 'Sietch Hajar', 'Sietch Jacurutu', 'Sietch Kathib',
-  'Sietch Khafash', 'Sietch Legg', 'Sietch Makab', 'Sietch Nadir', 'Sietch Rajifiri', 'Sietch Ramal',
+  'Sietch Khafash', 'Sietch Legg', 'Sietch Makab', 'Sietch Matar', 'Sietch Nadir', 'Sietch Rajifiri', 'Sietch Ramal',
   'Sietch Rifana', 'Sietch Sandrat', 'Sietch Saajid', 'Sietch Ta\'lab', 'Sietch Tabr', 'Sietch Tharwa',
-  'Sietch Umbu', 'Sietch Yaracuwan'
+  'Sietch Thueban', 'Sietch Umbu', 'Sietch Yaracuwan'
 ];
 
 // === GLOBALES ===

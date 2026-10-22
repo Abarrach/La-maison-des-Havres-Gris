@@ -398,6 +398,17 @@ const STEPS = [
       + 'Identifiants gaming.tools conservés : les builds sauvegardés les référencent.',
   },
   {
+    id: 'metiers',
+    label: 'Pistes de spécialisation (page Métiers : paliers, coûts en épice, passifs)',
+    script: 'tools/build_metiers_from_datamine.js',
+    args: (c) => [c.exportRoot],
+    outputs: ['metiers.json'],
+    sources: ['Systems/Specialization', 'Systems/Landsraad/DT_LandsraadContractsDailyBonus.json'],
+    paks: ['*'],
+    note: 'Garde les clés internes (stat) et le jugement « favorable Landsraad » de la guilde ; '
+      + 'vérifie aussi les tables d\'XP codées dans skills.js.',
+  },
+  {
     id: 'landsraad',
     label: 'Missions Landsraad (pools, noms FR, lieux)',
     script: 'tools/build_landsraad_from_datamine.js',
@@ -497,10 +508,9 @@ const ANGLES_MORTS = [
   },
   {
     id: 'divers',
-    fichiers: ['metiers.json', 'base_pieces_v2.json'],
-    label: 'Fichiers curés à la main (et un fichier mort)',
-    detail: 'metiers.json est saisi à la main, pas dataminé.\n'
-      + '    base_pieces_v2.json n\'est plus lu par aucune page (le planner charge v3 /\n'
+    fichiers: ['base_pieces_v2.json'],
+    label: 'Fichier mort',
+    detail: 'base_pieces_v2.json n\'est plus lu par aucune page (le planner charge v3 /\n'
       + '    planner_pieces.json) : ne pas perdre de temps à le régénérer.',
   },
 ];

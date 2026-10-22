@@ -5,34 +5,34 @@
     "talent": "Passif : Dégâts",
     "description": "Augmente les dégâts par niveau investi.",
     "stat": "degats",
-    "valeur": 1.0,
-    "suffixe": "%",
-    "is_passive": true
+    "valeur": 1,
+    "is_passive": true,
+    "suffixe": "%"
   },
   {
     "metier": "COMBAT",
     "niveau": 0,
-    "talent": "Passif : Atténuation des dégâts",
+    "talent": "Passif : Réduction des dégâts",
     "description": "Réduit les dégâts subis par niveau investi.",
     "stat": "attenuation",
     "valeur": 0.5,
-    "suffixe": "%",
-    "is_passive": true
+    "is_passive": true,
+    "suffixe": "%"
   },
   {
     "metier": "COMBAT",
     "niveau": 1,
     "talent": "Points de compétence",
-    "description": "Gagnez un point de compétence supplémentaire.",
+    "description": "À chaque gain de point(s) de compétence, vous en recevez un en plus.",
     "stat": "skill_points",
     "valeur": 3,
-    "cout_epice": 0
+    "cout_epice": 2
   },
   {
     "metier": "COMBAT",
     "niveau": 2,
-    "talent": "Endurance maximale",
-    "description": "Endurance maximale accrue.",
+    "talent": "Accroissement du maximum d'endurance",
+    "description": "Votre maximum d'endurance augmente.",
     "stat": "stamina",
     "valeur": 5,
     "cout_epice": 2
@@ -41,7 +41,7 @@
     "metier": "COMBAT",
     "niveau": 4,
     "talent": "Points de compétence",
-    "description": "Gagnez un point de compétence supplémentaire.",
+    "description": "À chaque gain de point(s) de compétence, vous en recevez un en plus.",
     "stat": "skill_points",
     "valeur": 1,
     "cout_epice": 2
@@ -49,8 +49,8 @@
   {
     "metier": "COMBAT",
     "niveau": 6,
-    "talent": "Santé maximale",
-    "description": "Santé maximale accrue.",
+    "talent": "Accroissement du maximum de santé",
+    "description": "Votre maximum de santé augmente.",
     "stat": "hp",
     "valeur": 15,
     "cout_epice": 2
@@ -59,7 +59,7 @@
     "metier": "COMBAT",
     "niveau": 8,
     "talent": "Points de compétence",
-    "description": "Gagnez des points de compétence supplémentaires.",
+    "description": "À chaque gain de point(s) de compétence, vous en recevez un en plus.",
     "stat": "skill_points",
     "valeur": 3,
     "cout_epice": 2
@@ -68,7 +68,7 @@
     "metier": "COMBAT",
     "niveau": 11,
     "talent": "Points de compétence",
-    "description": "Gagnez un point de compétence supplémentaire.",
+    "description": "À chaque gain de point(s) de compétence, vous en recevez un en plus.",
     "stat": "skill_points",
     "valeur": 1,
     "cout_epice": 5
@@ -77,7 +77,7 @@
     "metier": "COMBAT",
     "niveau": 14,
     "talent": "Points de compétence",
-    "description": "Gagnez un point de compétence supplémentaire.",
+    "description": "À chaque gain de point(s) de compétence, vous en recevez un en plus.",
     "stat": "skill_points",
     "valeur": 1,
     "cout_epice": 5
@@ -85,8 +85,8 @@
   {
     "metier": "COMBAT",
     "niveau": 16,
-    "talent": "Endurance maximale",
-    "description": "Endurance maximale accrue.",
+    "talent": "Accroissement du maximum d'endurance",
+    "description": "Votre maximum d'endurance augmente.",
     "stat": "stamina",
     "valeur": 20,
     "cout_epice": 5
@@ -95,7 +95,7 @@
     "metier": "COMBAT",
     "niveau": 18,
     "talent": "Points de compétence",
-    "description": "Gagnez des points de compétence supplémentaires.",
+    "description": "À chaque gain de point(s) de compétence, vous en recevez un en plus.",
     "stat": "skill_points",
     "valeur": 3,
     "cout_epice": 5
@@ -104,16 +104,16 @@
     "metier": "COMBAT",
     "niveau": 21,
     "talent": "Points de compétence",
-    "description": "Gagnez un point de compétence supplémentaire.",
+    "description": "À chaque gain de point(s) de compétence, vous en recevez un en plus.",
     "stat": "skill_points",
     "valeur": 1,
-    "cout_epice": 10
+    "cout_epice": 5
   },
   {
     "metier": "COMBAT",
     "niveau": 24,
     "talent": "Points de compétence",
-    "description": "Gagnez un point de compétence supplémentaire.",
+    "description": "À chaque gain de point(s) de compétence, vous en recevez un en plus.",
     "stat": "skill_points",
     "valeur": 1,
     "cout_epice": 10
@@ -121,8 +121,8 @@
   {
     "metier": "COMBAT",
     "niveau": 26,
-    "talent": "Santé maximale",
-    "description": "Santé maximale accrue.",
+    "talent": "Accroissement du maximum de santé",
+    "description": "Votre maximum de santé augmente.",
     "stat": "hp",
     "valeur": 5,
     "cout_epice": 10
@@ -131,7 +131,7 @@
     "metier": "COMBAT",
     "niveau": 28,
     "talent": "Points de compétence",
-    "description": "Gagnez des points de compétence supplémentaires.",
+    "description": "À chaque gain de point(s) de compétence, vous en recevez un en plus.",
     "stat": "skill_points",
     "valeur": 3,
     "cout_epice": 10
@@ -140,7 +140,7 @@
     "metier": "COMBAT",
     "niveau": 31,
     "talent": "Points de compétence",
-    "description": "Gagnez un point de compétence supplémentaire.",
+    "description": "À chaque gain de point(s) de compétence, vous en recevez un en plus.",
     "stat": "skill_points",
     "valeur": 1,
     "cout_epice": 10
@@ -149,16 +149,16 @@
     "metier": "COMBAT",
     "niveau": 34,
     "talent": "Points de compétence",
-    "description": "Gagnez un point de compétence supplémentaire.",
+    "description": "À chaque gain de point(s) de compétence, vous en recevez un en plus.",
     "stat": "skill_points",
     "valeur": 1,
-    "cout_epice": 15
+    "cout_epice": 10
   },
   {
     "metier": "COMBAT",
     "niveau": 36,
-    "talent": "Endurance maximale",
-    "description": "Endurance maximale accrue.",
+    "talent": "Accroissement du maximum d'endurance",
+    "description": "Votre maximum d'endurance augmente.",
     "stat": "stamina",
     "valeur": 5,
     "cout_epice": 15
@@ -167,7 +167,7 @@
     "metier": "COMBAT",
     "niveau": 38,
     "talent": "Points de compétence",
-    "description": "Gagnez des points de compétence supplémentaires.",
+    "description": "À chaque gain de point(s) de compétence, vous en recevez un en plus.",
     "stat": "skill_points",
     "valeur": 3,
     "cout_epice": 15
@@ -176,7 +176,7 @@
     "metier": "COMBAT",
     "niveau": 41,
     "talent": "Points de compétence",
-    "description": "Gagnez un point de compétence supplémentaire.",
+    "description": "À chaque gain de point(s) de compétence, vous en recevez un en plus.",
     "stat": "skill_points",
     "valeur": 1,
     "cout_epice": 15
@@ -185,7 +185,7 @@
     "metier": "COMBAT",
     "niveau": 44,
     "talent": "Points de compétence",
-    "description": "Gagnez un point de compétence supplémentaire.",
+    "description": "À chaque gain de point(s) de compétence, vous en recevez un en plus.",
     "stat": "skill_points",
     "valeur": 1,
     "cout_epice": 15
@@ -194,16 +194,16 @@
     "metier": "COMBAT",
     "niveau": 48,
     "talent": "Points de compétence",
-    "description": "Gagnez des points de compétence supplémentaires.",
+    "description": "À chaque gain de point(s) de compétence, vous en recevez un en plus.",
     "stat": "skill_points",
     "valeur": 3,
-    "cout_epice": 20
+    "cout_epice": 15
   },
   {
     "metier": "COMBAT",
     "niveau": 51,
     "talent": "Points de compétence",
-    "description": "Gagnez un point de compétence supplémentaire.",
+    "description": "À chaque gain de point(s) de compétence, vous en recevez un en plus.",
     "stat": "skill_points",
     "valeur": 1,
     "cout_epice": 20
@@ -212,7 +212,7 @@
     "metier": "COMBAT",
     "niveau": 54,
     "talent": "Points de compétence",
-    "description": "Gagnez un point de compétence supplémentaire.",
+    "description": "À chaque gain de point(s) de compétence, vous en recevez un en plus.",
     "stat": "skill_points",
     "valeur": 1,
     "cout_epice": 20
@@ -220,8 +220,8 @@
   {
     "metier": "COMBAT",
     "niveau": 56,
-    "talent": "Santé maximale",
-    "description": "Santé maximale accrue.",
+    "talent": "Accroissement du maximum de santé",
+    "description": "Votre maximum de santé augmente.",
     "stat": "hp",
     "valeur": 5,
     "cout_epice": 20
@@ -230,7 +230,7 @@
     "metier": "COMBAT",
     "niveau": 58,
     "talent": "Points de compétence",
-    "description": "Gagnez des points de compétence supplémentaires.",
+    "description": "À chaque gain de point(s) de compétence, vous en recevez un en plus.",
     "stat": "skill_points",
     "valeur": 3,
     "cout_epice": 20
@@ -239,16 +239,16 @@
     "metier": "COMBAT",
     "niveau": 61,
     "talent": "Points de compétence",
-    "description": "Gagnez un point de compétence supplémentaire.",
+    "description": "À chaque gain de point(s) de compétence, vous en recevez un en plus.",
     "stat": "skill_points",
     "valeur": 1,
-    "cout_epice": 25
+    "cout_epice": 20
   },
   {
     "metier": "COMBAT",
     "niveau": 64,
     "talent": "Points de compétence",
-    "description": "Gagnez un point de compétence supplémentaire.",
+    "description": "À chaque gain de point(s) de compétence, vous en recevez un en plus.",
     "stat": "skill_points",
     "valeur": 1,
     "cout_epice": 25
@@ -256,8 +256,8 @@
   {
     "metier": "COMBAT",
     "niveau": 66,
-    "talent": "Endurance maximale",
-    "description": "Endurance maximale accrue.",
+    "talent": "Accroissement du maximum d'endurance",
+    "description": "Votre maximum d'endurance augmente.",
     "stat": "stamina",
     "valeur": 5,
     "cout_epice": 25
@@ -266,7 +266,7 @@
     "metier": "COMBAT",
     "niveau": 68,
     "talent": "Points de compétence",
-    "description": "Gagnez des points de compétence supplémentaires.",
+    "description": "À chaque gain de point(s) de compétence, vous en recevez un en plus.",
     "stat": "skill_points",
     "valeur": 3,
     "cout_epice": 25
@@ -275,7 +275,7 @@
     "metier": "COMBAT",
     "niveau": 71,
     "talent": "Points de compétence",
-    "description": "Gagnez un point de compétence supplémentaire.",
+    "description": "À chaque gain de point(s) de compétence, vous en recevez un en plus.",
     "stat": "skill_points",
     "valeur": 1,
     "cout_epice": 25
@@ -284,7 +284,7 @@
     "metier": "COMBAT",
     "niveau": 74,
     "talent": "Points de compétence",
-    "description": "Gagnez un point de compétence supplémentaire.",
+    "description": "À chaque gain de point(s) de compétence, vous en recevez un en plus.",
     "stat": "skill_points",
     "valeur": 1,
     "cout_epice": 25
@@ -293,14 +293,14 @@
     "metier": "COMBAT",
     "niveau": 75,
     "talent": "Variante de casque de combattant",
-    "description": "Coiffe pour ceux qui exercent l'un des plus vieux métiers.",
-    "cout_epice": 25
+    "description": "Casque pour ceux qui ont l'une des plus anciennes professions du monde. Évidemment, ceux qui vivent par l'épée meurent généralement par l'épée, mais en attendant, ils ne risquent pas de manquer de travail. Sert à personnaliser les casques.",
+    "cout_epice": 30
   },
   {
     "metier": "COMBAT",
     "niveau": 77,
-    "talent": "Santé maximale",
-    "description": "Santé maximale accrue.",
+    "talent": "Accroissement du maximum de santé",
+    "description": "Votre maximum de santé augmente.",
     "stat": "hp",
     "valeur": 25,
     "is_landsraad_favorable": true,
@@ -310,7 +310,7 @@
     "metier": "COMBAT",
     "niveau": 79,
     "talent": "Points de compétence",
-    "description": "Gagnez des points de compétence supplémentaires.",
+    "description": "À chaque gain de point(s) de compétence, vous en recevez un en plus.",
     "stat": "skill_points",
     "valeur": 3,
     "cout_epice": 30
@@ -319,7 +319,7 @@
     "metier": "COMBAT",
     "niveau": 82,
     "talent": "Points de compétence",
-    "description": "Gagnez un point de compétence supplémentaire.",
+    "description": "À chaque gain de point(s) de compétence, vous en recevez un en plus.",
     "stat": "skill_points",
     "valeur": 1,
     "cout_epice": 30
@@ -328,7 +328,7 @@
     "metier": "COMBAT",
     "niveau": 85,
     "talent": "Points de compétence",
-    "description": "Gagnez un point de compétence supplémentaire.",
+    "description": "À chaque gain de point(s) de compétence, vous en recevez un en plus.",
     "stat": "skill_points",
     "valeur": 1,
     "cout_epice": 30
@@ -337,53 +337,53 @@
     "metier": "COMBAT",
     "niveau": 89,
     "talent": "Points de compétence",
-    "description": "Gagnez des points de compétence supplémentaires.",
+    "description": "À chaque gain de point(s) de compétence, vous en recevez un en plus.",
     "stat": "skill_points",
     "valeur": 3,
-    "cout_epice": 30
+    "cout_epice": 35
   },
   {
     "metier": "COMBAT",
     "niveau": 91,
-    "talent": "Santé maximale",
-    "description": "Santé maximale accrue.",
+    "talent": "Accroissement du maximum de santé",
+    "description": "Votre maximum de santé augmente.",
     "stat": "hp",
     "valeur": 5,
-    "cout_epice": 40
+    "cout_epice": 35
   },
   {
     "metier": "COMBAT",
     "niveau": 93,
     "talent": "Points de compétence",
-    "description": "Gagnez un point de compétence supplémentaire.",
+    "description": "À chaque gain de point(s) de compétence, vous en recevez un en plus.",
     "stat": "skill_points",
     "valeur": 1,
-    "cout_epice": 40
+    "cout_epice": 35
   },
   {
     "metier": "COMBAT",
     "niveau": 95,
-    "talent": "Endurance maximale",
-    "description": "Endurance maximale accrue.",
+    "talent": "Accroissement du maximum d'endurance",
+    "description": "Votre maximum d'endurance augmente.",
     "stat": "stamina",
     "valeur": 20,
     "is_landsraad_favorable": true,
-    "cout_epice": 40
+    "cout_epice": 35
   },
   {
     "metier": "COMBAT",
     "niveau": 97,
     "talent": "Points de compétence",
-    "description": "Gagnez un point de compétence supplémentaire.",
+    "description": "À chaque gain de point(s) de compétence, vous en recevez un en plus.",
     "stat": "skill_points",
     "valeur": 1,
-    "cout_epice": 40
+    "cout_epice": 35
   },
   {
     "metier": "COMBAT",
     "niveau": 100,
     "talent": "Points de compétence",
-    "description": "Gagnez des points de compétence supplémentaires.",
+    "description": "À chaque gain de point(s) de compétence, vous en recevez un en plus.",
     "stat": "skill_points",
     "valeur": 5,
     "is_landsraad_favorable": true,
@@ -392,28 +392,28 @@
   {
     "metier": "SABOTAGE",
     "niveau": 0,
-    "talent": "Passif : Cibles chancelantes",
+    "talent": "Passif : Dégâts aux cibles qui titubent",
     "description": "Dégâts infligés aux cibles chancelantes par niveau investi.",
     "stat": "dmg_chancelant",
     "valeur": 0.5,
-    "suffixe": "%",
-    "is_passive": true
+    "is_passive": true,
+    "suffixe": "%"
   },
   {
     "metier": "SABOTAGE",
     "niveau": 1,
     "talent": "Chasseur de têtes",
-    "description": "Augmente les dégâts infligés aux ennemis avec un tir dans la tête.",
+    "description": "Augmente les dégâts que vous infligez aux ennemis en leur tirant dans la tête.",
     "stat": "headshot_dmg",
     "valeur": 5,
     "suffixe": "%",
-    "cout_epice": 0
+    "cout_epice": 2
   },
   {
     "metier": "SABOTAGE",
     "niveau": 2,
-    "talent": "Pas en douceur",
-    "description": "Les pièges que vous déclenchez mettent plus de temps à exploser.",
+    "talent": "Pied léger",
+    "description": "Les pièges que vous actionnez mettent plus de temps à se déclencher.",
     "stat": "delai_piege",
     "valeur": 100,
     "suffixe": "%",
@@ -422,8 +422,8 @@
   {
     "metier": "SABOTAGE",
     "niveau": 3,
-    "talent": "Relâchez les cordons de la bourse",
-    "description": "Gagnez des jetons de maison supplémentaires.",
+    "talent": "Cordons de la bourse",
+    "description": "Le paiement des Maisons est augmenté lorsque vous menez des missions à bien pour le Landsraad.",
     "stat": "scrip",
     "valeur": 5,
     "suffixe": "%",
@@ -433,8 +433,8 @@
   {
     "metier": "SABOTAGE",
     "niveau": 5,
-    "talent": "Discret",
-    "description": "Réduit la distance à laquelle les ennemis vous détectent.",
+    "talent": "Pro de la discrétion",
+    "description": "Réduit la distance à laquelle les ennemis sentent votre présence.",
     "stat": "stealth_range",
     "valeur": -15,
     "suffixe": "%",
@@ -443,8 +443,8 @@
   {
     "metier": "SABOTAGE",
     "niveau": 8,
-    "talent": "Explosif",
-    "description": "Augmente les dégâts infligés par les barils explosifs.",
+    "talent": "Explosivement vôtre",
+    "description": "Augmente les dégâts infligés par les barils explosifs que vous déclenchez.",
     "stat": "barrel_dmg",
     "valeur": 100,
     "suffixe": "%",
@@ -454,17 +454,17 @@
     "metier": "SABOTAGE",
     "niveau": 10,
     "talent": "Chasseur de têtes",
-    "description": "Augmente les dégâts infligés aux ennemis avec un tir dans la tête.",
+    "description": "Augmente les dégâts que vous infligez aux ennemis en leur tirant dans la tête.",
     "stat": "headshot_dmg",
     "valeur": 5,
     "suffixe": "%",
-    "cout_epice": 2
+    "cout_epice": 5
   },
   {
     "metier": "SABOTAGE",
     "niveau": 12,
-    "talent": "Agent infiltré",
-    "description": "Réduit la portée de la détection ennemie.",
+    "talent": "Pro de l'infiltration",
+    "description": "Réduit la portée à laquelle il est possible de vous scanner.",
     "stat": "stealth_range",
     "valeur": -15,
     "suffixe": "%",
@@ -473,8 +473,8 @@
   {
     "metier": "SABOTAGE",
     "niveau": 15,
-    "talent": "Difficile à repérer",
-    "description": "Réduit la vitesse à laquelle les ennemis vous identifient.",
+    "talent": "Difficilement repérable",
+    "description": "Réduit la vitesse à laquelle les ennemis vous considèrent comme une menace.",
     "stat": "detection_speed",
     "valeur": -10,
     "suffixe": "%",
@@ -483,8 +483,8 @@
   {
     "metier": "SABOTAGE",
     "niveau": 17,
-    "talent": "Graisser les paumes",
-    "description": "Le coût de la corruption des envoyés du Landsraad est réduit.",
+    "talent": "Graissage de pattes",
+    "description": "Les pots-de-vin que vous versez aux émissaires du Landsraad vous coûtent moins d'argent.",
     "stat": "corruption_cost",
     "valeur": -10,
     "suffixe": "%",
@@ -494,8 +494,8 @@
   {
     "metier": "SABOTAGE",
     "niveau": 19,
-    "talent": "Contributeur du Landsraad",
-    "description": "Vous contribuez davantage de points pour votre faction.",
+    "talent": "Contribution au Landsraad",
+    "description": "Chaque fois que vous accomplissez une tâche pour une Maison du Landsraad, vous permettez à votre faction d'obtenir davantage de points pour obtenir le soutien de cette Maison.",
     "stat": "landsraad_points",
     "valeur": 5,
     "suffixe": "%",
@@ -505,8 +505,8 @@
   {
     "metier": "SABOTAGE",
     "niveau": 22,
-    "talent": "Relâchez les cordons de la bourse",
-    "description": "Gagnez des jetons de maison supplémentaires.",
+    "talent": "Cordons de la bourse",
+    "description": "Le paiement des Maisons est augmenté lorsque vous menez des missions à bien pour le Landsraad.",
     "stat": "scrip",
     "valeur": 2,
     "suffixe": "%",
@@ -517,7 +517,7 @@
     "metier": "SABOTAGE",
     "niveau": 24,
     "talent": "Ombre",
-    "description": "Réduit la durée des scans ennemis sur vous.",
+    "description": "Réduit la durée du scan lorsque vous vous faites scanner.",
     "stat": "duree_scan",
     "valeur": -15,
     "suffixe": "%",
@@ -527,7 +527,7 @@
     "metier": "SABOTAGE",
     "niveau": 27,
     "talent": "Chasseur de têtes",
-    "description": "Augmente les dégâts infligés aux ennemis avec un tir dans la tête.",
+    "description": "Augmente les dégâts que vous infligez aux ennemis en leur tirant dans la tête.",
     "stat": "headshot_dmg",
     "valeur": 5,
     "suffixe": "%",
@@ -536,8 +536,8 @@
   {
     "metier": "SABOTAGE",
     "niveau": 29,
-    "talent": "Graisser les paumes",
-    "description": "Le coût de la corruption des envoyés du Landsraad est réduit.",
+    "talent": "Graissage de pattes",
+    "description": "Les pots-de-vin que vous versez aux émissaires du Landsraad vous coûtent moins d'argent.",
     "stat": "corruption_cost",
     "valeur": -5,
     "suffixe": "%",
@@ -547,18 +547,18 @@
   {
     "metier": "SABOTAGE",
     "niveau": 32,
-    "talent": "Agent infiltré",
-    "description": "Réduit la portée de la détection ennemie.",
+    "talent": "Pro de l'infiltration",
+    "description": "Réduit la portée à laquelle il est possible de vous scanner.",
     "stat": "stealth_range",
     "valeur": -15,
     "suffixe": "%",
-    "cout_epice": 15
+    "cout_epice": 10
   },
   {
     "metier": "SABOTAGE",
     "niveau": 35,
     "talent": "Ombre",
-    "description": "Réduit la durée des scans ennemis sur vous.",
+    "description": "Réduit la durée du scan lorsque vous vous faites scanner.",
     "stat": "duree_scan",
     "valeur": -15,
     "suffixe": "%",
@@ -567,8 +567,8 @@
   {
     "metier": "SABOTAGE",
     "niveau": 37,
-    "talent": "Relâchez les cordons de la bourse",
-    "description": "Gagnez des jetons de maison supplémentaires.",
+    "talent": "Cordons de la bourse",
+    "description": "Le paiement des Maisons est augmenté lorsque vous menez des missions à bien pour le Landsraad.",
     "stat": "scrip",
     "valeur": 5,
     "suffixe": "%",
@@ -579,7 +579,7 @@
     "metier": "SABOTAGE",
     "niveau": 40,
     "talent": "Ce qui est à eux est à moi",
-    "description": "Les cadavres ennemis rapportent du butin supplémentaire.",
+    "description": "Les corps des ennemis vous rapportent un plus gros butin.",
     "stat": "butin_humain",
     "valeur": 1,
     "suffixe": " Niv",
@@ -588,8 +588,8 @@
   {
     "metier": "SABOTAGE",
     "niveau": 43,
-    "talent": "Contributeur du Landsraad",
-    "description": "Vous contribuez davantage de points pour votre faction.",
+    "talent": "Contribution au Landsraad",
+    "description": "Chaque fois que vous accomplissez une tâche pour une Maison du Landsraad, vous permettez à votre faction d'obtenir davantage de points pour obtenir le soutien de cette Maison.",
     "stat": "landsraad_points",
     "valeur": 10,
     "suffixe": "%",
@@ -599,19 +599,19 @@
   {
     "metier": "SABOTAGE",
     "niveau": 45,
-    "talent": "Relâchez les cordons de la bourse",
-    "description": "Gagnez des jetons de maison supplémentaires.",
+    "talent": "Cordons de la bourse",
+    "description": "Le paiement des Maisons est augmenté lorsque vous menez des missions à bien pour le Landsraad.",
     "stat": "scrip",
     "valeur": 2,
     "suffixe": "%",
     "is_landsraad_favorable": true,
-    "cout_epice": 20
+    "cout_epice": 15
   },
   {
     "metier": "SABOTAGE",
     "niveau": 48,
     "talent": "Ombre",
-    "description": "Réduit la durée des scans ennemis sur vous.",
+    "description": "Réduit la durée du scan lorsque vous vous faites scanner.",
     "stat": "duree_scan",
     "valeur": -15,
     "suffixe": "%",
@@ -621,7 +621,7 @@
     "metier": "SABOTAGE",
     "niveau": 50,
     "talent": "Chasseur de têtes",
-    "description": "Augmente les dégâts infligés aux ennemis avec un tir dans la tête.",
+    "description": "Augmente les dégâts que vous infligez aux ennemis en leur tirant dans la tête.",
     "stat": "headshot_dmg",
     "valeur": 5,
     "suffixe": "%",
@@ -630,8 +630,8 @@
   {
     "metier": "SABOTAGE",
     "niveau": 53,
-    "talent": "Contributeur du Landsraad",
-    "description": "Vous contribuez davantage de points pour votre faction.",
+    "talent": "Contribution au Landsraad",
+    "description": "Chaque fois que vous accomplissez une tâche pour une Maison du Landsraad, vous permettez à votre faction d'obtenir davantage de points pour obtenir le soutien de cette Maison.",
     "stat": "landsraad_points",
     "valeur": 5,
     "suffixe": "%",
@@ -641,8 +641,8 @@
   {
     "metier": "SABOTAGE",
     "niveau": 55,
-    "talent": "Agent infiltré",
-    "description": "Réduit la portée de la détection ennemie.",
+    "talent": "Pro de l'infiltration",
+    "description": "Réduit la portée à laquelle il est possible de vous scanner.",
     "stat": "stealth_range",
     "valeur": -15,
     "suffixe": "%",
@@ -651,8 +651,8 @@
   {
     "metier": "SABOTAGE",
     "niveau": 58,
-    "talent": "Graisser les paumes",
-    "description": "Le coût de la corruption des envoyés du Landsraad est réduit.",
+    "talent": "Graissage de pattes",
+    "description": "Les pots-de-vin que vous versez aux émissaires du Landsraad vous coûtent moins d'argent.",
     "stat": "corruption_cost",
     "valeur": -5,
     "suffixe": "%",
@@ -662,19 +662,19 @@
   {
     "metier": "SABOTAGE",
     "niveau": 60,
-    "talent": "Relâchez les cordons de la bourse",
-    "description": "Gagnez des jetons de maison supplémentaires.",
+    "talent": "Cordons de la bourse",
+    "description": "Le paiement des Maisons est augmenté lorsque vous menez des missions à bien pour le Landsraad.",
     "stat": "scrip",
     "valeur": 5,
     "suffixe": "%",
     "is_landsraad_favorable": true,
-    "cout_epice": 20
+    "cout_epice": 25
   },
   {
     "metier": "SABOTAGE",
     "niveau": 63,
     "talent": "Ombre",
-    "description": "Réduit la durée des scans ennemis sur vous.",
+    "description": "Réduit la durée du scan lorsque vous vous faites scanner.",
     "stat": "duree_scan",
     "valeur": -15,
     "suffixe": "%",
@@ -683,8 +683,8 @@
   {
     "metier": "SABOTAGE",
     "niveau": 65,
-    "talent": "Difficile à repérer",
-    "description": "Réduit la vitesse à laquelle les ennemis vous identifient.",
+    "talent": "Difficilement repérable",
+    "description": "Réduit la vitesse à laquelle les ennemis vous considèrent comme une menace.",
     "stat": "detection_speed",
     "valeur": -25,
     "suffixe": "%",
@@ -693,8 +693,8 @@
   {
     "metier": "SABOTAGE",
     "niveau": 69,
-    "talent": "Agent infiltré",
-    "description": "Réduit la portée de la détection ennemie.",
+    "talent": "Pro de l'infiltration",
+    "description": "Réduit la portée à laquelle il est possible de vous scanner.",
     "stat": "stealth_range",
     "valeur": -15,
     "suffixe": "%",
@@ -703,8 +703,8 @@
   {
     "metier": "SABOTAGE",
     "niveau": 72,
-    "talent": "Contributeur du Landsraad",
-    "description": "Vous contribuez davantage de points pour votre faction.",
+    "talent": "Contribution au Landsraad",
+    "description": "Chaque fois que vous accomplissez une tâche pour une Maison du Landsraad, vous permettez à votre faction d'obtenir davantage de points pour obtenir le soutien de cette Maison.",
     "stat": "landsraad_points",
     "valeur": 5,
     "suffixe": "%",
@@ -715,24 +715,24 @@
     "metier": "SABOTAGE",
     "niveau": 74,
     "talent": "Chasseur de têtes",
-    "description": "Augmente les dégâts infligés aux ennemis avec un tir dans la tête.",
+    "description": "Augmente les dégâts que vous infligez aux ennemis en leur tirant dans la tête.",
     "stat": "headshot_dmg",
     "valeur": 5,
     "suffixe": "%",
-    "cout_epice": 25
+    "cout_epice": 30
   },
   {
     "metier": "SABOTAGE",
     "niveau": 75,
-    "talent": "Variante de casque du saboteur",
-    "description": "Déblocage du casque exclusif de saboteur.",
-    "cout_epice": 25
+    "talent": "Variante de casque de saboteur",
+    "description": "Casque pour ceux qui aiment tout détruire. Quand ils regardent un mur en apparence solide, ces individus savent quelle brique retirer pour que tout s'effondre. Sert à personnaliser les casques.",
+    "cout_epice": 30
   },
   {
     "metier": "SABOTAGE",
     "niveau": 78,
-    "talent": "Graisser les paumes",
-    "description": "Le coût de la corruption des envoyés du Landsraad est réduit.",
+    "talent": "Graissage de pattes",
+    "description": "Les pots-de-vin que vous versez aux émissaires du Landsraad vous coûtent moins d'argent.",
     "stat": "corruption_cost",
     "valeur": -5,
     "suffixe": "%",
@@ -743,7 +743,7 @@
     "metier": "SABOTAGE",
     "niveau": 81,
     "talent": "Ombre",
-    "description": "Réduit la durée des scans ennemis sur vous.",
+    "description": "Réduit la durée du scan lorsque vous vous faites scanner.",
     "stat": "duree_scan",
     "valeur": -15,
     "suffixe": "%",
@@ -752,8 +752,8 @@
   {
     "metier": "SABOTAGE",
     "niveau": 85,
-    "talent": "Relâchez les cordons de la bourse",
-    "description": "Gagnez des jetons de maison supplémentaires.",
+    "talent": "Cordons de la bourse",
+    "description": "Le paiement des Maisons est augmenté lorsque vous menez des missions à bien pour le Landsraad.",
     "stat": "scrip",
     "valeur": 5,
     "suffixe": "%",
@@ -763,61 +763,61 @@
   {
     "metier": "SABOTAGE",
     "niveau": 88,
-    "talent": "Contributeur du Landsraad",
-    "description": "Vous contribuez davantage de points pour votre faction.",
+    "talent": "Contribution au Landsraad",
+    "description": "Chaque fois que vous accomplissez une tâche pour une Maison du Landsraad, vous permettez à votre faction d'obtenir davantage de points pour obtenir le soutien de cette Maison.",
     "stat": "landsraad_points",
     "valeur": 5,
     "suffixe": "%",
     "is_landsraad_favorable": true,
-    "cout_epice": 30
+    "cout_epice": 35
   },
   {
     "metier": "SABOTAGE",
     "niveau": 90,
-    "talent": "Graisser les paumes",
-    "description": "Le coût de la corruption des envoyés du Landsraad est réduit.",
+    "talent": "Graissage de pattes",
+    "description": "Les pots-de-vin que vous versez aux émissaires du Landsraad vous coûtent moins d'argent.",
     "stat": "corruption_cost",
     "valeur": -10,
     "suffixe": "%",
     "is_landsraad_favorable": true,
-    "cout_epice": 30
+    "cout_epice": 35
   },
   {
     "metier": "SABOTAGE",
     "niveau": 93,
-    "talent": "Discret",
-    "description": "Réduit la distance à laquelle les ennemis vous détectent.",
+    "talent": "Pro de la discrétion",
+    "description": "Réduit la distance à laquelle les ennemis sentent votre présence.",
     "stat": "stealth_range",
     "valeur": -15,
     "suffixe": "%",
-    "cout_epice": 40
+    "cout_epice": 35
   },
   {
     "metier": "SABOTAGE",
     "niveau": 95,
-    "talent": "Graisser les paumes",
-    "description": "Le coût de la corruption des envoyés du Landsraad est réduit.",
+    "talent": "Graissage de pattes",
+    "description": "Les pots-de-vin que vous versez aux émissaires du Landsraad vous coûtent moins d'argent.",
     "stat": "corruption_cost",
     "valeur": -5,
     "suffixe": "%",
     "is_landsraad_favorable": true,
-    "cout_epice": 40
+    "cout_epice": 35
   },
   {
     "metier": "SABOTAGE",
     "niveau": 98,
-    "talent": "Agent infiltré",
-    "description": "Réduit la portée de la détection ennemie.",
+    "talent": "Pro de l'infiltration",
+    "description": "Réduit la portée à laquelle il est possible de vous scanner.",
     "stat": "stealth_range",
     "valeur": -15,
     "suffixe": "%",
-    "cout_epice": 40
+    "cout_epice": 35
   },
   {
     "metier": "SABOTAGE",
     "niveau": 100,
     "talent": "Chasseur de têtes",
-    "description": "Augmente les dégâts infligés aux ennemis avec un tir dans la tête.",
+    "description": "Augmente les dégâts que vous infligez aux ennemis en leur tirant dans la tête.",
     "stat": "headshot_dmg",
     "valeur": 5,
     "suffixe": "%",
@@ -826,27 +826,27 @@
   {
     "metier": "EXPLORATION",
     "niveau": 0,
-    "talent": "Passif : Capacité de stockage",
+    "talent": "Passif : Capacité volumétrique du sac à dos",
     "description": "Augmente la capacité de stockage par niveau investi.",
     "stat": "stockage",
-    "valeur": 1.0,
-    "suffixe": "%",
-    "is_passive": true
+    "valeur": 1,
+    "is_passive": true,
+    "suffixe": "%"
   },
   {
     "metier": "EXPLORATION",
     "niveau": 1,
-    "talent": "Mule de bât",
-    "description": "Augmente la taille de l'inventaire d'une ligne.",
+    "talent": "Sherpa",
+    "description": "Augmente la taille de l'inventaire d'une rangée.",
     "stat": "inv_slots",
-    "valeur": 1,
-    "cout_epice": 0
+    "valeur": 5,
+    "cout_epice": 2
   },
   {
     "metier": "EXPLORATION",
     "niveau": 3,
-    "talent": "Réduction chaleur boost véhicule",
-    "description": "Réduction de l'accumulation de chaleur lors de l'utilisation des turbocompresseurs.",
+    "talent": "Réduction de la chaleur générée par le turbo des véhicules",
+    "description": "Vos véhicules génèrent moins de chaleur lorsque vous utilisez leur turbo.",
     "stat": "boost_heat",
     "valeur": -10,
     "suffixe": "%",
@@ -855,8 +855,8 @@
   {
     "metier": "EXPLORATION",
     "niveau": 6,
-    "talent": "Consommation de carburant supérieure",
-    "description": "Consommation de carburant réduite.",
+    "talent": "Consommation réduite",
+    "description": "Consommation de carburant réduite lorsque vous pilotez un véhicule.",
     "stat": "fuel_efficiency",
     "valeur": -5,
     "suffixe": "%",
@@ -866,8 +866,8 @@
   {
     "metier": "EXPLORATION",
     "niveau": 8,
-    "talent": "Cavalier dans la tempête",
-    "description": "Réduction des dommages causés aux véhicules par les tempêtes de sable.",
+    "talent": "Maîtrise des tempêtes",
+    "description": "Vos véhicules subissent moins de dégâts quand ils sont pris dans une tempête de sable.",
     "stat": "tempete",
     "valeur": 15,
     "suffixe": "%",
@@ -877,7 +877,7 @@
     "metier": "EXPLORATION",
     "niveau": 10,
     "talent": "Chasseur de trésors",
-    "description": "Augmente la quantité de butin obtenu sur les épaves et les trésors enfouis.",
+    "description": "Augmente la quantité de butin que vous récupérez en explorant une épave de vaisseau ou en déterrant un trésor enfoui.",
     "stat": "qualite_butin",
     "valeur": 1,
     "suffixe": " Niv",
@@ -887,8 +887,8 @@
   {
     "metier": "EXPLORATION",
     "niveau": 13,
-    "talent": "Géomètre efficace",
-    "description": "Le temps nécessaire pour réaliser un levé topographique avec la sonde est réduit.",
+    "talent": "Sondes plus efficaces",
+    "description": "Le temps requis pour observer une zone à l'aide d'une sonde d'observation est réduit.",
     "stat": "sonde",
     "valeur": -50,
     "suffixe": "%",
@@ -897,8 +897,8 @@
   {
     "metier": "EXPLORATION",
     "niveau": 15,
-    "talent": "Réduction chaleur boost véhicule",
-    "description": "Réduction de l'accumulation de chaleur du boost.",
+    "talent": "Réduction de la chaleur générée par le turbo des véhicules",
+    "description": "Vos véhicules génèrent moins de chaleur lorsque vous utilisez leur turbo.",
     "stat": "boost_heat",
     "valeur": -10,
     "suffixe": "%",
@@ -907,8 +907,8 @@
   {
     "metier": "EXPLORATION",
     "niveau": 17,
-    "talent": "Plage de balayage supérieure",
-    "description": "Portée accrue des scanners.",
+    "talent": "Meilleure portée de scan",
+    "description": "Augmente la portée des scanners que vous utilisez.",
     "stat": "scanner",
     "valeur": 15,
     "suffixe": "%",
@@ -918,8 +918,8 @@
   {
     "metier": "EXPLORATION",
     "niveau": 18,
-    "talent": "Réduction des coûts de dépannage",
-    "description": "Réduit le coût du dépannage des véhicules.",
+    "talent": "Réduction du coût de récupération de véhicule",
+    "description": "Réduit le coût de récupération des véhicules.",
     "stat": "recup_vehicule",
     "valeur": -25,
     "suffixe": "%",
@@ -929,8 +929,8 @@
   {
     "metier": "EXPLORATION",
     "niveau": 20,
-    "talent": "Bonus de vitesse du véhicule",
-    "description": "Vitesse de déplacement maximale accrue.",
+    "talent": "Bonus de vitesse des véhicules",
+    "description": "Votre vitesse de déplacement augmente lorsque vous pilotez un véhicule.",
     "stat": "vitesse",
     "valeur": 15,
     "suffixe": "%",
@@ -940,8 +940,8 @@
   {
     "metier": "EXPLORATION",
     "niveau": 23,
-    "talent": "Dissipation thermique supérieure",
-    "description": "Les véhicules dissipent la chaleur plus rapidement.",
+    "talent": "Meilleure dissipation de chaleur",
+    "description": "Vos véhicules dissipent plus efficacement la chaleur.",
     "stat": "refroidissement",
     "valeur": 5,
     "suffixe": "%",
@@ -950,18 +950,18 @@
   {
     "metier": "EXPLORATION",
     "niveau": 25,
-    "talent": "Mule de bât",
-    "description": "Augmente la taille de l'inventaire d'une ligne.",
+    "talent": "Sherpa",
+    "description": "Augmente la taille de l'inventaire d'une rangée.",
     "stat": "inv_slots",
-    "valeur": 1,
+    "valeur": 5,
     "is_landsraad_favorable": true,
     "cout_epice": 10
   },
   {
     "metier": "EXPLORATION",
     "niveau": 28,
-    "talent": "Réduction conso. d'énergie suspension",
-    "description": "Réduction de la consommation d'énergie des ceintures de suspension.",
+    "talent": "Réduction de consommation des suspenseurs",
+    "description": "Vos ceintures à suspenseur consomment moins d'énergie.",
     "stat": "conso_suspensor",
     "valeur": -10,
     "suffixe": "%",
@@ -970,8 +970,8 @@
   {
     "metier": "EXPLORATION",
     "niveau": 30,
-    "talent": "Réduction chaleur boost véhicule",
-    "description": "Réduction de l'accumulation de chaleur du boost.",
+    "talent": "Réduction de la chaleur générée par le turbo des véhicules",
+    "description": "Vos véhicules génèrent moins de chaleur lorsque vous utilisez leur turbo.",
     "stat": "boost_heat",
     "valeur": -10,
     "suffixe": "%",
@@ -980,18 +980,18 @@
   {
     "metier": "EXPLORATION",
     "niveau": 33,
-    "talent": "Manœuvres expertes",
-    "description": "Vos compétences de pilotage réduisent les dégâts subis en véhicule.",
+    "talent": "Maîtrise du pilotage",
+    "description": "Vous maîtrisez tellement bien vos véhicules qu'ils subissent moins de dégâts lorsque vous les pilotez.",
     "stat": "resistance_vehicule",
     "valeur": 10,
     "suffixe": "%",
-    "cout_epice": 15
+    "cout_epice": 10
   },
   {
     "metier": "EXPLORATION",
     "niveau": 35,
-    "talent": "Consommation de carburant supérieure",
-    "description": "Consommation de carburant réduite.",
+    "talent": "Consommation réduite",
+    "description": "Consommation de carburant réduite lorsque vous pilotez un véhicule.",
     "stat": "fuel_efficiency",
     "valeur": -5,
     "suffixe": "%",
@@ -1001,8 +1001,8 @@
   {
     "metier": "EXPLORATION",
     "niveau": 38,
-    "talent": "Dévoiler le brouillard",
-    "description": "Révéler une plus grande zone de brouillard de guerre.",
+    "talent": "Dispersion du brouillard",
+    "description": "Révèle une plus grande zone du brouillard de guerre lorsque vous traversez la carte.",
     "stat": "brouillard",
     "valeur": 50,
     "suffixe": "%",
@@ -1012,8 +1012,8 @@
   {
     "metier": "EXPLORATION",
     "niveau": 40,
-    "talent": "Caches cachées",
-    "description": "Augmente la quantité de butin dans les conteneurs.",
+    "talent": "Cachettes de butin",
+    "description": "Augmente la quantité de butin récupéré dans les contenants.",
     "stat": "butin_general",
     "valeur": 1,
     "suffixe": " Niv",
@@ -1023,8 +1023,8 @@
   {
     "metier": "EXPLORATION",
     "niveau": 42,
-    "talent": "Grimpeur de murs",
-    "description": "Réduction de la dépense énergétique lors de l'escalade.",
+    "talent": "Monte-en-l'air",
+    "description": "Perte d'endurance réduite lorsque vous escaladez.",
     "stat": "escalade",
     "valeur": -20,
     "suffixe": "%",
@@ -1033,18 +1033,18 @@
   {
     "metier": "EXPLORATION",
     "niveau": 45,
-    "talent": "Cavalier dans la tempête",
-    "description": "Réduction des dommages causés aux véhicules par les tempêtes de sable.",
+    "talent": "Maîtrise des tempêtes",
+    "description": "Vos véhicules subissent moins de dégâts quand ils sont pris dans une tempête de sable.",
     "stat": "tempete",
     "valeur": 15,
     "suffixe": "%",
-    "cout_epice": 20
+    "cout_epice": 15
   },
   {
     "metier": "EXPLORATION",
     "niveau": 48,
-    "talent": "Dissipation thermique supérieure",
-    "description": "Les véhicules dissipent la chaleur plus rapidement.",
+    "talent": "Meilleure dissipation de chaleur",
+    "description": "Vos véhicules dissipent plus efficacement la chaleur.",
     "stat": "refroidissement",
     "valeur": 5,
     "suffixe": "%",
@@ -1053,18 +1053,18 @@
   {
     "metier": "EXPLORATION",
     "niveau": 50,
-    "talent": "Mule de bât",
-    "description": "Augmente la taille de l'inventaire d'une ligne.",
+    "talent": "Sherpa",
+    "description": "Augmente la taille de l'inventaire d'une rangée.",
     "stat": "inv_slots",
-    "valeur": 1,
+    "valeur": 5,
     "is_landsraad_favorable": true,
     "cout_epice": 20
   },
   {
     "metier": "EXPLORATION",
     "niveau": 52,
-    "talent": "Réduction des coûts de dépannage",
-    "description": "Réduit le coût du dépannage des véhicules.",
+    "talent": "Réduction du coût de récupération de véhicule",
+    "description": "Réduit le coût de récupération des véhicules.",
     "stat": "recup_vehicule",
     "valeur": -25,
     "suffixe": "%",
@@ -1074,8 +1074,8 @@
   {
     "metier": "EXPLORATION",
     "niveau": 55,
-    "talent": "Consommation de carburant supérieure",
-    "description": "Consommation de carburant réduite.",
+    "talent": "Consommation réduite",
+    "description": "Consommation de carburant réduite lorsque vous pilotez un véhicule.",
     "stat": "fuel_efficiency",
     "valeur": -5,
     "suffixe": "%",
@@ -1085,8 +1085,8 @@
   {
     "metier": "EXPLORATION",
     "niveau": 59,
-    "talent": "Réduction chaleur boost véhicule",
-    "description": "Réduction de l'accumulation de chaleur du boost.",
+    "talent": "Réduction de la chaleur générée par le turbo des véhicules",
+    "description": "Vos véhicules génèrent moins de chaleur lorsque vous utilisez leur turbo.",
     "stat": "boost_heat",
     "valeur": -10,
     "suffixe": "%",
@@ -1095,8 +1095,8 @@
   {
     "metier": "EXPLORATION",
     "niveau": 62,
-    "talent": "Dissipation thermique supérieure",
-    "description": "Les véhicules dissipent la chaleur plus rapidement.",
+    "talent": "Meilleure dissipation de chaleur",
+    "description": "Vos véhicules dissipent plus efficacement la chaleur.",
     "stat": "refroidissement",
     "valeur": 5,
     "suffixe": "%",
@@ -1105,8 +1105,8 @@
   {
     "metier": "EXPLORATION",
     "niveau": 65,
-    "talent": "Consommation de carburant supérieure",
-    "description": "Consommation de carburant réduite.",
+    "talent": "Consommation réduite",
+    "description": "Consommation de carburant réduite lorsque vous pilotez un véhicule.",
     "stat": "fuel_efficiency",
     "valeur": -5,
     "suffixe": "%",
@@ -1116,8 +1116,8 @@
   {
     "metier": "EXPLORATION",
     "niveau": 68,
-    "talent": "Dissipation thermique supérieure",
-    "description": "Les véhicules dissipent la chaleur plus rapidement.",
+    "talent": "Meilleure dissipation de chaleur",
+    "description": "Vos véhicules dissipent plus efficacement la chaleur.",
     "stat": "refroidissement",
     "valeur": 5,
     "suffixe": "%",
@@ -1126,8 +1126,8 @@
   {
     "metier": "EXPLORATION",
     "niveau": 71,
-    "talent": "Plage de balayage supérieure",
-    "description": "Portée accrue des scanners.",
+    "talent": "Meilleure portée de scan",
+    "description": "Augmente la portée des scanners que vous utilisez.",
     "stat": "scanner",
     "valeur": 35,
     "suffixe": "%",
@@ -1138,7 +1138,7 @@
     "metier": "EXPLORATION",
     "niveau": 74,
     "talent": "Sans rythme",
-    "description": "Réduction du risque de prolifération des vers se déplaçant sur le sable.",
+    "description": "La menace que représentent les vers est réduite lorsque vous vous déplacez dans le désert.",
     "stat": "menace_vers",
     "valeur": -10,
     "suffixe": "%",
@@ -1149,24 +1149,24 @@
     "metier": "EXPLORATION",
     "niveau": 75,
     "talent": "Variante de casque d'explorateur",
-    "description": "Déblocage du casque exclusif d'explorateur.",
-    "cout_epice": 25
+    "description": "Casque célébrant ceux qui explorent l'univers pour découvrir ses secrets. C'est leur insatiable curiosité, plus forte encore que la peur de la mort, qui a permis à l'humanité d'essaimer à ce point dans le cosmos. Sert à personnaliser les casques.",
+    "cout_epice": 30
   },
   {
     "metier": "EXPLORATION",
     "niveau": 77,
-    "talent": "Mule de bât",
-    "description": "Augmente la taille de l'inventaire d'une ligne.",
+    "talent": "Sherpa",
+    "description": "Augmente la taille de l'inventaire d'une rangée.",
     "stat": "inv_slots",
-    "valeur": 1,
+    "valeur": 5,
     "is_landsraad_favorable": true,
     "cout_epice": 30
   },
   {
     "metier": "EXPLORATION",
     "niveau": 80,
-    "talent": "Cavalier dans la tempête",
-    "description": "Réduction des dommages causés aux véhicules par les tempêtes de sable.",
+    "talent": "Maîtrise des tempêtes",
+    "description": "Vos véhicules subissent moins de dégâts quand ils sont pris dans une tempête de sable.",
     "stat": "tempete",
     "valeur": 15,
     "suffixe": "%",
@@ -1175,8 +1175,8 @@
   {
     "metier": "EXPLORATION",
     "niveau": 83,
-    "talent": "Dissipation thermique supérieure",
-    "description": "Les véhicules dissipent la chaleur plus rapidement.",
+    "talent": "Meilleure dissipation de chaleur",
+    "description": "Vos véhicules dissipent plus efficacement la chaleur.",
     "stat": "refroidissement",
     "valeur": 5,
     "suffixe": "%",
@@ -1185,8 +1185,8 @@
   {
     "metier": "EXPLORATION",
     "niveau": 85,
-    "talent": "Consommation de carburant supérieure",
-    "description": "Consommation de carburant réduite.",
+    "talent": "Consommation réduite",
+    "description": "Consommation de carburant réduite lorsque vous pilotez un véhicule.",
     "stat": "fuel_efficiency",
     "valeur": -5,
     "suffixe": "%",
@@ -1196,109 +1196,109 @@
   {
     "metier": "EXPLORATION",
     "niveau": 88,
-    "talent": "Manœuvres expertes",
-    "description": "Vos compétences de pilotage réduisent les dégâts subis en véhicule.",
+    "talent": "Maîtrise du pilotage",
+    "description": "Vous maîtrisez tellement bien vos véhicules qu'ils subissent moins de dégâts lorsque vous les pilotez.",
     "stat": "resistance_vehicule",
     "valeur": 10,
     "suffixe": "%",
-    "cout_epice": 30
+    "cout_epice": 35
   },
   {
     "metier": "EXPLORATION",
     "niveau": 90,
-    "talent": "Réduction chaleur boost véhicule",
-    "description": "Réduction de l'accumulation de chaleur du boost.",
+    "talent": "Réduction de la chaleur générée par le turbo des véhicules",
+    "description": "Vos véhicules génèrent moins de chaleur lorsque vous utilisez leur turbo.",
     "stat": "boost_heat",
     "valeur": -10,
     "suffixe": "%",
-    "cout_epice": 30
+    "cout_epice": 35
   },
   {
     "metier": "EXPLORATION",
     "niveau": 93,
-    "talent": "Réduction conso. d'énergie suspension",
-    "description": "Réduction de la consommation d'énergie des ceintures de suspension.",
+    "talent": "Réduction de consommation des suspenseurs",
+    "description": "Vos ceintures à suspenseur consomment moins d'énergie.",
     "stat": "conso_suspensor",
     "valeur": -20,
     "suffixe": "%",
-    "cout_epice": 40
+    "cout_epice": 35
   },
   {
     "metier": "EXPLORATION",
     "niveau": 95,
-    "talent": "Dissipation thermique supérieure",
-    "description": "Les véhicules dissipent la chaleur plus rapidement.",
+    "talent": "Meilleure dissipation de chaleur",
+    "description": "Vos véhicules dissipent plus efficacement la chaleur.",
     "stat": "refroidissement",
     "valeur": 5,
     "suffixe": "%",
-    "cout_epice": 40
+    "cout_epice": 35
   },
   {
     "metier": "EXPLORATION",
     "niveau": 98,
     "talent": "Sans rythme",
-    "description": "Réduction du risque de prolifération des vers se déplaçant sur le sable.",
+    "description": "La menace que représentent les vers est réduite lorsque vous vous déplacez dans le désert.",
     "stat": "menace_vers",
     "valeur": -10,
     "suffixe": "%",
     "is_landsraad_favorable": true,
-    "cout_epice": 40
+    "cout_epice": 35
   },
   {
     "metier": "EXPLORATION",
     "niveau": 100,
-    "talent": "Mule de bât",
-    "description": "Augmente la taille de l'inventaire d'une ligne.",
+    "talent": "Sherpa",
+    "description": "Augmente la taille de l'inventaire d'une rangée.",
     "stat": "inv_slots",
-    "valeur": 1,
+    "valeur": 5,
     "is_landsraad_favorable": true,
     "cout_epice": 40
   },
   {
     "metier": "RECOLTE",
     "niveau": 0,
-    "talent": "Passif : Extraction par véhicule",
+    "talent": "Passif : Rendement de l'extraction :",
     "description": "Augmente le rendement de l'extraction minière par véhicule par niveau investi.",
     "stat": "rendement_vehicule",
     "valeur": 0.5,
-    "suffixe": "%",
-    "is_passive": true
+    "is_passive": true,
+    "suffixe": "%"
   },
   {
     "metier": "RECOLTE",
     "niveau": 0,
-    "talent": "Passif : Compacteur statique",
+    "talent": "Passif : Rendement du compacteur à électricité statique",
     "description": "Augmente le rendement du compacteur statique par niveau investi.",
     "stat": "rendement_compacteur",
     "valeur": 0.5,
-    "suffixe": "%",
-    "is_passive": true
+    "is_passive": true,
+    "suffixe": "%"
   },
   {
     "metier": "RECOLTE",
     "niveau": 0,
-    "talent": "Passif : Minage de base",
+    "talent": "Passif : Rendement du compacteur à électricité statique",
     "description": "Augmente le rendement minier de base par niveau investi.",
     "stat": "rendement_base",
     "valeur": 0.5,
-    "suffixe": "%",
-    "is_passive": true
+    "is_passive": true,
+    "suffixe": "%"
   },
   {
     "metier": "RECOLTE",
     "niveau": 1,
-    "talent": "Sauvetage efficace",
-    "description": "Composants bonus supplémentaires lors du recyclage d'épaves.",
+    "talent": "Récupération efficace",
+    "description": "Les champs de ressources donnant de la ferraille ont une chance de fournir des composants supplémentaires lorsque vous les récoltez en mode analyse.",
     "stat": "salvage_chance",
     "valeur": 30,
     "suffixe": "%",
-    "cout_epice": 0
+    "cout_epice": 2
   },
   {
     "metier": "RECOLTE",
     "niveau": 2,
     "talent": "Jusqu'à la dernière goutte",
-    "description": "Augmentation du rendement en eau (moissonneuse/faux).",
+    "description": "Vous récoltez davantage d'eau lorsque vous utilisez un collecteur de rosée ou une faux à rosée.",
     "stat": "yield_water",
     "valeur": 20,
     "suffixe": "%",
@@ -1309,7 +1309,7 @@
     "metier": "RECOLTE",
     "niveau": 3,
     "talent": "Maîtrise de l'exsanguination",
-    "description": "Augmentation des prélèvements sanguins sur les cadavres.",
+    "description": "Lorsque vous prélevez du sang sur les cadavres, vous en récupérez davantage.",
     "stat": "yield_blood",
     "valeur": 100,
     "suffixe": "%",
@@ -1319,8 +1319,8 @@
   {
     "metier": "RECOLTE",
     "niveau": 5,
-    "talent": "Des outils plus efficaces",
-    "description": "Consommation d'énergie réduite grâce à l'utilisation d'outils.",
+    "talent": "Meilleurs outils",
+    "description": "Consommation de puissance réduite lorsque vous utilisez des outils.",
     "stat": "tool_energy",
     "valeur": -10,
     "suffixe": "%",
@@ -1329,8 +1329,8 @@
   {
     "metier": "RECOLTE",
     "niveau": 7,
-    "talent": "Exploitation minière efficace",
-    "description": "Ressources supplémentaires provenant de gisements minéraux en analyse.",
+    "talent": "Extraction efficace",
+    "description": "Vous offre une chance d'obtenir des ressources qui ne sont pas toujours présentes dans les filons de minéraux que vous récoltez en mode analyse.",
     "stat": "mineraux_rares",
     "valeur": 5,
     "suffixe": "%",
@@ -1339,28 +1339,28 @@
   {
     "metier": "RECOLTE",
     "niveau": 8,
-    "talent": "Sécurité des compacteurs",
-    "description": "Réduction de la menace des vers lors de l'utilisation du compacteur statique.",
+    "talent": "Compacteur plus sûr",
+    "description": "Vous générez moins de menace pour les vers des sables lorsque vous utilisez votre compacteur à électricité statique.",
     "stat": "menace_compacteur",
-    "valeur": -4.6,
+    "valeur": -5,
     "suffixe": "%",
-    "cout_epice": 2
+    "cout_epice": 5
   },
   {
     "metier": "RECOLTE",
     "niveau": 10,
-    "talent": "Jackpot de rendement",
-    "description": "Chances d'obtenir des ressources supplémentaires lors de l'exploitation.",
+    "talent": "Jackpot d'extraction",
+    "description": "Ajoute une chance de gagner des ressources supplémentaires en récoltant des filons.",
     "stat": "jackpot",
     "valeur": 2.5,
     "suffixe": "%",
-    "cout_epice": 2
+    "cout_epice": 5
   },
   {
     "metier": "RECOLTE",
     "niveau": 13,
-    "talent": "Gamme de compacteurs supérieure",
-    "description": "Augmente la portée du compacteur statique.",
+    "talent": "Meilleure portée du compacteur",
+    "description": "Augmente la portée de votre compacteur à électricité statique.",
     "stat": "compacteur",
     "valeur": 10,
     "suffixe": "%",
@@ -1369,10 +1369,10 @@
   {
     "metier": "RECOLTE",
     "niveau": 15,
-    "talent": "Rendements de ramassage",
-    "description": "Augmentation de la quantité collectée lors du ramassage au sol.",
+    "talent": "Meilleur ramassage",
+    "description": "Lorsque vous récoltez des choses telles que de la ferraille, de la pierre ou du minerai, vous en ramassez davantage.",
     "stat": "ramassage",
-    "valeur": 150,
+    "valeur": 100,
     "suffixe": "%",
     "is_landsraad_favorable": true,
     "cout_epice": 5
@@ -1380,8 +1380,8 @@
   {
     "metier": "RECOLTE",
     "niveau": 17,
-    "talent": "Exploitation minière efficace",
-    "description": "Ressources supplémentaires provenant de gisements minéraux en analyse.",
+    "talent": "Extraction efficace",
+    "description": "Vous offre une chance d'obtenir des ressources qui ne sont pas toujours présentes dans les filons de minéraux que vous récoltez en mode analyse.",
     "stat": "mineraux_rares",
     "valeur": 5,
     "suffixe": "%",
@@ -1390,18 +1390,18 @@
   {
     "metier": "RECOLTE",
     "niveau": 20,
-    "talent": "Jackpot de rendement",
-    "description": "Chances d'obtenir des ressources supplémentaires lors de l'exploitation.",
+    "talent": "Jackpot d'extraction",
+    "description": "Ajoute une chance de gagner des ressources supplémentaires en récoltant des filons.",
     "stat": "jackpot",
     "valeur": 2.5,
     "suffixe": "%",
-    "cout_epice": 5
+    "cout_epice": 10
   },
   {
     "metier": "RECOLTE",
     "niveau": 23,
-    "talent": "Exploitation minière efficace",
-    "description": "Ressources supplémentaires provenant de gisements minéraux en analyse.",
+    "talent": "Extraction efficace",
+    "description": "Vous offre une chance d'obtenir des ressources qui ne sont pas toujours présentes dans les filons de minéraux que vous récoltez en mode analyse.",
     "stat": "mineraux_rares",
     "valeur": 5,
     "suffixe": "%",
@@ -1410,18 +1410,18 @@
   {
     "metier": "RECOLTE",
     "niveau": 25,
-    "talent": "Sécurité des compacteurs",
-    "description": "Réduction de la menace des vers lors de l'utilisation du compacteur statique.",
+    "talent": "Compacteur plus sûr",
+    "description": "Vous générez moins de menace pour les vers des sables lorsque vous utilisez votre compacteur à électricité statique.",
     "stat": "menace_compacteur",
-    "valeur": -4.6,
+    "valeur": -5,
     "suffixe": "%",
     "cout_epice": 10
   },
   {
     "metier": "RECOLTE",
     "niveau": 28,
-    "talent": "Exploitation minière efficace",
-    "description": "Ressources supplémentaires provenant de gisements minéraux en analyse.",
+    "talent": "Extraction efficace",
+    "description": "Vous offre une chance d'obtenir des ressources qui ne sont pas toujours présentes dans les filons de minéraux que vous récoltez en mode analyse.",
     "stat": "mineraux_rares",
     "valeur": 5,
     "suffixe": "%",
@@ -1430,8 +1430,8 @@
   {
     "metier": "RECOLTE",
     "niveau": 30,
-    "talent": "Jackpot de rendement",
-    "description": "Chances d'obtenir des ressources supplémentaires lors de l'exploitation.",
+    "talent": "Jackpot d'extraction",
+    "description": "Ajoute une chance de gagner des ressources supplémentaires en récoltant des filons.",
     "stat": "jackpot",
     "valeur": 2.5,
     "suffixe": "%",
@@ -1440,8 +1440,8 @@
   {
     "metier": "RECOLTE",
     "niveau": 33,
-    "talent": "Gamme de compacteurs supérieure",
-    "description": "Augmente la portée du compacteur statique.",
+    "talent": "Meilleure portée du compacteur",
+    "description": "Augmente la portée de votre compacteur à électricité statique.",
     "stat": "compacteur",
     "valeur": 10,
     "suffixe": "%",
@@ -1450,8 +1450,8 @@
   {
     "metier": "RECOLTE",
     "niveau": 35,
-    "talent": "Sauvetage efficace",
-    "description": "Composants bonus supplémentaires lors du recyclage d'épaves.",
+    "talent": "Récupération efficace",
+    "description": "Les champs de ressources donnant de la ferraille ont une chance de fournir des composants supplémentaires lorsque vous les récoltez en mode analyse.",
     "stat": "salvage_chance",
     "valeur": 10,
     "suffixe": "%",
@@ -1461,8 +1461,8 @@
   {
     "metier": "RECOLTE",
     "niveau": 38,
-    "talent": "Exploitation minière efficace",
-    "description": "Ressources supplémentaires provenant de gisements minéraux en analyse.",
+    "talent": "Extraction efficace",
+    "description": "Vous offre une chance d'obtenir des ressources qui ne sont pas toujours présentes dans les filons de minéraux que vous récoltez en mode analyse.",
     "stat": "mineraux_rares",
     "valeur": 5,
     "suffixe": "%",
@@ -1471,8 +1471,8 @@
   {
     "metier": "RECOLTE",
     "niveau": 40,
-    "talent": "Jackpot de rendement",
-    "description": "Chances d'obtenir des ressources supplémentaires lors de l'exploitation.",
+    "talent": "Jackpot d'extraction",
+    "description": "Ajoute une chance de gagner des ressources supplémentaires en récoltant des filons.",
     "stat": "jackpot",
     "valeur": 2.5,
     "suffixe": "%",
@@ -1481,8 +1481,8 @@
   {
     "metier": "RECOLTE",
     "niveau": 43,
-    "talent": "Exploitation minière efficace",
-    "description": "Ressources supplémentaires provenant de gisements minéraux en analyse.",
+    "talent": "Extraction efficace",
+    "description": "Vous offre une chance d'obtenir des ressources qui ne sont pas toujours présentes dans les filons de minéraux que vous récoltez en mode analyse.",
     "stat": "mineraux_rares",
     "valeur": 5,
     "suffixe": "%",
@@ -1491,8 +1491,8 @@
   {
     "metier": "RECOLTE",
     "niveau": 45,
-    "talent": "Des outils plus efficaces",
-    "description": "Consommation d'énergie réduite grâce à l'utilisation d'outils.",
+    "talent": "Meilleurs outils",
+    "description": "Consommation de puissance réduite lorsque vous utilisez des outils.",
     "stat": "tool_energy",
     "valeur": -5,
     "suffixe": "%",
@@ -1501,8 +1501,8 @@
   {
     "metier": "RECOLTE",
     "niveau": 48,
-    "talent": "Exploitation minière efficace",
-    "description": "Ressources supplémentaires provenant de gisements minéraux en analyse.",
+    "talent": "Extraction efficace",
+    "description": "Vous offre une chance d'obtenir des ressources qui ne sont pas toujours présentes dans les filons de minéraux que vous récoltez en mode analyse.",
     "stat": "mineraux_rares",
     "valeur": 5,
     "suffixe": "%",
@@ -1511,8 +1511,8 @@
   {
     "metier": "RECOLTE",
     "niveau": 50,
-    "talent": "Jackpot de rendement",
-    "description": "Chances d'obtenir des ressources supplémentaires lors de l'exploitation.",
+    "talent": "Jackpot d'extraction",
+    "description": "Ajoute une chance de gagner des ressources supplémentaires en récoltant des filons.",
     "stat": "jackpot",
     "valeur": 2.5,
     "suffixe": "%",
@@ -1521,8 +1521,8 @@
   {
     "metier": "RECOLTE",
     "niveau": 53,
-    "talent": "Exploitation minière efficace",
-    "description": "Ressources supplémentaires provenant de gisements minéraux en analyse.",
+    "talent": "Extraction efficace",
+    "description": "Vous offre une chance d'obtenir des ressources qui ne sont pas toujours présentes dans les filons de minéraux que vous récoltez en mode analyse.",
     "stat": "mineraux_rares",
     "valeur": 5,
     "suffixe": "%",
@@ -1531,10 +1531,10 @@
   {
     "metier": "RECOLTE",
     "niveau": 55,
-    "talent": "Rendements de ramassage",
-    "description": "Augmentation de la quantité collectée lors du ramassage au sol.",
+    "talent": "Meilleur ramassage",
+    "description": "Lorsque vous récoltez des choses telles que de la ferraille, de la pierre ou du minerai, vous en ramassez davantage.",
     "stat": "ramassage",
-    "valeur": 150,
+    "valeur": 100,
     "suffixe": "%",
     "is_landsraad_favorable": true,
     "cout_epice": 20
@@ -1542,18 +1542,18 @@
   {
     "metier": "RECOLTE",
     "niveau": 58,
-    "talent": "Compression du cadavre",
-    "description": "Les cadavres occupent moins de volume dans l'inventaire.",
+    "talent": "Compression de cadavre",
+    "description": "Les cadavres occupent moins de place dans votre inventaire.",
     "stat": "taille_cadavre",
     "valeur": -50,
     "suffixe": "%",
-    "cout_epice": 20
+    "cout_epice": 25
   },
   {
     "metier": "RECOLTE",
     "niveau": 61,
-    "talent": "Jackpot de rendement",
-    "description": "Chances d'obtenir des ressources supplémentaires lors de l'exploitation.",
+    "talent": "Jackpot d'extraction",
+    "description": "Ajoute une chance de gagner des ressources supplémentaires en récoltant des filons.",
     "stat": "jackpot",
     "valeur": 2.5,
     "suffixe": "%",
@@ -1562,8 +1562,8 @@
   {
     "metier": "RECOLTE",
     "niveau": 63,
-    "talent": "Gamme de compacteurs supérieure",
-    "description": "Augmente la portée du compacteur statique.",
+    "talent": "Meilleure portée du compacteur",
+    "description": "Augmente la portée de votre compacteur à électricité statique.",
     "stat": "compacteur",
     "valeur": 10,
     "suffixe": "%",
@@ -1572,18 +1572,18 @@
   {
     "metier": "RECOLTE",
     "niveau": 65,
-    "talent": "Sécurité des compacteurs",
-    "description": "Réduction de la menace des vers lors de l'utilisation du compacteur statique.",
+    "talent": "Compacteur plus sûr",
+    "description": "Vous générez moins de menace pour les vers des sables lorsque vous utilisez votre compacteur à électricité statique.",
     "stat": "menace_compacteur",
-    "valeur": -4.6,
+    "valeur": -5,
     "suffixe": "%",
     "cout_epice": 25
   },
   {
     "metier": "RECOLTE",
     "niveau": 68,
-    "talent": "Exploitation minière efficace",
-    "description": "Ressources supplémentaires provenant de gisements minéraux en analyse.",
+    "talent": "Extraction efficace",
+    "description": "Vous offre une chance d'obtenir des ressources qui ne sont pas toujours présentes dans les filons de minéraux que vous récoltez en mode analyse.",
     "stat": "mineraux_rares",
     "valeur": 5,
     "suffixe": "%",
@@ -1592,36 +1592,36 @@
   {
     "metier": "RECOLTE",
     "niveau": 71,
-    "talent": "Jackpot de rendement",
-    "description": "Chances d'obtenir des ressources supplémentaires lors de l'exploitation.",
+    "talent": "Jackpot d'extraction",
+    "description": "Ajoute une chance de gagner des ressources supplémentaires en récoltant des filons.",
     "stat": "jackpot",
     "valeur": 2.5,
     "suffixe": "%",
-    "cout_epice": 25
+    "cout_epice": 30
   },
   {
     "metier": "RECOLTE",
     "niveau": 74,
-    "talent": "Gamme de compacteurs supérieure",
-    "description": "Augmente la portée du compacteur statique.",
+    "talent": "Meilleure portée du compacteur",
+    "description": "Augmente la portée de votre compacteur à électricité statique.",
     "stat": "compacteur",
     "valeur": 40,
     "suffixe": "%",
     "is_landsraad_favorable": true,
-    "cout_epice": 25
+    "cout_epice": 30
   },
   {
     "metier": "RECOLTE",
     "niveau": 75,
-    "talent": "Variante du casque de récolteur",
-    "description": "Déblocage du casque exclusif de récolteur.",
-    "cout_epice": 25
+    "talent": "Variante de casque de récolteur",
+    "description": "Casque parfait pour ceux qui savent se procurer tout et n'importe quoi. Même les plus puissants font régulièrement appel à ce genre de personne dès qu'ils ont besoin de quelque chose. Sert à personnaliser les casques.",
+    "cout_epice": 30
   },
   {
     "metier": "RECOLTE",
     "niveau": 78,
-    "talent": "Gamme de compacteurs supérieure",
-    "description": "Augmente la portée du compacteur statique.",
+    "talent": "Meilleure portée du compacteur",
+    "description": "Augmente la portée de votre compacteur à électricité statique.",
     "stat": "compacteur",
     "valeur": 10,
     "suffixe": "%",
@@ -1630,8 +1630,8 @@
   {
     "metier": "RECOLTE",
     "niveau": 81,
-    "talent": "Jackpot de rendement",
-    "description": "Chances d'obtenir des ressources supplémentaires lors de l'exploitation.",
+    "talent": "Jackpot d'extraction",
+    "description": "Ajoute une chance de gagner des ressources supplémentaires en récoltant des filons.",
     "stat": "jackpot",
     "valeur": 2.5,
     "suffixe": "%",
@@ -1640,60 +1640,60 @@
   {
     "metier": "RECOLTE",
     "niveau": 83,
-    "talent": "Exploitation minière efficace",
-    "description": "Ressources supplémentaires provenant de gisements minéraux en analyse.",
+    "talent": "Extraction efficace",
+    "description": "Vous offre une chance d'obtenir des ressources qui ne sont pas toujours présentes dans les filons de minéraux que vous récoltez en mode analyse.",
     "stat": "mineraux_rares",
     "valeur": 5,
     "suffixe": "%",
     "is_landsraad_favorable": true,
-    "cout_epice": 30
+    "cout_epice": 35
   },
   {
     "metier": "RECOLTE",
     "niveau": 86,
-    "talent": "Sécurité des compacteurs",
-    "description": "Réduction de la menace des vers lors de l'utilisation du compacteur statique.",
+    "talent": "Compacteur plus sûr",
+    "description": "Vous générez moins de menace pour les vers des sables lorsque vous utilisez votre compacteur à électricité statique.",
     "stat": "menace_compacteur",
-    "valeur": -4.6,
+    "valeur": -5,
     "suffixe": "%",
-    "cout_epice": 30
+    "cout_epice": 35
   },
   {
     "metier": "RECOLTE",
     "niveau": 90,
-    "talent": "Jackpot de rendement",
-    "description": "Chances d'obtenir des ressources supplémentaires lors de l'exploitation.",
+    "talent": "Jackpot d'extraction",
+    "description": "Ajoute une chance de gagner des ressources supplémentaires en récoltant des filons.",
     "stat": "jackpot",
     "valeur": 2.5,
     "suffixe": "%",
-    "cout_epice": 30
+    "cout_epice": 35
   },
   {
     "metier": "RECOLTE",
     "niveau": 93,
-    "talent": "Des outils plus efficaces",
-    "description": "Consommation d'énergie réduite grâce à l'utilisation d'outils.",
+    "talent": "Meilleurs outils",
+    "description": "Consommation de puissance réduite lorsque vous utilisez des outils.",
     "stat": "tool_energy",
     "valeur": -10,
     "suffixe": "%",
-    "cout_epice": 40
+    "cout_epice": 35
   },
   {
     "metier": "RECOLTE",
     "niveau": 96,
-    "talent": "Sécurité des compacteurs",
-    "description": "Réduction de la menace des vers lors de l'utilisation du compacteur statique.",
+    "talent": "Compacteur plus sûr",
+    "description": "Vous générez moins de menace pour les vers des sables lorsque vous utilisez votre compacteur à électricité statique.",
     "stat": "menace_compacteur",
-    "valeur": -4.6,
+    "valeur": -5,
     "suffixe": "%",
     "is_landsraad_favorable": true,
-    "cout_epice": 40
+    "cout_epice": 35
   },
   {
     "metier": "RECOLTE",
     "niveau": 100,
-    "talent": "Jackpot de rendement",
-    "description": "Chances d'obtenir des ressources supplémentaires lors de l'exploitation.",
+    "talent": "Jackpot d'extraction",
+    "description": "Ajoute une chance de gagner des ressources supplémentaires en récoltant des filons.",
     "stat": "jackpot",
     "valeur": 2.5,
     "suffixe": "%",
@@ -1703,18 +1703,18 @@
   {
     "metier": "FABRICATION",
     "niveau": 0,
-    "talent": "Passif : Durabilité",
+    "talent": "Passif : Durabilité de l'objet fabriqué",
     "description": "Augmente la durabilité des objets fabriqués par niveau investi.",
     "stat": "durabilite_craft",
-    "valeur": 1.0,
-    "suffixe": "%",
-    "is_passive": true
+    "valeur": 1,
+    "is_passive": true,
+    "suffixe": "%"
   },
   {
     "metier": "FABRICATION",
     "niveau": 1,
-    "talent": "Limite d'augmentation à distance",
-    "description": "Permet d'ajouter des améliorations supplémentaires aux armes à distance.",
+    "talent": "Limite d'augmentations à distance",
+    "description": "Permet d'ajouter davantage d'augmentations aux armes à distance.",
     "stat": "slot_dist",
     "valeur": 1,
     "cout_epice": 0
@@ -1722,8 +1722,8 @@
   {
     "metier": "FABRICATION",
     "niveau": 3,
-    "talent": "Limite d'augmentation de mêlée",
-    "description": "Permet d'ajouter des améliorations supplémentaires aux armes de mêlée.",
+    "talent": "Limite d'augmentations au corps à corps",
+    "description": "Permet d'ajouter davantage d'augmentations aux armes de corps à corps.",
     "stat": "slot_melee",
     "valeur": 1,
     "cout_epice": 2
@@ -1731,8 +1731,8 @@
   {
     "metier": "FABRICATION",
     "niveau": 5,
-    "talent": "Maître réparateur",
-    "description": "Réduit le coût maximal de durabilité de chaque réparation.",
+    "talent": "Maître des réparations",
+    "description": "Réduit le coût en durabilité maximum de chaque réparation, et ce pour tous les types d'objets.",
     "stat": "repair_efficiency",
     "valeur": -5,
     "suffixe": "%",
@@ -1741,8 +1741,8 @@
   {
     "metier": "FABRICATION",
     "niveau": 8,
-    "talent": "Fabrication par lots de consommables",
-    "description": "Chances de produire le double de consommables (soins, munitions, épice).",
+    "talent": "Fabrication de lot de consommables",
+    "description": "Lorsque vous fabriquez des consommables tels que des trousses de secours, des munitions ou des consommables liés à l'épice, vous avez une chance d'en produire deux fois plus.",
     "stat": "double_craft",
     "valeur": 25,
     "suffixe": "%",
@@ -1752,8 +1752,8 @@
   {
     "metier": "FABRICATION",
     "niveau": 10,
-    "talent": "Limite d'augmentation des vêtements",
-    "description": "Permet d'ajouter des améliorations supplémentaires aux armures.",
+    "talent": "Limite d'augmentations des vêtements",
+    "description": "Permet d'ajouter davantage d'augmentations aux armures.",
     "stat": "slot_armor",
     "valeur": 1,
     "cout_epice": 2
@@ -1761,8 +1761,8 @@
   {
     "metier": "FABRICATION",
     "niveau": 12,
-    "talent": "Rendement supérieur en épices",
-    "description": "Ressources supplémentaires grâce aux commandes dans les raffineries d'épices.",
+    "talent": "Toujours plus d'épice",
+    "description": "Vous avez une chance d'obtenir davantage d'épice à chaque commande de raffinage passée dans une raffinerie d'épice.",
     "stat": "epice",
     "valeur": 10,
     "suffixe": "%",
@@ -1772,10 +1772,10 @@
   {
     "metier": "FABRICATION",
     "niveau": 14,
-    "talent": "Rendement du recyclage",
-    "description": "Le recyclage permet d'obtenir plus de ressources.",
+    "talent": "Meilleur recyclage",
+    "description": "Le recyclage vous rapporte davantage de ressources.",
     "stat": "recyclage",
-    "valeur": 33,
+    "valeur": 33.33,
     "suffixe": "%",
     "is_landsraad_favorable": true,
     "cout_epice": 5
@@ -1783,8 +1783,8 @@
   {
     "metier": "FABRICATION",
     "niveau": 16,
-    "talent": "Jackpot du recyclage",
-    "description": "En recyclant, vous pouvez obtenir des objets rares en plus.",
+    "talent": "Jackpot de recyclage",
+    "description": "En cas de recyclage, vous pouvez obtenir des objets rares supplémentaires.",
     "stat": "jackpot_recycle",
     "valeur": 5,
     "suffixe": "%",
@@ -1793,18 +1793,18 @@
   {
     "metier": "FABRICATION",
     "niveau": 18,
-    "talent": "Machines efficaces",
-    "description": "Augmente la vitesse de toutes les opérations de fabrication et de raffinage.",
+    "talent": "Machinerie efficace",
+    "description": "Augmente la vitesse de toutes vos opérations d'artisanat et de raffinage.",
     "stat": "vitesse_usine",
-    "valeur": -10,
+    "valeur": 15,
     "suffixe": "%",
     "cout_epice": 5
   },
   {
     "metier": "FABRICATION",
     "niveau": 20,
-    "talent": "Maîtrise de la fabrication d'augmentations",
-    "description": "Augmente les chances d'obtenir de meilleures statistiques lors de la fabrication d'améliorations.",
+    "talent": "Maîtrise de la fabrication augmentée",
+    "description": "Accroît les chances d'obtenir de meilleures caractéristiques lorsque vous fabriquez des augmentations.",
     "stat": "qualite_modif",
     "valeur": 5,
     "suffixe": "%",
@@ -1813,8 +1813,8 @@
   {
     "metier": "FABRICATION",
     "niveau": 22,
-    "talent": "Rendement chimique supérieur",
-    "description": "Ressources supplémentaires grâce aux commandes dans les raffineries chimiques.",
+    "talent": "Toujours plus de produits chimiques",
+    "description": "Vous avez une chance d'obtenir davantage de produits chimiques à chaque commande de raffinage passée dans une raffinerie chimique.",
     "stat": "chimie",
     "valeur": 30,
     "suffixe": "%",
@@ -1825,7 +1825,7 @@
     "metier": "FABRICATION",
     "niveau": 25,
     "talent": "Réduction du coût des augmentations",
-    "description": "Réduit le coût de fabrication des améliorations.",
+    "description": "Fabriquer des augmentations vous coûte moins cher.",
     "stat": "cout_modif",
     "valeur": -10,
     "suffixe": "%",
@@ -1835,8 +1835,8 @@
   {
     "metier": "FABRICATION",
     "niveau": 28,
-    "talent": "Maître réparateur",
-    "description": "Réduit le coût maximal de durabilité de chaque réparation.",
+    "talent": "Maître des réparations",
+    "description": "Réduit le coût en durabilité maximum de chaque réparation, et ce pour tous les types d'objets.",
     "stat": "repair_efficiency",
     "valeur": -5,
     "suffixe": "%",
@@ -1845,8 +1845,8 @@
   {
     "metier": "FABRICATION",
     "niveau": 30,
-    "talent": "Limite d'augmentation de mêlée",
-    "description": "Permet d'ajouter des améliorations supplémentaires aux armes de mêlée.",
+    "talent": "Limite d'augmentations au corps à corps",
+    "description": "Permet d'ajouter davantage d'augmentations aux armes de corps à corps.",
     "stat": "slot_melee",
     "valeur": 1,
     "cout_epice": 10
@@ -1854,8 +1854,8 @@
   {
     "metier": "FABRICATION",
     "niveau": 31,
-    "talent": "Limite d'augmentation à distance",
-    "description": "Permet d'ajouter des améliorations supplémentaires aux armes à distance.",
+    "talent": "Limite d'augmentations à distance",
+    "description": "Permet d'ajouter davantage d'augmentations aux armes à distance.",
     "stat": "slot_dist",
     "valeur": 1,
     "cout_epice": 10
@@ -1863,18 +1863,18 @@
   {
     "metier": "FABRICATION",
     "niveau": 33,
-    "talent": "Maîtrise de la fabrication d'augmentations",
-    "description": "Augmente les chances d'obtenir de meilleures statistiques lors de la fabrication d'améliorations.",
+    "talent": "Maîtrise de la fabrication augmentée",
+    "description": "Accroît les chances d'obtenir de meilleures caractéristiques lorsque vous fabriquez des augmentations.",
     "stat": "qualite_modif",
-    "valeur": 3,
+    "valeur": 2.5,
     "suffixe": "%",
     "cout_epice": 15
   },
   {
     "metier": "FABRICATION",
     "niveau": 35,
-    "talent": "Jackpot du recyclage",
-    "description": "En recyclant, vous pouvez obtenir des objets rares en plus.",
+    "talent": "Jackpot de recyclage",
+    "description": "En cas de recyclage, vous pouvez obtenir des objets rares supplémentaires.",
     "stat": "jackpot_recycle",
     "valeur": 5,
     "suffixe": "%",
@@ -1883,20 +1883,20 @@
   {
     "metier": "FABRICATION",
     "niveau": 38,
-    "talent": "Machines efficaces",
-    "description": "Augmente la vitesse de toutes les opérations de fabrication et de raffinage.",
+    "talent": "Machinerie efficace",
+    "description": "Augmente la vitesse de toutes vos opérations d'artisanat et de raffinage.",
     "stat": "vitesse_usine",
-    "valeur": -10,
+    "valeur": 15,
     "suffixe": "%",
     "cout_epice": 15
   },
   {
     "metier": "FABRICATION",
     "niveau": 40,
-    "talent": "Rendement du recyclage",
-    "description": "Le recyclage permet d'obtenir plus de ressources.",
+    "talent": "Meilleur recyclage",
+    "description": "Le recyclage vous rapporte davantage de ressources.",
     "stat": "recyclage",
-    "valeur": 33,
+    "valeur": 33.33,
     "suffixe": "%",
     "is_landsraad_favorable": true,
     "cout_epice": 15
@@ -1904,8 +1904,8 @@
   {
     "metier": "FABRICATION",
     "niveau": 42,
-    "talent": "Limite d'augmentation des vêtements",
-    "description": "Permet d'ajouter des améliorations supplémentaires aux armures.",
+    "talent": "Limite d'augmentations des vêtements",
+    "description": "Permet d'ajouter davantage d'augmentations aux armures.",
     "stat": "slot_armor",
     "valeur": 1,
     "cout_epice": 15
@@ -1913,8 +1913,8 @@
   {
     "metier": "FABRICATION",
     "niveau": 45,
-    "talent": "Rendement supérieur en épices",
-    "description": "Ressources supplémentaires grâce aux commandes dans les raffineries d'épices.",
+    "talent": "Toujours plus d'épice",
+    "description": "Vous avez une chance d'obtenir davantage d'épice à chaque commande de raffinage passée dans une raffinerie d'épice.",
     "stat": "epice",
     "valeur": 10,
     "suffixe": "%",
@@ -1924,8 +1924,8 @@
   {
     "metier": "FABRICATION",
     "niveau": 48,
-    "talent": "Maître réparateur",
-    "description": "Réduit le coût maximal de durabilité de chaque réparation.",
+    "talent": "Maître des réparations",
+    "description": "Réduit le coût en durabilité maximum de chaque réparation, et ce pour tous les types d'objets.",
     "stat": "repair_efficiency",
     "valeur": -5,
     "suffixe": "%",
@@ -1934,18 +1934,18 @@
   {
     "metier": "FABRICATION",
     "niveau": 52,
-    "talent": "Mise à niveau des fragments",
-    "description": "Débloque la fusion de fragments de qualité inférieure pour créer des fragments supérieurs.",
+    "talent": "Amélioration de fragment",
+    "description": "Débloque une recette du fabricateur de survie élaboré qui combine des fragments de moindre qualité pour en créer de qualité supérieure.",
     "is_landsraad_favorable": true,
     "cout_epice": 20
   },
   {
     "metier": "FABRICATION",
     "niveau": 55,
-    "talent": "Maîtrise de la fabrication d'augmentations",
-    "description": "Augmente les chances d'obtenir de meilleures statistiques lors de la fabrication d'améliorations.",
+    "talent": "Maîtrise de la fabrication augmentée",
+    "description": "Accroît les chances d'obtenir de meilleures caractéristiques lorsque vous fabriquez des augmentations.",
     "stat": "qualite_modif",
-    "valeur": 3,
+    "valeur": 2.5,
     "suffixe": "%",
     "cout_epice": 20
   },
@@ -1953,7 +1953,7 @@
     "metier": "FABRICATION",
     "niveau": 59,
     "talent": "Réduction du coût des augmentations",
-    "description": "Réduit le coût de fabrication des améliorations.",
+    "description": "Fabriquer des augmentations vous coûte moins cher.",
     "stat": "cout_modif",
     "valeur": -10,
     "suffixe": "%",
@@ -1963,8 +1963,8 @@
   {
     "metier": "FABRICATION",
     "niveau": 61,
-    "talent": "Ne gaspillez pas, vous ne manquerez de rien",
-    "description": "Lors du recyclage d'un objet unique, chance de récupérer son schéma de fabrication.",
+    "talent": "Pas de gaspi",
+    "description": "Lorsque vous recyclez un objet unique, vous avez une chance de récupérer le schéma utilisé pour le fabriquer.",
     "stat": "recup_schema",
     "valeur": 15,
     "suffixe": "%",
@@ -1974,8 +1974,8 @@
   {
     "metier": "FABRICATION",
     "niveau": 63,
-    "talent": "Rendement supérieur en minerai",
-    "description": "Ressources supplémentaires grâce aux commandes dans les raffineries de minerai.",
+    "talent": "Toujours plus de minerai",
+    "description": "Vous avez une chance d'obtenir davantage de minerai à chaque commande de raffinage passée dans une raffinerie de minerai.",
     "stat": "minerais",
     "valeur": 30,
     "suffixe": "%",
@@ -1985,8 +1985,8 @@
   {
     "metier": "FABRICATION",
     "niveau": 66,
-    "talent": "Maître réparateur",
-    "description": "Réduit le coût maximal de durabilité de chaque réparation.",
+    "talent": "Maître des réparations",
+    "description": "Réduit le coût en durabilité maximum de chaque réparation, et ce pour tous les types d'objets.",
     "stat": "repair_efficiency",
     "valeur": -10,
     "suffixe": "%",
@@ -1995,8 +1995,8 @@
   {
     "metier": "FABRICATION",
     "niveau": 69,
-    "talent": "Jackpot du recyclage",
-    "description": "En recyclant, vous pouvez obtenir des objets rares en plus.",
+    "talent": "Jackpot de recyclage",
+    "description": "En cas de recyclage, vous pouvez obtenir des objets rares supplémentaires.",
     "stat": "jackpot_recycle",
     "valeur": 5,
     "suffixe": "%",
@@ -2005,25 +2005,25 @@
   {
     "metier": "FABRICATION",
     "niveau": 72,
-    "talent": "Machines efficaces",
-    "description": "Augmente la vitesse de toutes les opérations de fabrication et de raffinage.",
+    "talent": "Machinerie efficace",
+    "description": "Augmente la vitesse de toutes vos opérations d'artisanat et de raffinage.",
     "stat": "vitesse_usine",
-    "valeur": -10,
+    "valeur": 15,
     "suffixe": "%",
     "cout_epice": 25
   },
   {
     "metier": "FABRICATION",
     "niveau": 75,
-    "talent": "Variante de casque d'artisan",
-    "description": "Déblocage du casque exclusif d'artisan.",
-    "cout_epice": 25
+    "talent": "Variante de casque de fabricant",
+    "description": "Casque célébrant ceux qui fabriquent et bâtissent, car ce sont ces artisans qui façonnent le monde autour d'eux par la seule force de leur talent. Sert à personnaliser les casques.",
+    "cout_epice": 30
   },
   {
     "metier": "FABRICATION",
     "niveau": 78,
-    "talent": "Maîtrise de la fabrication d'augmentations",
-    "description": "Augmente les chances d'obtenir de meilleures statistiques lors de la fabrication d'améliorations.",
+    "talent": "Maîtrise de la fabrication augmentée",
+    "description": "Accroît les chances d'obtenir de meilleures caractéristiques lorsque vous fabriquez des augmentations.",
     "stat": "qualite_modif",
     "valeur": 5,
     "suffixe": "%",
@@ -2032,10 +2032,10 @@
   {
     "metier": "FABRICATION",
     "niveau": 80,
-    "talent": "Rendement du recyclage",
-    "description": "Le recyclage permet d'obtenir plus de ressources.",
+    "talent": "Meilleur recyclage",
+    "description": "Le recyclage vous rapporte davantage de ressources.",
     "stat": "recyclage",
-    "valeur": 33,
+    "valeur": 33.33,
     "suffixe": "%",
     "is_landsraad_favorable": true,
     "cout_epice": 30
@@ -2043,8 +2043,8 @@
   {
     "metier": "FABRICATION",
     "niveau": 83,
-    "talent": "Maître réparateur",
-    "description": "Réduit le coût maximal de durabilité de chaque réparation.",
+    "talent": "Maître des réparations",
+    "description": "Réduit le coût en durabilité maximum de chaque réparation, et ce pour tous les types d'objets.",
     "stat": "repair_efficiency",
     "valeur": -5,
     "suffixe": "%",
@@ -2053,8 +2053,8 @@
   {
     "metier": "FABRICATION",
     "niveau": 85,
-    "talent": "Rendement supérieur en épices",
-    "description": "Ressources supplémentaires grâce aux commandes dans les raffineries d'épices.",
+    "talent": "Toujours plus d'épice",
+    "description": "Vous avez une chance d'obtenir davantage d'épice à chaque commande de raffinage passée dans une raffinerie d'épice.",
     "stat": "epice",
     "valeur": 10,
     "suffixe": "%",
@@ -2064,57 +2064,57 @@
   {
     "metier": "FABRICATION",
     "niveau": 87,
-    "talent": "Limite d'augmentation à distance",
-    "description": "Permet d'ajouter des améliorations supplémentaires aux armes à distance.",
+    "talent": "Limite d'augmentations à distance",
+    "description": "Permet d'ajouter davantage d'augmentations aux armes à distance.",
     "stat": "slot_dist",
     "valeur": 1,
-    "cout_epice": 30
+    "cout_epice": 35
   },
   {
     "metier": "FABRICATION",
     "niveau": 88,
-    "talent": "Limite d'augmentation de mêlée",
-    "description": "Permet d'ajouter des améliorations supplémentaires aux armes de mêlée.",
+    "talent": "Limite d'augmentations au corps à corps",
+    "description": "Permet d'ajouter davantage d'augmentations aux armes de corps à corps.",
     "stat": "slot_melee",
     "valeur": 1,
-    "cout_epice": 30
+    "cout_epice": 35
   },
   {
     "metier": "FABRICATION",
     "niveau": 90,
     "talent": "Réduction du coût des augmentations",
-    "description": "Réduit le coût de fabrication des améliorations.",
+    "description": "Fabriquer des augmentations vous coûte moins cher.",
     "stat": "cout_modif",
     "valeur": -10,
     "suffixe": "%",
     "is_landsraad_favorable": true,
-    "cout_epice": 30
+    "cout_epice": 35
   },
   {
     "metier": "FABRICATION",
     "niveau": 93,
-    "talent": "Machines efficaces",
-    "description": "Augmente la vitesse de toutes les opérations de fabrication et de raffinage.",
+    "talent": "Machinerie efficace",
+    "description": "Augmente la vitesse de toutes vos opérations d'artisanat et de raffinage.",
     "stat": "vitesse_usine",
-    "valeur": -10,
+    "valeur": 15,
     "suffixe": "%",
-    "cout_epice": 40
+    "cout_epice": 35
   },
   {
     "metier": "FABRICATION",
     "niveau": 96,
-    "talent": "Maîtrise de la fabrication d'augmentations",
-    "description": "Augmente les chances d'obtenir de meilleures statistiques lors de la fabrication d'améliorations.",
+    "talent": "Maîtrise de la fabrication augmentée",
+    "description": "Accroît les chances d'obtenir de meilleures caractéristiques lorsque vous fabriquez des augmentations.",
     "stat": "qualite_modif",
     "valeur": 5,
     "suffixe": "%",
-    "cout_epice": 40
+    "cout_epice": 35
   },
   {
     "metier": "FABRICATION",
     "niveau": 100,
     "talent": "Données fantômes",
-    "description": "Possibilité d'obtenir deux fois plus de permis en apprenant un schéma.",
+    "description": "Vous avez une chance de gagner deux fois plus de permis lorsque vous apprenez un schéma.",
     "stat": "double_permis",
     "valeur": 15,
     "suffixe": "%",

@@ -145,10 +145,17 @@ Composant commun à **tout le site** : l'attribut `title` natif du navigateur es
 - **Déployé sur** : `map.html`, `base_planner.html`, `optimiseur.html`, `plans.html`, `account.html`, `menu.html`, `skills.html`, `epice/debrief.html` (+ `script.js`, `base_planner.js`, `skills.js`). **84 infobulles converties, plus aucun `title` natif** sur ces pages
 - Deux infobulles CSS locales du planner ont été retirées à cette occasion : celle des boutons d'outils (`content: attr(title)`, en `nowrap` donc débordante) et une règle `[data-tooltip]` **déjà morte** (plus aucun élément ne la portait)
 
-### Simulateur de Talents
+### Simulateur de Talents (`skills.html`, onglet Métiers)
 - Arbre de compétences interactif avec allocation de points
 - Plusieurs filières de métiers (Combat, Artisanat, etc.)
 - Simulez et testez vos combinaisons de talents avant de les appliquer en jeu
+- **`metiers.json` est dataminé** depuis le 2026-10-23 (`tools/build_metiers_from_datamine.js`, étape `metiers`). Il était saisi à la main en avril : la STRUCTURE était juste (205 paliers + 8 passifs, aux mêmes niveaux que le jeu), mais titres et descriptions étaient paraphrasés (« Endurance maximale » au lieu de « Accroissement du maximum d'endurance »), **51 coûts en épice** différaient (ex. niveau 1 : 0 → 2 sur les cinq pistes ; 40 → 35 dans les derniers paliers) et **21 valeurs** étaient fausses : Sherpa = **+5 emplacements** (1 rangée de sac, le jeu affiche ×5), Meilleur ramassage **+100 %** (×2, pas 150 %), Compacteur plus sûr **−5 %** (×0,95, pas −4,6 %), Machinerie efficace **+15 %** de vitesse (valeur affichée par le jeu, pas −10 %), Maîtrise de la fabrication augmentée 2,5 %, Meilleur recyclage 33,33 %
+  - Chaîne : `Systems/Specialization/DA_<Piste>Track` (courbe d'XP, passifs = attribut + courbe `CF_Passive*` par niveau, `m_Keystones[]` = niveau, coût en épice, effet) → `Keystones/DA_*` (points de compétence, modificateurs d'attribut, cosmétique, recette, étiquette de joueur) → `GUI/DA_*GUIData` (titre et description FR, et l'extension d'affichage : libellé, %, multiplicateur, « soustraire 1 », inversion de signe)
+  - Restent à nous : la clé `stat` (sert aux sommes, reprise palier par palier) et **« favorable Landsraad »** (jugement de la guilde, pas une donnée du jeu)
+  - ⚠ **Signe** : « −15 % » ou « +15 % » pour une même réduction n'est qu'une convention liée aux libellés de la page ; à valeur absolue égale, le signe en place est conservé. ⚠ **Précision** : le jeu arrondit l'AFFICHAGE (`m_NumDecimals`), on garde le centième car la page additionne. ⚠ Passifs de Récolte : 3 attributs pour 2 libellés — les deux qui suivent la même courbe partagent le libellé (« soustraire 1 »), sinon 100,5 % au lieu de 0,5 %
+  - 3 paliers à étiquette (« +1 niveau de qualité du butin ») ne sont pas chiffrés par le jeu : la valeur saisie est conservée et le script les liste
+  - **Tables d'XP de `skills.js`** (`XP_CUMUL`, `MISSIONS_CUMUL`) : codées en dur, VÉRIFIÉES à chaque passage — conformes au jeu (courbe commune aux 5 pistes, 125 XP de spécialisation par mission Landsraad sur serveur officiel, 1 500 en solo/serveur hébergé, `DT_LandsraadContractsDailyBonus`). Les plafonds « 5 par jour / 35 par semaine » sont côté serveur, pas dans le client
+  - Jalons (`MILESTONES`) corrigés à la main en conséquence : Exploration 25/50 « +5 emplacements d'inventaire », Récolte 15/55 « Ramassage +100 % »
 
 ### Commandes & Services (`skills.html`)
 - Formulaire de soumission avec description détaillée
@@ -1447,7 +1454,7 @@ schtasks /create /tn "DuneMap - verif datamine" /sc weekly /d WED /st 10:00 /tr 
 ⚠ Le `/nopause` est obligatoire dans une tâche planifiée : sans lui, le script attend une touche
 que personne ne tapera. (Donner le chemin complet du `.cmd` dans `/tr`.)
 
-### Les 19 étapes couvertes
+### Les 20 étapes couvertes
 
 | id | Sortie | Source |
 |---|---|---|
@@ -1463,6 +1470,7 @@ que personne ne tapera. (Donner le chemin complet du `.cmd` dans `/tr`.)
 | `plan_locations` | `plan_locations.json` | `Maps/Biomes/**/CB/**` (acteurs `TemporaryLootSpawner`) |
 | `plans_index` | `plans_index.json` | `Localization/ST_Localization_Items` + `CDT_BaseItems` |
 | `skills` | `stuff_skills.json` | `Systems/Progression` (DT_TrainingModules, DT_Perks, GASEffects) + `GadgetsAbilities/CT_AbilityTuning`, `CT_AbilityStatDisplay` |
+| `metiers` | `metiers.json` | `Systems/Specialization` + `Systems/Landsraad/DT_LandsraadContractsDailyBonus` |
 | `landsraad` | `landsraad_data.json` | `Systems/Landsraad/VotingBlock` + `JourneyCards/LandsraadContracts` + `Maps/DT_MapsInfo` |
 | `plans_univers` | `plans_uniques.json` | export de l'addon en jeu (`.txt`, opt-in `--with-univers`) |
 | `base_pieces_v3` | `base_pieces_v3.json` | `Systems/Building/Data`, `Systems/Vehicles` — script **externe** (opt-in `--run-planner-import`) |
@@ -1673,7 +1681,7 @@ un débit.
 `--check` les rappelle à chaque passage — c'est le seul moyen de ne pas les oublier après un patch.
 
 - **`planner_utilities.json`** : extrait à la main de `DT_PlaceableData_Functional` + bbox des `.glb`.
-- **`metiers.json`** : saisi à la main (`landsraad_data.json` est dataminé depuis le 2026-10-22).
+- Plus aucun : `landsraad_data.json` (2026-10-22) et `metiers.json` (2026-10-23) sont dataminés.
 - **`base_pieces_v2.json`** : plus lu par aucune page — ne pas perdre de temps à le régénérer.
 
 ---

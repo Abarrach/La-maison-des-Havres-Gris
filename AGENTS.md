@@ -378,4 +378,4 @@ Ne pas les reproposer sans élément nouveau.
 - **Données encore en retard sur le jeu** (audit du 2026-10-22, build 26083551) : tout ce que
   le pipeline extrait est à jour (recettes, coûts des machines, Landsraad, capacités compris).
   Les stats d'armes viennent de gaming.tools, revérifiées le 2026-10-23 (aucune n'avait changé ;
-  récupération par navigateur : `tools/recepteur_snapshot.cjs`). Reste hors pipeline : **talents** (`metiers.json`, saisi à la main). Diagnostic : `node tools/update_datamine.js --check`.
+  récupération par navigateur : `tools/recepteur_snapshot.cjs`). Plus rien de saisi à la main (`metiers.json` dataminé le 2026-10-23). Diagnostic : `node tools/update_datamine.js --check`.

@@ -70,8 +70,8 @@ const statConfig = {
 const MILESTONES = {
     "COMBAT":      { 6: "Santé +15", 77: "Santé +25 🏛 + Casque niv.75", 100: "+5 pts compétence" },
     "SABOTAGE":    { 19: "+5% Contrib. Faction 🏛", 43: "+10% Contrib. Faction 🏛", 75: "Casque Saboteur" },
-    "EXPLORATION": { 25: "+1 Slot inventaire 🏛", 50: "+1 Slot inventaire 🏛", 74: "Discrétion Vers 🏛", 75: "Casque Explorateur" },
-    "RECOLTE":     { 15: "Ramassage ×150% 🏛", 55: "Ramassage ×150% 🏛", 75: "Casque Récolteur" },
+    "EXPLORATION": { 25: "+5 emplacements d'inventaire 🏛", 50: "+5 emplacements d'inventaire 🏛", 74: "Discrétion Vers 🏛", 75: "Casque Explorateur" },
+    "RECOLTE":     { 15: "Ramassage +100% 🏛", 55: "Ramassage +100% 🏛", 75: "Casque Récolteur" },
     "FABRICATION": { 8: "25% Double Craft 🏛", 52: "Fusion de Fragments 🏛", 63: "Rendement Minerai 🏛", 75: "Casque Artisan", 100: "15% Double Permis 🏛" }
 };
 

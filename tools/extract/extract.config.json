@@ -111,6 +111,18 @@
       "path": "GadgetsAbilities/CT_",
       "mode": "dir",
       "note": "courbes des capacités (CT_AbilityTuning) et d'affichage (CT_AbilityStatDisplay)"
+    },
+    {
+      "id": "specialization",
+      "path": "Systems/Specialization/",
+      "mode": "dir",
+      "note": "pistes de spécialisation : paliers, coûts, passifs, libellés (alimente metiers.json)"
+    },
+    {
+      "id": "landsraad_bonus",
+      "path": "Systems/Landsraad/DT_LandsraadContractsDailyBonus",
+      "mode": "file",
+      "note": "XP de spécialisation par mission Landsraad (vérifie MISSIONS_CUMUL de skills.js)"
     }
   ],
 

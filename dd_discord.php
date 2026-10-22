@@ -56,7 +56,7 @@ const DD_COUCHES = [
     'ecolab'       => '🔬 Labos',
     'cave'         => '🕳️ Grottes',
 ];
-const DD_TYPES = ['cave' => 'Grotte', 'ecolab' => 'Labo', 'shipwreck' => 'Épave'];
+const DD_TYPES = ['cave' => 'Grotte', 'ecolab' => 'Labo', 'shipwreck' => 'Épave', 'lootur' => 'Coffre isolé'];
 const DD_MOIS  = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet',
                   'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 
@@ -136,16 +136,29 @@ function dd_plans_semaine(array $r): array {
             $cle = $pid !== '' ? $pid : 'n:' . $nom;
             if (!isset($plans[$cle])) $plans[$cle] = ['nom' => $nom, 'pid' => $pid, 'sites' => []];
             $plans[$cle]['sites'][] = ['type' => (string)($s['type'] ?? ''), 'cell' => (string)($s['cell'] ?? ''),
-                                       'name' => (string)($s['name'] ?? ''), 'p' => (float)($u['p'] ?? 0)];
+                                       'name' => (string)($s['name'] ?? ''), 'p' => (float)($u['p'] ?? 0)]
+                                     + (isset($u['pp']) ? ['pp' => (float)$u['pp']] : []);
         }
     }
-    foreach ($plans as &$p) usort($p['sites'], function ($a, $b) { return $b['p'] <=> $a['p']; });
+    // Meilleure chance d'abord, PvP compris : c'est elle qu'on vient chercher.
+    $fort = function ($s) { return max($s['p'], $s['pp'] ?? 0); };
+    foreach ($plans as &$p) usort($p['sites'], function ($a, $b) use ($fort) { return $fort($b) <=> $fort($a); });
     unset($p);
     return $plans;
 }
 
 function dd_pct(float $p): string {
     return $p >= 0.01 ? round($p * 100) . ' %' : '< 1 %';
+}
+
+/**
+ * Chance d'un site : PvE, puis PvP quand la table diffère. Un même coffre est décrit
+ * une fois par zone chez gaming.tools, avec des chances très différentes (épave
+ * tombée : 3 % en PvE, 20 % en PvP) ; p = 0 avec pp = schéma absent de la table PvE.
+ */
+function dd_pct_site(array $s): string {
+    if (($s['p'] ?? 0) <= 0 && isset($s['pp'])) return 'PvP ' . dd_pct($s['pp']);
+    return dd_pct($s['p'] ?? 0) . (isset($s['pp']) ? ' · PvP ' . dd_pct($s['pp']) : '');
 }
 
 function dd_site_txt(array $s): string {

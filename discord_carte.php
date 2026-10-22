@@ -80,7 +80,7 @@ if ($type === 4) {
         // Le meilleur site dès la liste (« Labo E8 · 14 % ») : souvent, c'est tout
         // ce qu'on venait chercher. Libellé ET valeur : 100 caractères au plus.
         $s   = $p['sites'][0] ?? null;
-        $ou  = $s ? ' — ' . (DD_TYPES[$s['type']] ?? 'Site') . ' ' . $s['cell'] . ' · ' . dd_pct($s['p'])
+        $ou  = $s ? ' — ' . (DD_TYPES[$s['type']] ?? 'Site') . ' ' . $s['cell'] . ' · ' . dd_pct_site($s)
                   . (count($p['sites']) > 1 ? ' (+' . (count($p['sites']) - 1) . ' autre' . (count($p['sites']) > 2 ? 's' : '')
                      . ' site' . (count($p['sites']) > 2 ? 's' : '') . ')' : '') : '';
         $choix[] = ['name' => dc_cut($p['nom'], 100 - strlen($ou)) . $ou, 'value' => dc_cut((string)$cle, 100)];
@@ -146,7 +146,7 @@ if (!$p) {
 
 $l = [];
 foreach (array_slice($p['sites'], 0, 15) as $s) {
-    $l[] = '• ' . dd_site_txt($s) . ' — ' . dd_pct($s['p']) . ' par coffre';
+    $l[] = '• ' . dd_site_txt($s) . ' — ' . dd_pct_site($s) . ' par coffre';
 }
 $desc = $alerte . implode("\n", $l);
 if (count($p['sites']) > 15) $desc .= "\n_… et " . (count($p['sites']) - 15) . ' autres sites_';

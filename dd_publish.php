@@ -103,6 +103,7 @@ function ddp_item(array $i, bool $avecUniques): array {
             $o['uniques'][] = [
                 'nom' => ddp_txt($u['nom'] ?? '', 100),
                 'p'   => max(0, min(1, (float)($u['p'] ?? 0))),
+            ] + (isset($u['pp']) ? ['pp' => max(0, min(1, (float)$u['pp']))] : []) + [
                 'pid' => preg_match('/^[a-z0-9_]{1,120}$/', (string)($u['pid'] ?? '')) ? (string)$u['pid'] : null,
             ];
         }

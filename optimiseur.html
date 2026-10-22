@@ -411,6 +411,7 @@ function syncUiMode(){
 const STAT_NOTE_TOPICS=[
   'DPS par arme = effectif × (1 + bonus de capacités) × <span style="color:var(--violet)">facteur des augments de dégâts compatibles</span>, ×0,4 en PvP, ×mult tête si actif.',
   'Les augments (dataminés) ont un <b>roll réglable</b> par effet et une qualité, et sont désormais rattachés à l\'objet qui les porte (chaque arme/pièce a ses propres emplacements).',
+  '<b>Jets d\'augments</b> : le curseur part du <b>maximum</b> (potentiel). Depuis la 1.5.3, les jets suivent une <b>courbe en cloche</b> : les valeurs du milieu sont les plus fréquentes, le maximum reste aussi rare qu\'avant. À régler sur le jet réel de l\'augment.',
   'Augments d\'armure : les <b>mitigations</b> (réduc. par type) sont additionnées au total ; le <b>bonus d\'armure</b> (%) s\'applique à la pièce sur laquelle l\'augment est équipé.',
   'Armure→réduction et ×0,4 PvP = <b>modèles communautaires</b> (naguya.tech), pas dataminés.',
   '<b>Multiplicateur de tête</b> ("×" à côté de "Tirs à la tête") : base par défaut <b>1,5</b>, valeur communautaire la plus répandue (pas dataminée par gaming.tools — chaque arme a sa vraie valeur, ex. ×2 pour un SE — à ajuster selon l\'arme équipée). Le bonus « Dégâts critiques » d\'un augment équipé sur l\'arme s\'ajoute automatiquement par-dessus, inutile de le compter à la main.',
@@ -467,6 +468,11 @@ function setAugCapacity(itemSlotKey,delta){
 function augEntry(itemSlotKey,idx){return ((BUILD.augments||{})[itemSlotKey]||[])[idx]||null;}
 function augQuality(itemSlotKey,idx){const e=augEntry(itemSlotKey,idx);if(!e)return 0;const a=augData(e.id);if(!a)return 0;const mn=a.minQuality||0;return e.q==null?5:Math.max(mn,Math.min(5,e.q));}
 function setAugQuality(itemSlotKey,idx,q){const e=augEntry(itemSlotKey,idx);if(!e)return;e.q=q;saveBuild();renderAll();}
+// Depuis la 1.5.3.0 (17/09/2026), les jets d'augments suivent une courbe en cloche : les
+// valeurs du milieu sortent le plus souvent, la valeur maximale reste aussi rare qu'avant
+// (note de patch). Le curseur part du MAXIMUM (potentiel), le cas devenu le plus rare :
+// on le dit, sans inventer de probabilités que le jeu ne publie pas.
+const AUG_ROLL_TIP="Jet de l'effet, du minimum (0 %) au maximum (100 %). Le curseur part du maximum, c'est-à-dire du potentiel de l'augment.\nDepuis la 1.5.3, les jets suivent une courbe en cloche : les valeurs du milieu sont les plus fréquentes, le maximum reste aussi rare qu'avant.\nÀ régler sur le jet réel de l'augment pour un calcul juste.";
 function augRoll(itemSlotKey,idx,ei){const e=augEntry(itemSlotKey,idx);return (e&&e.r&&e.r[ei]!=null)?e.r[ei]:1;}            // défaut = max (potentiel)
 function setAugRoll(itemSlotKey,idx,ei,v){const e=augEntry(itemSlotKey,idx);if(!e)return;v=Math.max(0,Math.min(1,+v));if(!e.r)e.r={};e.r[ei]=v;saveBuild();renderAll();}
 function removeAug(itemSlotKey,idx){const arr=(BUILD.augments||{})[itemSlotKey];if(!arr)return;arr[idx]=null;saveBuild();renderAll();}
@@ -801,7 +807,7 @@ function augDetail(itemSlotKey,idx,it){
     const neg=augEffIsNeg(eff,ev);
     const pct=Math.round(augRoll(itemSlotKey,idx,ei)*100);
     const ctrl= ev.rolled
-      ? `<span class="aug-roll-wrap"><input type="range" class="aug-roll" min="0" max="100" value="${pct}" oninput="augRollLive(this,'${itemSlotKey}',${idx},${ei})" onchange="setAugRoll('${itemSlotKey}',${idx},${ei},this.value/100)"><input type="number" class="aug-pct" min="0" max="100" value="${pct}" onclick="event.stopPropagation();this.select()" onchange="let v=Math.max(0,Math.min(100,+this.value));this.value=v;this.previousElementSibling.value=v;setAugRoll('${itemSlotKey}',${idx},${ei},v/100)"><span class="aug-pct-lbl">%</span></span>`
+      ? `<span class="aug-roll-wrap" data-tip="${AUG_ROLL_TIP}"><input type="range" class="aug-roll" min="0" max="100" value="${pct}" oninput="augRollLive(this,'${itemSlotKey}',${idx},${ei})" onchange="setAugRoll('${itemSlotKey}',${idx},${ei},this.value/100)"><input type="number" class="aug-pct" min="0" max="100" value="${pct}" onclick="event.stopPropagation();this.select()" onchange="let v=Math.max(0,Math.min(100,+this.value));this.value=v;this.previousElementSibling.value=v;setAugRoll('${itemSlotKey}',${idx},${ei},v/100)"><span class="aug-pct-lbl">%</span></span>`
       : `<span class="aug-fixed">fixe</span>`;
     const mm= ev.rolled ? `<span class="aug-mm">${augValFmt(eff,{val:ev.mn})} … ${augValFmt(eff,{val:ev.mx})}</span>` : '<span class="aug-mm"></span>';
     rows+=`<div class="aug-eff"><span class="aug-el" data-tip="${esc(effStats(eff).map(augStatLabel).join(', '))}">${esc(effLabel(eff))}</span>${ctrl}<span class="aug-ev ${neg?'neg':'pos'}">${augValFmt(eff,ev)}</span>${mm}</div>`;

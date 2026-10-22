@@ -438,6 +438,7 @@ function showCustomConfirm(title, message, onConfirm) {
     msgEl.style.display = 'block';
     inputEl.style.display = 'none';
     document.getElementById('modal-select').style.display = 'none';
+    document.getElementById('modal-form').style.display = 'none';
     overlay.style.display = 'flex';
 
     const newBtnConf = btnConf.cloneNode(true);
@@ -462,6 +463,7 @@ function showCustomPrompt(title, message, existingText, onConfirm) {
     msgEl.style.display = 'block';
     inputEl.style.display = 'block';
     document.getElementById('modal-select').style.display = 'none';
+    document.getElementById('modal-form').style.display = 'none';
     inputEl.value = existingText || "";
     overlay.style.display = 'flex';
     inputEl.focus(); 
@@ -495,6 +497,7 @@ function showCustomSelect(title, message, options, defaultValue, onConfirm) {
     inputEl.style.display = 'none';
     selectEl.innerHTML = options.map(o => `<option value="${o}"${o === defaultValue ? ' selected' : ''}>${o}</option>`).join('');
     selectEl.style.display = 'block';
+    document.getElementById('modal-form').style.display = 'none';
     overlay.style.display = 'flex';
 
     const newBtnConf = btnConf.cloneNode(true);
@@ -554,6 +557,15 @@ function initMap() {
   L.control.zoom({ position: 'bottomright' }).addTo(map);
   loadMapLayer(currentMapId);
   map.on("click", (e) => {
+    // Déplacement en cours (bouton 📍 d'une base) : ce clic est la nouvelle position.
+    if (baseMoveTarget) {
+      const b = baseMoveTarget;
+      stopBaseMove();
+      showCustomConfirm('DÉPLACEMENT', `Déplacer <b>${ddEsc(b.user)}</b> ici ?`, () => {
+        updateBase(b, { newX: e.latlng.lat, newY: e.latlng.lng });
+      });
+      return;
+    }
     selectedCoords = e.latlng;
     if (isAdmin) {
       const d = document.getElementById("coordDisplay");
@@ -1545,55 +1557,143 @@ function addMarker(user, x, y, type = "joueur", note = "", sietch = "", instance
     : (iconSet[type] || iconSet.joueur);
   const isOwner = (user === currentUser);
   const canEdit = isOwner || isAdmin;
-  const deleteBtn = canEdit ? `<br><button class="delete-btn" onclick="removeBasePrompt('${user}', ${x}, ${y})">🗑 Supprimer</button>` : "";
+  // Les boutons désignent la base par son rang dans `markers` : plus de pseudo ni de
+  // note recopiés dans un onclick (une apostrophe dans une note cassait le JavaScript).
+  const idx = markers.length;
 
   let instanceBadge = '';
   if (instance) {
     const col = instance === 'pvp' ? '#cc2222' : '#2255cc';
     instanceBadge = ` <span style="color:${col};font-size:11px;font-weight:bold;">[${instance.toUpperCase()}]</span>`;
   }
-  let popupContent = `<b>${user}</b>${instanceBadge}`;
-  if (sietch) popupContent += `<br><small style="color:#a67c33">${sietch}</small>`;
-  popupContent += `<br><small>${type}</small>`;
-
-  const safeUser = user.replace(/'/g, "\\'");
-  const safeNote = note ? note.replace(/'/g, "&apos;") : "";
+  let popupContent = `<b>${ddEsc(user)}</b>${instanceBadge}`;
+  if (sietch) popupContent += `<br><small style="color:#a67c33">${ddEsc(sietch)}</small>`;
+  popupContent += `<br><small>${ddEsc(BASE_TYPES[type] || type)}</small>`;
 
   if (note) {
-      const clickAction = canEdit ? `onclick="editBaseNote('${safeUser}', ${x}, ${y}, '${safeNote}')"` : "";
+      const clickAction = canEdit ? `onclick="openBaseEditor(${idx})"` : "";
       const classEditable = canEdit ? "editable-note" : "";
-      const titleAttr = canEdit ? "title='Cliquez pour modifier'" : "";
-      popupContent += `<br><span class="base-note ${classEditable}" ${clickAction} ${titleAttr}>Note : ${note}</span>`;
+      const tipAttr = canEdit ? `data-tip="Cliquez pour modifier"` : "";
+      popupContent += `<br><span class="base-note ${classEditable}" ${clickAction} ${tipAttr}>Note : ${ddEsc(note)}</span>`;
   } else if (canEdit) {
-      popupContent += `<br><span class="base-note-add" onclick="editBaseNote('${safeUser}', ${x}, ${y}, '')">+ Ajouter une note</span>`;
+      popupContent += `<br><span class="base-note-add" onclick="openBaseEditor(${idx})">+ Ajouter une note</span>`;
   }
-  popupContent += deleteBtn;
+  if (canEdit) {
+    popupContent += `<div class="base-actions">`
+      + `<button class="edit-btn" onclick="openBaseEditor(${idx})">✏️ Modifier</button>`
+      + `<button class="edit-btn secondaire" onclick="startBaseMove(${idx})">📍 Déplacer</button>`
+      + `<button class="delete-btn" onclick="removeBasePrompt(${idx})">🗑 Supprimer</button>`
+      + `</div>`;
+  }
 
-  let tooltipContent = `<div>${user}</div>`;
-  if (sietch) tooltipContent += `<div class="tooltip-subtext">${sietch}</div>`;
+  let tooltipContent = `<div>${ddEsc(user)}</div>`;
+  if (sietch) tooltipContent += `<div class="tooltip-subtext">${ddEsc(sietch)}</div>`;
   if (instance) tooltipContent += `<div class="tooltip-subtext">${instance.toUpperCase()}</div>`;
-  if (note && note.trim() !== "") tooltipContent += `<div class="tooltip-subtext">${note}</div>`;
+  if (note && note.trim() !== "") tooltipContent += `<div class="tooltip-subtext">${ddEsc(note)}</div>`;
 
   const m = L.marker([x, y], { icon }).addTo(map)
     .bindPopup(popupContent)
     .bindTooltip(tooltipContent, { permanent: false, direction: 'top', offset: [0, -40], className: 'base-tooltip' });
 
+  // L'infobulle de survol restait affichée DERRIÈRE la fenêtre ouverte (double
+  // « fantôme » flou du même texte) : on la retire le temps que la fenêtre est ouverte.
+  m.on('popupopen', () => {
+    const tip = m.getTooltip();
+    m.closeTooltip();
+    m.unbindTooltip();
+    m.once('popupclose', () => { if (tip) m.bindTooltip(tip); });
+  });
+
   attachHoverSound(m);
-  markers.push({ user, x, y, type, map: currentMapId, marker: m });
+  markers.push({ user, x, y, type, note, sietch, instance, map: currentMapId, marker: m });
 }
 
-window.editBaseNote = function(user, x, y, currentNote) {
-    showCustomPrompt("NOTE", "Modifier la note :", currentNote, async function(newNote) {
-        if (newNote.trim() === currentNote) return; 
-        const payload = { action: "updateNote", user: user, x: x, y: y, note: newNote.trim() };
-        try {
-            const res = await fetch("save.php", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-            const json = await res.json();
-            if (json.ok) loadMapLayer(currentMapId);
-            else alert("Erreur : " + (json.error || "Inconnue"));
-        } catch (e) { alert("Erreur réseau."); }
-    });
+const BASE_TYPES = { joueur: 'Joueur', guilde: 'Guilde', landsraad: 'Landsraad', ressource: 'Ressource' };
+
+async function updateBase(base, champs) {
+  const payload = { action: 'updateBase', user: base.user, x: base.x, y: base.y, ...champs };
+  try {
+    const res = await fetch('save.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const json = await res.json();
+    if (json.ok) { loadMapLayer(currentMapId); return true; }
+    const msg = { not_authorized: "Vous ne pouvez modifier que votre propre base.",
+                  not_logged_in: "Session expirée : reconnectez-vous." }[json.error] || json.error || 'inconnue';
+    showCustomConfirm('ERREUR', ddEsc(msg));
+  } catch (e) { showCustomConfirm('ERREUR', 'Erreur réseau.'); }
+  return false;
+}
+
+// Fenêtre « Modifier la base » : note pour tous ; sietch (Hagga) ou instance (Deep
+// Desert) ; nom et type pour les admins seulement (le serveur refait le contrôle).
+window.openBaseEditor = function(idx) {
+  const b = markers[idx];
+  if (!b) return;
+  map.closePopup();
+  const overlay = document.getElementById('custom-modal-overlay');
+  const form = document.getElementById('modal-form');
+  document.getElementById('modal-title').innerText = 'MODIFIER LA BASE';
+  document.getElementById('modal-message').style.display = 'none';
+  document.getElementById('modal-input').style.display = 'none';
+  document.getElementById('modal-select').style.display = 'none';
+  const opts = (liste, val) => liste.map(([v, t]) => `<option value="${ddEsc(v)}"${v === val ? ' selected' : ''}>${ddEsc(t)}</option>`).join('');
+  let h = '';
+  if (isAdmin) {
+    h += `<label for="be-name">Nom</label><input id="be-name" class="modal-input-field" maxlength="60" value="${ddEsc(b.user)}">`;
+    h += `<label for="be-type">Type</label><select id="be-type" class="modal-input-field">${opts(Object.entries(BASE_TYPES), b.type)}</select>`;
+  }
+  if (b.map === 'hagga') {
+    const liste = SIETCHS.includes(b.sietch) || !b.sietch ? SIETCHS : [b.sietch, ...SIETCHS];
+    h += `<label for="be-sietch">Sietch</label><select id="be-sietch" class="modal-input-field">${opts(liste.map(s => [s, s]), b.sietch || SIETCHS[0])}</select>`;
+  } else if (b.map === 'deep_desert') {
+    h += `<label for="be-instance">Instance</label><select id="be-instance" class="modal-input-field">${opts([['pvp', 'PVP'], ['pve', 'PVE']], b.instance || 'pvp')}</select>`;
+  }
+  h += `<label for="be-note">Note</label><textarea id="be-note" class="modal-input-field" maxlength="500">${ddEsc(b.note || '')}</textarea>`;
+  form.innerHTML = h;
+  form.style.display = 'block';
+  overlay.style.display = 'flex';
+
+  const oldConf = document.getElementById('modal-btn-confirm'), oldCanc = document.getElementById('modal-btn-cancel');
+  const conf = oldConf.cloneNode(true), canc = oldCanc.cloneNode(true);
+  oldConf.parentNode.replaceChild(conf, oldConf);
+  oldCanc.parentNode.replaceChild(canc, oldCanc);
+  conf.textContent = 'Enregistrer';
+  const fermer = () => { form.style.display = 'none'; form.innerHTML = ''; overlay.style.display = 'none'; conf.textContent = 'Confirmer'; };
+  canc.addEventListener('click', fermer);
+  conf.addEventListener('click', () => {
+    const val = id => { const el = document.getElementById(id); return el ? el.value : undefined; };
+    const champs = { note: val('be-note').trim() };
+    if (b.map === 'hagga') champs.sietch = val('be-sietch');
+    if (b.map === 'deep_desert') champs.instance = val('be-instance');
+    if (isAdmin) { champs.name = val('be-name').trim(); champs.type = val('be-type'); }
+    fermer();
+    updateBase(b, champs);
+  });
+  const note = document.getElementById('be-note');
+  if (note) note.focus();
 };
+
+// Déplacer une base : le prochain clic sur la carte donne le nouvel emplacement.
+// Évite le « supprimer puis reposer », qui faisait perdre note et sietch.
+let baseMoveTarget = null;
+window.startBaseMove = function(idx) {
+  const b = markers[idx];
+  if (!b) return;
+  map.closePopup();
+  baseMoveTarget = b;
+  document.getElementById('map').classList.add('map-moving');
+  let ban = document.getElementById('base-move-banner');
+  if (!ban) { ban = document.createElement('div'); ban.id = 'base-move-banner'; document.body.appendChild(ban); }
+  ban.innerHTML = `📍 Cliquez sur le nouvel emplacement de <b>${ddEsc(b.user)}</b>`
+    + `<button class="edit-btn secondaire" onclick="stopBaseMove()">Annuler</button>`;
+  ban.hidden = false;
+};
+window.stopBaseMove = function() {
+  baseMoveTarget = null;
+  document.getElementById('map').classList.remove('map-moving');
+  const ban = document.getElementById('base-move-banner');
+  if (ban) ban.hidden = true;
+};
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && baseMoveTarget) stopBaseMove(); });
 
 async function addOrReplaceOwnBase(x, y) {
   if (currentMapId === 'hagga') {
@@ -1664,7 +1764,11 @@ async function saveBase(user, x, y, type, note = "", sietch = "", instance = "")
   else alert("Erreur: " + json.error);
 }
 
-function removeBasePrompt(u, x, y) { showCustomConfirm("SUPPRESSION", "Voulez-vous vraiment supprimer cette base ?", () => { removeBase(u, x, y); }); }
+function removeBasePrompt(idx) {
+  const b = markers[idx];
+  if (!b) return;
+  showCustomConfirm("SUPPRESSION", "Voulez-vous vraiment supprimer cette base ?", () => { removeBase(b.user, b.x, b.y); });
+}
 async function removeBase(u, x, y) {
   await fetch("save.php", { method: "POST", body: JSON.stringify({ action: "remove", user: u, x, y }) });
   loadMapLayer(currentMapId);

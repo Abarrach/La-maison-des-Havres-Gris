@@ -40,6 +40,30 @@
         display: none;
     }
     .modal-input-field:focus { outline: none; box-shadow: 0 0 10px #cda434; }
+    .modal-form { text-align: left; margin-bottom: 18px; }
+    .modal-form label { display: block; color: #cda434; font-size: 0.8em; text-transform: uppercase; margin: 10px 0 4px; }
+    .modal-form .modal-input-field { display: block; margin-bottom: 0; }
+    .modal-form textarea.modal-input-field { min-height: 70px; resize: vertical; }
+    /* Boutons de la fenêtre d'une base : Modifier / Déplacer / Supprimer */
+    .base-actions { display: flex; gap: 6px; margin-top: 10px; }
+    .base-actions button { flex: 1; }
+    .base-actions .delete-btn { width: auto; margin-top: 0; }
+    .edit-btn {
+      padding: 6px 8px; border: 1px solid #cda434; border-radius: 4px; cursor: pointer;
+      background: linear-gradient(180deg, #cda434 0%, #8a6e23 100%); color: #1a0505;
+      font-weight: bold; font-size: 11px; text-transform: uppercase;
+    }
+    .edit-btn:hover { background: #eac154; }
+    .edit-btn.secondaire { background: #2a2016; color: #e8d4a8; border-color: #5c4025; }
+    .edit-btn.secondaire:hover { border-color: #cda434; color: #f3c44f; }
+    /* Mode « déplacer une base » : bandeau + curseur viseur */
+    #base-move-banner {
+      position: fixed; top: 90px; left: 50%; transform: translateX(-50%); z-index: 3000;
+      background: rgba(20,12,4,0.95); border: 1px solid #cda434; border-radius: 6px;
+      color: #f5deb3; padding: 8px 14px; font-size: 13px; box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+    }
+    #base-move-banner button { margin-left: 10px; }
+    .map-moving, .map-moving .leaflet-interactive { cursor: crosshair !important; }
     .modal-buttons { display: flex; gap: 10px; justify-content: center; }
     .modal-btn {
         padding: 10px 20px; border: 1px solid #555; cursor: pointer;
@@ -445,6 +469,8 @@
         <p id="modal-message" class="modal-message">Message...</p>
         <input type="text" id="modal-input" class="modal-input-field" placeholder="Votre note ici...">
         <select id="modal-select" class="modal-input-field" style="display:none"></select>
+        <!-- Formulaire « Modifier la base » (script.js, openBaseEditor) -->
+        <div id="modal-form" class="modal-form" style="display:none"></div>
         <div class="modal-buttons">
             <button id="modal-btn-cancel" class="modal-btn modal-btn-cancel">Annuler</button>
             <button id="modal-btn-confirm" class="modal-btn modal-btn-confirm">Confirmer</button>

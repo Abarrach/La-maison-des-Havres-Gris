@@ -51,6 +51,16 @@ DuneMap est un outil interne destiné aux membres de la guilde *Maison des Havre
 - Légende visible sur la carte du Désert Profond
 - Un joueur peut avoir une base dans chaque instance (max 2)
 
+#### Modifier une base (Hagga et Désert Profond) — 2026-10-22
+- La fenêtre d'une base porte trois boutons pour son **propriétaire** et pour les **admins** : **✏️ Modifier**, **📍 Déplacer**, **🗑 Supprimer**. Auparavant, seule la note se modifiait, en cliquant sur son texte, sans que rien ne l'indique
+- **Modifier** (`openBaseEditor`) : note pour tous ; **sietch** sur Hagga, **instance PVP/PVE** sur le Désert Profond ; **nom et type** pour les admins seulement (ce sont eux qui posent les POI de guilde, Landsraad, ressources)
+- **Déplacer** (`startBaseMove`) : bandeau « Cliquez sur le nouvel emplacement », curseur viseur, Échap pour annuler. La base garde note, sietch et instance — le « déplacement » à la pose (cliquer ailleurs quand on a déjà une base) supprime puis recrée, et faisait tout ressaisir
+- Les boutons désignent la base par son rang dans `markers` : la note n'est plus recopiée dans un `onclick` (une apostrophe dans une note cassait le JavaScript de la fenêtre). Nom, sietch et note sont échappés
+- L'infobulle de survol restait affichée **derrière** la fenêtre ouverte (texte en double, flou) : elle est retirée le temps que la fenêtre est ouverte
+- **Serveur : action `updateBase`** dans `save.php` (note, sietch, instance, nouvelle position ; nom et type si admin). Un joueur garde **une base par instance** : passer sa base PVP en PVE alors qu'il en a déjà une est refusé
+- ⚠ **`add`, `updateNote`, `remove` ne vérifiaient AUCUN droit** jusqu'au 2026-10-22 : n'importe qui pouvait effacer ou réécrire la base d'un autre en appelant `save.php` directement. Toutes les actions sur les bases passent désormais par `requireBaseOwner()` : pseudo de **session** (jamais celui envoyé par la page) égal au propriétaire, ou rôle admin. Sans session → `not_logged_in` (401)
+- Testé sur un banc isolé (copie de `save.php` + `bases.json` fictif, connexion simulée) : anonyme refusé, joueur refusé sur la base d'un autre, nom/type ignorés pour un joueur, règle une-base-par-instance, déplacement, renommage admin, type invalide refusé ; puis l'interface dans Chrome (joueur sur Hagga, admin sur le Désert Profond)
+
 #### Désert Profond — Carte dynamique, champs d'épice et POI
 - **Seed hebdomadaire = formule de date, pas de scraping.** Le tileset tourne sur **12 variantes** (`deepdesert_1_00` … `_11`, vérifié : `_12` n'existe pas) ; le seed actif = `compteur_hebdo % 12`, avec pour référence le compteur **16 = semaine du 9 juin 2026** (reset **mardi 05h Paris**). La même formule est écrite côté client (`currentActorSeed()` dans `script.js`) et côté serveur (`dd_week_count()` dans `dd_map_update.php`) → image et marqueurs ne divergent jamais.
   - ⚠ **Cloudflare bloque le serveur** (403 « Just a moment ») sur la page et l'API gaming.tools : impossible de scraper le seed côté PHP. Les **tuiles .webp passent**, d'où la recomposition d'image qui fonctionne. `dd_seed.php` et `dd_proxy.php` sont conservés comme **replis inertes** (bloqués en pratique) — ne pas s'y fier.

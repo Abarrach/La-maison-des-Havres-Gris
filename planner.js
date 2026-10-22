@@ -13,10 +13,14 @@ document.addEventListener("DOMContentLoaded", () => {
 // 1. INITIALISATION
 // ==========================================
 
-fetch('landsraad_data.json')
+// Missions dataminées (tools/build_landsraad_from_datamine.js) : régénérées à chaque patch,
+// donc jamais servies depuis le cache du navigateur.
+let questCategories = null;
+fetch('landsraad_data.json?t=' + Date.now())
     .then(r => r.json())
     .then(data => {
         questsData = data.quests;
+        questCategories = data.categories || null;
         displayAllQuests();
         startSync();
     })
@@ -190,14 +194,13 @@ function addPlayer() {
 function displayAllQuests() {
     const container = document.getElementById('checkboxContainer');
     container.innerHTML = '';
-    const categories = ["Combat", "Sabotage", "Récolte", "Exploration", "Artisanat"];
+    // Catégories et ordre = ceux du jeu (pools du Landsraad), repli sur l'ancienne liste.
+    const categories = questCategories || ["Combat", "Sabotage", "Récolte", "Exploration", "Artisanat"];
+    const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
     categories.forEach(cat => {
-        const catQuests = questsData.filter(q => {
-            if (cat === "Récolte") return ["Récolte", "Recolte", "Rassemblement"].includes(q.type);
-            return q.type === cat;
-        });
-        
+        const catQuests = questsData.filter(q => q.type === cat);
+
         if (catQuests.length > 0) {
             const header = document.createElement('div');
             header.className = 'category-header';
@@ -206,8 +209,17 @@ function displayAllQuests() {
 
             catQuests.forEach(q => {
                 const div = document.createElement('div');
-                div.className = 'quest-item';
-                div.innerHTML = `<input type="checkbox" value="${q.id}" id="q_${q.id}" name="questCheck"><label for="q_${q.id}" style="display:inline; color:#ccc; cursor:pointer;">${q.name} <span style="color:#666; font-size:0.8em; margin-left:5px; background:#222; padding:0 4px; border-radius:3px;">${q.zone}</span></label>`;
+                // Désactivée par Funcom (côté serveur) : visible, pour qu'on ne la cherche pas,
+                // mais impossible à cocher. La date et la source viennent de la note de patch.
+                const off = q.desactivee;
+                div.className = 'quest-item' + (off ? ' quest-off' : '');
+                const tip = [q.desc, q.groupe === 'groupe' ? 'Lieu prévu pour un groupe.' : '',
+                    off ? `Désactivée depuis le patch ${off.depuis}.` : ''].filter(Boolean).join('\n\n');
+                const groupe = q.groupe === 'groupe' ? ' <span class="quest-badge" data-tip="Lieu prévu pour un groupe">👥</span>' : '';
+                const etat = off ? ' <span class="quest-off-label">désactivée</span>' : '';
+                div.innerHTML = `<input type="checkbox" value="${esc(q.id)}" id="q_${esc(q.id)}" name="questCheck"${off ? ' disabled' : ''}>`
+                    + `<label for="q_${esc(q.id)}"${tip ? ` data-tip="${esc(tip)}"` : ''}>${esc(q.name)}${groupe}${etat} `
+                    + `<span class="quest-zone">${esc(q.zone)}</span></label>`;
                 container.appendChild(div);
             });
         }

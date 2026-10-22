@@ -54,6 +54,10 @@ epice/data/sop_content.json
 # Journal runtime du bot Sorties
 epice/data/discord_sortie.log
 epice/data/paris_discord.log*
+# Carte Deep Desert hebdo (dd_map_update.php) : journal, marqueur d'alerte, image en cours d'écriture
+dd_map_update.log
+dd_map_alerte.json
+deep_desert.jpg.tmp
 # Sorties Discord non-épice (Labo/Farm/Landsraad) — runtime, recréé par discord_sortie.php
 epice/data/discord_sorties.json
 # Tournois PvP (arbres, scores, podiums) — runtime, recréé par tournois-api.php

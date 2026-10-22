@@ -37,6 +37,21 @@ function isGuildChief(array $users, string $pseudo): bool {
     return false;
 }
 
+// Bases de la carte : seul le propriétaire (pseudo de SESSION, jamais celui envoyé par
+// la page) ou un admin peut ajouter, modifier ou supprimer. Jusqu'au 2026-10-22 ces
+// actions ne vérifiaient rien : n'importe qui pouvait effacer la base d'un autre en
+// appelant save.php directement.
+function sessionUser(): string {
+    $u = trim((string)($_SESSION['user'] ?? ''));
+    if ($u === '') jerr("not_logged_in", 401);
+    return $u;
+}
+function requireBaseOwner(string $baseUser) {
+    $me = sessionUser();
+    if (($_SESSION['role'] ?? '') === 'admin') return;
+    if (strcasecmp($baseUser, $me) !== 0) jerr("not_authorized", 403);
+}
+
 function readJson($path) {
     if (!file_exists($path)) return [];
     $content = file_get_contents($path);
@@ -107,6 +122,7 @@ switch ($action) {
         $instance = trim($data['instance'] ?? '');
 
         if ($user === '') jerr("missing_user");
+        requireBaseOwner($user);   // un joueur ne pose que SA base ; un admin pose aussi les POI
         $file = __DIR__ . '/bases.json';
         $bases = readJson($file);
         $bases[] = ['user' => $user, 'x' => $x, 'y' => $y, 'type' => $type, 'map' => $mapId, 'note' => $note, 'sietch' => $sietch, 'instance' => $instance];
@@ -119,6 +135,7 @@ switch ($action) {
         $x = floatval($data['x'] ?? 0);
         $y = floatval($data['y'] ?? 0);
         $newNote = trim($data['note'] ?? '');
+        requireBaseOwner((string)$targetUser);
 
         $file = __DIR__ . '/bases.json';
         $bases = readJson($file);
@@ -140,10 +157,64 @@ switch ($action) {
         }
         exit;
 
+    case 'updateBase':
+        // Modification d'une base depuis sa fenêtre sur la carte. Identifiée comme
+        // partout par (pseudo, x, y). Le joueur change sa note, son sietch (Hagga), son
+        // instance (Deep Desert) et sa position ; nom et type restent aux admins (ce sont
+        // eux qui posent les POI de guilde, Landsraad, ressources).
+        $targetUser = (string)($data['user'] ?? '');
+        $x = floatval($data['x'] ?? 0);
+        $y = floatval($data['y'] ?? 0);
+        requireBaseOwner($targetUser);
+        $admin = (($_SESSION['role'] ?? '') === 'admin');
+
+        $file = __DIR__ . '/bases.json';
+        $bases = readJson($file);
+        $idx = null;
+        foreach ($bases as $i => $b) {
+            if (($b['user'] ?? '') === $targetUser && abs($b['x'] - $x) < 0.001 && abs($b['y'] - $y) < 0.001) { $idx = $i; break; }
+        }
+        if ($idx === null) jerr("base_not_found");
+        $b = $bases[$idx];
+        $carte = $b['map'] ?? 'hagga';
+
+        if (array_key_exists('note', $data)) $b['note'] = substr(trim((string)$data['note']), 0, 500);
+        if (array_key_exists('sietch', $data) && $carte === 'hagga') $b['sietch'] = substr(trim((string)$data['sietch']), 0, 60);
+        if (array_key_exists('instance', $data) && $carte === 'deep_desert') {
+            $inst = (string)$data['instance'];
+            if (!in_array($inst, ['pvp', 'pve'], true)) jerr("instance_invalide");
+            // Un joueur : une base par instance (même règle qu'à la pose).
+            if (!$admin && $inst !== ($b['instance'] ?? '')) {
+                foreach ($bases as $i => $o) {
+                    if ($i !== $idx && ($o['user'] ?? '') === $b['user'] && ($o['map'] ?? 'hagga') === 'deep_desert' && ($o['instance'] ?? '') === $inst) {
+                        jerr("Vous avez déjà une base en " . strtoupper($inst) . ".");
+                    }
+                }
+            }
+            $b['instance'] = $inst;
+        }
+        if (isset($data['newX'], $data['newY'])) {
+            if (!is_numeric($data['newX']) || !is_numeric($data['newY'])) jerr("position_invalide");
+            $b['x'] = floatval($data['newX']);
+            $b['y'] = floatval($data['newY']);
+        }
+        if ($admin) {
+            if (isset($data['name']) && trim((string)$data['name']) !== '') $b['user'] = substr(trim((string)$data['name']), 0, 60);
+            if (isset($data['type'])) {
+                if (!in_array($data['type'], ['joueur', 'guilde', 'landsraad', 'ressource'], true)) jerr("type_invalide");
+                $b['type'] = $data['type'];
+            }
+        }
+        $bases[$idx] = $b;
+        if (!writeJson($file, $bases)) jerr("write_error");
+        echo json_encode(['ok' => true]);
+        exit;
+
     case 'remove':
         $targetUser = $data['user'] ?? '';
         $x = floatval($data['x'] ?? 0);
         $y = floatval($data['y'] ?? 0);
+        requireBaseOwner((string)$targetUser);
         $file = __DIR__ . '/bases.json';
         $bases = readJson($file);
         $bases = array_filter($bases, function($b) use ($targetUser, $x, $y) {

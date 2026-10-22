@@ -7247,5 +7247,4363 @@
     }
   },
   "_by_piece_note": "Coûts dataminés (CDT_BuildableGroupData.m_BuildableTierData[].m_PlacementCosts), indexés par identifiant de pièce. Le coût dépend du couple groupe × palier, et le palier est porté par la pièce : indexer ainsi évite le pont faction → set → nom anglais. Les noms de matériaux sont les noms anglais du jeu (Name.SourceString), identiques à ceux de tcno, pour que les deux sources s'agrègent. Les clés tcno sont conservées : le planner s'en sert en repli.",
-  "_by_piece_generated_at": "2026-10-19T23:58:54.239Z"
+  "_by_piece_generated_at": "2026-10-22T14:37:28.923Z",
+  "by_placeable": {
+    "Totem_Placeable": {
+      "resources": {
+        "Salvaged Metal": 40
+      },
+      "power": -15,
+      "group": "Totem",
+      "tier": "Tier1"
+    },
+    "RespawnBeacon_Placeable": {
+      "resources": {
+        "Respawn Beacon": 1
+      },
+      "power": 0,
+      "group": "RespawnBeacon",
+      "tier": "Tier0"
+    },
+    "WindTurbineOmnidirectional_Placeable": {
+      "resources": {
+        "Steel Ingot": 45,
+        "Cobalt Paste": 65,
+        "Calibrated Servok": 20
+      },
+      "power": 150,
+      "group": "WindTurbine",
+      "tier": "Tier0"
+    },
+    "WindTurbineDirectional_Placeable": {
+      "resources": {
+        "Duraluminum Ingot": 90,
+        "Cobalt Paste": 120,
+        "Calibrated Servok": 40,
+        "Spice Melange": 3
+      },
+      "power": 350,
+      "group": "WindTurbine",
+      "tier": "Tier1"
+    },
+    "Fabricator_Placeable": {
+      "resources": {
+        "Salvaged Metal": 75
+      },
+      "power": -10,
+      "group": "Fabricator",
+      "tier": "Tier0"
+    },
+    "PortableFabricator_Placeable": {
+      "resources": {
+        "PortableFabricator": 1
+      },
+      "power": -5,
+      "group": "PortableFabricator",
+      "tier": "Tier0"
+    },
+    "DeathstilOldl_Placeable": {
+      "resources": {
+        "Duraluminum Ingot": 180,
+        "Silicone Block": 130,
+        "Complex Machinery": 50
+      },
+      "power": -10,
+      "group": "Deathstill",
+      "tier": "Tier0",
+      "water_capacity": 45000
+    },
+    "Door_S_SquishUp_Placeable": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "power": 0,
+      "group": "Door",
+      "tier": "Tier0"
+    },
+    "Choam_Door_S_SquishUp_Placeable": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "power": 0,
+      "group": "Door",
+      "tier": "Tier0"
+    },
+    "GenericContainer_Placeable": {
+      "resources": {
+        "Iron Ingot": 20
+      },
+      "power": 0,
+      "group": "StorageContainer",
+      "tier": "Tier0"
+    },
+    "Turret_Placeable": {
+      "resources": {
+        "Turret": 1
+      },
+      "power": -10,
+      "group": "Turret",
+      "tier": "Tier0"
+    },
+    "Gate_M_SquishUp_Placeable": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "power": 0,
+      "group": "DoorWide",
+      "tier": "Tier0"
+    },
+    "Generator_Placeable": {
+      "resources": {
+        "Salvaged Metal": 45
+      },
+      "power": 75,
+      "group": "Generator",
+      "tier": "Tier0"
+    },
+    "Windtrap_Placeable": {
+      "resources": {
+        "Steel Ingot": 90,
+        "Silicone Block": 30,
+        "Calibrated Servok": 20
+      },
+      "power": -75,
+      "group": "WindTrap",
+      "tier": "Tier0",
+      "water_per_h": 2700,
+      "water_capacity": 500
+    },
+    "LargeWindtrap_Placeable": {
+      "resources": {
+        "Duraluminum Ingot": 180,
+        "Silicone Block": 195,
+        "Calibrated Servok": 40,
+        "Spice Melange": 4
+      },
+      "power": -135,
+      "group": "WindTrap",
+      "tier": "Tier1",
+      "water_per_h": 6300,
+      "water_capacity": 500
+    },
+    "WaterCistern_Placeable": {
+      "resources": {
+        "Copper Ingot": 25
+      },
+      "power": 0,
+      "group": "WaterCistern",
+      "tier": "Tier0",
+      "water_capacity": 5000
+    },
+    "SpiceRefinery_Placeable": {
+      "resources": {
+        "Duraluminum Ingot": 120,
+        "Silicone Block": 100,
+        "Cobalt Paste": 60,
+        "Complex Machinery": 50
+      },
+      "power": -200,
+      "group": "SpiceRefinery",
+      "tier": "Tier0"
+    },
+    "SpiceSilo_Placeable": {
+      "resources": {
+        "Salvaged Metal": 35
+      },
+      "power": 0,
+      "group": "SpiceSilo",
+      "tier": "Tier0"
+    },
+    "Choam_TrapDoor_S_Placeable": {
+      "resources": {
+        "Granite Stone": 7
+      },
+      "power": 0,
+      "group": "Hatch",
+      "tier": "Tier0"
+    },
+    "Thumper_Placeable": {
+      "resources": {
+        "Thumper": 1
+      },
+      "power": 0,
+      "group": "Thumper",
+      "tier": "Tier0"
+    },
+    "Stilltent_Placeable": {
+      "resources": {
+        "Stilltent": 1
+      },
+      "power": 0,
+      "group": "Stilltent",
+      "tier": "Tier0",
+      "water_per_h": 720,
+      "water_capacity": 200
+    },
+    "Choam_PrudenceDoor_S_Placeable": {
+      "resources": {
+        "Iron Ingot": 20
+      },
+      "power": -5,
+      "group": "PrudenceDoor",
+      "tier": "Tier1"
+    },
+    "Choam_PentashieldSurfaceVertical_Placeable": {
+      "resources": {
+        "Steel Ingot": 2,
+        "Cobalt Paste": 20,
+        "Calibrated Servok": 6
+      },
+      "power": -3,
+      "group": "PentashieldSurfaceVertical",
+      "tier": "Tier0"
+    },
+    "Choam_PentashieldSurfaceVerticalPlacementCorner_Placeable": {
+      "resources": {
+        "Steel Ingot": 2,
+        "Cobalt Paste": 20,
+        "Calibrated Servok": 6
+      },
+      "power": 0,
+      "group": "PentashieldSurfaceVerticalPlacementCorner",
+      "tier": "Tier0"
+    },
+    "Choam_PentashieldSurfaceHorizontal_Placeable": {
+      "resources": {
+        "Steel Ingot": 2,
+        "Cobalt Paste": 20,
+        "Calibrated Servok": 6
+      },
+      "power": -3,
+      "group": "PentashieldSurfaceHorizontal",
+      "tier": "Tier0"
+    },
+    "Choam_PentashieldSurfaceHorizontalPlacementCorner_Placeable": {
+      "resources": {
+        "Steel Ingot": 2,
+        "Cobalt Paste": 20,
+        "Calibrated Servok": 6
+      },
+      "power": 0,
+      "group": "PentashieldSurfaceHorizontalPlacementCorner",
+      "tier": "Tier0"
+    },
+    "SeismicProbe_Placeable": {
+      "resources": {
+        "SeismicProbe": 1
+      },
+      "power": 0,
+      "group": "SeismicProbe",
+      "tier": "Tier0"
+    },
+    "StakingUnit_Placeable": {
+      "resources": {
+        "Staking Unit": 1
+      },
+      "power": 0,
+      "group": "StakingUnit",
+      "tier": "Tier0"
+    },
+    "ModdingStation_Placeable": {
+      "resources": {
+        "Plastanium Ingot": 60,
+        "Silicone Block": 75,
+        "Complex Machinery": 40,
+        "Cobalt Paste": 55,
+        "Advanced Machinery": 10
+      },
+      "power": -50,
+      "group": "ModdingStation",
+      "tier": "Tier0"
+    },
+    "MediumOreRefinery_Placeable": {
+      "resources": {
+        "Steel Ingot": 125,
+        "Cobalt Paste": 45,
+        "Complex Machinery": 35
+      },
+      "power": -45,
+      "group": "OreRefinery",
+      "tier": "Tier1"
+    },
+    "SmallOreRefinery_Placeable": {
+      "resources": {
+        "Salvaged Metal": 90
+      },
+      "power": -15,
+      "group": "OreRefinery",
+      "tier": "Tier0"
+    },
+    "SmallChemicalRefinery_Placeable": {
+      "resources": {
+        "Copper Ingot": 45
+      },
+      "power": -15,
+      "group": "ChemicalRefinery",
+      "tier": "Tier0"
+    },
+    "WeaponsFabricator_Placeable": {
+      "resources": {
+        "Steel Ingot": 40,
+        "Complex Machinery": 30
+      },
+      "power": -40,
+      "group": "WeaponsFabricator",
+      "tier": "Tier0"
+    },
+    "WearablesFabricator_Placeable": {
+      "resources": {
+        "Steel Ingot": 40,
+        "Complex Machinery": 30
+      },
+      "power": -40,
+      "group": "WearablesFabricator",
+      "tier": "Tier0"
+    },
+    "VehiclesFabricator_Placeable": {
+      "resources": {
+        "Steel Ingot": 40,
+        "Complex Machinery": 30
+      },
+      "power": -40,
+      "group": "VehiclesFabricator",
+      "tier": "Tier0"
+    },
+    "SurvivalFabricator_Placeable": {
+      "resources": {
+        "Steel Ingot": 40,
+        "Complex Machinery": 30
+      },
+      "power": -40,
+      "group": "SurvivalFabricator",
+      "tier": "Tier0"
+    },
+    "ConstructionFabricator_Placeable": {
+      "resources": {
+        "Iron Ingot": 10
+      },
+      "power": -25,
+      "group": "ConstructionFabricator",
+      "tier": "Tier0"
+    },
+    "Atreides_Outpost_Door_Placeable": {
+      "resources": {
+        "Plastone": 12
+      },
+      "power": 0,
+      "group": "Door",
+      "tier": "Tier2"
+    },
+    "Harkonnen_Outpost_Door_Placeable": {
+      "resources": {
+        "Plastone": 12
+      },
+      "power": 0,
+      "group": "Door",
+      "tier": "Tier2"
+    },
+    "Atreides_TrapDoor_Placeable": {
+      "resources": {
+        "Plastone": 12
+      },
+      "power": 0,
+      "group": "Hatch",
+      "tier": "Tier2"
+    },
+    "Harkonnen_TrapDoor_Placeable": {
+      "resources": {
+        "Plastone": 12
+      },
+      "power": 0,
+      "group": "Hatch",
+      "tier": "Tier2"
+    },
+    "Harkonnen_DoorTall_Placeable": {
+      "resources": {
+        "Plastone": 12
+      },
+      "power": 0,
+      "group": "DoorTall",
+      "tier": "Tier2"
+    },
+    "Choam_Shelter_TrapDoor_Placeable": {
+      "resources": {
+        "Granite Stone": 7
+      },
+      "power": 0,
+      "group": "Hatch",
+      "tier": "Tier0"
+    },
+    "Choam_Shelter_Door_Placeable": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "power": 0,
+      "group": "Door",
+      "tier": "Tier0"
+    },
+    "Atreides_PrudenceDoor_S_Placeable": {
+      "resources": {
+        "Aluminum Ingot": 20
+      },
+      "power": -5,
+      "group": "PrudenceDoor",
+      "tier": "Tier2"
+    },
+    "Harkonnen_PrudenceDoor_S_Placeable": {
+      "resources": {
+        "Aluminum Ingot": 20
+      },
+      "power": -5,
+      "group": "PrudenceDoor",
+      "tier": "Tier2"
+    },
+    "MediumStorageContainer_Placeable": {
+      "resources": {
+        "Plastanium Ingot": 55,
+        "Silicone Block": 12,
+        "Spice Melange": 4
+      },
+      "power": 0,
+      "group": "StorageContainer",
+      "tier": "Tier2"
+    },
+    "TotemTemporary_Placeable": {
+      "resources": {
+        "Salvaged Metal": 40
+      },
+      "power": -10,
+      "group": "Totem",
+      "tier": "Tier0"
+    },
+    "CompactThumper_Placeable": {
+      "resources": {
+        "CompactThumper": 1
+      },
+      "power": 0,
+      "group": "CompactThumper",
+      "tier": "Tier0"
+    },
+    "LongDurationThumper_Placeable": {
+      "resources": {
+        "LongDurationThumper": 1
+      },
+      "power": 0,
+      "group": "LongDurationThumper",
+      "tier": "Tier0"
+    },
+    "CompactSeismicProbe_Placeable": {
+      "resources": {
+        "CompactSeismicProbe": 1
+      },
+      "power": 0,
+      "group": "CompactSeismicProbe",
+      "tier": "Tier0"
+    },
+    "LongRangeSeismicProbe_Placeable": {
+      "resources": {
+        "LongRangeSeismicProbe": 1
+      },
+      "power": 0,
+      "group": "LongRangeSeismicProbe",
+      "tier": "Tier0"
+    },
+    "RepairStation_Placeable": {
+      "resources": {
+        "Iron Ingot": 40
+      },
+      "power": -20,
+      "group": "RepairStation",
+      "tier": "Tier0"
+    },
+    "Choam_Level2_Door_Placeable": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "power": 0,
+      "group": "Door",
+      "tier": "Tier1"
+    },
+    "Choam_Level2_TrapDoor_Placeable": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "power": 0,
+      "group": "Hatch",
+      "tier": "Tier1"
+    },
+    "MediumWaterCistern_Placeable": {
+      "resources": {
+        "Steel Ingot": 60,
+        "Silicone Block": 30
+      },
+      "power": 0,
+      "group": "WaterCistern",
+      "tier": "Tier1",
+      "water_capacity": 25000
+    },
+    "LargeWaterCistern_Placeable": {
+      "resources": {
+        "Duraluminum Ingot": 115,
+        "Silicone Block": 120,
+        "Industrial Pump": 20
+      },
+      "power": 0,
+      "group": "WaterCistern",
+      "tier": "Tier2",
+      "water_capacity": 100000
+    },
+    "SmallInsulatedCistern_Placeable": {
+      "resources": {
+        "Copper Ingot": 10,
+        "Silicone Block": 15,
+        "ScrapElectronics": 50
+      },
+      "power": 0,
+      "group": "InsulatedCistern",
+      "tier": "Tier0",
+      "water_capacity": 2500
+    },
+    "MediumInsulatedCistern_Placeable": {
+      "resources": {
+        "Aluminum Ingot": 70,
+        "Silicone Block": 80,
+        "JasmiumDust": 30,
+        "Spice Melange": 60
+      },
+      "power": 0,
+      "group": "InsulatedCistern",
+      "tier": "Tier1",
+      "water_capacity": 7500
+    },
+    "Choam_Shelter_DoorWide_Placeable": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "power": 0,
+      "group": "DoorWide",
+      "tier": "Tier0"
+    },
+    "Choam_level2_DoorWide_Placeable": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "power": 0,
+      "group": "DoorWide",
+      "tier": "Tier1"
+    },
+    "Atreides_DoorWide_Placeable": {
+      "resources": {
+        "Plastone": 12
+      },
+      "power": 0,
+      "group": "DoorWide",
+      "tier": "Tier2"
+    },
+    "Atreides_DoorTall_Placeable": {
+      "resources": {
+        "Plastone": 12
+      },
+      "power": 0,
+      "group": "DoorTall",
+      "tier": "Tier2"
+    },
+    "BloodWaterExtractor_Placeable": {
+      "resources": {
+        "Salvaged Metal": 70
+      },
+      "power": -10,
+      "group": "BloodWaterExtractor",
+      "tier": "Tier0",
+      "water_capacity": 1000
+    },
+    "CamouflagedStilltent_Placeable": {
+      "resources": {
+        "CamouflagedStilltent": 1
+      },
+      "power": 0,
+      "group": "Stilltent",
+      "tier": "Tier1",
+      "water_per_h": 720,
+      "water_capacity": 200
+    },
+    "ProtectiveStilltent_Placeable": {
+      "resources": {
+        "ProtectiveStilltent": 1
+      },
+      "power": 0,
+      "group": "Stilltent",
+      "tier": "Tier2",
+      "water_per_h": 720,
+      "water_capacity": 200
+    },
+    "MediumChemicalRefinery_Placeable": {
+      "resources": {
+        "Duraluminum Ingot": 150,
+        "Silicone Block": 75,
+        "Complex Machinery": 40
+      },
+      "power": -350,
+      "group": "ChemicalRefinery",
+      "tier": "Tier1"
+    },
+    "MediumSpiceRefinery_Placeable": {
+      "resources": {
+        "Plastanium Ingot": 225,
+        "Silicone Block": 190,
+        "Spice Melange": 105,
+        "Complex Machinery": 80,
+        "Cobalt Paste": 140
+      },
+      "power": -350,
+      "group": "SpiceRefinery",
+      "tier": "Tier1"
+    },
+    "Harkonnen_DoorWide_Placeable": {
+      "resources": {
+        "Plastone": 12
+      },
+      "power": 0,
+      "group": "DoorWide",
+      "tier": "Tier2"
+    },
+    "UniqueThumper_Placeable": {
+      "resources": {
+        "Clapper Mk4": 1
+      },
+      "power": 0,
+      "group": "UniqueThumper",
+      "tier": "Tier0"
+    },
+    "Recycler_Placeable": {
+      "resources": {
+        "Copper Ingot": 30
+      },
+      "power": -15,
+      "group": "Recycler",
+      "tier": "Tier0"
+    },
+    "BloodWaterExtractionAdvanced_Placeable": {
+      "resources": {
+        "Iron Ingot": 50,
+        "Silicone Block": 16,
+        "Complex Machinery": 20
+      },
+      "power": -35,
+      "group": "BloodWaterExtractor",
+      "tier": "Tier1",
+      "water_capacity": 1000
+    },
+    "Deathstill_Placeable": {
+      "resources": {
+        "Duraluminum Ingot": 180,
+        "Silicone Block": 130,
+        "Complex Machinery": 50
+      },
+      "power": -350,
+      "group": "Deathstill",
+      "tier": "Tier0"
+    },
+    "AdvancedWeaponsFabricator_Placeable": {
+      "resources": {
+        "Plastanium Ingot": 115,
+        "Silicone Block": 150,
+        "Complex Machinery": 80,
+        "Cobalt Paste": 110,
+        "Military Power Regulator": 30
+      },
+      "power": -150,
+      "group": "WeaponsFabricator",
+      "tier": "Tier1"
+    },
+    "AdvancedWearablesFabricator_Placeable": {
+      "resources": {
+        "Plastanium Ingot": 115,
+        "Silicone Block": 150,
+        "Complex Machinery": 80,
+        "Cobalt Paste": 110,
+        "Armor Plating": 90
+      },
+      "power": -150,
+      "group": "WearablesFabricator",
+      "tier": "Tier1"
+    },
+    "Advanced_VehiclesFabricator_Placeable": {
+      "resources": {
+        "Plastanium Ingot": 115,
+        "Silicone Block": 150,
+        "Complex Machinery": 80,
+        "Cobalt Paste": 110,
+        "Industrial Pump": 40
+      },
+      "power": -150,
+      "group": "VehiclesFabricator",
+      "tier": "Tier1"
+    },
+    "Advanced_SurvivalFabricator_Placeable": {
+      "resources": {
+        "Plastanium Ingot": 115,
+        "Silicone Block": 150,
+        "Complex Machinery": 80,
+        "Cobalt Paste": 110,
+        "Thermoelectric Cooler": 25
+      },
+      "power": -150,
+      "group": "SurvivalFabricator",
+      "tier": "Tier1"
+    },
+    "LargeOreRefinery_Placeable": {
+      "resources": {
+        "Plastanium Ingot": 300,
+        "Silicone Block": 450,
+        "Spice Melange": 315,
+        "Complex Machinery": 160,
+        "Cobalt Paste": 550,
+        "Advanced Machinery": 40
+      },
+      "power": -350,
+      "group": "OreRefinery",
+      "tier": "Tier2"
+    },
+    "LargeSpiceRefinery_Placeable": {
+      "resources": {
+        "Plastanium Ingot": 750,
+        "Silicone Block": 900,
+        "Complex Machinery": 280,
+        "Spice Melange": 840,
+        "Cobalt Paste": 825,
+        "Advanced Machinery": 55
+      },
+      "power": -500,
+      "group": "SpiceRefinery",
+      "tier": "Tier2"
+    },
+    "StorageContainer_Placeable": {
+      "resources": {
+        "Aluminum Ingot": 35,
+        "Silicone Block": 5
+      },
+      "power": 0,
+      "group": "StorageContainer",
+      "tier": "Tier1"
+    },
+    "UniqueThumper_Placeable_02": {
+      "resources": {
+        "Wormsong Echo": 1
+      },
+      "power": 0,
+      "group": "UniqueThumper",
+      "tier": "Tier1"
+    },
+    "UniqueThumper_Placeable_03": {
+      "resources": {
+        "Song of Shai-Hulud": 1
+      },
+      "power": 0,
+      "group": "UniqueThumper",
+      "tier": "Tier2"
+    },
+    "SpiceGenerator_Placeable": {
+      "resources": {
+        "Plastanium Ingot": 340,
+        "Silicone Block": 150,
+        "Spice Melange": 210,
+        "Complex Machinery": 80,
+        "Cobalt Paste": 220,
+        "Advanced Machinery": 40
+      },
+      "power": 1000,
+      "group": "Generator",
+      "tier": "Tier1"
+    },
+    "Stilltent_Placeable_Unique_01": {
+      "resources": {
+        "Double-sealed Stilltent": 1
+      },
+      "power": 0,
+      "group": "Stilltent_Unique_01",
+      "tier": "Tier0",
+      "water_per_h": 960,
+      "water_capacity": 200
+    },
+    "Totem_Small_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": -15,
+      "group": "Totem_Small",
+      "tier": "Tier0"
+    },
+    "StakingUnitVertical_Placeable": {
+      "resources": {
+        "Vertical Staking Unit": 1
+      },
+      "power": 0,
+      "group": "StakingUnitVertical",
+      "tier": "Tier0"
+    },
+    "MTX_Neut_JailSet_Door_Placeable": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "power": 0,
+      "group": "Door",
+      "tier": "Tier1"
+    },
+    "Fremen_Deathstill_Placeable": {
+      "resources": {
+        "Steel Ingot": 60,
+        "Silicone Block": 28,
+        "Complex Machinery": 32
+      },
+      "power": -200,
+      "group": "Deathstill",
+      "tier": "Tier1"
+    },
+    "MTX_Neut_DesertMechanic_Door_Placeable": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "power": 0,
+      "group": "DoorWide",
+      "tier": "Tier1"
+    },
+    "MTX_Choam_TwitchReward_Door_Placeable": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "power": 0,
+      "group": "Door",
+      "tier": "Tier1"
+    },
+    "MTX_Choam_TwitchReward_Hatch_Door_Placeable": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "power": 0,
+      "group": "Hatch",
+      "tier": "Tier1"
+    },
+    "MTX_Neut_DesertMechanic_Prudence_Door_Placeable": {
+      "resources": {
+        "Iron Ingot": 20
+      },
+      "power": -5,
+      "group": "PrudenceDoor",
+      "tier": "Tier1"
+    },
+    "MTX_Smug_Door_Placeable": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "power": 0,
+      "group": "Door",
+      "tier": "Tier1"
+    },
+    "MTX_Smug_Hatch_Door_Placeable": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "power": 0,
+      "group": "Hatch",
+      "tier": "Tier1"
+    },
+    "MTX_Smug_Garage_Door_Placeable": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "power": 0,
+      "group": "DoorWide",
+      "tier": "Tier1"
+    },
+    "Atre_Garage_Door_Placeable": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "power": 0,
+      "group": "DoorGarage",
+      "tier": "Tier1"
+    },
+    "Choam_Level2_Garage_Door_Placeable": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "power": 0,
+      "group": "DoorGarage",
+      "tier": "Tier1"
+    },
+    "Hark_Garage_Door_Placeable": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "power": 0,
+      "group": "DoorGarage",
+      "tier": "Tier1"
+    },
+    "Neut_Desert_Mechanic_Garage_Door_Placeable": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "power": 0,
+      "group": "DoorGarage",
+      "tier": "Tier1"
+    },
+    "MTX_Smug_Garage_Door_Big_Placeable": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "power": 0,
+      "group": "DoorGarage",
+      "tier": "Tier1"
+    },
+    "Developer_StorageContainer_Placeable": {
+      "resources": {
+        "Iron Ingot": 20
+      },
+      "power": 0,
+      "group": "StorageContainer",
+      "tier": "Tier0"
+    },
+    "MTX_Watershippers_Door_Placeable": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "power": 0,
+      "group": "Door",
+      "tier": "Tier1"
+    },
+    "MTX_Smug_Prudence_Door_Placeable": {
+      "resources": {
+        "Iron Ingot": 20
+      },
+      "power": -5,
+      "group": "PrudenceDoor",
+      "tier": "Tier1"
+    },
+    "MTX_Watershippers_Prudence_Door_Placeable": {
+      "resources": {
+        "Iron Ingot": 20
+      },
+      "power": 0,
+      "group": "PrudenceDoor",
+      "tier": "Tier1"
+    },
+    "MTX_Watershippers_Garage_Door_Big_Placeable": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "power": 0,
+      "group": "DoorGarage",
+      "tier": "Tier1"
+    },
+    "MTX_Sardaukar_GarageDoor_Placeable": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "power": 0,
+      "group": "DoorGarage",
+      "tier": "Tier1"
+    },
+    "MTX_Sardaukar_Door_Placeable": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "power": 0,
+      "group": "Door",
+      "tier": "Tier1"
+    },
+    "MTX_Sardaukar_TallDoor_Placeable": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "power": 0,
+      "group": "DoorTall",
+      "tier": "Tier1"
+    },
+    "MTX_Sardaukar_PrudenceDoor_Placeable": {
+      "resources": {
+        "Iron Ingot": 20
+      },
+      "power": 0,
+      "group": "PrudenceDoor",
+      "tier": "Tier1"
+    },
+    "MTX_Sardaukar_Door_Placeable_L": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "power": 0,
+      "group": "Door",
+      "tier": "Tier1"
+    },
+    "MTX_Sardaukar_TallDoor_Placeable_L": {
+      "resources": {
+        "Granite Stone": 10
+      },
+      "power": 0,
+      "group": "DoorTall",
+      "tier": "Tier1"
+    },
+    "MTX_Sardaukar_PrudenceDoor_Placeable_L": {
+      "resources": {
+        "Iron Ingot": 20
+      },
+      "power": 0,
+      "group": "PrudenceDoor",
+      "tier": "Tier1"
+    },
+    "Atre_DLC_Glowglobe_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Atre_Glowglobe_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "CeilingGlowGlobe_Player": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Choam_Glowglobe_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Table": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Table",
+      "tier": "Tier0"
+    },
+    "Chair_1_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "Chair_2_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "Chair_3_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "Ladder_Placeable": {
+      "resources": {
+        "Granite Stone": 8
+      },
+      "power": 0,
+      "group": "Ladder",
+      "tier": "Tier0"
+    },
+    "Banner_Atreides_Placeable": {
+      "resources": {
+        "Plastone": 50,
+        "Agave Seeds": 15
+      },
+      "power": 0,
+      "group": "Banner",
+      "tier": "Tier1"
+    },
+    "Banner_Harkonnen_Placeable": {
+      "resources": {
+        "Plastone": 50,
+        "Agave Seeds": 15
+      },
+      "power": 0,
+      "group": "Banner",
+      "tier": "Tier1"
+    },
+    "Banner_Smuggler_Placeable": {
+      "resources": {
+        "Plastone": 50,
+        "Agave Seeds": 15
+      },
+      "power": 0,
+      "group": "Banner",
+      "tier": "Tier1"
+    },
+    "OutpostBunkBed_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "OutpostChair_1_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "Choam_Couch_1_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "Choam_CouchBlend_1_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "Choam_CouchBlend_2_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "Choam_CouchCorner_1_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "Choam_CouchCorner_In_1_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "OutpostTable_1_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Table",
+      "tier": "Tier0"
+    },
+    "OutpostTable_2_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Table",
+      "tier": "Tier0"
+    },
+    "OutpostTable_3_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Table",
+      "tier": "Tier0"
+    },
+    "PlantPot_S_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "PlantPot_M_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "SpiceCoffeeSet_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "WallDeco",
+      "tier": "Tier0"
+    },
+    "ChoamOutpostCeilingLamp_1_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "ChoamOutpostWallLamp_1_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "ChoamOutpostFloorLamp_1_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "HarkonnenOutpostWallLamp_1_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "HarkonnenOutpostWallLamp_2_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "HarkonnenOutpostWallLamp_3_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Neut_Vase_Head_Small_A_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Vase_Head_Small_B_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Vase_Head_Small_C_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Vase_Small_1_A_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Vase_Small_1_B_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Vase_Small_1_C_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Vase_Small_2_A_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Vase_Small_2_B_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Vase_Small_3_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_VaseOctogonal_Big_A_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_VaseOctogonal_Big_B_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_VaseOctogonal_Big_C_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_VaseOctogonal_Big_D_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_VaseOctogonal_Small_A_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_VaseOctogonal_Small_B_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_VaseOctogonal_Small_C_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_VaseOctogonal_Small_D_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_VaseOctogonal_Small_E_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_VaseRound_Big_A_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_VaseRound_Big_B_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_VaseRound_Big_C_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_VaseRound_Big_D_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_VaseRound_Small_A_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_VaseRound_Small_B_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Bowl_Small_A_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Bowl_Small_B_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Bowl_Small_C_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_CakeStandRound_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Hookah_A_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_IncenseHolder_A_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_IncenseHolder_B_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_TrayRound_Small_A_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_TrayRound_Small_B_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Diffuser_Small_A_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Diffuser_Small_B_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Diffuser_Small_B_2_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Shelves_1_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "Neut_Shelves_2_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "Neut_Shelves_3_A_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "Neut_Shelves_3_B_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "GlowGlobe": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "GlowGlobe_Player": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Hark_CeilingGlowGlobe_1_Player_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Neut_FloorLamp_1_Player_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Neut_CeilingLamp_1_Player_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Neut_WallLamp_1_Player_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Neut_FloorLamp_2_Player_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Neut_CeilingLamp_2_Player_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Neut_WallLamp_2_Player_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Neut_FloorLamp_3_Player_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Neut_CeilingLamp_3_Player_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Neut_WallLamp_3_Player_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Neut_FloorLamp_4_Player_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Neut_CeilingLamp_4_Player_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Neut_WallLamp_4_Player_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Neut_FloorLamp_5_Player_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Neut_CeilingLamp_5_Player_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Neut_WallLamp_5_Player_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Neut_FloorLamp_6_Player_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Neut_CeilingLamp_6_Player_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Neut_WallLamp_6_Player_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Neut_FloorLamp_7_Player_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Neut_CeilingLamp_7_Player_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Neut_WallLamp_7_Player_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Choam_WallShelf_1_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "WallFurniture",
+      "tier": "Tier0"
+    },
+    "Choam_WallShelf_Bottom_1_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "WallFurniture",
+      "tier": "Tier0"
+    },
+    "Choam_WallShelf_Top_1_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "WallFurniture",
+      "tier": "Tier0"
+    },
+    "Atreides_Table_01_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Table",
+      "tier": "Tier0"
+    },
+    "Atreides_Table_Big_01_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Table",
+      "tier": "Tier0"
+    },
+    "Atreides_TableSide_01_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Table",
+      "tier": "Tier0"
+    },
+    "Atreides_TableSide_02_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Table",
+      "tier": "Tier0"
+    },
+    "Atreides_Chair_01_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "Harkonnen_Bench_L_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "Harkonnen_Bench_R_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "Neut_Rug_01_Placeable": {
+      "resources": {
+        "Plant Fiber": 50
+      },
+      "power": 0,
+      "group": "Carpet",
+      "tier": "Tier0"
+    },
+    "Neut_Rug_02_Placeable": {
+      "resources": {
+        "Plant Fiber": 50
+      },
+      "power": 0,
+      "group": "Carpet",
+      "tier": "Tier0"
+    },
+    "Neut_Rug_03_Placeable": {
+      "resources": {
+        "Plant Fiber": 50
+      },
+      "power": 0,
+      "group": "Carpet",
+      "tier": "Tier0"
+    },
+    "Atre_PlateDeco_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "WallDeco",
+      "tier": "Tier0"
+    },
+    "Atre_Cabinet_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "Atre_Bed_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "Atre_DiningTable_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Table",
+      "tier": "Tier0"
+    },
+    "Atre_SideTable_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Table",
+      "tier": "Tier0"
+    },
+    "Atre_Wardrobe_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "Atre_SmallStorageDrawer_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "Atre_Banner_Placeable": {
+      "resources": {
+        "Plastone": 50,
+        "Agave Seeds": 15
+      },
+      "power": 0,
+      "group": "Banner",
+      "tier": "Tier1"
+    },
+    "Atre_Couch_1_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "Atre_CouchCorner_1_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "Atre_CouchCorner_In_1_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "Atre_Chair_1_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "Atre_Chair_2_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "Atre_Chandelier_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25,
+        "Agave Seeds": 5
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier1"
+    },
+    "Atre_LightCeiling_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25,
+        "Agave Seeds": 5
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier1"
+    },
+    "Atre_LightFloor_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Atre_LightWall_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Atre_StandingLight_01_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Atre_StandingLight_02_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Atre_Shelves_01_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "Hark_FloorGlowGlobe_1_Player_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Atre_WallPartition_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "Atre_Deco_Books_01_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Atre_Deco_Books_02_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Atre_Deco_Books_03_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Atre_Deco_Plate_01_Placeable": {
+      "resources": {
+        "Plastone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier1"
+    },
+    "Atre_Deco_Plate_02_Placeable": {
+      "resources": {
+        "Plastone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier1"
+    },
+    "Atre_Deco_Glass_Bowl_Placeable": {
+      "resources": {
+        "Plastone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier1"
+    },
+    "Atre_Deco_Glass_Carafe_Placeable": {
+      "resources": {
+        "Plastone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier1"
+    },
+    "Atre_Deco_Glass_Cup_Placeable": {
+      "resources": {
+        "Plastone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier1"
+    },
+    "Atre_Deco_Glass_SpiceJar_Placeable": {
+      "resources": {
+        "Plastone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier1"
+    },
+    "Atre_Deco_Trophy_01_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Atre_Deco_Vase_01_A_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Atre_Deco_Vase_01_B_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Atre_Deco_Vase_01_C_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Atre_Deco_Vase_02_A_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Atre_Deco_Vase_02_B_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Hark_Bed_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "Hark_DiningTable_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Table",
+      "tier": "Tier0"
+    },
+    "Hark_SideTable_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Table",
+      "tier": "Tier0"
+    },
+    "Hark_OfficeTable_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Table",
+      "tier": "Tier0"
+    },
+    "Hark_Wardrobe_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "Hark_SmallStorageDrawer_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "Hark_Banner_Placeable": {
+      "resources": {
+        "Plastone": 50,
+        "Agave Seeds": 15
+      },
+      "power": 0,
+      "group": "Banner",
+      "tier": "Tier1"
+    },
+    "Hark_Chair_1_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "Hark_Chair_2_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "Hark_Shelves_01_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "Hark_WallPartition_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "Hark_Carpet_01_Placeable": {
+      "resources": {
+        "Plant Fiber": 50
+      },
+      "power": 0,
+      "group": "Carpet",
+      "tier": "Tier0"
+    },
+    "Hark_Carpet_02_Placeable": {
+      "resources": {
+        "Plant Fiber": 50
+      },
+      "power": 0,
+      "group": "Carpet",
+      "tier": "Tier0"
+    },
+    "Hark_LightCeiling_01_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25,
+        "Agave Seeds": 5
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier1"
+    },
+    "Hark_LightCeiling_02_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25,
+        "Agave Seeds": 5
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier1"
+    },
+    "Hark_LightWall_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Hark_StandingLight_01_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Hark_StandingLight_02_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Hark_WallArt_01_Placeable": {
+      "resources": {
+        "Plastone": 50,
+        "Agave Seeds": 15
+      },
+      "power": 0,
+      "group": "WallDeco",
+      "tier": "Tier1"
+    },
+    "Hark_WallArt_02_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "WallDeco",
+      "tier": "Tier0"
+    },
+    "Hark_Deco_Hologram_Placeable": {
+      "resources": {
+        "Plastone": 25
+      },
+      "power": 0,
+      "group": "Projectors",
+      "tier": "Tier1"
+    },
+    "Hark_Deco_Books_01_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Hark_Deco_Books_02_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Hark_Deco_Books_03_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Hark_Deco_Bowl_Placeable": {
+      "resources": {
+        "Plastone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier1"
+    },
+    "Hark_Deco_Carafe_Placeable": {
+      "resources": {
+        "Plastone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier1"
+    },
+    "Hark_Deco_Cup_01_Placeable": {
+      "resources": {
+        "Plastone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier1"
+    },
+    "Hark_Deco_Cup_02_Placeable": {
+      "resources": {
+        "Plastone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier1"
+    },
+    "Hark_Deco_Plate_01_Placeable": {
+      "resources": {
+        "Plastone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier1"
+    },
+    "Hark_Deco_Plate_02_Placeable": {
+      "resources": {
+        "Plastone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier1"
+    },
+    "Hark_Deco_SpiceJar_Placeable": {
+      "resources": {
+        "Plastone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier1"
+    },
+    "Hark_Deco_Totem_01_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Hark_Deco_Totem_02_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Hark_Deco_Trophy_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Hark_Deco_Vase_01_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Hark_Deco_Vase_02_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Hark_Deco_Urn_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Choam_Chair_1_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "Choam_DiningTable_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Table",
+      "tier": "Tier0"
+    },
+    "Choam_OfficeTable_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Table",
+      "tier": "Tier0"
+    },
+    "Choam_SmallStorageDrawer_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "Choam_Wardrobe_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "Choam_Shelves_01_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "Choam_Carpet_01_Placeable": {
+      "resources": {
+        "Plant Fiber": 50
+      },
+      "power": 0,
+      "group": "Carpet",
+      "tier": "Tier0"
+    },
+    "Choam_Carpet_02_Placeable": {
+      "resources": {
+        "Plant Fiber": 50
+      },
+      "power": 0,
+      "group": "Carpet",
+      "tier": "Tier0"
+    },
+    "Choam_Bed_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "Choam_Banner_Placeable": {
+      "resources": {
+        "Plastone": 50,
+        "Agave Seeds": 15
+      },
+      "power": 0,
+      "group": "Banner",
+      "tier": "Tier1"
+    },
+    "Choam_WallPartition_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "Choam_WallArt_01_Placeable": {
+      "resources": {
+        "Plastone": 50,
+        "Agave Seeds": 15
+      },
+      "power": 0,
+      "group": "WallDeco",
+      "tier": "Tier1"
+    },
+    "Choam_WallArt_02_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "WallDeco",
+      "tier": "Tier0"
+    },
+    "Choam_LightCeiling_01_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25,
+        "Agave Seeds": 5
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier1"
+    },
+    "Choam_LightCeiling_02_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25,
+        "Agave Seeds": 5
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier1"
+    },
+    "Choam_LightWall_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Choam_StandingLight_01_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Choam_StandingLight_02_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Choam_LightFloor_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "Choam_Deco_Hologram_Placeable": {
+      "resources": {
+        "Plastone": 25
+      },
+      "power": 0,
+      "group": "Projectors",
+      "tier": "Tier1"
+    },
+    "Choam_Deco_Bowl_Placeable": {
+      "resources": {
+        "Plastone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier1"
+    },
+    "Choam_Deco_Carafe_Placeable": {
+      "resources": {
+        "Plastone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier1"
+    },
+    "Choam_Deco_Cup_01_Placeable": {
+      "resources": {
+        "Plastone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier1"
+    },
+    "Choam_Deco_Cup_02_Placeable": {
+      "resources": {
+        "Plastone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier1"
+    },
+    "Choam_Deco_Plate_01_Placeable": {
+      "resources": {
+        "Plastone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier1"
+    },
+    "Choam_Deco_Plate_02_Placeable": {
+      "resources": {
+        "Plastone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier1"
+    },
+    "Choam_Deco_SpiceJar_Placeable": {
+      "resources": {
+        "Plastone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier1"
+    },
+    "Choam_Deco_Trophy_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Choam_Deco_Vase_01A_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Choam_Deco_Vase_01B_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Choam_Deco_Vase_02A_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Choam_Deco_Vase_02B_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Choam_Deco_Books_01_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Choam_Deco_Books_02_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Choam_Deco_Books_03_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Atre_Carpet_01_Placeable": {
+      "resources": {
+        "Plant Fiber": 50
+      },
+      "power": 0,
+      "group": "Carpet",
+      "tier": "Tier0"
+    },
+    "Atre_Carpet_02_Placeable": {
+      "resources": {
+        "Plant Fiber": 50
+      },
+      "power": 0,
+      "group": "Carpet",
+      "tier": "Tier0"
+    },
+    "Atre_Deco_Hologram_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "Projectors",
+      "tier": "Tier0"
+    },
+    "Choam_SideTable_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Table",
+      "tier": "Tier0"
+    },
+    "Atre_OfficeTable_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Table",
+      "tier": "Tier0"
+    },
+    "Atre_WallArt_01_Placeable": {
+      "resources": {
+        "Plastone": 50,
+        "Agave Seeds": 15
+      },
+      "power": 0,
+      "group": "WallDeco",
+      "tier": "Tier1"
+    },
+    "Choam_Deco_Vase_03_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Gunner_WorkingTable_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Table",
+      "tier": "Tier0"
+    },
+    "Neut_Gunner_DismantledScattergun_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Gunner_GunStorage_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "Neut_Kaitain_BirdHouse_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "MediumDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Kaitain_LargeFountain_Placeable": {
+      "resources": {
+        "Granite Stone": 100
+      },
+      "power": 0,
+      "group": "LargeDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Kaitain_SmallFountain_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Kaitain_Flowerbed_Straight_Placeable": {
+      "resources": {
+        "Granite Stone": 100
+      },
+      "power": 0,
+      "group": "LargeDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Kaitain_Flowerbed_Corner_Placeable": {
+      "resources": {
+        "Granite Stone": 100
+      },
+      "power": 0,
+      "group": "LargeDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Kaitain_Bush_Straight_Placeable": {
+      "resources": {
+        "Granite Stone": 100
+      },
+      "power": 0,
+      "group": "LargeDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Kaitain_Bush_Corner_Placeable": {
+      "resources": {
+        "Granite Stone": 100
+      },
+      "power": 0,
+      "group": "LargeDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Kaitain_Tree_Straight_Placeable": {
+      "resources": {
+        "Granite Stone": 100
+      },
+      "power": 0,
+      "group": "LargeDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Kaitain_Tree_Corner_Placeable": {
+      "resources": {
+        "Granite Stone": 100
+      },
+      "power": 0,
+      "group": "LargeDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Kaitan_Cheops_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_StrategyTable_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "Neut_Strategy_RoomSign_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "Projectors",
+      "tier": "Tier0"
+    },
+    "MTX_Neut_StrategyRoomCarpet_Placeable": {
+      "resources": {
+        "Plant Fiber": 50
+      },
+      "power": 0,
+      "group": "Carpet",
+      "tier": "Tier0"
+    },
+    "Neut_Miniature_AtreidesTroops_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Miniature_HarkonnenTroops_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Miniature_FremenTroops_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Miniature_SpiceField_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Miniature_StrategyFlag_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Miniature_Worm_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Miniature_Harvester_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Miniature_Ornithopter_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Miniature_Sandbike_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Miniature_Tank_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Miniature_Transport_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_JailSet_Bed_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "Neut_JailSet_WaterPoint_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "MediumDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Statue_DesertMouse_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Neut_Statue_Bat_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Statue_KulonDonkey_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "MediumDeco",
+      "tier": "Tier0"
+    },
+    "Neut_Statue_LargeSandworm_Placeable": {
+      "resources": {
+        "Granite Stone": 100
+      },
+      "power": 0,
+      "group": "LargeDeco",
+      "tier": "Tier0"
+    },
+    "Hark_WallGlowGlobe_1_Player_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "MTX_Frem_FremKit_Glowglobe_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "MTX_Neut_DesertMechanicSet_Glowglobe_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "MTX_Frem_FremKit_BoardGame_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Frem_FremKit_Stove_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_Movie_Chair_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_Movie_Bench_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_Movie_LargeCarpet_Placeable": {
+      "resources": {
+        "Plant Fiber": 50
+      },
+      "power": 0,
+      "group": "Carpet",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_Movie_SmallCarpet_Placeable": {
+      "resources": {
+        "Plant Fiber": 50
+      },
+      "power": 0,
+      "group": "Carpet",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_Movie_DecorativePlate_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "WallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_Movie_Painting_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "WallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_Movie_LargeDesk_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Table",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_Movie_Table_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Table",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_Movie_Dresser_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_Movie_Cabinet_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_Movie_Bonsai_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "Projectors",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_Movie_BullStatue_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_Movie_DecorativeBox_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_Movie_DecorativeWineBottle_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_Movie_FoodPlatter_01_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_Movie_Glass_01_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_Movie_Glass_02_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_Movie_PlateCutlery_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_Movie_CaladanCastle_Hologram_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "Projectors",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_Movie_Vase_01_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_Movie_WaterPitcher_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_Movie_WindChimes_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "CeilingDeco-Medium",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_LetosSeal_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "WallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_Flagpole_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "MediumDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_Hologram_CaladanEmblem_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "Projectors",
+      "tier": "Tier0"
+    },
+    "MTX_Neut_DesertMechanicSet_SandbikePainting_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "WallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Neut_DesertMechanicSet_Toolbox_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "MediumDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Neut_DesertMechanicSet_Sign_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "WallDeco",
+      "tier": "Tier0"
+    },
+    "WallGlowGlobe_Player": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "MTX_Neut_DesertMechanic_StorageContainer_Placeable": {
+      "resources": {
+        "Granite Stone": 100
+      },
+      "power": 0,
+      "group": "LargeDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Neut_DesertMechanicSet_Projector_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "Projectors",
+      "tier": "Tier0"
+    },
+    "MTX_Neut_DesertMechanic_DismantledSandbike_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "MediumDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Neut_DesertMechanic_SpareWheel_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "MediumDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Caladan_Movie_Bed_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "MTX_Caladan_Movie_Mural_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "WallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Caladan_Movie_Cushion_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Neut_MuadDibCage_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "LightMediumDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Neut_MuralPainting_01_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "WallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Neut_MuralPainting_02_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "WallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Neut_MuralPainting_03_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "WallDeco",
+      "tier": "Tier0"
+    },
+    "Beta_Plaque_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "WallDeco",
+      "tier": "Tier0"
+    },
+    "Atre_Emperor_Painting_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "WallDeco",
+      "tier": "Tier0"
+    },
+    "Hark_Emperor_Painting_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "WallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Choam_KirabTurret_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Neut_HarvesterCaptainChair_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "MTX_Neut_TeleporterDevice_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_Troopship_Relief_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "WallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_Flagship_Relief_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "WallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Neut_Raider_Makeshift_Lampost_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "MediumDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Smug_Shelves_01_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "MTX_Smug_Shelves_02_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "MTX_Smug_Chair_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "MTX_Smug_Couch_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "MTX_Smug_Trophy_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Smug_Couch_Corner_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "MTX_Smug_Books_01_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Smug_Books_02_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Smug_Books_03_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Smug_TableLamp_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "MTX_Smug_Couch_Corner_In_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "MTX_Smug_Bed_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "MTX_Smug_Chandelier_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25,
+        "Agave Seeds": 5
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier1"
+    },
+    "MTX_Smug_Light_Ceiling_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25,
+        "Agave Seeds": 5
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier1"
+    },
+    "MTX_Atre_Sculpture_01_Placeable": {
+      "resources": {
+        "Granite Stone": 100
+      },
+      "power": 0,
+      "group": "LargeDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_Sculpture_02_Placeable": {
+      "resources": {
+        "Granite Stone": 100
+      },
+      "power": 0,
+      "group": "LargeDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Choam_Sculpture_01_Placeable": {
+      "resources": {
+        "Granite Stone": 100
+      },
+      "power": 0,
+      "group": "LargeDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Choam_Sculpture_02_Placeable": {
+      "resources": {
+        "Granite Stone": 100
+      },
+      "power": 0,
+      "group": "LargeDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Hark_Sculpture_01_Placeable": {
+      "resources": {
+        "Granite Stone": 100
+      },
+      "power": 0,
+      "group": "LargeDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Hark_Sculpture_02_Placeable": {
+      "resources": {
+        "Granite Stone": 100
+      },
+      "power": 0,
+      "group": "LargeDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Smug_LightWall_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "MTX_Smug_Banner_Placeable": {
+      "resources": {
+        "Plastone": 50,
+        "Agave Seeds": 15
+      },
+      "power": 0,
+      "group": "Banner",
+      "tier": "Tier1"
+    },
+    "MTX_Smug_Carpet_Placeable": {
+      "resources": {
+        "Plant Fiber": 50
+      },
+      "power": 0,
+      "group": "Carpet",
+      "tier": "Tier0"
+    },
+    "MTX_Smug_DiningTable_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Table",
+      "tier": "Tier0"
+    },
+    "MTX_Neut_ChristmasTree_Hologram_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "Projectors",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_TeaHouse_WallRelief_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "WallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_WaterS_Banner_Placeable": {
+      "resources": {
+        "Plastone": 50,
+        "Agave Seeds": 15
+      },
+      "power": 0,
+      "group": "Banner",
+      "tier": "Tier1"
+    },
+    "MTX_WaterS_Bed_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "MTX_WaterS_Books_01_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_WaterS_Books_02_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_WaterS_Books_03_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_WaterS_Carpet_Placeable": {
+      "resources": {
+        "Plant Fiber": 50
+      },
+      "power": 0,
+      "group": "Carpet",
+      "tier": "Tier0"
+    },
+    "MTX_WaterS_Chair_01_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "MTX_WaterS_Chair_02_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "MTX_WaterS_Couch_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "MTX_WaterS_Couch_Corner_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "MTX_WaterS_Couch_Corner_In_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "MTX_WaterS_DiningTable_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Table",
+      "tier": "Tier0"
+    },
+    "MTX_WaterS_Light_Ceiling_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25,
+        "Agave Seeds": 5
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier1"
+    },
+    "MTX_WaterS_TableLamp_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "MTX_WaterS_LightWall_01_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "MTX_WaterS_LightWall_02_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "MTX_WaterS_Shelves_02_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "MTX_WaterS_Trophy_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_TeaSet_UpperBar_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "CeilingDeco-Medium",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_TeaSet_TeaService_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_TeaSet_Table_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_TeaSet_LowerBar_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_TeaSet_Baliset_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "MediumDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_TeaSet_Sofa_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_TeaSet_Chair_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_TeaSet_WallRelief_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "WallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_MovieTeaser_FirePlace_Placeable": {
+      "resources": {
+        "Granite Stone": 100
+      },
+      "power": 0,
+      "group": "LargeDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Env_Prop_MovieTeaser_Throne_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "MTX_WaterS_Banner_Placeable_2": {
+      "resources": {
+        "Plastone": 50,
+        "Agave Seeds": 15
+      },
+      "power": 0,
+      "group": "Banner",
+      "tier": "Tier1"
+    },
+    "MTX_ArakeenAlleyway_Carpet_Placeable": {
+      "resources": {
+        "Plant Fiber": 50
+      },
+      "power": 0,
+      "group": "Carpet",
+      "tier": "Tier0"
+    },
+    "MTX_DestroyedZanovar_Hologram_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "Projectors",
+      "tier": "Tier0"
+    },
+    "MTX_DualBladesDeco_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_IxianTotem_Placeable": {
+      "resources": {
+        "Granite Stone": 100
+      },
+      "power": 0,
+      "group": "LargeDeco",
+      "tier": "Tier0"
+    },
+    "MTX_MaasKharet_Glowglobe_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "MTX_MinotaurMaskWall_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "WallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_PhaedraPortrait_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "WallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_RevMotherFloatingChair_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "MTX_SardaukarFightingDummy_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "MediumDeco",
+      "tier": "Tier0"
+    },
+    "MTX_TheGluttonRedLight_Glowglobe_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "B1C5_MTX_Sardaukar_Banner_Placeable": {
+      "resources": {
+        "Plastone": 50,
+        "Agave Seeds": 15
+      },
+      "power": 0,
+      "group": "Banner",
+      "tier": "Tier1"
+    },
+    "B1C5_MTX_Sardaukar_Bed_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "B1C5_MTX_Sardaukar_Books_01_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "B1C5_MTX_Sardaukar_Books_02_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "B1C5_MTX_Sardaukar_Books_03_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "B1C5_MTX_Sardaukar_Carpet_Placeable": {
+      "resources": {
+        "Plant Fiber": 50
+      },
+      "power": 0,
+      "group": "Carpet",
+      "tier": "Tier0"
+    },
+    "B1C5_MTX_Sardaukar_Chair_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "B1C5_MTX_Sardaukar_Chandelier_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25,
+        "Agave Seeds": 5
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier1"
+    },
+    "B1C5_MTX_Sardaukar_Couch_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "B1C5_MTX_Sardaukar_Couch_Corner_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "B1C5_MTX_Sardaukar_Couch_Corner_In_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "B1C5_MTX_Sardaukar_DiningTable_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Table",
+      "tier": "Tier0"
+    },
+    "B1C5_MTX_Sardaukar_Glowglobe_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "B1C5_MTX_Sardaukar_LightTable_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "B1C5_MTX_Sardaukar_Shelves_01_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Furniture",
+      "tier": "Tier0"
+    },
+    "B1C5_MTX_Sardaukar_Trophy_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "B1C5_MTX_Sardaukar_WallLamp_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "MTX_B1C5_BeastRabban_Projector_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "Projectors",
+      "tier": "Tier0"
+    },
+    "MTX_B1C5_DukeLeto_Projector_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "Projectors",
+      "tier": "Tier0"
+    },
+    "MTX_B1C5_WaterFatManor_Projector_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "Projectors",
+      "tier": "Tier0"
+    },
+    "MTX_B1C5_WormMouthMural_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "WallDeco",
+      "tier": "Tier0"
+    },
+    "B1C5_MTX_ReverendMotherRoom_Banner_Placeable": {
+      "resources": {
+        "Plastone": 50,
+        "Agave Seeds": 15
+      },
+      "power": 0,
+      "group": "Banner",
+      "tier": "Tier1"
+    },
+    "B1C5_MTX_ReverendMotherRoom_Carpet_Placeable": {
+      "resources": {
+        "Plant Fiber": 50
+      },
+      "power": 0,
+      "group": "Carpet",
+      "tier": "Tier0"
+    },
+    "B1C5_MTX_ReverendMotherRoom_Chair_01_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "B1C5_MTX_ReverendMotherRoom_Chair_02_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Chair",
+      "tier": "Tier0"
+    },
+    "B1C5_MTX_ReverendMotherRoom_Table_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Table",
+      "tier": "Tier0"
+    },
+    "B1C5_MTX_ReverendMotherRoom_TableRound_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "Table",
+      "tier": "Tier0"
+    },
+    "MTX_Neut_MeltedCorpse_01_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "MediumDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Neut_MeltedCorpse_02_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "MediumDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Neut_MeltedCorpse_03_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "MediumDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Neut_Skeleton_01_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "MediumDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Neut_Skeleton_02_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "MediumDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Neut_Skeleton_03_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Hark_FleshTube_01_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "MediumDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Hark_FleshTube_02_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "MediumDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Hark_FleshTube_03_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "MediumDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Neut_VacuumBodies_Placeable": {
+      "resources": {
+        "Granite Stone": 50
+      },
+      "power": 0,
+      "group": "CeilingDeco-Medium",
+      "tier": "Tier0"
+    },
+    "MTX_Atre_RadiationCrate_Placeable": {
+      "resources": {
+        "Granite Stone": 25
+      },
+      "power": 0,
+      "group": "SmallDeco",
+      "tier": "Tier0"
+    },
+    "MTX_Neut_LightPole_Placeable": {
+      "resources": {
+        "Salvaged Metal": 25
+      },
+      "power": 0,
+      "group": "GlowGlobe",
+      "tier": "Tier0"
+    },
+    "MTX_Neut_Crucifixion_01_Placeable": {
+      "resources": {
+        "Granite Stone": 100
+      },
+      "power": 0,
+      "group": "LargeDeco",
+      "tier": "Tier0"
+    }
+  },
+  "_by_placeable_note": "Machines et utilitaires, dataminés (CDT_PlaceableData : groupe × palier → CDT_BuildableGroupData, énergie = m_PowerProduction − m_PowerConsumption, eau PASSIVE par heure = m_WaterGenerationAmountPerUpdate × 3600 / m_WaterGenerationRateInSecs). Prioritaire sur la clé functional (tcno, d'avant la 1.5.3.0), gardée en repli."
 }

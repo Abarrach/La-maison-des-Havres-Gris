@@ -11,8 +11,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 // ?v= : cache-busting. Bump à chaque modif des modules pour forcer le rechargement
 // (sinon le navigateur sert l'ancienne version mise en cache).
-import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot44triangles';
-import { createMeshFactory } from './planner_mesh.js?v=lot44triangles';
+import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot45couts';
+import { createMeshFactory } from './planner_mesh.js?v=lot45couts';
 
 // ============================================================
 // MOTEUR — bascule ancien (géométrie+grille) / nouveau (sockets+meshes réels)
@@ -349,7 +349,7 @@ const EXCLUDED_PIECE_IDS = new Set([
 ]);
 
 async function loadCatalog() {
-  const url = ENGINE === 'sockets' ? 'planner_pieces.json?v=lot44triangles' : PIECES_JSON_URL;
+  const url = ENGINE === 'sockets' ? 'planner_pieces.json?v=lot45couts' : PIECES_JSON_URL;
   const resp = await fetch(url);
   if (!resp.ok) throw new Error('pieces ' + resp.status);
   const piecesData = await resp.json();
@@ -7125,7 +7125,7 @@ const MATERIAL_FR = {
 
 async function loadCosts() {
   try {
-    const r = await fetch('planner_costs.json?v=lot44triangles');
+    const r = await fetch('planner_costs.json?v=lot45couts');
     if (!r.ok) return;
     SUMMARY.costs = await r.json();
     SUMMARY.costIndex = new Map();
@@ -7151,17 +7151,28 @@ const COST_ALIAS = {
   'advanced vehicle fabricator': 'advanced vehicles fabricator',
 };
 
-// Coût matériaux + énergie/eau d'une pièce, ou null si inconnu.
+// Distilles et purificateurs ne produisent de l'eau qu'en traitant corps ou sang : rien
+// de passif dans les données du jeu. Ils ne comptent donc pas dans le bilan d'eau, et la
+// synthèse le dit au lieu d'afficher un chiffre qui laisserait croire le contraire.
+const WATER_ON_USE_GROUPS = new Set(['Deathstill', 'BloodPurifier']);
+
+// Coût matériaux + énergie/eau d'une pièce, ou null si inconnu. waterProd = unités/heure.
 function resolvePieceCost(piece) {
   if (!SUMMARY.costs) return null;
-  // 1. Machines et utilitaires : eux seuls portent énergie et production d'eau, qui ne
-  //    sont pas dans les coûts de construction. Ils passent donc EN PREMIER — les mettre
-  //    après le datamine ferait silencieusement tomber le bilan énergie à zéro.
+  // 1. Machines et utilitaires, DATAMINÉS (coût, énergie, eau passive) : le relevé tcno
+  //    datait d'avant la 1.5.3.0 (épice encore exigée par les fabricateurs avancés, coûts
+  //    d'avant la baisse, eau des pièges à vent inversée et en unités par seconde).
+  const pl = (SUMMARY.costs.by_placeable || {})[piece.id];
+  if (pl) return { resources: pl.resources || {}, power: pl.power || 0, waterProd: pl.water_per_h || 0 };
+  // 2. Repli tcno (véhicules, machines absentes du datamine). Ils passent AVANT les pièces
+  //    de construction : eux seuls portent énergie et eau, les mettre après ferait
+  //    silencieusement tomber le bilan énergie à zéro. tcno note l'eau PAR SECONDE.
   const en0 = bpNorm(piece.label_en || piece.label_fr);
   const en = COST_ALIAS[en0] || en0;
   const f = SUMMARY.costIndex.get(en);
-  if (f) return { resources: f.resources || {}, power: f.power || 0, waterProd: f.waterProd || 0 };
-  // 2. Pièces de construction : coût DATAMINÉ, indexé par identifiant de pièce — donc
+  if (f) return { resources: f.resources || {}, power: f.power || 0,
+    waterProd: WATER_ON_USE_GROUPS.has(piece.group) ? 0 : (f.waterProd || 0) * 3600 };
+  // 3. Pièces de construction : coût DATAMINÉ, indexé par identifiant de pièce — donc
   //    sans le pont faction → set → nom anglais, et fidèle au modèle du jeu
   //    (groupe × palier). 753 pièces couvertes contre 272 chez tcno, dont les sets
   //    ajoutés par un patch. Confronté à tcno : zéro écart de quantité.
@@ -7179,11 +7190,12 @@ function computeSummary() {
   const items = state.plan.floors.flatMap(f => f.items);
   const byCat = {};        // cat -> { total, types: Map(label -> count) }
   const materials = {};    // matériau -> quantité
-  let powerProd = 0, powerCons = 0, waterProd = 0, unknownCost = 0, total = 0;
+  let powerProd = 0, powerCons = 0, waterProd = 0, waterOnUse = 0, unknownCost = 0, total = 0;
   for (const it of items) {
     const piece = state.piecesById.get(it.piece_id);
     if (!piece) continue;
     total++;
+    if (WATER_ON_USE_GROUPS.has(piece.group)) waterOnUse++;
     const cat = getEffectiveCategory(piece);
     const c = byCat[cat] || (byCat[cat] = { total: 0, types: new Map() });
     c.total++;
@@ -7199,7 +7211,7 @@ function computeSummary() {
     }
   }
   const floors = state.plan.floors.filter(f => f.items.length).length;
-  return { total, floors, byCat, materials, powerProd, powerCons, waterProd, unknownCost };
+  return { total, floors, byCat, materials, powerProd, powerCons, waterProd, waterOnUse, unknownCost };
 }
 
 function renderSummary() {
@@ -7218,10 +7230,13 @@ function renderSummary() {
      + `<div class="bp-sum-kpi"><span>${s.total}</span>pièces</div>`
      + `<div class="bp-sum-kpi"><span>${s.floors}</span>étage${s.floors > 1 ? 's' : ''}</div>`
      + `<div class="bp-sum-kpi"><span class="${net >= 0 ? 'ok' : 'warn'}">${net >= 0 ? '+' : ''}${net}</span>énergie nette</div>`
-     + (s.waterProd ? `<div class="bp-sum-kpi"><span class="ok">${(+s.waterProd.toFixed(2))}</span>eau/h</div>` : '')
+     + (s.waterProd ? `<div class="bp-sum-kpi"><span class="ok">+${Math.round(s.waterProd).toLocaleString('fr-FR')}</span>eau/h (passive)</div>` : '')
      + '</div>';
   if (s.powerProd || s.powerCons)
     h += `<div class="bp-sum-energy">⚡ Production ${s.powerProd} · Consommation ${s.powerCons}</div>`;
+  if (s.waterOnUse)
+    h += `<div class="bp-sum-energy">💧 ${s.waterOnUse} distille${s.waterOnUse > 1 ? 's' : ''} / purificateur${s.waterOnUse > 1 ? 's' : ''} : `
+       + 'eau produite seulement en traitant corps ou sang, non comptée ci-dessus.</div>';
 
   // ── Par catégorie (repliable) ──
   h += '<div class="bp-summary-sec-title">Par catégorie</div>';
@@ -7251,11 +7266,12 @@ function renderSummary() {
   }
 
   // ── Crédit ──
-  // Le crédit doit dire la vérité : les coûts de construction viennent maintenant des
-  // données du jeu, mais énergie et eau des machines restent le relevé de TroubleChute.
-  h += '<div class="bp-summary-credit">Coûts de construction : extraits des données du jeu. '
-     + 'Énergie et eau des machines : données compilées par '
-     + '<a href="https://tools.tcno.co/dune" target="_blank" rel="noopener">TroubleChute (tcno.co)</a></div>';
+  // Le crédit doit dire la vérité : pièces ET machines viennent des données du jeu.
+  // TroubleChute ne sert plus que de repli (machine absente du datamine) ; les
+  // véhicules n'ont de coût ni chez l'un ni chez l'autre.
+  h += '<div class="bp-summary-credit">Coûts, énergie et eau : extraits des données du jeu '
+     + '(repli : données compilées par '
+     + '<a href="https://tools.tcno.co/dune" target="_blank" rel="noopener">TroubleChute (tcno.co)</a>).</div>';
   body.innerHTML = h;
 }
 

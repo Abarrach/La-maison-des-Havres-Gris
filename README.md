@@ -1425,7 +1425,7 @@ que personne ne tapera. (Donner le chemin complet du `.cmd` dans `/tr`.)
 | `plans_univers` | `plans_uniques.json` | export de l'addon en jeu (`.txt`, opt-in `--with-univers`) |
 | `base_pieces_v3` | `base_pieces_v3.json` | `Systems/Building/Data`, `Systems/Vehicles` — script **externe** (opt-in `--run-planner-import`) |
 | `sockets` | `dune_socket_profiles.json`, `dune_group_config.json`, `dune_pieces_sockets.json` | `DT_DuneSocketSetupData` + `CDT_BuildableGroupData` |
-| `costs` | `planner_costs.json` (clé `by_piece`) | `CDT_BuildableGroupData` + `DT_BuildingData_*` |
+| `costs` | `planner_costs.json` (clés `by_piece` et `by_placeable`) | `CDT_BuildableGroupData` + `DT_BuildingData_*` + `CDT_PlaceableData` |
 | `planner_pieces` | `planner_pieces.json` | 100 % local (fusion v3 + sockets + utilitaires) |
 | `meshes` | `models/*.glb` | **les paks** via `DuneExtract --meshes` (glTF), ou `flatten_glb` depuis un export FModel. `models/` n'est pas versionné |
 
@@ -1575,8 +1575,24 @@ Deux précautions :
   d'abord, car eux seuls portent énergie et production d'eau. Les mettre après le datamine
   ferait silencieusement tomber le bilan énergie à zéro.
 
-Les clés tcno sont conservées et le planner s'en sert en repli ; le crédit affiché dans la
-synthèse distingue désormais les coûts (jeu) de l'énergie et l'eau (TroubleChute).
+Les clés tcno sont conservées et le planner s'en sert en repli.
+
+**Les machines aussi (2026-10-22, clé `by_placeable`).** Une machine est une ligne de
+`CDT_PlaceableData` qui porte le même couple groupe × palier qu'une pièce, plus l'énergie
+(`m_PowerProduction − m_PowerConsumption`) et l'eau passive
+(`m_WaterGenerationAmountPerUpdate × 3600 / m_WaterGenerationRateInSecs`). 41 machines sur 49
+sont chiffrées ; les 8 véhicules n'ont de coût nulle part. Le relevé tcno était d'**avant la
+1.5.3.0** : 16 machines sur 35 comparables différaient, dont les 4 fabricateurs avancés et la
+raffinerie chimique moyenne qui exigeaient encore de l'épice, et tous les coûts d'avant la baisse
+de 10 à 25 %. `resolvePieceCost` lit donc `by_placeable` **en premier**, tcno ne sert plus que de repli.
+
+⚠ **L'eau de tcno était fausse deux fois** : les deux pièges à vent **inversés** (1,75 pour le petit,
+1,4 pour le grand) et en unités **par seconde**, alors que la synthèse affichait « eau/h » — un
+piège à vent apparaissait à « 1,75 eau/h ». Le jeu donne 6 unités / 8 s et 14 unités / 8 s, soit
+**2 700/h et 6 300/h**, exactement ce qu'affiche le planner de gaming.tools (vérifié le 2026-10-22).
+Distilles et purificateurs ont **0** d'eau passive : ils ne produisent qu'en traitant corps ou sang.
+Ils ne comptent donc pas dans le bilan, et la synthèse le dit sur une ligne à part au lieu d'inventer
+un débit.
 
 ### Pièges de ce pipeline
 
@@ -1597,6 +1613,11 @@ synthèse distingue désormais les coûts (jeu) de l'énergie et l'eau (TroubleC
   noms dérivés des templates, en n'affichant qu'un `⚠` noyé dans sa sortie. L'orchestrateur
   **écarte l'étape** dans ce cas ; le remède est de récupérer le fichier depuis la prod
   (`curl -O https://havresgris.ddns.net/stuff_names.json`) ou de lancer `--with-snapshot`.
+- **Un patch qui ne touche à rien laisse l'outil en alerte** (constaté le 2026-10-22, hotfix
+  1.5.15.2) : l'extracteur relit les 1 906 tables, n'en réécrit **aucune** (contenu identique), donc
+  leurs dates ne bougent pas et `--check` continue de les déclarer plus anciennes que les paks. Le
+  « 0 écrit(s) · 1906 inchangé(s) » de l'export EST la réponse : rien à refaire. Pour régénérer
+  quand même une étape (ici les recettes, jamais passées par l'outil), `--only=<id> --force`.
 - **Régénérer sur un export périmé ne sert à rien** : l'outil saute ces étapes plutôt que de
   refabriquer l'ancien contenu avec une date neuve.
 - **Le diff ignore `generated_at`** : sans ça, chaque exécution afficherait un changement pour un

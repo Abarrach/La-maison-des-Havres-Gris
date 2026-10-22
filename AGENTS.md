@@ -375,9 +375,10 @@ Ne pas les reproposer sans élément nouveau.
   `fix_frozen_data.py` (outil de secours réutilisable, le plus utile), `dune_logger_multi.py`
   (ancien scraper, remplacé) et `analyze_dune.py`.
 - **Registre des plans** (`/plan`) : livré et viable, mais l'utilisateur veut le retravailler.
-- **Données dataminées en retard d'un patch** (constaté le 2026-09-13) : le jeu a été patché le
-  **12/08** (`Systems.pak`, `Maps_*`), l'export FModel date de fin juin / début août. Recettes,
-  descriptions, armures, augments, butin et plans reflètent donc l'état d'avant. Le diagnostic
-  complet et la marche à suivre sortent de `node tools/update_datamine.js --check` ; l'export
-  FModel est manuel, tout le reste est automatisé (README, section « Mettre à jour les données
-  après un patch du jeu »).
+- **Données encore en retard sur le jeu** (audit du 2026-10-22, build 26083551) : tout ce que
+  le pipeline extrait est à jour (recettes et coûts des machines compris, régénérés ce jour-là).
+  Restent hors pipeline : **capacités et stats d'armes** (`stuff_skills.json`, liste d'objets de
+  `stuff_data.json`) = snapshot gaming.tools du 27/06, d'avant la refonte des capacités de la
+  1.5.3.0 ; **missions Landsraad** (`landsraad_data.json`, 25 saisies en avril, ~40 dans le jeu, noms
+  FR dataminables dans `ST_Localization_Lore_Pickups_Contracts`, clés `DA_LDR_*`) ;
+  **talents** (`metiers.json`, saisi à la main). Diagnostic : `node tools/update_datamine.js --check`.

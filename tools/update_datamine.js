@@ -423,13 +423,14 @@ const STEPS = [
   },
   {
     id: 'costs',
-    label: 'Coûts de construction (matériaux par groupe x palier)',
+    label: 'Coûts de construction (matériaux par groupe x palier, machines comprises)',
     script: 'tools/build_costs_from_datamine.js',
     args: (c) => [path.join(c.exportRoot, 'Systems')],
     outputs: ['planner_costs.json'],
-    sources: ['Systems/Building/Data/CDT_BuildableGroupData.json', 'Systems/Building/Data/BuildingData'],
+    sources: ['Systems/Building/Data/CDT_BuildableGroupData.json', 'Systems/Building/Data/BuildingData',
+      'Systems/Building/Data/CDT_PlaceableData.json'],
     paks: ['*'],
-    note: 'Ajoute la cle by_piece sans toucher aux donnees tcno, que le planner garde en repli. '
+    note: 'Ajoute les cles by_piece et by_placeable (machines : cout, energie, eau passive) sans toucher aux donnees tcno, que le planner garde en repli. '
       + 'Le cout depend du couple groupe x palier, et le palier est porte par la piece : indexer '
       + 'par piece evite le pont faction -> set -> nom anglais.',
   },

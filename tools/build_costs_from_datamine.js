@@ -100,6 +100,59 @@ for (const f of fs.readdirSync(D_BUILD)) {
   }
 }
 
+// ── Machines et utilitaires (placeables) ────────────────────────────────────
+// Même modèle groupe × palier que les pièces, mais la ligne de `CDT_PlaceableData`
+// porte EN PLUS l'énergie et l'eau. Ces valeurs venaient jusqu'ici de tcno, figées
+// avant la 1.5.3.0 (17/09/2026) : épice encore exigée par les fabricateurs avancés,
+// coûts d'avant la baisse de 10 à 25 %, et production d'eau des deux pièges à vent
+// INVERSÉE et en unités par seconde. gaming.tools affiche bien 2 700/h et 6 300/h,
+// soit les 6 et 14 unités toutes les 8 s du jeu.
+// Eau : seule la production PASSIVE est une donnée de la ligne. Distilles et
+// purificateurs ne produisent qu'en traitant du sang ou des corps, ce qui n'y figure
+// pas (0) — on ne l'invente pas, le planner le signale à part.
+const F_PLACE = path.join(SYS, 'Building/Data/CDT_PlaceableData.json');
+const placeables = {};
+if (fs.existsSync(F_PLACE)) {
+  for (const [id, r] of Object.entries(lire(F_PLACE))) {
+    const groupe = r.m_BuildableGroupType && r.m_BuildableGroupType.Name;
+    const palier = r.m_BuildableTier && r.m_BuildableTier.Name;
+    const cout = groupe && palier ? (parGroupe[groupe] || {})[palier] : null;
+    const power = (r.m_PowerProduction || 0) - (r.m_PowerConsumption || 0);
+    const qte = r.m_WaterGenerationAmountPerUpdate || 0, periode = r.m_WaterGenerationRateInSecs || 0;
+    const eauH = qte > 0 && periode > 0 ? Math.round(qte * 3600 / periode) : 0;
+    if (!(cout && Object.keys(cout.resources).length) && !power && !eauH) continue;
+    placeables[id] = { resources: cout ? cout.resources : {}, power, group: groupe || null, tier: palier || null };
+    if (eauH) placeables[id].water_per_h = eauH;
+    if (r.m_WaterCapacity > 0 && r.m_bCanStoreWater) placeables[id].water_capacity = r.m_WaterCapacity;
+  }
+} else {
+  console.warn(`⚠ ${F_PLACE} introuvable : coûts des machines non régénérés (le planner garde tcno).`);
+}
+
+function comparerMachines() {
+  const tcno = JSON.parse(fs.readFileSync(F_COSTS, 'utf8')).functional || {};
+  const catalogue = JSON.parse(fs.readFileSync(path.join(RACINE, 'planner_pieces.json'), 'utf8')).pieces || [];
+  const norm = (s) => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+  const parNom = new Map(Object.entries(tcno).map(([k, v]) => [norm(k), v]));
+  let couvertes = 0, identiques = 0;
+  const ecarts = [], sans = [];
+  for (const p of catalogue) {
+    if (p.faction_id !== 'placeables') continue;
+    const nous = placeables[p.id];
+    if (!nous) { sans.push(p.id); continue; }
+    couvertes++;
+    const chez = parNom.get(norm(p.label_en)) || parNom.get(norm(p.label_en) + 's');
+    if (!chez) continue;
+    if (JSON.stringify(chez.resources || {}) === JSON.stringify(nous.resources) && (chez.power || 0) === nous.power) identiques++;
+    else ecarts.push(`${p.id} : tcno ${JSON.stringify(chez.resources)} ${chez.power || 0}W → jeu ${JSON.stringify(nous.resources)} ${nous.power}W`);
+  }
+  console.log('\n=== Machines : confrontation avec tcno ===');
+  console.log(`  machines du catalogue chiffrées par le jeu : ${couvertes} (sans : ${sans.join(', ') || 'aucune'})`);
+  console.log(`  identiques à tcno : ${identiques} · différentes : ${ecarts.length} (attendu : tcno est d'avant la 1.5.3.0)`);
+  for (const e of ecarts.slice(0, 8)) console.log('    ' + e);
+  if (ecarts.length > 8) console.log(`    … (+${ecarts.length - 8})`);
+}
+
 // ── Comparaison avec les valeurs tcno (c'est la validation) ─────────────────
 // On rejoue le pont du planner — faction → set, label_en → nom tcno — pour confronter
 // les deux sources sur les pièces que tcno couvre.
@@ -157,11 +210,21 @@ const parPalier = {};
 for (const p of Object.values(pieces)) parPalier[p.tier] = (parPalier[p.tier] || 0) + 1;
 console.log(`par palier         : ${JSON.stringify(parPalier)}`);
 
-if (CHECK) { comparer(); process.exit(0); }
+console.log(`machines chiffrées : ${Object.keys(placeables).length}`);
+
+if (CHECK) { comparer(); comparerMachines(); process.exit(0); }
 
 comparer();
+comparerMachines();
 const costs = JSON.parse(fs.readFileSync(F_COSTS, 'utf8'));
 costs.by_piece = pieces;
+if (Object.keys(placeables).length) {
+  costs.by_placeable = placeables;
+  costs._by_placeable_note = 'Machines et utilitaires, dataminés (CDT_PlaceableData : groupe × palier → '
+    + 'CDT_BuildableGroupData, énergie = m_PowerProduction − m_PowerConsumption, eau PASSIVE par heure = '
+    + 'm_WaterGenerationAmountPerUpdate × 3600 / m_WaterGenerationRateInSecs). Prioritaire sur la clé '
+    + 'functional (tcno, d\'avant la 1.5.3.0), gardée en repli.';
+}
 costs._by_piece_note = 'Coûts dataminés (CDT_BuildableGroupData.m_BuildableTierData[].m_PlacementCosts), '
   + 'indexés par identifiant de pièce. Le coût dépend du couple groupe × palier, et le palier est porté '
   + 'par la pièce : indexer ainsi évite le pont faction → set → nom anglais. Les noms de matériaux sont '

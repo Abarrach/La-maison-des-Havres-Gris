@@ -1,6 +1,6 @@
 {
   "_note": "Écrit par tools/update_datamine.js. Dit de QUEL build du jeu proviennent les données du site, et quand chaque étape a tourné pour la dernière fois. Versionné exprès : c'est la seule trace de la fraîcheur des données.",
-  "updated_at": "2026-10-22T15:30:05.552Z",
+  "updated_at": "2026-10-22T22:10:32.258Z",
   "game": {
     "build_id": "26083551",
     "last_updated": "2026-10-22T09:49:12.000Z",
@@ -38,26 +38,26 @@
       "outputs": {}
     },
     "descriptions": {
-      "ran_at": "2026-10-19T22:37:47.190Z",
-      "game_build_id": "25936403",
+      "ran_at": "2026-10-22T22:08:08.117Z",
+      "game_build_id": "26083551",
       "sources": {
         "Systems/Items/CDT_BaseItems.json": "2026-10-19T22:36:52.143Z"
       },
       "outputs": {
         "stuff_data.json": {
-          "entrees": 691
+          "entrees": 693
         }
       }
     },
     "armor": {
-      "ran_at": "2026-10-19T22:37:47.190Z",
-      "game_build_id": "25936403",
+      "ran_at": "2026-10-22T22:10:32.251Z",
+      "game_build_id": "26083551",
       "sources": {
         "Systems/Items/DT_ArmorItemTable.json": "2026-10-19T22:36:52.292Z"
       },
       "outputs": {
         "stuff_data.json": {
-          "entrees": 691
+          "entrees": 693
         }
       }
     },
@@ -183,6 +183,22 @@
       "outputs": {
         "landsraad_data.json": {
           "entrees": 41
+        }
+      }
+    },
+    "skills": {
+      "ran_at": "2026-10-22T22:08:55.119Z",
+      "game_build_id": "26083551",
+      "sources": {
+        "Systems/Progression/DT_TrainingModules.json": "2026-10-22T22:08:53.405Z",
+        "Systems/Progression/DT_Perks.json": "2026-10-22T22:08:53.141Z",
+        "Systems/Progression/GASEffects": "2026-10-22T22:08:54.147Z",
+        "GadgetsAbilities/CT_AbilityTuning.json": "2026-10-22T22:08:54.246Z",
+        "GadgetsAbilities/CT_AbilityStatDisplay.json": "2026-10-22T22:08:54.246Z"
+      },
+      "outputs": {
+        "stuff_skills.json": {
+          "entrees": 1
         }
       }
     }

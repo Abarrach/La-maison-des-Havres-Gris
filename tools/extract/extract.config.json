@@ -99,6 +99,18 @@
       "path": "Maps/DT_MapsInfo",
       "mode": "file",
       "note": "nom FR des lieux + taille de groupe conseillée"
+    },
+    {
+      "id": "progression",
+      "path": "Systems/Progression/",
+      "mode": "dir",
+      "note": "compétences : DT_TrainingModules, DT_Perks, effets (GASEffects) et courbes (alimente stuff_skills.json)"
+    },
+    {
+      "id": "ability_tuning",
+      "path": "GadgetsAbilities/CT_",
+      "mode": "dir",
+      "note": "courbes des capacités (CT_AbilityTuning) et d'affichage (CT_AbilityStatDisplay)"
     }
   ],
 

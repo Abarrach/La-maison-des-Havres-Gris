@@ -273,14 +273,16 @@ const STEPS = [
   },
   {
     id: 'snapshot',
-    label: 'Snapshot gaming.tools (liste d\'objets, stats d\'armes, capacités)',
+    label: 'Snapshot gaming.tools (liste d\'objets, stats d\'armes)',
     script: 'tools/build_stuff_snapshot.js',
-    outputs: ['stuff_data.json', 'stuff_skills.json', 'stuff_names.json'],
+    outputs: ['stuff_data.json', 'stuff_names.json'],
     sources: [], paks: [],
     optIn: 'snapshot',
     note: 'Réseau, ~30 min, régulièrement bloqué (403 Cloudflare) y compris depuis le poste de dev. '
-      + 'Seule source des stats d\'ARMES (le datamine ne donne que des références de Blueprints). '
-      + 'Utile surtout quand un patch ajoute de NOUVEAUX objets.',
+      + 'Source des stats d\'ARMES telles que les affiche gaming.tools (les carcasses du jeu, '
+      + 'CDT_WeaponsAndMods, les donnent aussi, mais avec d\'autres conventions : projectiles par tir). '
+      + 'Utile surtout quand un patch ajoute de NOUVEAUX objets. Node bloqué : faire déposer les '
+      + 'fichiers bruts par un navigateur, puis build_stuff_snapshot.js --from=<dossier> (cf. README).',
   },
   {
     id: 'mapstructtypes',
@@ -382,6 +384,18 @@ const STEPS = [
     sources: ['Localization/ST_Localization_Items.json', 'Systems/Items/CDT_BaseItems.json'],
     paks: ['Localization.pak', 'Systems.pak'],
     requiresLocal: ['stuff_loot.json'],
+  },
+  {
+    id: 'skills',
+    label: 'Capacités, techniques et attributs (niveaux, recharges, coûts)',
+    script: 'tools/build_skills_from_datamine.js',
+    args: (c) => [c.exportRoot],
+    outputs: ['stuff_skills.json'],
+    sources: ['Systems/Progression/DT_TrainingModules.json', 'Systems/Progression/DT_Perks.json',
+      'Systems/Progression/GASEffects', 'GadgetsAbilities/CT_AbilityTuning.json', 'GadgetsAbilities/CT_AbilityStatDisplay.json'],
+    paks: ['*'],
+    note: 'Remplace le snapshot gaming.tools des capacités (27/06, d\'avant la refonte 1.5.3.0). '
+      + 'Identifiants gaming.tools conservés : les builds sauvegardés les référencent.',
   },
   {
     id: 'landsraad',
@@ -522,7 +536,7 @@ function entrees(json) {
   };
   if (Array.isArray(json)) { pousserTableau(json); return m; }
   if (typeof json !== 'object') return null;
-  for (const clef of ['items', 'pieces', 'utilities', 'plans', 'augments', 'loot', 'sources', 'locations', 'quests']) {
+  for (const clef of ['items', 'pieces', 'utilities', 'plans', 'augments', 'loot', 'sources', 'locations', 'quests', 'skills']) {
     const v = json[clef];
     if (Array.isArray(v)) { pousserTableau(v); return m; }
     if (v && typeof v === 'object') { for (const [k, val] of Object.entries(v)) m.set(k, val); return m; }

@@ -18,9 +18,25 @@
  *   l'IP est en cooldown → attends 15-30 min et RELANCE : le script est
  *   REPRENABLE (il ne re-télécharge que ce qui manque, et réutilise la liste
  *   déjà générée si items.d.json est bloqué). Relance jusqu'à « 0 restantes ».
+ *
+ * ── Mode hors ligne : --from=<dossier> (2026-10-23) ───────────────────────────
+ * Node est bloqué par Cloudflare, mais un NAVIGATEUR passe. Le navigateur dépose donc
+ * les fichiers bruts dans un dossier (items.d.json, et items/<id>.d.json pour le
+ * détail d'un objet), et ce script les transforme sans toucher au réseau :
+ *   node tools/build_stuff_snapshot.js --from=<dossier>
+ * En mode hors ligne, stuff_recipes.json n'est JAMAIS réécrit (les recettes viennent
+ * du jeu, tools/build_recipes_from_datamine.js) ; le détail d'un objet ne sert qu'à
+ * ses grades (`scaled`) et, à défaut, à sa description.
+ *
+ * Dans les deux modes : la description (`desc`, dataminée) et les grades (`scaled`)
+ * déjà présents sont CONSERVÉS — régénérer la liste les effaçait.
+ * Les capacités (stuff_skills.json) ne sont plus écrites ici : elles viennent du jeu
+ * (tools/build_skills_from_datamine.js), confrontées à gaming.tools le 2026-10-23
+ * (112 sur 113 identiques).
  */
 const fs = require('fs');
 const path = require('path');
+const FROM = (process.argv.find(a => a.startsWith('--from=')) || '').slice(7);
 
 const OUT    = path.resolve(__dirname, '..');            // racine du site
 const LOCALE = 'fr';                                     // langue des données (fr/en/de/es) — on joue en FR
@@ -51,7 +67,16 @@ const compactStats = s => (Array.isArray(s) ? s : []).filter(x => x && x.key)
   .map(x => ({ k: x.key, n: x.name, v: x.value, f: x.format, t: x.type }));
 
 // Renvoie {data} (200), {notFound} (404) ou {blocked} (403/erreur après retries).
+// En mode --from, lit le fichier déposé par le navigateur au lieu d'appeler le CDN.
 async function getJson(url, tries = 5) {
+  if (FROM) {
+    const rel = url.slice(CDN.length + 1);
+    for (const f of [rel, rel.replace(/\.d\.json$/, '.json')]) {
+      const p = path.join(FROM, f);
+      if (fs.existsSync(p)) return { data: JSON.parse(fs.readFileSync(p, 'utf8')) };
+    }
+    return { notFound: true };
+  }
   for (let a = 0; a < tries; a++) {
     let r;
     try { r = await fetch(url, { headers: H }); }
@@ -86,6 +111,17 @@ async function getJson(url, tries = 5) {
       for (const c of it.categories) { const p = c.split('/'); if (p[1] === group && p.length > 2) { const cand = p.slice(1).join('/'); if (cand.length > sub.length) sub = cand; } }
       items.push({ id: it.id, name: it.name, icon: it.iconPath, tier: it.tier, rarity: it.rarity, group, cat: sub, stats: compactStats(it.stats) });
     }
+    // Conserver ce que la liste ne porte pas : description (dataminée) et grades.
+    let avant = [];
+    try { avant = JSON.parse(fs.readFileSync(DATA, 'utf8')).items || []; } catch (e) {}
+    const parId = new Map(avant.map(x => [x.id, x]));
+    for (const it of items) {
+      const o = parId.get(it.id);
+      if (o && o.desc) it.desc = o.desc;
+      if (o && o.scaled) it.scaled = o.scaled;
+    }
+    const nouveaux = items.filter(x => !parId.has(x.id)).map(x => `${x.id} (${x.name})`);
+    if (nouveaux.length) console.log(`    nouveaux objets : ${nouveaux.join(', ')}`);
     fs.writeFileSync(DATA, JSON.stringify({
       generated_at: new Date().toISOString(), mode: 'snapshot', locale: LOCALE, source: 'dune.gaming.tools',
       icon_base: 'https://cdn-hosted.gaming.tools/dune/images', count: items.length, items,
@@ -98,30 +134,30 @@ async function getJson(url, tries = 5) {
     process.exit(1);
   }
 
-  // ── 1bis) Capacités & techniques (skills.d.json — 1 seul fetch) ─────────────
-  console.log('1bis/2 — capacités & techniques…');
-  const skRes = await getJson(`${CDN}/skills.d.json`);
-  if (skRes.data) {
-    const arr = resolveFlat(skRes.data, 0);
-    const skills = (Array.isArray(arr) ? arr : []).map(s => ({
-      id: s.id, name: s.name, icon: s.iconPath, type: s.skillType, tree: s.skillTree,
-      maxLevel: s.maxLevel || 1,
-      stats: (s.stats || []).map(st => ({ lvl: st.level, k: st.key, n: st.name, v: st.value, f: st.format, op: st.operation })),
-    })).filter(s => s.id && s.name);
-    fs.writeFileSync(path.join(OUT, 'stuff_skills.json'), JSON.stringify({
-      generated_at: new Date().toISOString(), locale: LOCALE, source: 'dune.gaming.tools',
-      icon_base: 'https://cdn-hosted.gaming.tools/dune/images', count: skills.length, skills,
-    }));
-    console.log(`    stuff_skills.json — ${skills.length} skills.`);
-  } else if (fs.existsSync(path.join(OUT, 'stuff_skills.json'))) {
-    console.log('    skills.d.json bloqué → on garde stuff_skills.json existant.');
-  } else {
-    console.log('    skills.d.json bloqué et aucun snapshot — capacités/techniques indisponibles (relance plus tard).');
-  }
+  // (Capacités : plus écrites ici, cf. en-tête — tools/build_skills_from_datamine.js.)
 
   // ── 2) Recettes (reprenable) ───────────────────────────────────────────────
-  console.log('2/2 — recettes (lent ; relançable jusqu’à « 0 restantes »)…');
   const data = JSON.parse(fs.readFileSync(DATA, 'utf8'));
+  if (FROM) {
+    // Hors ligne : seulement les détails déposés (grades, description à défaut).
+    let n = 0;
+    for (const it of data.items) {
+      const res = await getJson(`${CDN}/items/${it.id}.d.json`);
+      if (!res.data) continue;
+      const root = resolveFlat(res.data, 0);
+      if (!it.desc && root.description) it.desc = root.description;
+      if (Array.isArray(root.scaledStats) && root.scaledStats.length && !it.scaled) {
+        const sc = {};
+        for (const g of root.scaledStats) { const o = {}; for (const s of (g.stats || [])) o[s.key] = s.value; sc[g.grade] = o; }
+        if (Object.keys(sc).length) it.scaled = sc;
+      }
+      n++;
+    }
+    fs.writeFileSync(DATA, JSON.stringify(data));
+    console.log(`2/2 — ${n} détail(s) d'objet appliqué(s). stuff_recipes.json inchangé (recettes = datamine).`);
+    return;
+  }
+  console.log('2/2 — recettes (lent ; relançable jusqu’à « 0 restantes »)…');
   const ids = data.items.map(i => i.id).filter(Boolean);
   let recipes = {};
   try { recipes = JSON.parse(fs.readFileSync(RECIP, 'utf8')) || {}; } catch (e) {}

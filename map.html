@@ -206,6 +206,13 @@
       gap: 6px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.6);
     }
+    .legend-star {
+      width: 12px; text-align: center; flex-shrink: 0;
+      color: #f3c44f; font-size: 14px; line-height: 1;
+      text-shadow: 0 1px 2px #000;
+    }
+    .dd-legend-hint { font-size: 11px; color: #a89470; max-width: 210px; }
+    .dd-legend-hint:empty { display: none; }
     .legend-item {
       display: flex;
       align-items: center;
@@ -260,6 +267,19 @@
       width: 1px; background: #5c4025;
     }
     .dd-filter-btn:hover { border-color: #f3c44f; transform: translateY(-2px); }
+    /* Envoi de la carte sur Discord (script.js, ddPublishBtn) : allumé quand on
+       peut envoyer, éteint une fois la carte de la semaine partie. */
+    .dd-filter-discord { margin-left: 6px; position: relative; }
+    .dd-filter-discord svg { width: 24px; height: 24px; fill: #5865f2; pointer-events: none; }
+    .dd-discord-badge {
+      position: absolute; top: -5px; right: -5px;
+      min-width: 16px; height: 16px; padding: 0 2px;
+      border-radius: 8px; background: #cda434; color: #1a0505;
+      border: 1px solid #1a0505;
+      font-size: 10px; font-weight: bold; line-height: 14px; text-align: center;
+    }
+    .dd-filter-btn:disabled { cursor: default; }
+    .dd-filter-btn:disabled:hover { border-color: #4a3a22; transform: none; }
     .dd-filter-btn.active {
       filter: none;
       border-color: #f3c44f;
@@ -358,7 +378,11 @@
   <div id="dd-legend">
     <div class="legend-item"><span class="legend-dot" style="background:#cc2222"></span> PVP</div>
     <div class="legend-item"><span class="legend-dot" style="background:#2255cc"></span> PVE</div>
-    <div id="dd-overlay-status" style="font-size:0.75rem;color:#aaa;margin-top:4px;"></div>
+    <div class="legend-item"><span class="legend-star">★</span> Schéma unique / loot ultra-rare</div>
+    <!-- Rappel tant que le filtre ★ est actif (script.js, ddUpdateStatus) -->
+    <div id="dd-star-hint" class="dd-legend-hint" hidden>Filtre ★ actif : seuls les plus gros champs de filons</div>
+    <!-- Vide quand tout va bien ; chargement, récolte en cours ou panne sinon -->
+    <div id="dd-overlay-status" class="dd-legend-hint"></div>
   </div>
 
   <!-- Barre de filtres à icônes (Deep Desert) — peuplée par script.js -->

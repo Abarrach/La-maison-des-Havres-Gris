@@ -84,3 +84,6 @@ tools/dump_usmap.config.json
 # depuis le site : DONNÉE VIVANTE, ne jamais l'écraser ni la supprimer au déploiement.
 bd/data/
 bd/pages/
+
+# Cartes Deep Desert publiées sur Discord + relevé de la semaine — runtime, créé par dd_publish.php
+dd_cartes/

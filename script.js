@@ -171,10 +171,17 @@ async function ddPlanNames() {
 // (ex. « lightornithopterchoamboostheatefficient2_schematic » enseigne
 // « ornithopterlightboost_unique_lessheat_5 »). On essaie les deux, dans les
 // deux conventions de suffixe → 135/140 uniques nommés en FR (seed 01).
-function ddPlanFr(names, itemId, schemId) {
+// La clé trouvée sert d'identifiant stable du schéma dans le relevé envoyé à
+// Discord (`/carte plan`) ; c'est aussi celle du registre des plans de la guilde
+// (`plans_guilde.json` → `possede`), pas encore en production.
+function ddPlanKey(names, itemId, schemId) {
   const cands = [itemId, schemId, (schemId || '').replace(/_schematic$/, ''), 'schematic_' + (itemId || '')];
-  for (const c of cands) if (c && names[c] && names[c].n) return names[c].n;
+  for (const c of cands) if (c && names[c] && names[c].n) return c;
   return null;
+}
+function ddPlanFr(names, itemId, schemId) {
+  const k = ddPlanKey(names, itemId, schemId);
+  return k ? names[k].n : null;
 }
 
 // POI (grottes/labos/épaves) depuis le .d.json gaming.tools — best-effort
@@ -234,6 +241,7 @@ async function fetchDDPois(nn) {
         const id = t.id || e.id || '';
         uniques.push({
           id,
+          pid: ddPlanKey(planNames, id, e.id),
           nom: ddPlanFr(planNames, id, e.id) || t.name || e.name || id,
           p: nl.probability || 0,
         });
@@ -275,20 +283,29 @@ async function fetchDDPois(nn) {
 // donc on récupère tout côté client avec le bon seed (= semaine en cours).
 async function fetchActorsDirect() {
   const nn = currentActorSeed();
-  let data = null;
-  // nn = semaine en cours ; seed=0 = repli ultime si nn échoue totalement
-  for (const seed of [nn, 0]) {
-    try {
-      const r = await fetch(`https://dune-api-v2.gaming.tools/actors?world=deepdesert_1&seed=${seed}`);
-      if (!r.ok) continue;
+  let data = null, recolte = false;
+  try {
+    const r = await fetch(`https://dune-api-v2.gaming.tools/actors?world=deepdesert_1&seed=${nn}`);
+    if (r.ok) {
       const actors = await r.json();
-      if (Array.isArray(actors) && actors.length > 100) { data = processActors(nn, actors); break; }
-    } catch { /* réseau, on essaie le suivant */ }
+      if (Array.isArray(actors) && actors.length > 100) data = processActors(nn, actors);
+      else recolte = Array.isArray(actors);
+    }
+  } catch { /* réseau : on laissera le proxy essayer */ }
+  // Semaine pas encore relevée par gaming.tools : juste après le reset, la
+  // variante répond avec 0 acteur (épice, filons). On ne montre PAS une autre
+  // semaine à la place — l'ancien repli sur seed=0 affichait l'épice d'une autre
+  // carte sous l'étiquette de celle-ci. Les POI, eux, sont fixes par variante et
+  // restent affichables : la carte s'ouvre avec grottes et labos, sans épice.
+  if (!data && recolte) {
+    data = { seed: nn, zones: [], enRecolte: true,
+             layers: { spice_large: [], spice_medium: [], spice_small: [], titanium: [], stravidium: [] } };
   }
   if (!data) return null;
   // POI (best-effort : n'empêche pas l'affichage de l'épice si indisponible)
   const pois = await fetchDDPois(nn);
   if (pois) Object.assign(data.layers, pois);
+  else if (data.enRecolte) return null;
   return data;
 }
 
@@ -316,6 +333,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const userInfo = document.getElementById("user-info");
   if (userInfo) userInfo.innerText = `[${currentUser}] ${isAdmin ? 'Admin' : ''}`;
+
+  // Lien direct vers la Deep Desert (bouton du message Discord) : map.html?carte=dd
+  if (new URLSearchParams(location.search).get('carte') === 'dd') {
+    currentMapId = 'deep_desert';
+    document.querySelectorAll('.map-switch-btn').forEach(b => b.classList.toggle('active', b.dataset.map === 'deep_desert'));
+  }
 
   await checkDeepDesertWipe();
   setupMapSwitcher();
@@ -692,15 +715,44 @@ function ddEsc(s) {
   return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
 
+const DD_ZONE_STYLES = {
+  NullSec:  { color: '#cc2222', fillColor: '#cc2222', fillOpacity: 0.18, weight: 1.5, opacity: 0.7 },
+  Security: { color: '#2255cc', fillColor: '#2255cc', fillOpacity: 0.12, weight: 1,   opacity: 0.5 },
+};
+
+// Ce qu'une couche montre réellement avec les filtres en cours. Partagé par la
+// carte ET par l'image publiée sur Discord : ce qui part sur Discord est
+// exactement ce que l'admin voit à l'écran.
+// `star` = filtre ★ à appliquer (par défaut celui de l'écran).
+function ddFilterList(L0, list, star = ddStarredOnly) {
+  // Filons : seuil de regroupement, relevé quand ★ est actif (« que les gros »)
+  const minNodes = (star && L0.thresholdStar) ? L0.thresholdStar : L0.threshold;
+  if (minNodes) list = list.filter(it => (it.count || 1) >= minNodes);
+  // Filtre global « pépites uniquement » : sur les POI, ne garder que les ★
+  if (star && L0.rare) list = list.filter(it => (it.rarity || 0) >= 3);
+  return list;
+}
+
+// Opacité et plan d'un marqueur (même partage carte / image Discord).
+function ddItemLook(L0, it) {
+  const cnt = it.count  || 1;
+  const rar = it.rarity || 0;
+  // Opacité : POI ordinaire estompé (ni pépite ★ ni notable « gros »),
+  // et champs de filons gradués selon la taille de la concentration.
+  const faded   = L0.rare && rar < 3 && !it.notable;
+  const opacity = L0.cluster ? ddClusterScale(L0, cnt).opacity : (faded ? 0.78 : 1);
+  // Les gros champs passent au-dessus des petits (sinon un 103 nœuds peut se
+  // retrouver caché derrière un 21 nœuds voisin).
+  const zPlan = L0.cluster ? Math.min(19, Math.round(cnt / 6)) : (rar >= 3 ? 20 : (it.notable ? 15 : 10));
+  return { opacity, zPlan };
+}
+
 // Rendu zones PVP/PVE + toutes les couches de marqueurs à partir des données proxy
 function renderDDData(data) {
   if (ddZoneLayer) map.removeLayer(ddZoneLayer);
   ddZoneLayer = L.layerGroup();
 
-  const ZONE_STYLES = {
-    NullSec:  { color: '#cc2222', fillColor: '#cc2222', fillOpacity: 0.18, weight: 1.5, opacity: 0.7 },
-    Security: { color: '#2255cc', fillColor: '#2255cc', fillOpacity: 0.12, weight: 1,   opacity: 0.5 },
-  };
+  const ZONE_STYLES = DD_ZONE_STYLES;
   const ZONE_LABELS = { NullSec: '⚔ PVP (NullSec)', Security: '🛡 PVE (Security)' };
 
   let zoneCount = 0;
@@ -728,22 +780,14 @@ function renderDDData(data) {
   for (const L0 of DD_LAYERS) {
     if (ddLayerGroups[L0.id]) { map.removeLayer(ddLayerGroups[L0.id]); }
     const grp  = L.layerGroup();
-    let list   = layers[L0.id] || [];
-    // Filons : seuil de regroupement, relevé quand ★ est actif (« que les gros »)
-    const minNodes = (ddStarredOnly && L0.thresholdStar) ? L0.thresholdStar : L0.threshold;
-    if (minNodes) list = list.filter(it => (it.count || 1) >= minNodes);
-    // Filtre global « pépites uniquement » : sur les POI, ne garder que les ★
-    if (ddStarredOnly && L0.rare) list = list.filter(it => (it.rarity || 0) >= 3);
+    const list = ddFilterList(L0, layers[L0.id] || []);
     counts[L0.id] = list.length;
     for (const it of list) {
       const pos   = gameToLeaflet(it.x, it.y);
       const cell  = it.cell || 'ABCDEFGHI'[Math.min(8, Math.floor(pos.lat / (DD_IMG_H / 9)))] + Math.min(9, Math.floor(pos.lng / (DD_IMG_W / 9)) + 1);
       const cnt   = it.count || 1;
       const rar   = it.rarity || 0;
-      // Opacité : POI ordinaire estompé (ni pépite ★ ni notable « gros »),
-      // et champs de filons gradués selon la taille de la concentration.
-      const faded   = L0.rare && rar < 3 && !it.notable;
-      const opacity = L0.cluster ? ddClusterScale(L0, cnt).opacity : (faded ? 0.78 : 1);
+      const { opacity, zPlan } = ddItemLook(L0, it);
       let label   = L0.label;
       if (L0.cluster && cnt > 1) label += ` — ${cnt} nœuds`;
       if (rar >= 3) label += ' — ★ ' + ((it.loot && it.loot.length) ? it.loot.join(' + ') : 'loot rare');
@@ -769,9 +813,6 @@ function renderDDData(data) {
              + '</div>';
       }
 
-      // Les gros champs passent au-dessus des petits (sinon un 103 nœuds peut se
-      // retrouver caché derrière un 21 nœuds voisin).
-      const zPlan = L0.cluster ? Math.min(19, Math.round(cnt / 6)) : (rar >= 3 ? 20 : (it.notable ? 15 : 10));
       L.marker(pos, { icon: ddMakeIcon(L0, it), opacity, zIndexOffset: zPlan })
         .bindTooltip(tip, { sticky: true, className: 'dd-zone-tooltip' })
         .addTo(grp);
@@ -794,15 +835,19 @@ function ddRerender() {
   ddUpdateStatus();
 }
 
-// Ligne d'état de la légende. Le rappel « ★ actif » est important : avec le
-// filtre en place à l'ouverture, un joueur ne voit qu'un champ de filons sur
-// une quinzaine, sans forcément comprendre pourquoi.
-let _ddStatusBase = '';
+// Légende. Le rappel « ★ actif » est important : avec le filtre en place à
+// l'ouverture, un joueur ne voit qu'un champ de filons sur une quinzaine, sans
+// forcément comprendre pourquoi. La ligne d'état ne parle que quand quelque chose
+// ne va pas (chargement, récolte en cours, panne) : seed, nombre de zones et
+// source étaient des infos de mise au point, retirées à la demande de l'utilisateur.
 function ddUpdateStatus() {
+  const hint = document.getElementById('dd-star-hint');
+  if (hint) hint.hidden = !ddStarredOnly;
+}
+
+function ddSetStatus(txt) {
   const el = document.getElementById('dd-overlay-status');
-  if (!el || !_ddStatusBase) return;
-  el.textContent = _ddStatusBase
-    + (ddStarredOnly ? ' · ★ actif — décocher pour voir tous les champs de filons' : '');
+  if (el) el.textContent = txt || '';
 }
 
 // Barre de filtres à icônes (boutons ronds cliquables, façon method.gg)
@@ -848,13 +893,14 @@ function buildDDFilterBar(counts) {
     ddRerender();
   });
   bar.appendChild(starBtn);
+  ddRenderPublishBtn();
 
   bar.style.display = 'flex';
 }
 
 async function loadDDOverlay() {
-  const statusEl = document.getElementById('dd-overlay-status');
-  if (statusEl) statusEl.textContent = '⏳ Chargement des zones…';
+  ddSetStatus('⏳ Chargement de la carte…');
+  ddUpdateStatus();
 
   let data = null;
   let fromProxy = false;
@@ -866,7 +912,7 @@ async function loadDDOverlay() {
 
   // ── 2. Repli : proxy PHP (sert un cache s'il a pu en constituer un) ───────
   if (!data) {
-    if (statusEl) statusEl.textContent = '⏳ Tentative via le serveur…';
+    ddSetStatus('⏳ Tentative via le serveur…');
     try {
       const r = await fetch('dd_proxy.php');
       if (r.ok) {
@@ -877,20 +923,322 @@ async function loadDDOverlay() {
   }
 
   if (!data) {
-    if (statusEl) statusEl.textContent = '⚠ Zones non disponibles';
+    ddSetStatus('⚠ Carte de la semaine indisponible');
     console.warn('[DD overlay] Impossible de récupérer les données.');
     return;
   }
 
   window._ddCurrentSeed = data.seed;
-  const { zoneCount, counts } = renderDDData(data);
-  if (statusEl) {
-    const src      = fromProxy ? '📦 proxy' : '🌐 direct';
-    const nbSpice  = (counts && counts.spice_large) || 0;
-    _ddStatusBase  = `✅ Seed #${data.seed} — ${zoneCount} zones · ${nbSpice} grands champs (${src})`;
-    statusEl.style.color = '';
-    ddUpdateStatus();
+  renderDDData(data);
+  // Texte voulu par l'utilisateur (« ça fait plus role play ») pour la fenêtre
+  // entre le reset et le relevé de la semaine par gaming.tools.
+  ddSetStatus(data.enRecolte ? '⏳ Données en cours de récolte — épice et filons de la semaine arrivent bientôt' : '');
+  ddUpdateStatus();
+  // Proxy = cache serveur, pas forcément la semaine en cours : pas d'envoi.
+  if (fromProxy) data.repli = true;
+  ddRefreshPublishState();
+}
+
+// === PUBLICATION SUR DISCORD =========================================
+// Le serveur ne peut PAS lire les données de la semaine (Cloudflare : 403 sur
+// l'API acteurs ET sur le .d.json, revérifié le 2026-10-21 ; seules les tuiles et
+// les icônes passent). C'est donc le navigateur du membre qui compose l'image —
+// fond de la semaine + marqueurs dans la vue de base, la même pour tous (cf.
+// ddDefaultVue) — et qui envoie le relevé de la semaine à `dd_publish.php`.
+// Le bot poste ensuite dans le
+// salon Deep Desert, et `/carte` relit ce relevé sans rien recalculer.
+// Le bouton est ouvert à tous les membres, une fois par semaine (cf. ddPublishBtn).
+// ⚠ Pas de préparation d'avance ni de cron possible : l'épice et les filons d'une
+// semaine n'existent chez gaming.tools qu'une fois cette semaine commencée (les 2
+// variantes à venir y ont 0 acteur, constaté le 2026-10-21), et Chrome sans
+// fenêtre est arrêté par le défi Cloudflare. Voir README.
+// Tuiles et icônes du CDN portent `Access-Control-Allow-Origin: *` : chargées en
+// `crossOrigin`, elles ne « souillent » pas le canevas, qui reste exportable.
+const DD_SHOT_W = 1800;   // largeur de l'image publiée (réduite dans le fil, pleine au clic)
+const DD_TILES  = 8;      // tuiles z3 : 8 × 8, comme dd_map_update.php
+
+function ddLoadImg(src) {
+  return new Promise(res => {
+    const im = new Image();
+    im.crossOrigin = 'anonymous';
+    im.onload  = () => res(im);
+    im.onerror = () => res(null);
+    im.src = src;
+  });
+}
+
+function ddRoundRect(g, x, y, w, h, r) {
+  g.beginPath();
+  if (g.roundRect) g.roundRect(x, y, w, h, r);
+  else g.rect(x, y, w, h);
+}
+
+
+// Compose l'image de la semaine avec une vue donnée. Reprend les règles de la
+// carte (ddFilterList, ddItemLook, ddClusterScale, et le dessin des icônes de
+// ddMakeIcon + CSS de map.html) pour que l'image ressemble à la carte du site.
+async function ddComposeShot(data, vue) {
+  const W  = DD_SHOT_W, sc = W / DD_IMG_W, H = Math.round(DD_IMG_H * sc);
+  // Les icônes de la carte sont en pixels d'ÉCRAN ; la carte vue en entier tient
+  // dans ~1 000 px, d'où ce facteur pour garder les mêmes proportions.
+  const k  = W / 1000;
+  const px = lng => lng * sc;
+  const py = lat => (DD_IMG_H - lat) * sc;   // lat 0 = bas de l'image (rangée A)
+
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  const g = cv.getContext('2d');
+
+  // Fond : les 64 tuiles de la variante, et non deep_desert.jpg — celui-ci n'est
+  // recomposé par cron que le mardi à 6 h 30 UTC : une publication faite juste
+  // après le reset serait partie sur le fond de la semaine précédente. Même
+  // assemblage que dd_map_update.php, étiré comme Leaflet étire deep_desert.jpg.
+  const world = 'deepdesert_1_' + String(data.seed).padStart(2, '0');
+  const tw = W / DD_TILES, th = H / DD_TILES;
+  g.fillStyle = 'rgb(210,175,120)';            // sable neutre si une tuile manque
+  g.fillRect(0, 0, W, H);
+  const tuiles = [];
+  for (let y = 0; y < DD_TILES; y++) for (let x = 0; x < DD_TILES; x++) {
+    tuiles.push(ddLoadImg(`https://cdn-hosted.gaming.tools/dune/map-tiles/${world}/3/${x}_${y}.webp`)
+      .then(im => ({ im, x, y })));
   }
+  let manquantes = 0;
+  for (const { im, x, y } of await Promise.all(tuiles)) {
+    if (im) g.drawImage(im, x * tw, y * th, tw, th); else manquantes++;
+  }
+  if (manquantes > 8) throw new Error(`fond de carte ${world} incomplet (${manquantes} tuiles manquantes)`);
+
+  // Zones PVP/PVE
+  for (const z of (data.zones || [])) {
+    if (!z.bounds || z.bounds.length < 2) continue;
+    const st   = DD_ZONE_STYLES[z.zoneType] || DD_ZONE_STYLES.Security;
+    const pts  = z.bounds.map(b => gameToLeaflet(b.x, b.y));
+    const lats = pts.map(p => p.lat), lngs = pts.map(p => p.lng);
+    const x0 = px(Math.min(...lngs)), x1 = px(Math.max(...lngs));
+    const y0 = py(Math.max(...lats)), y1 = py(Math.min(...lats));
+    g.globalAlpha = st.fillOpacity; g.fillStyle = st.fillColor;
+    g.fillRect(x0, y0, x1 - x0, y1 - y0);
+    g.globalAlpha = st.opacity; g.strokeStyle = st.color; g.lineWidth = st.weight * k;
+    g.strokeRect(x0, y0, x1 - x0, y1 - y0);
+  }
+  g.globalAlpha = 1;
+
+  // PAS de grille dessinée ici : les tuiles gaming.tools portent déjà les lignes
+  // ET le nom de chaque case, en gros. La grille de createDDGrid les doublait sur
+  // l'image (deux étiquettes par case, constaté au premier essai).
+
+  // Marqueurs visibles, dans l'ordre d'empilement de Leaflet (position à l'écran
+  // + zIndexOffset) : un gros champ ne doit pas disparaître sous un petit.
+  const layers = data.layers || {};
+  const shown  = DD_LAYERS.filter(L0 => vue.visible[L0.id]);
+  const icons  = {};
+  await Promise.all(shown.map(async L0 => { icons[L0.id] = await ddLoadImg(`${CDN_ICONS}/${L0.icon}.webp`); }));
+  const items = [];
+  for (const L0 of shown) {
+    for (const it of ddFilterList(L0, layers[L0.id] || [], vue.star)) {
+      const pos = gameToLeaflet(it.x, it.y);
+      items.push({ L0, it, x: px(pos.lng), y: py(pos.lat), ...ddItemLook(L0, it) });
+    }
+  }
+  items.sort((a, b) => (a.y / k + a.zPlan) - (b.y / k + b.zPlan));
+
+  for (const m of items) {
+    const { L0, it } = m;
+    const im = icons[L0.id];
+    if (!im) continue;
+    const cnt = it.count || 1, rar = it.rarity || 0;
+    g.globalAlpha = m.opacity;
+    if (L0.cluster && cnt > 1) {
+      // Champ de filons + pastille de comptage (.dd-cluster-badge)
+      const s = ddClusterScale(L0, cnt).size * k;
+      g.save();
+      g.shadowColor = 'rgba(0,0,0,0.8)'; g.shadowBlur = 2 * k; g.shadowOffsetY = k;
+      g.drawImage(im, m.x - s / 2, m.y - s / 2, s, s);
+      g.restore();
+      const txt = String(cnt);
+      g.font = `bold ${Math.round(10 * k)}px sans-serif`;
+      const bh = 16 * k, bw = Math.max(16 * k, g.measureText(txt).width + 6 * k);
+      const bx = m.x + s / 2 + 8 * k - bw, by = m.y - s / 2 - 6 * k;
+      ddRoundRect(g, bx, by, bw, bh, 8 * k);
+      g.fillStyle = '#cda434'; g.fill();
+      g.lineWidth = k; g.strokeStyle = '#1a0505'; g.stroke();
+      g.fillStyle = '#1a0505'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(txt, bx + bw / 2, by + bh / 2 + k * 0.5);
+      g.textAlign = 'start';
+    } else if (rar >= 3) {
+      // Pépite : anneau doré lumineux + ★ (.dd-rare-ring / .dd-rare-star)
+      const s = L0.size * k, r = s / 2;
+      g.save();
+      g.beginPath(); g.arc(m.x, m.y, r - k, 0, Math.PI * 2);
+      g.fillStyle = 'rgba(0,0,0,0.4)'; g.fill();
+      g.shadowColor = '#f3c44f'; g.shadowBlur = 8 * k;
+      g.lineWidth = 2 * k; g.strokeStyle = '#f3c44f'; g.stroke();
+      g.restore();
+      const si = (L0.size - 8) * k;
+      g.drawImage(im, m.x - si / 2, m.y - si / 2, si, si);
+      g.save();
+      g.font = `${Math.round(13 * k)}px sans-serif`;
+      g.textAlign = 'right'; g.textBaseline = 'top';
+      g.shadowColor = '#000'; g.shadowBlur = 3 * k;
+      g.fillStyle = '#f3c44f';
+      g.fillText('★', m.x + r + 7 * k, m.y - r - 9 * k);
+      g.restore();
+    } else {
+      let s = L0.size;
+      if (L0.rare && !it.notable) s = Math.round(s * 0.6);
+      s *= k;
+      g.drawImage(im, m.x - s / 2, m.y - s / 2, s, s);
+    }
+  }
+  g.globalAlpha = 1;
+
+  return await new Promise(res => cv.toBlob(res, 'image/jpeg', 0.86));
+}
+
+// Relevé de la semaine envoyé avec l'image :
+//  - `affiche` = ce qui est sur l'image (sert au résumé du message) ;
+//  - `sites`   = TOUS les sites à schéma unique, filtres ignorés — `/carte plan`
+//    ne doit pas dépendre de ce que l'admin avait coché.
+function ddShotSnapshot(data, vue) {
+  const layers = data.layers || {};
+  const pick = (it, avecUniques) => {
+    const o = { cell: it.cell || ddCell(it.x, it.y) };
+    if ((it.count || 1) > 1)    o.count = it.count;
+    if (it.name)                o.name  = it.name;
+    if (avecUniques && it.uniques && it.uniques.length) {
+      o.uniques = it.uniques.map(u => ({ nom: u.nom, p: u.p || 0, pid: u.pid || null }));
+    }
+    return o;
+  };
+  const affiche = {};
+  for (const L0 of DD_LAYERS) {
+    if (vue.visible[L0.id]) affiche[L0.id] = ddFilterList(L0, layers[L0.id] || [], vue.star).map(it => pick(it, false));
+  }
+  const sites = [];
+  for (const id of ['cave', 'ecolab', 'shipwreck']) {
+    for (const it of (layers[id] || [])) {
+      if (it.uniques && it.uniques.length) sites.push({ type: id, ...pick(it, true) });
+    }
+  }
+  return { seed: data.seed, affiche, sites };
+}
+
+// Compose et envoie à dd_publish.php, qui poste (ou remplace) le message de la semaine.
+async function ddSendShot(data, vue) {
+  const blob = await ddComposeShot(data, vue);
+  if (!blob) throw new Error("l'image n'a pas pu être générée");
+  const fd = new FormData();
+  fd.append('image', blob, 'carte.jpg');
+  fd.append('releve', JSON.stringify(ddShotSnapshot(data, vue)));
+  if (ddApercu()) fd.append('apercu', '1');
+  const r = await fetch('dd_publish.php', { method: 'POST', body: fd, credentials: 'same-origin' });
+  const j = await r.json().catch(() => ({
+    ok: false,
+    error: r.status === 413 ? "image refusée par le serveur : trop lourde (limite d'envoi nginx/PHP)"
+                            : `réponse illisible du serveur (HTTP ${r.status})`,
+  }));
+  if (!j.ok) throw new Error(j.error || 'échec inconnu');
+  return j;
+}
+
+// Vue d'ouverture du site (défauts de DD_LAYERS, ★ actif) : c'est TOUJOURS elle qui
+// part, admins compris (décision de l'utilisateur, 2026-10-21 : « pour habituer tout
+// le monde à avoir la même chose »). Les filtres de l'écran n'y changent rien.
+function ddDefaultVue() {
+  const visible = {};
+  for (const L0 of DD_LAYERS) visible[L0.id] = !!L0.on;
+  return { visible, star: true };
+}
+
+// Bouton « Envoyer la carte sur Discord », dans la légende Deep Desert, ouvert à
+// TOUS les membres (décision de l'utilisateur, 2026-10-21) : « le premier qui passe
+// envoie l'info ». Une fois la carte de la semaine postée, il est grisé jusqu'au
+// reset ; seul un admin peut alors republier (correction, bug). Le serveur
+// (dd_publish.php) refait le même contrôle : le grisé n'est qu'un confort.
+let _ddPubEtat = null;   // { publiee, par, admin } renvoyé par le serveur
+
+// « Aperçu joueur » (auth-guard.js) : la session PHP reste admin, il faut donc
+// demander au serveur de nous traiter en membre (apercu=1), comme bd/ et les tournois.
+function ddApercu() {
+  try { return localStorage.getItem('previewPlayer') === '1'; } catch { return false; }
+}
+
+// Seules les données de LA semaine, complètes, peuvent partir : ni le cache du
+// proxy (`repli`), ni une semaine encore en cours de récolte chez gaming.tools.
+function ddEnvoyable() {
+  return !!(_ddLastData && !_ddLastData.repli && !_ddLastData.enRecolte);
+}
+
+// Bouton rond de la barre de filtres, à droite de ★ (même gabarit : le libellé
+// vit dans l'infobulle). buildDDFilterBar vide la barre à chaque rendu, d'où la
+// recréation à la demande.
+function ddPublishBtn() {
+  let btn = document.getElementById('ddPublishBtn');
+  if (btn) return btn;
+  const bar = document.getElementById('dd-filter-bar');
+  if (!bar) return null;
+  btn = document.createElement('button');
+  btn.id = 'ddPublishBtn';
+  btn.className = 'dd-filter-btn dd-filter-discord';
+  btn.addEventListener('click', ddPublishDiscord);
+  bar.appendChild(btn);
+  return btn;
+}
+
+// Logo Discord (marque « Clyde », tracé Simple Icons, CC0), en ligne : pas de
+// dépendance à un CDN d'icônes, et la couleur suit l'état du bouton (CSS).
+const DD_DISCORD_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg>';
+
+function ddRenderPublishBtn(occupe) {
+  const btn = ddPublishBtn();
+  if (!btn) return;
+  const e = _ddPubEtat;
+  let badge = '', tip = 'Envoyer la carte de la semaine dans le salon Deep Desert du Discord';
+  let off = !ddEnvoyable();
+  if (occupe) { badge = '⏳'; tip = occupe; off = true; }
+  else if (!_ddLastData) tip = 'Envoi sur Discord — chargement de la carte…';
+  else if (!ddEnvoyable()) tip = 'Envoi sur Discord — données en cours de récolte, réessaie un peu plus tard';
+  else if (e && e.publiee) {
+    if (e.admin && !ddApercu()) tip = `Republier la carte (admin) — déjà envoyée${e.par ? ' par ' + e.par : ''}, remplace le message de la semaine`;
+    else { badge = '✓'; tip = `Carte de la semaine déjà sur Discord${e.par ? ' (envoyée par ' + e.par + ')' : ''} — revient au prochain reset du mardi`; off = true; }
+  }
+  // Logo toujours le même ; une pastille dit « en cours » (⏳) ou « déjà envoyée » (✓).
+  btn.innerHTML = DD_DISCORD_SVG + (badge ? `<span class="dd-discord-badge">${badge}</span>` : '');
+  btn.disabled = off;
+  btn.classList.toggle('active', !off);   // allumé = on peut envoyer
+  btn.dataset.tip = tip;
+  btn.setAttribute('aria-label', tip);
+}
+
+async function ddRefreshPublishState() {
+  try {
+    const r = await fetch('dd_publish.php?action=etat' + (ddApercu() ? '&apercu=1' : ''), { credentials: 'same-origin' });
+    const j = await r.json();
+    if (j.ok) _ddPubEtat = j;
+  } catch { /* hors ligne : le bouton reste utilisable, le serveur tranchera */ }
+  ddRenderPublishBtn();
+}
+
+async function ddPublishDiscord() {
+  if (currentMapId !== 'deep_desert' || !ddEnvoyable()) return;
+  const refait = !!(_ddPubEtat && _ddPubEtat.publiee);
+  showCustomConfirm('ENVOYER SUR DISCORD',
+    "La carte de la semaine part dans le salon Deep Desert, pour toute la guilde, "
+    + "dans sa <b>vue de base</b> (la même pour tous, quels que soient tes filtres)."
+    + (refait ? ' L’ancien message de la semaine sera <b>supprimé</b> et un nouveau posté à la place.' : ' Une seule fois par semaine : le bouton se grise ensuite.'),
+    async () => {
+      ddRenderPublishBtn('Composition et envoi de la carte…');
+      try {
+        const j = await ddSendShot(_ddLastData, ddDefaultVue());
+        showCustomConfirm('CARTE ENVOYÉE',
+          (j.edite ? 'L’ancien message a été retiré et la nouvelle carte postée' : 'La carte est en ligne') + ' dans le salon Deep Desert. Merci !'
+          + (j.lien ? `<br><br><a href="${ddEsc(j.lien)}" target="_blank" rel="noopener" style="color:#f3c44f">Voir le message dans Discord</a>` : ''));
+      } catch (e) {
+        showCustomConfirm('ENVOI IMPOSSIBLE', ddEsc(e.message || String(e)));
+      } finally {
+        await ddRefreshPublishState();
+      }
+    });
 }
 
 function reloadBases() {
@@ -1154,7 +1502,7 @@ function createAdminPanel() {
     <p id="coordDisplay" style="margin-top:10px;font-size:11px;color:#d3b46f;text-align:center;">Cliquez sur la carte...</p>
   `;
   document.body.appendChild(p);
-  
+
   document.getElementById("addBaseBtn").onclick = () => {
     if(!selectedCoords) return alert("Cliquez sur la carte !");
     const n = document.getElementById("baseName").value.trim();

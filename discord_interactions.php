@@ -16,6 +16,7 @@
 //   - /sortie + composants sortie   → epice/discord_sortie.php  (existant, inchangé)
 //   - /commande + composants cmd_   → discord_commande.php      (lot 3+, pas encore livré)
 //   - composants tpari/tparim/tparimes → epice/discord_paris.php (paris des tournois PvP)
+//   - /carte (+ autocomplétion)     → discord_carte.php         (carte Deep Desert de la semaine)
 //
 //  Sécurité : chaque requête Discord est signée. On refuse (401)
 //  tout ce qui n'est pas signé correctement. La clé publique est
@@ -112,6 +113,7 @@ function detect_route(array $body): ?string {
         if ($name === 'sortie')   return 'sortie';
         if ($name === 'commande') return 'commande';
         if ($name === 'plan')     return 'plan';
+        if ($name === 'carte')    return 'carte';
         return null;
     }
 
@@ -197,6 +199,11 @@ if ($route === 'commande') {
 
 if ($route === 'plan') {
     require __DIR__ . '/discord_plan.php';
+    exit;
+}
+
+if ($route === 'carte') {
+    require __DIR__ . '/discord_carte.php';
     exit;
 }
 

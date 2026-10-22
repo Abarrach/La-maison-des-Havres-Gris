@@ -221,6 +221,22 @@
       font-size: 12px;
       font-weight: bold;
     }
+    /* Recherche « où tombe ce schéma ? » en tête de la légende DD */
+    #dd-search[hidden] { display: none; }
+    #dd-search-input {
+      width: 230px; box-sizing: border-box; padding: 5px 8px;
+      background: rgba(0,0,0,0.5); color: #f5deb3;
+      border: 1px solid #5c4025; border-radius: 4px; font-size: 12px;
+    }
+    #dd-search-input:focus { outline: none; border-color: #cda434; }
+    #dd-search-res { max-width: 230px; max-height: 200px; overflow-y: auto; margin-top: 4px; }
+    #dd-search-res:empty { display: none; }
+    .dd-search-site { font-size: 11px; color: #e8d4a8; padding: 3px 4px; border-radius: 3px; cursor: pointer; }
+    .dd-search-site:hover { background: rgba(205,164,52,0.18); }
+    .dd-search-site b { color: #f3c44f; }
+    .dd-search-agg, .dd-search-vide { cursor: default; color: #a89470; font-style: italic; font-size: 11px; }
+    /* `hidden` seul ne gagne pas contre le display:flex de .legend-item */
+    .legend-item[hidden] { display: none; }
     .legend-dot {
       width: 12px;
       height: 12px;
@@ -240,6 +256,9 @@
       flex-wrap: wrap;
       gap: 6px;
       justify-content: center;
+      /* Sans max-content, left:50% + translateX(-50%) borne la largeur à la MOITIÉ de
+         l'écran : avec 18 couches la barre passait à la ligne à mi-écran. */
+      width: max-content;
       max-width: 90vw;
       padding: 6px 10px;
       background: rgba(20, 12, 4, 0.92);
@@ -261,6 +280,8 @@
       filter: grayscale(1) opacity(0.45);
     }
     .dd-filter-btn img { width: 26px; height: 26px; pointer-events: none; }
+    /* Trait entre deux familles de couches (épice | filons | sites | ressources) */
+    .dd-filter-sep { width: 1px; align-self: stretch; margin: 4px 2px; background: #5c4025; }
     .dd-filter-star { margin-left: 12px; position: relative; }
     .dd-filter-star::before {
       content: ""; position: absolute; left: -7px; top: 6px; bottom: 6px;
@@ -376,8 +397,16 @@
   </div>
 
   <div id="dd-legend">
-    <div class="legend-item"><span class="legend-dot" style="background:#cc2222"></span> PVP</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#2255cc"></span> PVE</div>
+    <!-- « Où tombe ce schéma ? » (script.js, ddBuildSearch / ddSearch) : masqué tant
+         que les sites de la semaine ne sont pas chargés -->
+    <div id="dd-search" hidden>
+      <input id="dd-search-input" list="dd-search-list" type="search" autocomplete="off"
+             placeholder="Où tombe… (schéma unique)" aria-label="Où tombe ce schéma unique cette semaine">
+      <datalist id="dd-search-list"></datalist>
+      <div id="dd-search-res"></div>
+    </div>
+    <div class="legend-item dd-legend-zone"><span class="legend-dot" style="background:#cc2222"></span> PVP</div>
+    <div class="legend-item dd-legend-zone"><span class="legend-dot" style="background:#2255cc"></span> PVE</div>
     <div class="legend-item"><span class="legend-star">★</span> Schéma unique / loot ultra-rare</div>
     <!-- Rappel tant que le filtre ★ est actif (script.js, ddUpdateStatus) -->
     <div id="dd-star-hint" class="dd-legend-hint" hidden>Filtre ★ actif : seuls les plus gros champs de filons</div>

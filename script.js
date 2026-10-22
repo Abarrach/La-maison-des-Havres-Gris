@@ -123,9 +123,19 @@ function ddFlatResolve(flat, i, skip, depth = 0) {
 }
 
 // Acteurs bruts → couches (zones, épice L/M/S, filons regroupés)
+// Les noms d'acteurs ne sont pas ceux des ressources : AzuriteOre = cuivre,
+// DolomiteOre = carbone, MagnetiteOre = fer (correspondances de gaming.tools).
+// ⚠ Les zones PVP/PVE (BP_SecurityZone_C) ne sont PLUS publiées depuis la variante 7
+// (semaine du 22/09/2026, juste après la 1.5.3.0) : 0 sur les variantes 7 à 11, 43 à
+// 48 sur les 2 à 6. La légende PVP/PVE se masque donc quand il n'y en a aucune.
+const DD_ORES = {
+  bauxiteore: 'aluminium', azuriteore: 'copper', magnetiteore: 'iron',
+  dolomiterock: 'carbon', erythriteore: 'erythrite',
+};
 function processActors(seed, actors) {
   const zones = [];
-  const spiceL = [], spiceM = [], spiceS = [], tiPts = [], stPts = [];
+  const spiceL = [], spiceM = [], spiceS = [], tiPts = [], stPts = [], sable = [], tombees = [];
+  const ores = Object.fromEntries(Object.values(DD_ORES).map(k => [k, []]));
   for (const a of actors) {
     const mk = a.map_marker_id;
     if (a.type === 'BP_SecurityZone_C') {
@@ -135,15 +145,20 @@ function processActors(seed, actors) {
     else if (mk === 'spicefieldsmall')    spiceS.push({ x: a.x, y: a.y, cell: ddCell(a.x, a.y) });
     else if (mk === 'titaniumore')        tiPts.push({ x: a.x, y: a.y });
     else if (mk === 'stravidiumore')      stPts.push({ x: a.x, y: a.y });
+    else if (DD_ORES[mk])                 ores[DD_ORES[mk]].push({ x: a.x, y: a.y });
+    else if (mk === 'floursand')          sable.push({ x: a.x, y: a.y, cell: ddCell(a.x, a.y) });
+    // Épave « tombée » : petite épave semée dans le désert (≈ 110 par variante), même
+    // table de butin partout, attachée ensuite depuis le .d.json (cf. fetchDDPois).
+    else if (/^BP_SmallShipwreck/.test(a.type)) tombees.push({ x: a.x, y: a.y, cell: ddCell(a.x, a.y) });
   }
-  return {
-    seed, zones,
-    layers: {
-      spice_large: spiceL, spice_medium: spiceM, spice_small: spiceS,
-      titanium: ddClusterPts(tiPts), stravidium: ddClusterPts(stPts),
-      cave: [], ecolab: [], shipwreck: [],
-    },
+  const layers = {
+    spice_large: spiceL, spice_medium: spiceM, spice_small: spiceS,
+    titanium: ddClusterPts(tiPts), stravidium: ddClusterPts(stPts),
+    floursand: sable, fallen: tombees,
+    cave: [], ecolab: [], shipwreck: [],
   };
+  for (const [k, pts] of Object.entries(ores)) layers[k] = ddClusterPts(pts);
+  return { seed, zones, layers };
 }
 
 // ── Noms FR des schémas uniques ──────────────────────────────────────────────
@@ -184,6 +199,27 @@ function ddPlanFr(names, itemId, schemId) {
   return k ? names[k].n : null;
 }
 
+// { id → { nom, pve, pvp } } → liste triée des schémas uniques d'un site.
+//   p  = chance PvE (ou commune si le coffre n'a pas de zone) — la référence affichée,
+//        et la seule qui vaille sur toute la carte de l'instance PvE ;
+//   pp = chance PvP, seulement quand elle diffère ;
+//   seulPvp = schéma absent de la table PvE.
+function ddUniquesListe(acc) {
+  return Object.values(acc).map(r => {
+    const u = { id: r.id, pid: r.pid, nom: r.nom, p: r.pve !== null ? r.pve : r.pvp };
+    if (r.pve !== null && r.pvp !== null && Math.abs(r.pvp - r.pve) > 1e-9) u.pp = r.pvp;
+    if (r.pve === null && r.pvp !== null) u.seulPvp = true;
+    return u;
+  }).sort((a, b) => Math.max(b.p, b.pp || 0) - Math.max(a.p, a.pp || 0));
+}
+
+// Chance(s) d'un schéma, pour une infobulle ou un résultat de recherche.
+function ddPctTxt(u) {
+  const pct = v => (v >= 0.01 ? Math.round(v * 100) + ' %' : '< 1 %');
+  if (u.seulPvp) return pct(u.p) + ' en PvP';
+  return pct(u.p) + (u.pp !== undefined ? ` · PvP ${pct(u.pp)}` : '');
+}
+
 // POI (grottes/labos/épaves) depuis le .d.json gaming.tools — best-effort
 let _ddPoiCache = {};
 async function fetchDDPois(nn) {
@@ -198,9 +234,22 @@ async function fetchDDPois(nn) {
     const locs = root.locations || [];
     const planNames = await ddPlanNames();
     const RANK = { Basic: 1, Rare: 2, UltraRare: 3 };
-    const out = { cave: [], ecolab: [], shipwreck: [] };
+    const out = { cave: [], ecolab: [], shipwreck: [], intel: [], house: [], lootur: [], _fallen: null };
     const sites = {};  // clé « nom|cellule » → site
     const keyOf = (name, gridCell) => (name || '') + '|' + (gridCell || '');
+
+    // 0) Points sans butin : renseignements et représentants des Maisons du Landsraad
+    //    (l'icône du représentant porte le nom de la Maison : on la garde par marqueur).
+    for (const l of locs) {
+      const loc = l.location;
+      if (!loc || typeof loc !== 'object') continue;
+      if (l.locationType === 'intelPoint') {
+        out.intel.push({ x: loc.x, y: loc.y, cell: ddCell(loc.x, loc.y) });
+      } else if (l.locationType === 'marker' && /^houserepresentative/.test(l.iconId || '')) {
+        out.house.push({ x: loc.x, y: loc.y, cell: ddCell(loc.x, loc.y), icon: l.iconId,
+                         name: (l.name || '').replace(/^House (.+?) Representative$/, 'Maison $1').trim() });
+      }
+    }
 
     // 1) SITES depuis les marqueurs (dédup nom+cellule : des grottes différentes
     //    partagent le même nom, ex. « Forgotten Cave » → ne PAS fusionner).
@@ -208,7 +257,7 @@ async function fetchDDPois(nn) {
     //    chez gaming.tools (vérifié : 6 grottes A1 A5 A8 C3 C7 I5).
     for (const l of locs) {
       if ((l.locationType || '') !== 'marker') continue;
-      if (!out[l.iconId]) continue;            // uniquement grottes/labos/épaves
+      if (!['cave', 'ecolab', 'shipwreck'].includes(l.iconId)) continue;
       const loc = l.location;
       if (!loc || typeof loc !== 'object') continue;
       const key = keyOf(l.name, l.gridCell);
@@ -224,6 +273,34 @@ async function fetchDDPois(nn) {
     }
 
     // 2) LOOT depuis les coffres, rattaché au site parent (nom+cellule)
+    //    ⚠ PvE / PvP : un même coffre est listé DEUX fois, une par zone (`zone`), avec
+    //    des chances très différentes — épave tombée : 2,7 % en PvE, 19,6 % en PvP ;
+    //    labo ultra-rare : 38 uniques en PvE, 24 en PvP. Les fusionner en gardant la
+    //    meilleure chance affichait la chance PvP partout (constaté le 2026-10-22).
+    //    Et les zones ne sont plus publiées (cf. processActors) : impossible de dire
+    //    dans laquelle tombe un site, on garde donc les DEUX chances.
+    const tirages = (l) => {
+      const out2 = [];
+      for (const nl of (l.notableLoot || [])) {
+        const e = nl.entity || {};
+        if (!e.isSchematic || e.rarity !== 'Unique') continue;
+        const t = (e.teachesItems && e.teachesItems[0]) || {};
+        const id = t.id || e.id || '';
+        out2.push({ id, pid: ddPlanKey(planNames, id, e.id),
+                    nom: ddPlanFr(planNames, id, e.id) || t.name || e.name || id, p: nl.probability || 0 });
+      }
+      return out2;
+    };
+    // Range une chance dans la bonne colonne : coffre PvE, PvP, ou sans zone (= les deux).
+    const ranger = (acc, l) => {
+      for (const u of tirages(l)) {
+        const r = acc[u.id] || (acc[u.id] = { id: u.id, pid: u.pid, nom: u.nom, pve: null, pvp: null });
+        for (const z of (l.zone === 'pve' ? ['pve'] : l.zone === 'pvp' ? ['pvp'] : ['pve', 'pvp'])) {
+          if (r[z] === null || u.p > r[z]) r[z] = u.p;
+        }
+      }
+    };
+    const fallen = {};
     for (const l of locs) {
       if ((l.locationType || '') !== 'lootContainer') continue;
       const lt = l.lootTable || '';
@@ -231,41 +308,35 @@ async function fetchDDPois(nn) {
       const m = lt.match(/(UltraRare|Rare|Basic)_(Cave|Ecolab|Shipwreck)/);
       const tier = m ? RANK[m[1]] : 0;
       const lbl = isUnique ? 'Schéma unique' : (tier === 3 ? 'Coffre ultra-rare' : null);
+      const parents = (l.parentMarkers || []).filter(p => p && p.name);
 
-      // Schémas uniques réellement listés dans le coffre (nom + chance de tirage)
-      const uniques = [];
-      for (const nl of (l.notableLoot || [])) {
-        const e = nl.entity || {};
-        if (!e.isSchematic || e.rarity !== 'Unique') continue;
-        const t = (e.teachesItems && e.teachesItems[0]) || {};
-        const id = t.id || e.id || '';
-        uniques.push({
-          id,
-          pid: ddPlanKey(planNames, id, e.id),
-          nom: ddPlanFr(planNames, id, e.id) || t.name || e.name || id,
-          p: nl.probability || 0,
-        });
+      // Épaves tombées : la même table pour les ~110 épaves, décrite une fois par zone.
+      if (/SmallShipwreck/.test(lt)) { ranger(fallen, l); continue; }
+      // Coffre ultra-rare posé dans le désert, hors de tout site : sa propre couche.
+      if (!parents.length && (isUnique || tier === 3) && l.location) {
+        const acc = {};
+        ranger(acc, l);
+        out.lootur.push({ x: l.location.x, y: l.location.y, cell: ddCell(l.location.x, l.location.y),
+                          rarity: 3, loot: [lbl], uniques: ddUniquesListe(acc) });
+        continue;
       }
 
-      for (const p of (l.parentMarkers || [])) {
-        if (!p || !p.name) continue;
+      for (const p of parents) {
         const s = sites[keyOf(p.name, p.gridCell)];
         if (!s) continue;                      // le parent doit exister comme marqueur
         if (tier > s.tier) s.tier = tier;
         if (isUnique) s.unique = true;
         if (lbl) s._loot[lbl] = true;
-        // Un même coffre est listé une fois par marqueur parent : on dédoublonne
-        // par id d'objet et on garde la meilleure chance vue.
-        for (const u of uniques) {
-          const prev = s._uniq[u.id];
-          if (!prev || u.p > prev.p) s._uniq[u.id] = u;
-        }
+        // Un même coffre est listé une fois par marqueur parent : `ranger`
+        // dédoublonne par id d'objet et garde la meilleure chance de chaque zone.
+        ranger(s._uniq, l);
       }
     }
+    out._fallen = ddUniquesListe(fallen);
 
     // rarity ≥ 3 = ★ pépite (schéma unique listé, coffre Unique OU palier UltraRare)
     for (const s of Object.values(sites)) {
-      s.uniques = Object.values(s._uniq).sort((a, b) => b.p - a.p);
+      s.uniques = ddUniquesListe(s._uniq);
       if (s.uniques.length) s.unique = true;
       s.rarity = (s.unique || s.tier >= 3) ? 3 : s.tier;
       s.loot = Object.keys(s._loot);
@@ -304,7 +375,12 @@ async function fetchActorsDirect() {
   if (!data) return null;
   // POI (best-effort : n'empêche pas l'affichage de l'épice si indisponible)
   const pois = await fetchDDPois(nn);
-  if (pois) Object.assign(data.layers, pois);
+  if (pois) {
+    const { _fallen, ...couches } = pois;
+    Object.assign(data.layers, couches);
+    // Les positions des épaves tombées viennent des acteurs, leur butin du .d.json.
+    for (const it of (data.layers.fallen || [])) it.uniques = _fallen || [];
+  }
   else if (data.enRecolte) return null;
   return data;
 }
@@ -565,6 +641,7 @@ async function loadMapLayer(mapId) {
       if (ddLayerGroups[id]) map.removeLayer(ddLayerGroups[id]);
     }
     ddLayerGroups = {};
+    ddSearchClear();
     ddOverlayShown = false;
   }
 
@@ -620,14 +697,34 @@ const DD_CLUSTER_MIN_STAR = 70;
 // Nombre de schémas uniques détaillés dans une infobulle (le reste est résumé).
 const DD_UNIQUES_MAX = 8;
 
+// `group` sépare la barre de filtres en familles (un trait entre deux familles).
+// Toutes les couches ajoutées le 2026-10-22 sont DÉCOCHÉES par défaut : la vue par
+// défaut est aussi celle de l'image envoyée sur Discord (ddDefaultVue), qui ne doit
+// pas changer sans décision.
 const DD_LAYERS = [
-  { id: 'spice_large',  label: "Grand champ d'épice",   icon: 'spicefieldlarge',  size: 64, on: true  },
-  { id: 'spice_medium', label: "Champ d'épice moyen",   icon: 'spicefieldmedium', size: 24, on: false },
-  { id: 'titanium',     label: 'Titane (champ regroupé)',     icon: 'titaniumore',   size: 54, on: true, cluster: true, threshold: DD_CLUSTER_MIN, thresholdStar: DD_CLUSTER_MIN_STAR },
-  { id: 'stravidium',   label: 'Stravidium (champ regroupé)', icon: 'stravidiumore', size: 54, on: true, cluster: true, threshold: DD_CLUSTER_MIN, thresholdStar: DD_CLUSTER_MIN_STAR },
-  { id: 'ecolab',       label: 'Labos (pépites surlignées)', icon: 'ecolab',     size: 52, on: true,  rare: true },
-  { id: 'cave',         label: 'Grottes (pépites surlignées)', icon: 'cave',   size: 52, on: true,  rare: true },
-  { id: 'shipwreck',    label: 'Épaves (pépites surlignées)',  icon: 'shipwreck', size: 54, on: false, rare: true },
+  { id: 'spice_large',  group: 'epice', label: "Grand champ d'épice",   icon: 'spicefieldlarge',  size: 64, on: true  },
+  { id: 'spice_medium', group: 'epice', label: "Champ d'épice moyen",   icon: 'spicefieldmedium', size: 24, on: false },
+  { id: 'spice_small',  group: 'epice', label: "Petit champ d'épice",   icon: 'spicefieldsmall',  size: 16, on: false },
+  { id: 'titanium',     group: 'filons', label: 'Titane (champ regroupé)',     icon: 'titaniumore',   size: 54, on: true, cluster: true, threshold: DD_CLUSTER_MIN, thresholdStar: DD_CLUSTER_MIN_STAR },
+  { id: 'stravidium',   group: 'filons', label: 'Stravidium (champ regroupé)', icon: 'stravidiumore', size: 54, on: true, cluster: true, threshold: DD_CLUSTER_MIN, thresholdStar: DD_CLUSTER_MIN_STAR },
+  { id: 'ecolab',       group: 'sites', label: 'Labos (pépites surlignées)', icon: 'ecolab',     size: 52, on: true,  rare: true },
+  { id: 'cave',         group: 'sites', label: 'Grottes (pépites surlignées)', icon: 'cave',   size: 52, on: true,  rare: true },
+  { id: 'shipwreck',    group: 'sites', label: 'Épaves (pépites surlignées)',  icon: 'shipwreck', size: 54, on: false, rare: true },
+  { id: 'lootur',       group: 'sites', label: 'Coffre ultra-rare isolé (hors site)', icon: 'lootcontainer', size: 40, on: false, rare: true },
+  // Épaves tombées : ~110 par carte, même butin partout → pas des pépites (★ ne les
+  // retient pas), mais leurs chances PvP sont parmi les meilleures du Deep Desert.
+  { id: 'fallen',       group: 'sites', label: 'Épaves tombées', icon: 'salvagesteel', size: 30, on: false },
+  { id: 'intel',        group: 'sites', label: 'Points de renseignement', icon: 'intel', size: 32, on: false },
+  { id: 'house',        group: 'sites', label: 'Représentants des Maisons', icon: 'houserepresentativemaros', size: 40, on: false },
+  // Autres ressources. Aluminium et cuivre se comptent en centaines de nœuds : mêmes
+  // seuils que le titane. Fer, carbone et érythrite tiennent en un ou deux champs sur
+  // toute la carte (relevé de la variante 11) : seuil à 1, ★ ne les cache pas.
+  { id: 'aluminium',    group: 'ress', label: "Minerai d'aluminium (champ regroupé)", icon: 'bauxiteore', size: 44, on: false, cluster: true, threshold: DD_CLUSTER_MIN, thresholdStar: DD_CLUSTER_MIN_STAR },
+  { id: 'copper',       group: 'ress', label: 'Minerai de cuivre (champ regroupé)',  icon: 'azuriteore',  size: 44, on: false, cluster: true, threshold: DD_CLUSTER_MIN, thresholdStar: DD_CLUSTER_MIN_STAR },
+  { id: 'iron',         group: 'ress', label: 'Minerai de fer',      icon: 'magnetiteore',  size: 44, on: false, cluster: true, threshold: 1, thresholdStar: 1 },
+  { id: 'carbon',       group: 'ress', label: 'Minerai de carbone',  icon: 'dolomiterock',  size: 44, on: false, cluster: true, threshold: 1, thresholdStar: 1 },
+  { id: 'erythrite',    group: 'ress', label: "Cristal d'érythrite", icon: 'erythriteore',  size: 44, on: false, cluster: true, threshold: 1, thresholdStar: 1 },
+  { id: 'floursand',    group: 'ress', label: 'Sable farine',        icon: 'floursand',     size: 28, on: false },
 ];
 
 // Clés d'état versionnées : en changer le numéro REMET TOUT LE MONDE aux
@@ -681,7 +778,7 @@ function ddClusterScale(layer, count) {
 // Icône d'un marqueur : pastille de comptage (concentration de filons),
 // anneau doré pour un site notable (★ si coffre Unique/UltraRare) ou icône simple.
 function ddMakeIcon(layer, item) {
-  const url = `${CDN_ICONS}/${layer.icon}.webp`;
+  const url = `${CDN_ICONS}/${item.icon || layer.icon}.webp`;   // icône propre au marqueur (Maison)
   let   s   = layer.size;
   const count  = item.count  || 1;
   const rarity = item.rarity || 0;
@@ -769,6 +866,9 @@ function renderDDData(data) {
     zoneCount++;
   }
   ddZoneLayer.addTo(map);
+  // Plus de zones publiées depuis la semaine du 22/09/2026 : une légende PVP/PVE sans
+  // aucune zone dessinée laisserait croire que toute la carte est d'un seul type.
+  document.querySelectorAll('.dd-legend-zone').forEach(el => { el.hidden = !zoneCount; });
 
   // Couches de marqueurs (épice, filons, POI) — rétro-compat : si pas de
   // `layers`, on retombe sur l'ancien `resources` (= grands champs d'épice).
@@ -804,12 +904,14 @@ function renderDDData(data) {
       // probabilité vaut donc bien mieux qu'un site à 50 entrées.
       let tip = ddEsc(label);
       if (it.uniques && it.uniques.length) {
-        const pct  = v => (v >= 0.01 ? Math.round(v * 100) + ' %' : '< 1 %');
         const top  = it.uniques.slice(0, DD_UNIQUES_MAX);   // déjà triés par probabilité
         const rest = it.uniques.length - top.length;
+        const der  = top[top.length - 1];
         tip += `<div class="dd-tip-uniques"><b>Schémas uniques (${it.uniques.length})</b>`
-             + top.map(u => `<div>• ${ddEsc(u.nom)}${u.p ? ` <span class="dd-tip-pct">${pct(u.p)}</span>` : ''}</div>`).join('')
-             + (rest ? `<div class="dd-tip-more">+ ${rest} autre${rest > 1 ? 's' : ''}, ${pct(top[top.length - 1].p)} ou moins</div>` : '')
+             + top.map(u => `<div>• ${ddEsc(u.nom)}${u.p ? ` <span class="dd-tip-pct">${ddPctTxt(u)}</span>` : ''}</div>`).join('')
+             + (rest ? `<div class="dd-tip-more">+ ${rest} autre${rest > 1 ? 's' : ''}, ${ddPctTxt({ p: Math.max(der.p, der.pp || 0) })} ou moins</div>` : '')
+             + (it.uniques.some(u => u.pp !== undefined || u.seulPvp)
+                 ? '<div class="dd-tip-more">Chance PvE, puis PvP quand la table diffère</div>' : '')
              + '</div>';
       }
 
@@ -825,8 +927,91 @@ function renderDDData(data) {
   }
 
   buildDDFilterBar(counts);
+  ddBuildSearch(layers);
   ddOverlayShown = true;
   return { zoneCount, counts };
+}
+
+// === « OÙ TOMBE CE SCHÉMA ? » ===========================================
+// Recherche d'un schéma unique parmi les sites de LA semaine : liste des sites où il
+// peut tomber, chance par site (PvE, puis PvP si la table diffère), et anneau doré
+// sur la carte. Le contenu des tables ne change pas d'une semaine à l'autre, c'est
+// leur PLACEMENT qui tourne (cf. README) : la question utile est donc « où, cette
+// semaine », pas « quoi ».
+// Les épaves tombées (~110, même table partout) sont résumées en une ligne : un
+// anneau sur chacune noierait la carte.
+const DD_SITE_TYPES = { cave: 'Grotte', ecolab: 'Labo', shipwreck: 'Épave', lootur: 'Coffre isolé' };
+let _ddSearchIndex = null;   // nom FR → [{ id, it, u }]
+let _ddSearchLayer = null;
+
+function ddBuildSearch(layers) {
+  const idx = new Map();
+  const ajout = (id, it, u) => {
+    if (!idx.has(u.nom)) idx.set(u.nom, []);
+    idx.get(u.nom).push({ id, it, u });
+  };
+  for (const id of [...Object.keys(DD_SITE_TYPES), 'fallen']) {
+    for (const it of (layers[id] || [])) {
+      for (const u of (it.uniques || [])) ajout(id, it, u);
+      if (id === 'fallen') break;          // même table partout : un exemplaire suffit
+    }
+  }
+  _ddSearchIndex = idx;
+  const dl = document.getElementById('dd-search-list');
+  if (dl) dl.innerHTML = [...idx.keys()].sort((a, b) => a.localeCompare(b, 'fr'))
+    .map(n => `<option value="${ddEsc(n)}"></option>`).join('');
+  const box = document.getElementById('dd-search');
+  if (box) box.hidden = !idx.size;
+  const inp = document.getElementById('dd-search-input');
+  if (inp && inp.value) ddSearch(inp.value);   // re-rendu (filtre ★…) : garder la recherche
+}
+
+// Le champ propose les noms (datalist) ; on cherche dès qu'un nom exact est choisi.
+(function ddSearchInit() {
+  const inp = document.getElementById('dd-search-input');
+  if (!inp) return;
+  inp.addEventListener('input', () => {
+    if (!inp.value.trim()) ddSearchClear();
+    else if (_ddSearchIndex && _ddSearchIndex.has(inp.value.trim())) ddSearch(inp.value);
+  });
+  inp.addEventListener('change', () => ddSearch(inp.value));
+})();
+
+function ddSearchClear() {
+  if (_ddSearchLayer) { map.removeLayer(_ddSearchLayer); _ddSearchLayer = null; }
+  const res = document.getElementById('dd-search-res');
+  if (res) res.innerHTML = '';
+}
+
+function ddSearch(nom) {
+  ddSearchClear();
+  const res = document.getElementById('dd-search-res');
+  const hits = (_ddSearchIndex && _ddSearchIndex.get(nom.trim())) || null;
+  if (!res || !nom.trim()) return;
+  if (!hits) { res.innerHTML = '<div class="dd-search-vide">Aucun site de cette semaine ne le propose.</div>'; return; }
+  const fort = h => Math.max(h.u.p, h.u.pp || 0);
+  const sites = hits.filter(h => h.id !== 'fallen').sort((a, b) => fort(b) - fort(a));
+  const tombe = hits.find(h => h.id === 'fallen');
+  _ddSearchLayer = L.layerGroup().addTo(map);
+  const pts = [];
+  let h = '';
+  for (const [i, s] of sites.entries()) {
+    const pos = gameToLeaflet(s.it.x, s.it.y);
+    pts.push(pos);
+    L.circleMarker(pos, { radius: 22, color: '#f3c44f', weight: 3, fill: false, interactive: false })
+      .addTo(_ddSearchLayer);
+    h += `<div class="dd-search-site" data-i="${i}">${DD_SITE_TYPES[s.id]} <b>${ddEsc(s.it.cell || '')}</b>`
+       + `${s.it.name ? ' · ' + ddEsc(s.it.name) : ''} — ${ddPctTxt(s.u)}</div>`;
+  }
+  if (tombe) {
+    const n = ((_ddLastData && _ddLastData.layers && _ddLastData.layers.fallen) || []).length;
+    h += `<div class="dd-search-site dd-search-agg">Épaves tombées (${n} sur la carte) — ${ddPctTxt(tombe.u)}</div>`;
+  }
+  res.innerHTML = h;
+  res.querySelectorAll('.dd-search-site[data-i]').forEach(el => {
+    el.addEventListener('click', () => map.setView(pts[+el.dataset.i], Math.max(map.getZoom(), -2)));
+  });
+  if (pts.length) map.fitBounds(L.latLngBounds(pts).pad(0.3), { maxZoom: map.getZoom() });
 }
 
 // Re-rendu des couches POI sans refetch (bascule du filtre global)
@@ -856,7 +1041,14 @@ function buildDDFilterBar(counts) {
   if (!bar) return;
   bar.innerHTML = '';
   const visible = loadDDFilterState();
+  let famille = null;
   for (const L0 of DD_LAYERS) {
+    if (famille !== null && L0.group !== famille) {
+      const sep = document.createElement('span');
+      sep.className = 'dd-filter-sep';
+      bar.appendChild(sep);
+    }
+    famille = L0.group;
     const n   = counts ? (counts[L0.id] || 0) : 0;
     const btn = document.createElement('button');
     btn.className = 'dd-filter-btn' + (visible[L0.id] ? ' active' : '');
@@ -1106,7 +1298,13 @@ function ddShotSnapshot(data, vue) {
     if ((it.count || 1) > 1)    o.count = it.count;
     if (it.name)                o.name  = it.name;
     if (avecUniques && it.uniques && it.uniques.length) {
-      o.uniques = it.uniques.map(u => ({ nom: u.nom, p: u.p || 0, pid: u.pid || null }));
+      // p = chance PvE, pp = chance PvP quand elle diffère ; un schéma absent de la
+      // table PvE part en p = 0 + pp (cf. dd_pct_site côté bot).
+      o.uniques = it.uniques.map(u => {
+        const r = { nom: u.nom, p: u.seulPvp ? 0 : (u.p || 0), pid: u.pid || null };
+        if (u.seulPvp) r.pp = u.p || 0; else if (u.pp !== undefined) r.pp = u.pp;
+        return r;
+      });
     }
     return o;
   };
@@ -1115,7 +1313,7 @@ function ddShotSnapshot(data, vue) {
     if (vue.visible[L0.id]) affiche[L0.id] = ddFilterList(L0, layers[L0.id] || [], vue.star).map(it => pick(it, false));
   }
   const sites = [];
-  for (const id of ['cave', 'ecolab', 'shipwreck']) {
+  for (const id of ['cave', 'ecolab', 'shipwreck', 'lootur']) {
     for (const it of (layers[id] || [])) {
       if (it.uniques && it.uniques.length) sites.push({ type: id, ...pick(it, true) });
     }

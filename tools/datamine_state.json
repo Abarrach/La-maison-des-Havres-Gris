@@ -1,6 +1,6 @@
 {
   "_note": "Écrit par tools/update_datamine.js. Dit de QUEL build du jeu proviennent les données du site, et quand chaque étape a tourné pour la dernière fois. Versionné exprès : c'est la seule trace de la fraîcheur des données.",
-  "updated_at": "2026-10-22T14:37:28.950Z",
+  "updated_at": "2026-10-22T15:30:05.552Z",
   "game": {
     "build_id": "26083551",
     "last_updated": "2026-10-22T09:49:12.000Z",
@@ -169,6 +169,20 @@
       "outputs": {
         "stuff_recipes.json": {
           "entrees": 1414
+        }
+      }
+    },
+    "landsraad": {
+      "ran_at": "2026-10-22T15:30:05.543Z",
+      "game_build_id": "26083551",
+      "sources": {
+        "Systems/Landsraad/VotingBlock": "2026-10-22T15:28:39.533Z",
+        "Systems/MnemonicRecall/Data/JourneyCards/LandsraadContracts": "2026-10-22T15:25:48.049Z",
+        "Maps/DT_MapsInfo.json": "2026-10-22T15:28:39.914Z"
+      },
+      "outputs": {
+        "landsraad_data.json": {
+          "entrees": 41
         }
       }
     }

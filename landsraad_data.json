@@ -1,33 +1,473 @@
 {
-    "quests": [
-        { "id": 1, "name": "Frappe de décapitation", "type": "Combat", "zone": "Colonie" },
-        { "id": 2, "name": "Attaque sous fausse bannière", "type": "Combat", "zone": "Caverne rougissante" },
-        { "id": 3, "name": "Le Tombeau des lucioles", "type": "Combat", "zone": "Station d'essai n° 136" },
-        { "id": 4, "name": "Déclencher un piège", "type": "Combat", "zone": "Caverne rougissante" },
-        { "id": 5, "name": "Le cœur du problème", "type": "Combat", "zone": "Épave du Tyche" },
-
-        { "id": 6, "name": "Une leçon de botanique", "type": "Sabotage", "zone": "Station d'essai n° 195" },
-        { "id": 7, "name": "Assassinat : Maison Lindaren", "type": "Sabotage", "zone": "Bassin de Hagga" },
-        { "id": 8, "name": "Dans l'ombre", "type": "Sabotage", "zone": "Épave du Tyche" },
-        { "id": 9, "name": "Savoir, c'est pouvoir", "type": "Sabotage", "zone": "Colonie" },
-        { "id": 10, "name": "Opérations de mise en forme", "type": "Sabotage", "zone": "Colonie" },
-
-        { "id": 11, "name": "Essais sur le terrain", "type": "Récolte", "zone": "Caverne rougissante" },
-        { "id": 12, "name": "Vivre de la terre", "type": "Récolte", "zone": "Colonie" },
-        { "id": 13, "name": "Ressources précieuses", "type": "Récolte", "zone": "Station d'essai n° 24" },
-        { "id": 14, "name": "Nettoyage de station", "type": "Récolte", "zone": "Station d'essai n° 89" },
-        { "id": 15, "name": "Cycle de vie des cactus", "type": "Récolte", "zone": "Bassin de Hagga" },
-
-        { "id": 16, "name": "Trouvailles Fremen", "type": "Exploration", "zone": "Piste des contrebandiers" },
-        { "id": 17, "name": "Course contre la montre", "type": "Exploration", "zone": "Bassin de Hagga" },
-        { "id": 18, "name": "Reconnaissance de faille", "type": "Exploration", "zone": "Bassin de Hagga" },
-        { "id": 19, "name": "Sabotage à bord du Tyche", "type": "Exploration", "zone": "Épave du Tyche" },
-        { "id": 20, "name": "L'opération Opafire", "type": "Exploration", "zone": "Caverne rougissante" },
-
-        { "id": 21, "name": "Puissance de la tempête", "type": "Artisanat", "zone": "Station d'essai n° 152" },
-        { "id": 22, "name": "Lire le courrier", "type": "Artisanat", "zone": "Bassin de Hagga" },
-        { "id": 23, "name": "Les allées et venues", "type": "Artisanat", "zone": "Colonie" },
-        { "id": 24, "name": "L'énergie du futur", "type": "Artisanat", "zone": "Épave du Tyche" },
-        { "id": 25, "name": "La route des contrebandiers", "type": "Artisanat", "zone": "Piste des contrebandiers" }
-    ]
+  "generated_at": "2026-10-22T15:30:18.772Z",
+  "source": "datamine : Systems/Landsraad/VotingBlock (pools), JourneyCards/LandsraadContracts (missions), Maps/DT_MapsInfo (lieux)",
+  "note": "Généré par tools/build_landsraad_from_datamine.js — ne pas éditer à la main. Une mission désactivée l'est côté serveur et reste dans son pool : « desactivee » vient de la note de patch citée.",
+  "categories": [
+    "Artisanat",
+    "Récolte",
+    "Exploration",
+    "Combat",
+    "Sabotage"
+  ],
+  "quests": [
+    {
+      "id": "DA_LDR_Crafting_TheComingAndGoing",
+      "name": "Allées et venues",
+      "type": "Artisanat",
+      "zone": "Caverne Rougissante",
+      "map": "ErythriteCaveIsland",
+      "groupe": "solo",
+      "points": 1000,
+      "solaris": 6000,
+      "desc": "Montez une opération de surveillance autour de la Caverne Rougissante et tuez tous les témoins. La Caverne Rougissante a une grande importance stratégique. C'est un endroit chargé de ressources, ce qui explique que tant de factions d'Arrakis tentent de s'en emparer. Mais, en ce qui nous concerne, les informations ont une bien plus grande valeur que les divers minerais, ne serait-ce que parce qu'elles ne demandent pas une aussi grande logistique. Rendez-vous à la Caverne Rougissante et placez des appareils de surveillance afin qu'on sache qui équipe ces déserteurs. Tuez tous ceux qui vous verraient faire pour que l'opération reste un secret, et ensuite, nous attendrons que les informations commencent à arriver."
+    },
+    {
+      "id": "DA_LDR_Crafting_Convergence",
+      "name": "Convergence",
+      "type": "Artisanat",
+      "zone": "Bassin de Hagga",
+      "map": "HaggaBasin",
+      "groupe": "solo",
+      "points": 1250,
+      "solaris": 6000,
+      "desc": "(REQUIS : compacteur à électricité statique) Notre Grande Maison requiert vos services. Avant de se volatiliser, les Fremens ont caché une relique que nous désirons au plus haut point. Son positionnement peut apparemment être déterminé par triangulation, à l'aide des trois points suivants : Mirzabah, la Sentinelle et la Main de Khidr. Allez à chacun de ces endroits, placez-y des localisateurs, et déterrez la relique enfouie.",
+      "desactivee": {
+        "depuis": "1.5.3.0 (17/09/2026)",
+        "source": "https://duneawakening.com/news/dune-awakening-console-release-patch-notes/"
+      }
+    },
+    {
+      "id": "DA_LDR_Crafting_Phasedancers",
+      "name": "Ectoplasmes et illusions",
+      "type": "Artisanat",
+      "zone": "Ruines de Tsimpo",
+      "map": "TheRuinsOfTsimpo",
+      "groupe": "solo",
+      "points": 1000,
+      "solaris": 6000,
+      "desc": "ATTENTION : cette mission nécessitera probablement d'analyser des données. PENSEZ À VOUS MUNIR D'UN SCANNER PORTATIF ! On raconte que les ruines de Tsimpo sont hantées. En réalité, les soi-disant « fantômes » maintiennent cette illusion grâce à des projecteurs solido placés avec soin qui génèrent des silhouettes dans la poussière afin de faire peur aux intrus. La technologie requise pour cela dépasse de beaucoup celle à laquelle les simples pilleurs d'épaves ont accès. Les renseignements dont nous disposons laissent entendre qu'elle pourrait être due à un ancien jongleur passé maître dans l'art de l'illusion, un homme dont les Grandes Maisons rêvent depuis longtemps de détenir les secrets. Solitaire et imprévisible, cet individu a disparu de la circulation depuis longtemps, mais tout porte à croire qu'il est impliqué dans cette histoire. Cela étant, les Grandes Maisons ont besoin de preuves. Découvrez comment les illusions sont créées, identifiez leur source et récupérez toutes les informations nécessaires pour entretenir cette illusion."
+    },
+    {
+      "id": "DA_LDR_Crafting_EnergyOfTheFuture_01",
+      "name": "L'énergie du futur",
+      "type": "Artisanat",
+      "zone": "Épave du Tyché",
+      "map": "RadioactiveShipwreck",
+      "groupe": "solo",
+      "points": 1000,
+      "solaris": 6000,
+      "desc": "Fabriquez une cellule d'énergie à partir de matériaux irradiés récupérés dans l'épave du Tyché. Cela fait quelque temps que notre Maison cherche de nouvelles méthodes de génération d'énergie mais, en raison de la Grande Convention, il est interdit d'utiliser les matériaux nucléaires pour la recherche. Toutefois, nos informateurs nous ont révélé que le Tyché transportait une cargaison illégale de cristaux irradiés, dont les radiations ont fini par se propager dans tout le vaisseau. Voilà une opportunité à ne surtout pas laisser passer ! Retrouvez le Tyché, mettez la main sur une cellule d'énergie expérimentale, remplissez-la de liquide irradié prélevé à l'intérieur du vaisseau et envoyez-la-nous, que nous puissions l'étudier. Et n'oubliez pas, il faut faire très attention en manipulant les matériaux irradiés !"
+    },
+    {
+      "id": "DA_LDR_Crafting_SurveillanceRun",
+      "name": "La Piste des Contrebandiers",
+      "type": "Artisanat",
+      "zone": "Piste des Contrebandiers",
+      "map": "GroundVehicleTimeTrialIsland",
+      "groupe": "solo",
+      "points": 1000,
+      "solaris": 6000,
+      "desc": "(REQUIS : moto des sables ou roue tout-terrain) Les rivalités entre les Maisons sont censées se résoudre par la diplomatie et la fourberie, pas virer au spectacle. Et pourtant, les anciennes traditions persistent, sous la forme d'épreuves secrètes dans le désert, loin des yeux du Landsraad. La plus célèbre d'entre elles emprunte ce qu'on appelle la Piste des Contrebandiers. Ni témoins ni gloire, rien que le sable et le risque de tout perdre. Un enregistrement vérifié prouvant que l'épreuve a été réussie confère toutefois un immense prestige à la Maison de celui ou celle qui l'a tentée. Nous n'avons pas de champion pour nous représenter, mais il semblerait que vous, vous puissiez le faire."
+    },
+    {
+      "id": "DA_LDR_Crafting_HarnessingThePowerOfTheStorm_01",
+      "name": "La puissance de la tempête",
+      "type": "Artisanat",
+      "zone": "Station Expérimentale de l'Imperium 152",
+      "map": "ElectricityDungeon",
+      "groupe": "groupe",
+      "points": 1250,
+      "solaris": 8000,
+      "desc": "Fouillez la Station Expérimentale de l'Imperium 152 dans l'espoir de trouver de quoi fabriquer une éolienne capable de résister aux tempêtes de sable. Les parasites, c'est ça, le problème. Toutes les éoliennes que nous installons dans le désert se font déchiqueter par les tempêtes Coriolis, c'est vrai, mais ce sont les parasites qui finissent toujours par causer le dysfonctionnement de leurs servoks. Il paraît qu'explorer les endroits dangereux est votre spécialité, alors, allez dans cette vieille Station Expérimentale, récupérez les composants nécessaires et fabriquez-nous une éolienne résistant aux parasites."
+    },
+    {
+      "id": "DA_LDR_Crafting_ReadingTheMail_01",
+      "name": "Lire le courrier",
+      "type": "Artisanat",
+      "zone": "Colonie",
+      "map": "SandfliesFortress",
+      "groupe": "solo",
+      "points": 1000,
+      "solaris": 6000,
+      "desc": "Espionnez les communications des Diptères des Sables et dérobez la technologie de leur générateur. Cela fait longtemps que notre Maison est fascinée par la technologie faite de bric et de broc de ceux qui vivent de la terre. Les Fremens et leurs inventions permettant de survivre dans le désert, bien sûr, mais aussi, plus récemment, les Diptères des Sables. Nous avons entendu parler d'un générateur portable pouvant être aisément désassemblé et transporté qu'ils posséderaient dans leur Colonie. Connectez-vous à leur ResCom, apprenez comment assembler leur générateur, et envoyez-le-nous, afin que nous puissions étudier leur technologie. Si nous pouvions la déposer au nom du CHOM, cela nous rendrait tous immensément riches."
+    },
+    {
+      "id": "DA_LDR_Crafting_RareMetals",
+      "name": "Métaux rares",
+      "type": "Artisanat",
+      "zone": "Passe du Vent",
+      "map": "WindPass",
+      "groupe": "solo",
+      "points": 1000,
+      "solaris": 6000,
+      "desc": "Notre Grande Maison a une mission à vous confier. Nous venons tout juste d'apprendre que les Yafeng étaient en train de développer, dans leur atelier de la Passe du Vent, un nouveau genre d'extracteur de minerai pour récupérer les métaux rares au cœur des astéroïdes. Voilà une source de revenus pour le moins surprenante pour des convoyeurs d'eau... ce qui intéresse grandement l'un de nos alliés, qui a une dent contre les Yafeng. Allez voler le schéma et rapportez-nous un prototype en état de marche. Veillez à bien couvrir vos traces et sabotez le schéma des Yafeng avant de repartir."
+    },
+    {
+      "id": "DA_LDR_Gathering_TheDoomOfTsimpo",
+      "name": "La destruction de Tsimpo",
+      "type": "Récolte",
+      "zone": "Ruines de Tsimpo",
+      "map": "TheRuinsOfTsimpo",
+      "groupe": "solo",
+      "points": 1000,
+      "solaris": 6000,
+      "desc": "Le village de Tsimpo n'a pas simplement été ravagé durant une bataille. Il a été complètement rayé de la carte. Nous pensons que la violence utilisée pour ce faire dépasse de loin ce qui est acceptable pour ce genre d'opération. Fouillez les emplacements des pièces d'artillerie utilisées pour détruire le village afin d'essayer de trouver des preuves d'utilisation de munitions prohibées ou d'attaque de cibles interdites. Selon ce que vous trouvez, le Landsraad pourra peut-être imposer des sanctions."
+    },
+    {
+      "id": "DA_LDR_Gathering_RockAndRoots",
+      "name": "La source du problème",
+      "type": "Récolte",
+      "zone": "Passe du Vent",
+      "map": "WindPass",
+      "groupe": "solo",
+      "points": 1000,
+      "solaris": 6000,
+      "desc": "Dans la Passe du Vent, un incident a déclenché un processus de confinement mis en place par les Yafeng, une longue dynastie de convoyeurs d'eau. Cela a causé d'importants changements dans la quantité d'eau qu'ils proposent et dans l'activité de leur site, ce qui a attiré l'attention du Landsraad. Vous allez devoir vous rendre sur place pour découvrir ce qu'il se passe. Récupérez toutes les preuves que vous trouverez, déterminez la cause du problème et agissez avant que les convoyeurs d'eau ne fassent disparaître tout ce qui pourrait les incriminer."
+    },
+    {
+      "id": "DA_LDR_Gathering_FieldOfFlowers_01",
+      "name": "La vie des cactus",
+      "type": "Récolte",
+      "zone": "Bassin de Hagga",
+      "map": "HaggaBasin",
+      "groupe": "solo",
+      "points": 1000,
+      "solaris": 6000,
+      "desc": "Retrouvez l'agent disparu et récoltez des échantillons de cactus spéciaux dans l'O'odham. Cette région est connue pour la flore qui y pousse, et qui dit plantes dit remèdes, mais aussi poisons. Nous avons chargé un agent d'aller nous chercher des échantillons, mais il n'est jamais revenu. Retrouvez-le, récupérez les échantillons et nous vous récompenserons comme vous le méritez."
+    },
+    {
+      "id": "DA_LDR_Gather_TestingStationCleanup_01",
+      "name": "Nettoyage de Station Expérimentale",
+      "type": "Récolte",
+      "zone": "Station Expérimentale de l'Imperium 89",
+      "map": "RadiationDungeon",
+      "groupe": "groupe",
+      "points": 1250,
+      "solaris": 8000,
+      "desc": "Récupérez des échantillons irradiés d'un atomique qui fuit dans la Station Expérimentale de l'Imperium 89. Les Stations Expérimentales ont été scellées voici dix mille ans, et le fait qu'elles existent toujours depuis tout ce temps est la preuve de l'efficacité de l'architecture prébutlérienne. Il y a quelques décennies, des atomiques y ont été stockés, mais ils sont vieux et ils fuient. Notre Maison souhaiterait étudier des échantillons provenant de ces armes. Rendez-vous à la station et prélevez plusieurs échantillons de fluide irradié. Pensez à prendre une combinaison antiradiations, mais aussi beaucoup d'armes. Notre service de renseignement nous indique qu'il se passerait des choses étranges, là-bas."
+    },
+    {
+      "id": "DA_LDR_Gather_PreciousResources_01",
+      "name": "Précieuses ressources",
+      "type": "Récolte",
+      "zone": "Station Expérimentale de l'Imperium 24",
+      "map": "DarknessDungeon",
+      "groupe": "groupe",
+      "points": 1250,
+      "solaris": 8000,
+      "desc": "Analysez du sang de suboïde à l'intérieur de la Station Expérimentale de l'Imperium 24. La Maison que vous représentez nous assure que vous savez faire preuve de discrétion, et c'est justement ce dont nous avons besoin. Un membre de la Regis Familia de notre Maison a accumulé une forte dette auprès du Bene Tleilax en raison de son penchant pour... les créations exotiques. Aujourd'hui, il nous faut payer la note, et les Tleilaxu exigent que nous fassions quelque chose pour eux. Rendez-vous à la Station Expérimentale de l'Imperium 24, récupérez du sang de suboïde et analysez-le. Cela libérera ma Maison de cette dette."
+    },
+    {
+      "id": "DA_LDR_Gather_FieldTesting",
+      "name": "Tests sur le terrain",
+      "type": "Récolte",
+      "zone": "Caverne Rougissante",
+      "map": "ErythriteCaveIsland",
+      "groupe": "solo",
+      "points": 1000,
+      "solaris": 6000,
+      "desc": "Une flotte de véhicules récolteurs d'épice expérimentaux a disparu près de la Caverne Rougissante. Chacun de ces véhicules terrestres pour quatre personnes est équipé d'une variante de notre laser d'extraction extrêmement classifié. Nous avons perdu le contact avec le convoi peu de temps après son arrivée près de la Caverne Rougissante. S'il y a encore des composants en état de marche, récupérez-les. Pensez à emporter un tailleray, vous en aurez besoin pour démanteler les véhicules. Faites-le et notre Maison aura une dette envers vous."
+    },
+    {
+      "id": "DA_LDR_Gather_TerminalVelocity",
+      "name": "Vélocité terminale",
+      "type": "Récolte",
+      "zone": "Piste des Contrebandiers",
+      "map": "GroundVehicleTimeTrialIsland",
+      "groupe": "solo",
+      "points": 1000,
+      "solaris": 6000,
+      "desc": "(REQUIS : scanner) Nous avons reçu des nouvelles particulièrement tragiques. Un membre important de notre Grande Maison a perdu la vie sur la Piste des Contrebandiers. Il testait un prototype expérimental de moteur de moto des sables en conditions réelles. Retrouvez l'épave de sa moto et rapportez-la-nous. Bonne chance !"
+    },
+    {
+      "id": "DA_LDR_Gather_LivingOfTheLand_01",
+      "name": "Vivre de la terre",
+      "type": "Récolte",
+      "zone": "Colonie",
+      "map": "SandfliesFortress",
+      "groupe": "solo",
+      "points": 1000,
+      "solaris": 6000,
+      "desc": "Dévalisez la Colonie, la forteresse des Diptères des Sables, afin d'y récupérer des provisions. Voler les voleurs, ce n'est pas vraiment du vol, c'est de la récupération. Les Diptères des Sables ont amassé une immense fortune dans leur citadelle des terres brisées, et notre Maison tient à ce qu'ils comprennent ce que ça fait de se faire dévaliser. Volez leur eau, récupérez leur carburant et prenez leurs ressources. Oh, et il y a aussi la question de l'ornithoptère qu'ils ont abattu. Il ne transportait clairement pas une cargaison classifiée. Désassemblez-le à l'aide d'un tailleray, sachant que punir les Diptères des Sables n'est absolument pas une tentative pour faire disparaître ce qu'il pouvait ou non y avoir à bord de cet orni. Ahem. Enfin, bref, vous savez quoi faire, alors, au travail."
+    },
+    {
+      "id": "DA_LDR_Exploration_RaceAgainstTime_01",
+      "name": "Course contre la montre",
+      "type": "Exploration",
+      "zone": "Bassin de Hagga",
+      "map": "HaggaBasin",
+      "groupe": "solo",
+      "points": 750,
+      "solaris": 4000,
+      "desc": "Récupérez des appareils de surveillance dans la Faille de Hagga avant que les informations qu'ils contiennent ne soient effacées. Nous avons récemment découvert toute une série d'appareils de surveillance appartenant à une Maison rivale. Nous ignorons quel genre de données ils collectent, mais il nous les faut. Le problème, c'est que, si on récupère l'un de ces appareils, cela envoie un signal à tous les autres afin qu'ils effacent automatiquement leurs données au bout d'un court laps de temps. La Maison que vous représentez ne cesse de vanter votre efficacité, mais vous sentez-vous capable de récupérer tous ces appareils de surveillance avant l'effacement de leurs données ? Je l'espère."
+    },
+    {
+      "id": "DA_LDR_Exploration_Rockfall",
+      "name": "Débris fracassants",
+      "type": "Exploration",
+      "zone": "Passe du Vent",
+      "map": "WindPass",
+      "groupe": "solo",
+      "points": 1000,
+      "solaris": 6000,
+      "desc": "Notre Grande Maison a besoin de vous. Depuis quelque temps, nous surveillons les convoyeurs d'eau, et plus spécifiquement les Yafeng, qui opèrent depuis la Passe du Vent. Mais la destruction d'un gros astéroïde et les dégâts que les débris ont causés dans la région ont détruit les capteurs que nous avions installés pour les espionner. Allez sur place et installez de nouveaux capteurs dissimulés tout autour du complexe des convoyeurs d'eau. Une fois cela fait, prenez le contrôle des relais de communication de leurs gardes afin d'envoyer le signal hors-monde. Mais attention ! Dès que la transmission débutera, le système réagira et, si vous ne parvenez pas à contourner ses contre-mesures, il la coupera en quelques instants."
+    },
+    {
+      "id": "DA_LDR_Exploration_TreasureHunt_01",
+      "name": "L'opération Opaflamme",
+      "type": "Exploration",
+      "zone": "Caverne Rougissante",
+      "map": "ErythriteCaveIsland",
+      "groupe": "solo",
+      "points": 1000,
+      "solaris": 6000,
+      "desc": "Récupérez des bijoux volés à notre Maison et perdus dans la Caverne Rougissante. Un membre de notre na-Familia, un mentat, a été impliqué dans le vol d'une boîte à bijoux comprenant des opaflammes. Nous savons qu'il est allé se cacher dans la Caverne Rougissante, mais son récepteur du ResCom a été perdu ou détruit peu de temps après. Nous ne pouvons pas faire ce que nous voulons sur Arrakis, mais la Maison que vous représentez vous recommande chaudement comme agent « officieux ». Allez à la Caverne Rougissante, retrouvez notre mentat voleur et récupérez nos bijoux. Vous verrez que nous ne sommes pas des ingrats."
+    },
+    {
+      "id": "DA_LDR_Exploration_FremenFinds",
+      "name": "Les trouvailles des Fremens",
+      "type": "Exploration",
+      "zone": "Piste des Contrebandiers",
+      "map": "GroundVehicleTimeTrialIsland",
+      "groupe": "solo",
+      "points": 1250,
+      "solaris": 8000,
+      "desc": "Utilisez l'imagerie des éclaireurs pour acquérir des artefacts fremens au niveau des fouilles réalisées par les Maas Kharet. Les éclaireurs en poste au niveau de la Piste des Contrebandiers ont signalé que les Maas Kharet avaient des fouilles en cours dans les canyons. Ils cherchent des artefacts fremens, mais ceux-ci appartiennent de droit aux Grandes Maisons, car c'est notre pogrom qui a éradiqué les Fremens, et les Maas Kharet s'amusent à piller leurs ruines ! Mais ces artefacts devraient se trouver dans un musée ! Nous avons juste reçu quelques images et rapports de nos éclaireurs. Retrouvez les sites de fouilles et récupérez ces artefacts."
+    },
+    {
+      "id": "DA_LDR_JourneyContract_Exploration_RiftReconRun_01",
+      "name": "Mission de reconnaissance dans la Faille",
+      "type": "Exploration",
+      "zone": "Bassin de Hagga",
+      "map": "HaggaBasin",
+      "groupe": "solo",
+      "points": 1000,
+      "solaris": 6000,
+      "desc": "Allez tester l'efficacité des capteurs d'alerte précoce des Harkonnen dans la Faille de Hagga. Vu qui sont vos supérieurs, cette requête risque de vous sembler quelque peu... complexe. Nous souhaiterions tester l'efficacité des capteurs d'alerte précoce que les Harkonnen ont installés dans la Faille de Hagga. Nous pensons qu'un ornithoptère allant assez vite devrait pouvoir les franchir et atteindre leur forteresse avant que l'alerte soit donnée. Aidez-nous à vérifier cette théorie."
+    },
+    {
+      "id": "DA_LDR_Exploration_SurveyingTsimpo",
+      "name": "Observer Tsimpo",
+      "type": "Exploration",
+      "zone": "Ruines de Tsimpo",
+      "map": "TheRuinsOfTsimpo",
+      "groupe": "solo",
+      "points": 1000,
+      "solaris": 6000,
+      "desc": "Observez les ruines de Tsimpo à l'aide de sondes expérimentales. Notre Maison a besoin de votre aide pour percer les nuages de poussière permanents qui pèsent sur Tsimpo. Une de nos équipes d'éclaireurs a essayé une nouvelle approche, en adaptant des appareils de marquage à des sondes d'observation locales, capables d'effectuer des relevés à partir du niveau du sol. Aucun de nos hommes n'est revenu. C'est la raison pour laquelle nous nous tournons désormais vers vous. Récupérez leurs sondes modifiées, déployez-les en divers points du village et réalisez une observation complète de ce dernier afin que nous sachions ce que dissimule la poussière. D'après la rumeur, il pourrait y avoir une cache d'épice dans les environs."
+    },
+    {
+      "id": "DA_LDR_Exploration_SampleRecovery",
+      "name": "Récupération d'échantillon",
+      "type": "Exploration",
+      "zone": "Bassin de Hagga",
+      "map": "HaggaBasin",
+      "groupe": "solo",
+      "points": 1000,
+      "solaris": 6000,
+      "desc": "(REQUIS : compacteur à électricité statique et scanner) Notre Grande Maison aurait besoin de vous pour régler une affaire nécessitant habileté et discrétion. Nous avons obtenu des informations comme quoi un membre haut placé des Maas Kharet aurait volé quatre échantillons de ver des sables à la secte pour les cacher en divers endroits avant de faire défection. Retrouvez-les et déterrez-les. Ils ont une grande valeur à nos yeux.",
+      "desactivee": {
+        "depuis": "1.5.3.0 (17/09/2026)",
+        "source": "https://duneawakening.com/news/dune-awakening-console-release-patch-notes/"
+      }
+    },
+    {
+      "id": "DA_LDR_Exploration_FlightOfTheCalypso_01",
+      "name": "Sabotage à bord du Tyché",
+      "type": "Exploration",
+      "zone": "Épave du Tyché",
+      "map": "RadioactiveShipwreck",
+      "groupe": "solo",
+      "points": 1000,
+      "solaris": 6000,
+      "desc": "Récupérez les journaux de bord du Tyché et aidez-nous à comprendre qui l'a saboté ! Le Tyché, vaisseau-cargo atréides, s'est écrasé au beau milieu du Bassin Impérial suite à un sabotage, et nous tenons à savoir ce qui s'est passé. Découvrez-le et vous aurez notre soutien au Landsraad."
+    },
+    {
+      "id": "DA_LDR_Combat_DecapitationStrike_01",
+      "name": "La tête du serpent",
+      "type": "Combat",
+      "zone": "Colonie",
+      "map": "SandfliesFortress",
+      "groupe": "solo",
+      "points": 1000,
+      "solaris": 6000,
+      "desc": "Éliminez les chefs des Diptères des Sables dans leur forteresse des terres brisées, la Colonie, afin de les empêcher de perturber les opérations d'extraction de notre Maison. Nous en avons plus qu'assez de ces parasites. Leurs raids constants et leurs tentatives de sabotage menacent nos profits et, si cela continue, nous risquons de perdre notre influence au sein du directorat du CHOM. Éliminez leurs chefs afin qu'ils nous laissent tranquilles. Allez à leur forteresse des terres brisées, la Colonie, tuez leur chef d'équipe et usurpez son identité sur le ResCom pour tendre une embuscade à leur lieutenant. Faites-le et notre Maison aura une dette envers vous."
+    },
+    {
+      "id": "DA_LDR_Combat_GraveOfTheFireflies_01",
+      "name": "Le cimetière des Lucioles",
+      "type": "Combat",
+      "zone": "Station Expérimentale de l'Imperium 136",
+      "map": "FireDungeon",
+      "groupe": "groupe",
+      "points": 1250,
+      "solaris": 8000,
+      "desc": "Tuez Masano la Brûlée, qui dirige les Lucioles qui se sont emparées de la Station Expérimentale de l'Imperium 136. Les Diptères des Sables sont une source d'espoir pour les pyons et vassaux d'Arrakis, mais même eux ont en leur sein des membres qu'ils ne supportent pas. Prenez la faction plus extrémiste des Lucioles. Ce sont des individus dangereux, certes, mais surtout, ils empêchent notre Maison d'accéder aux réserves de carburant de l'ancienne Station Expérimentale dont ils se sont emparés. Tuez leur chef et dispersez les autres aux quatre vents. Voyons si votre réputation est justifiée..."
+    },
+    {
+      "id": "DA_LDR_Combat_HeartOfTheMatter",
+      "name": "Le cœur du problème",
+      "type": "Combat",
+      "zone": "Épave du Tyché",
+      "map": "RadioactiveShipwreck",
+      "groupe": "solo",
+      "points": 1000,
+      "solaris": 6000,
+      "desc": "Récupérez des cristaux irradiés à l'intérieur de l'épave du Tyché avant la racaille locale. Le fait que le Tyché se soit écrasé met notre Maison dans une situation délicate. En effet, il transportait des cristaux irradiés, formellement interdits par la Grande Convention. Nous ne nous en servions pas en tant qu'armes, mais à fins de recherche, mais même ainsi, s'ils sont reliés à nous, nous risquons d'importantes sanctions. Allez à l'épave du Tyché et activez son système de défense pour empêcher la racaille locale d'y entrer, le temps pour nous d'envoyer une équipe de nettoyage qui viendra récupérer ce qui nous appartient."
+    },
+    {
+      "id": "DA_LDR_Combat_SpringingATrap",
+      "name": "Le mystère des signaux",
+      "type": "Combat",
+      "zone": "Caverne Rougissante",
+      "map": "ErythriteCaveIsland",
+      "groupe": "solo",
+      "points": 1000,
+      "solaris": 6000,
+      "desc": "De mystérieux signaux émanent de la Caverne Rougissante. Qui les envoie, à destination de qui, et pour quelle raison ? Notre Maison doit absolument le savoir, et celle que vous représentez nous recommande de faire appel à vous pour ce travail. Alors, je vais vous demander de localiser la source de ces signaux par triangulation, puis d'intensifier ces derniers afin que nous puissions identifier quelle Maison utilise cette fréquence. Prouvez-nous que vous êtes de taille à accomplir cette mission et nous vous récompenserons comme vous le méritez."
+    },
+    {
+      "id": "DA_LDR_Combat_ThePriceOfWater",
+      "name": "Le prix de l'eau",
+      "type": "Combat",
+      "zone": "Passe du Vent",
+      "map": "WindPass",
+      "groupe": "solo",
+      "points": 1000,
+      "solaris": 6000,
+      "desc": "La Guilde Spatiale soupçonne la famille Yafeng, une longue dynastie de convoyeurs d'eau, de chasser sur les astéroïdes riches en eau dans la Passe du Vent sans autorisation. Notre Maison a décidé de saisir cette opportunité de gagner en influence en intercédant en faveur des Yafeng. Nos recherches nous ont appris qu'un vaisseau de transport d'épice était en chemin pour tenter d'intercepter plusieurs astéroïdes, et il serait dans notre intérêt qu'il ait un regrettable accident et s'écrase sur sa cible. Allez à la Passe du Vent. D'après l'une de nos sources, le terminal de sécurité du poste de garde central devrait indiquer où se trouve le personnel important. Votre mission consiste à trouver l'ingénieur en chef pour obtenir les coordonnées des astéroïdes, puis les modifier afin que le vaisseau ne se rende pas à l'endroit prévu."
+    },
+    {
+      "id": "DA_LDR_Combat_GhostsOfTsimpo",
+      "name": "Les fantômes de Tsimpo",
+      "type": "Combat",
+      "zone": "Ruines de Tsimpo",
+      "map": "TheRuinsOfTsimpo",
+      "groupe": "solo",
+      "points": 1000,
+      "solaris": 6000,
+      "desc": "Les « fantômes » de Tsimpo attaquent les caravanes et massacrent tous ceux qui en font partie. Rendez-vous aux ruines de Tsimpo, levez le voile sur toute cette opération et venez à bout des pillards fantômes une bonne fois pour toutes. Les ruines de Tsimpo sont maudites, du moins est-ce ce que les pyons murmurent entre eux. Les patrouilles reviennent terrifiées, les hommes évoquant des spectres armés de poignards de lumière. Une Grande Maison refuse de croire à ces histoires de spectres et cherche à découvrir la vérité. Allez à Tsimpo, enquêtez sur les attaques et percez le mystère de ces pillards fantômes, qui se cachent derrière une terreur fabriquée de toutes pièces."
+    },
+    {
+      "id": "DA_LDR_Combat_ClearTheRun",
+      "name": "Nettoyage de la piste",
+      "type": "Combat",
+      "zone": "Piste des Contrebandiers",
+      "map": "GroundVehicleTimeTrialIsland",
+      "groupe": "solo",
+      "points": 1000,
+      "solaris": 6000,
+      "desc": "Nous avons subi une terrible tragédie, et nous ne pouvons pas laisser passer cela. Un membre éminent de notre Grande Maison a en effet été récemment tué alors qu'il empruntait la Piste des Contrebandiers. Nous pensons que les responsables ne sont autres qu'un groupe de Maas Kharet. Éliminez-les, détruisez leurs camps et tuez leur chef."
+    },
+    {
+      "id": "DA_LDR_Combat_FalseFlagStrike_01",
+      "name": "Opération sous fausse bannière",
+      "type": "Combat",
+      "zone": "Caverne Rougissante",
+      "map": "ErythriteCaveIsland",
+      "groupe": "solo",
+      "points": 1000,
+      "solaris": 6000,
+      "desc": "Dégagez la route menant à la Caverne Rougissante en faisant en sorte que les déserteurs s'entretuent. Notre Maison souhaite vous proposer un projet aussi intéressant pour vous que pour nous. Des déserteurs de votre Maison se sont installés tout près de la Caverne Rougissante, dont nous souhaitons exploiter les ressources. Mais heureusement, il y a un autre camp de déserteurs non loin. Faites en sorte qu'ils s'entretuent afin de dégager l'accès à la grotte."
+    },
+    {
+      "id": "DA_LDR_Syndicate_Assassination_1",
+      "name": "Assassinat : Maison Lindaren",
+      "type": "Sabotage",
+      "zone": "Bassin de Hagga",
+      "map": "HaggaBasin",
+      "groupe": "solo",
+      "points": 1000,
+      "solaris": 6000,
+      "desc": "Placez des preuves pour faire croire à un assassinat dans l'est du Bouclier du Bassin de Hagga. C'est bien dommage. Un représentant de la Maison Lindaren a péri durant un rassemblement des Diptères des Sables locaux. Placez des preuves sur le lieu du meurtre afin que les Diptères des Sables soient accusés et que les soupçons cessent de se porter sur... d'autres."
+    },
+    {
+      "id": "DA_LDR_Subterfuge_ALessonInBotanyAndPain_01",
+      "name": "Cours de botanique (et de souffrance)",
+      "type": "Sabotage",
+      "zone": "Station Expérimentale de l'Imperium 195",
+      "map": "PoisonDungeon",
+      "groupe": "groupe",
+      "points": 1250,
+      "solaris": 8000,
+      "desc": "Enquêtez sur le brouillard empoisonné émanant de la Station Expérimentale de l'Imperium 195. Nous ne savons pas grand-chose à ce sujet, mais nous avons tout de même appris que les imbéciles qui occupaient cette Station Expérimentale tentaient d'obtenir un mélange de bois-brouillard et de résidu d'elacca. Nous ignorons ce qu'une mixture aussi volatile pourrait donner, mais certaines rumeurs évoquent un poison indétectable pour les goûte-poison. Si c'est vrai, cela bouleverserait totalement la Guerre des Assassins ! Rendez-vous à la Station Expérimentale de l'Imperium 195 et récupérez les recherches qui y étaient menées, ainsi qu'un échantillon du poison. Faites-le et nous saurons vous récompenser."
+    },
+    {
+      "id": "DA_LDR_Subterfuge_InTheShadows",
+      "name": "Dans l'ombre",
+      "type": "Sabotage",
+      "zone": "Épave du Tyché",
+      "map": "RadioactiveShipwreck",
+      "groupe": "solo",
+      "points": 1000,
+      "solaris": 6000,
+      "desc": "Volez une cargaison bien spécifique dans l'épave du Tyché, afin que les Maisons Moritani et Ecaz s'entredéchirent. C'est absolument parfait ! Quand il s'est écrasé dans le désert, le Tyché transportait une cargaison d'une grande valeur pour la Maison Ecaz, et c'est la Maison Moritani qui est la cause du sabotage qui a provoqué le crash. Et désormais, les deux Maisons veulent récupérer la cargaison dans l'épave irradiée. Mais vous allez la leur voler sous le nez. Comme ça, elles s'accuseront mutuellement, ce qui les affaiblira toutes les deux, tandis que nous, nous aurons tout gagné. La Maison que vous représentez nous assure que vous êtes fiable et que vous savez agir en toute discrétion. C'est le moment de le prouver."
+    },
+    {
+      "id": "DA_LDR_Subterfuge_ATrailOfBlood",
+      "name": "Les morts ne parlent pas",
+      "type": "Sabotage",
+      "zone": "L'ancienne carrière",
+      "map": "PitDungeon",
+      "groupe": "groupe",
+      "points": 1250,
+      "solaris": 8000,
+      "desc": "Nous allons devoir gérer une situation quelque peu délicate. Plusieurs agents de notre Maison ont disparu lors d'une opération secrète dans l'ancienne carrière, et il est vital que cela ne remonte pas jusqu'à nous. Le titre de propriété de ce lieu est actuellement âprement disputé et, afin d'éviter toute implication de notre part, nous allons vous demander de ramener nos agents disparus, ou du moins leurs plaques. Vous devriez pouvoir repérer celles-ci au scanner, mais il est possible qu'il vous faille vous en approcher tout près pour obtenir un signal. Nos agents disparus se nomment Salvez, Myrna, Andrei, Gabe, Parvati et Levi."
+    },
+    {
+      "id": "DA_LDR_Subterfuge_WatchingTheRun",
+      "name": "Observation",
+      "type": "Sabotage",
+      "zone": "Piste des Contrebandiers",
+      "map": "GroundVehicleTimeTrialIsland",
+      "groupe": "solo",
+      "points": 1000,
+      "solaris": 6000,
+      "desc": "Notre Grande Maison désire faire appel à vos services. La Piste des Contrebandiers est une célèbre piste pour moto des sables, et beaucoup l'empruntent pour faire leurs preuves. Savoir qui le fait, et qui parvient à arriver jusqu'au bout, peut avoir une importance sur le plan politique. Nous souhaitons donc que vous placiez des appareils de surveillance sur les flèches rocheuses surplombant le tracé."
+    },
+    {
+      "id": "DA_LDR_Subterfuge_PoisoningTheWell",
+      "name": "Relations empoisonnées",
+      "type": "Sabotage",
+      "zone": "Passe du Vent",
+      "map": "WindPass",
+      "groupe": "solo",
+      "points": 1000,
+      "solaris": 6000,
+      "desc": "Nous avons appris que les Yafeng devaient fournir en eau la délégation de l'une de nos Maisons rivales au Landsraad. Nous souhaitons que les émissaires de cette dernière se retrouvent... indisposés et incapables de conclure l'affaire qui les amène sur Arrakis. Nous avons donc payé un employé pour qu'il empoisonne une cargaison d'eau spécifique, mais il a abandonné sa mission sans explication. Il a toutefois laissé le poison sur place, avec des indications quant à la façon de l'utiliser. Nous avons besoin de vous pour mener cette tâche à bien. Pour commencer, empoisonnez l'eau. Puis, assurez-vous qu'elle arrive bien à destination."
+    },
+    {
+      "id": "DA_LDR_Subterfuge_ShapingOperations_01",
+      "name": "Sabotage des opérations",
+      "type": "Sabotage",
+      "zone": "Colonie",
+      "map": "SandfliesFortress",
+      "groupe": "solo",
+      "points": 1000,
+      "solaris": 6000,
+      "desc": "Sabotez les opérations des Diptères des Sables dans leur forteresse des terres brisées, la Colonie. Cela fait longtemps que ces terroristes harcèlent notre Maison, et ils se croient inattaquables. Nous comptons sur vous pour leur donner une bonne leçon. Tuez leurs sentinelles, mettez leurs véhicules hors service et incendiez tout. Faites-le et vous aurez notre faveur."
+    },
+    {
+      "id": "DA_LDR_Subterfuge_SpyingOnCompetition_1",
+      "name": "Surveillance généralisée",
+      "type": "Sabotage",
+      "zone": "Bassin de Hagga",
+      "map": "HaggaBasin",
+      "groupe": "solo",
+      "points": 1250,
+      "solaris": 8000,
+      "desc": "Montez une opération de surveillance contre les représentants des diverses Maisons du Bassin de Hagga. L'un des grands intérêts de l'espionnage est de découvrir les secrets honteux que les autres cherchent à cacher. Plusieurs Grandes Maisons ont installé des camps dans des endroits étonnants du Bassin de Hagga, ce qui les rend vulnérables. Montez une opération de surveillance contre chaque représentant d'une Grande Maison dans le Bassin de Hagga. Voyons ce qui les intéresse à ce point dans cet endroit du diable..."
+    },
+    {
+      "id": "DA_LDR_Subterfuge_ExpedientPolitics",
+      "name": "Une politique opportune",
+      "type": "Sabotage",
+      "zone": "Ruines de Tsimpo",
+      "map": "TheRuinsOfTsimpo",
+      "groupe": "solo",
+      "points": 1000,
+      "solaris": 6000,
+      "desc": "Déterrez les secrets de deux Grandes Maisons ensevelis dans les ruines de Tsimpo. Les fantômes de Tsimpo ne sont pas juste des pillards profitant de la poussière pour se cacher. Ils ont aussi été créés par une succession de mauvaises décisions et d'ordres catastrophiques. La véritable histoire de ce conflit a été enterrée dans le village. Notre Maison veut que vous alliez mener l'enquête sur place. Cherchez des ordres d'opération, des rapports de mission ou des journaux du ResCom dans les ruines. Nous sommes bien évidemment conscients du fait qu'exposer l'implication de votre propre faction serait un véritable suicide politique. Infiltrez-vous à l'intérieur de Tsimpo, récupérez ou effacez les documents incriminants et rapportez-nous la vérité qui sert le mieux vos alliances actuelles."
+    }
+  ]
 }

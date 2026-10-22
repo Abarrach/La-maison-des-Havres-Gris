@@ -379,6 +379,4 @@ Ne pas les reproposer sans élément nouveau.
   le pipeline extrait est à jour (recettes et coûts des machines compris, régénérés ce jour-là).
   Restent hors pipeline : **capacités et stats d'armes** (`stuff_skills.json`, liste d'objets de
   `stuff_data.json`) = snapshot gaming.tools du 27/06, d'avant la refonte des capacités de la
-  1.5.3.0 ; **missions Landsraad** (`landsraad_data.json`, 25 saisies en avril, ~40 dans le jeu, noms
-  FR dataminables dans `ST_Localization_Lore_Pickups_Contracts`, clés `DA_LDR_*`) ;
-  **talents** (`metiers.json`, saisi à la main). Diagnostic : `node tools/update_datamine.js --check`.
+  1.5.3.0 ; **talents** (`metiers.json`, saisi à la main). Diagnostic : `node tools/update_datamine.js --check`.

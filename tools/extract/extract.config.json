@@ -81,6 +81,24 @@
       "path": "Systems/Vehicles/",
       "mode": "dir",
       "note": "véhicules (alimente base_pieces_v3)"
+    },
+    {
+      "id": "landsraad",
+      "path": "Systems/MnemonicRecall/Data/JourneyCards/LandsraadContracts/",
+      "mode": "dir",
+      "note": "missions Landsraad (alimente landsraad_data.json)"
+    },
+    {
+      "id": "landsraad_pools",
+      "path": "Systems/Landsraad/VotingBlock/",
+      "mode": "dir",
+      "note": "pools de missions Landsraad, un par spécialité"
+    },
+    {
+      "id": "maps_info",
+      "path": "Maps/DT_MapsInfo",
+      "mode": "file",
+      "note": "nom FR des lieux + taille de groupe conseillée"
     }
   ],
 

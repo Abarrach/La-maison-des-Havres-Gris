@@ -384,6 +384,18 @@ const STEPS = [
     requiresLocal: ['stuff_loot.json'],
   },
   {
+    id: 'landsraad',
+    label: 'Missions Landsraad (pools, noms FR, lieux)',
+    script: 'tools/build_landsraad_from_datamine.js',
+    args: (c) => [c.exportRoot],
+    outputs: ['landsraad_data.json'],
+    sources: ['Systems/Landsraad/VotingBlock', 'Systems/MnemonicRecall/Data/JourneyCards/LandsraadContracts',
+      'Maps/DT_MapsInfo.json'],
+    paks: ['*'],
+    note: 'Une mission desactivee par Funcom reste dans son pool (cote serveur) : le marquage vient '
+      + 'de la note de patch, declaree dans DESACTIVEES en tete du script.',
+  },
+  {
     id: 'plans_univers',
     label: 'Univers des plans uniques apprenables',
     script: 'tools/build_plans_uniques.js',
@@ -471,9 +483,9 @@ const ANGLES_MORTS = [
   },
   {
     id: 'divers',
-    fichiers: ['metiers.json', 'landsraad_data.json', 'base_pieces_v2.json'],
+    fichiers: ['metiers.json', 'base_pieces_v2.json'],
     label: 'Fichiers curés à la main (et un fichier mort)',
-    detail: 'metiers.json et landsraad_data.json sont saisis à la main, pas dataminés.\n'
+    detail: 'metiers.json est saisi à la main, pas dataminé.\n'
       + '    base_pieces_v2.json n\'est plus lu par aucune page (le planner charge v3 /\n'
       + '    planner_pieces.json) : ne pas perdre de temps à le régénérer.',
   },
@@ -510,7 +522,7 @@ function entrees(json) {
   };
   if (Array.isArray(json)) { pousserTableau(json); return m; }
   if (typeof json !== 'object') return null;
-  for (const clef of ['items', 'pieces', 'utilities', 'plans', 'augments', 'loot', 'sources', 'locations']) {
+  for (const clef of ['items', 'pieces', 'utilities', 'plans', 'augments', 'loot', 'sources', 'locations', 'quests']) {
     const v = json[clef];
     if (Array.isArray(v)) { pousserTableau(v); return m; }
     if (v && typeof v === 'object') { for (const [k, val] of Object.entries(v)) m.set(k, val); return m; }

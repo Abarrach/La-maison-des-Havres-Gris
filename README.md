@@ -176,8 +176,14 @@ Composant commun à **tout le site** : l'attribut `title` natif du navigateur es
 - Accessible depuis le menu principal (tuile dédiée avec image `migration.png`)
 - Header standard avec widget compte joueur et bouton retour **Menu**
 
-### Planificateur d'Événements Landsraad
-- Sélection de quêtes parmi 25 missions réparties en 5 catégories
+### Planificateur d'Événements Landsraad (`planner.html`)
+- Sélection de quêtes parmi les **41 missions du jeu**, rangées par spécialité dans l'ordre du jeu (Artisanat, Récolte, Exploration, Combat, Sabotage)
+- **`landsraad_data.json` est dataminé** depuis le 2026-10-22 (`tools/build_landsraad_from_datamine.js`, étape `landsraad` de `update_datamine.js`) : il était saisi à la main (25 missions relevées en avril), alors que la 1.4 en a ajouté 16 (Ruines de Tsimpo, Passe du Vent, Piste des Contrebandiers). Noms et descriptions sont ceux du jeu en français, qui en a renommé plusieurs (« Frappe de décapitation » → « La tête du serpent ») : le jeu fait foi
+  - Chaîne : `Systems/Landsraad/VotingBlock/DA_LVB_VotingBlock1..5` (un pool par spécialité, nom FR) → `JourneyCards/LandsraadContracts/DA_LDR_*` (nom, description, cartes cibles, points, Solaris) → `Maps/DT_MapsInfo` (nom FR du lieu, taille de groupe conseillée)
+  - Les pools contiennent aussi **13 contrats de test** (`DA_LDR_Test*`), écartés. ⚠ Filtrer sur le PRÉFIXE `DA_LDR_Test`, pas sur « _Test » : ce motif écartait « Nettoyage de Station Expérimentale » (`DA_LDR_Gather_TestingStationCleanup_01`)
+  - **Missions désactivées** (Convergence, Récupération d'échantillon, patch 1.5.3.0) : Funcom les coupe côté serveur, elles restent dans leur pool et rien dans les fichiers ne les distingue. Elles sont déclarées dans `DESACTIVEES` en tête du script, avec la note de patch en source ; la page les montre barrées, non cochables. Le jour où l'une revient, retirer sa ligne
+  - 👥 = lieu prévu pour un groupe (`EGroupSize::Party` : les stations expérimentales et l'Ancienne carrière) ; la description complète s'affiche au survol
+  - Identifiants de mission = noms d'assets (`DA_LDR_…`), et non plus des numéros 1 à 25 : les inscriptions déjà sauvegardées portent une copie complète de la mission, elles restent lisibles
 - Gestion des participants (ajout/suppression de membres)
 - Attribution automatique des rôles selon la composition du groupe
 - Aperçu et sauvegarde des données de l'événement
@@ -1407,7 +1413,7 @@ schtasks /create /tn "DuneMap - verif datamine" /sc weekly /d WED /st 10:00 /tr 
 ⚠ Le `/nopause` est obligatoire dans une tâche planifiée : sans lui, le script attend une touche
 que personne ne tapera. (Donner le chemin complet du `.cmd` dans `/tr`.)
 
-### Les 17 étapes couvertes
+### Les 18 étapes couvertes
 
 | id | Sortie | Source |
 |---|---|---|
@@ -1422,6 +1428,7 @@ que personne ne tapera. (Donner le chemin complet du `.cmd` dans `/tr`.)
 | `plan_sources` | `plan_sources.json` | `Systems/LootTables` + `CDT_BaseItems.ItemTags` |
 | `plan_locations` | `plan_locations.json` | `Maps/Biomes/**/CB/**` (acteurs `TemporaryLootSpawner`) |
 | `plans_index` | `plans_index.json` | `Localization/ST_Localization_Items` + `CDT_BaseItems` |
+| `landsraad` | `landsraad_data.json` | `Systems/Landsraad/VotingBlock` + `JourneyCards/LandsraadContracts` + `Maps/DT_MapsInfo` |
 | `plans_univers` | `plans_uniques.json` | export de l'addon en jeu (`.txt`, opt-in `--with-univers`) |
 | `base_pieces_v3` | `base_pieces_v3.json` | `Systems/Building/Data`, `Systems/Vehicles` — script **externe** (opt-in `--run-planner-import`) |
 | `sockets` | `dune_socket_profiles.json`, `dune_group_config.json`, `dune_pieces_sockets.json` | `DT_DuneSocketSetupData` + `CDT_BuildableGroupData` |
@@ -1631,7 +1638,7 @@ un débit.
 `--check` les rappelle à chaque passage — c'est le seul moyen de ne pas les oublier après un patch.
 
 - **`planner_utilities.json`** : extrait à la main de `DT_PlaceableData_Functional` + bbox des `.glb`.
-- **`metiers.json`, `landsraad_data.json`** : saisis à la main.
+- **`metiers.json`** : saisi à la main (`landsraad_data.json` est dataminé depuis le 2026-10-22).
 - **`base_pieces_v2.json`** : plus lu par aucune page — ne pas perdre de temps à le régénérer.
 
 ---

@@ -1,0 +1,77 @@
+<?php
+// Tests des fonctions pures de discord_objet.php (fiches objets sur Discord).
+// Usage : php tools/test_discord_objet.php        → « OK (n) » ou la liste des échecs.
+// Les données sont les vraies (stuff_data.json) : si un snapshot renomme un objet,
+// le test le dira avant Discord.
+
+define('DO_TESTS', true);
+require __DIR__ . '/../discord_objet.php';
+
+$data  = do_charger();
+$items = $data['items'];
+$ko = []; $n = 0;
+$egal = function ($nom, $attendu, $obtenu) use (&$ko, &$n) {
+    $n++;
+    if ($attendu !== $obtenu) $ko[] = "✘ {$nom}\n   attendu : " . json_encode($attendu, JSON_UNESCAPED_UNICODE)
+        . "\n   obtenu  : " . json_encode($obtenu, JSON_UNESCAPED_UNICODE);
+};
+
+// ---- Repérage dans un texte ---------------------------------------------------
+$egal('message réel (MK6 collé, minuscules)', ['bodyfluidextractor_unique_poison_06'],
+    do_trouver("Pour l'extraction du sang je prend Extracteur impur MK6, il y a mieux ?", $items));
+$egal('nom sans version → la plus haute', ['bodyfluidextractor_unique_poison_06'],
+    do_trouver('ton extracteur impur est nul', $items));
+$egal('nom complet prioritaire sur le nom sans version', ['bodyfluidextractor_2h_tier6'],
+    do_trouver('Extracteur de sang Mk 6', $items));
+$egal('accents et apostrophes ignorés', ['bodyfluidextractor_unique_water_05'],
+    do_trouver("l'EXTRACTEUR A FILTRE mk5 !", $items));
+$egal('deux objets, dans l’ordre du texte', ['heavypistol_unique_headshot_06', 'bodyfluidextractor_unique_poison_06'],
+    do_trouver('Point final ou Extracteur impur Mk 6 ?', $items));
+$egal('rien à trouver', [], do_trouver('salut tout le monde, raid ce soir ?', $items));
+$egal('mot isolé : pas de correspondance dans un mot plus long', [], do_trouver('pointfinal', $items));
+$egal('doublon de nom → tier le plus haut', ['combat_light_unique_scanning_helmet_06'],
+    do_trouver("Casque d'analyse renforcée", $items));
+$egal('même objet cité deux fois → une fiche', ['bodyfluidextractor_unique_poison_06'],
+    do_trouver('Extracteur impur Mk 6, oui, Extracteur impur Mk6', $items));
+
+// ---- Valeurs affichées --------------------------------------------------------
+$egal('pourcentage', '75 %', do_valeur(['v' => 75, 'f' => '{v:0}%', 't' => 'number']));
+$egal('flottant arrondi', '60 %', do_valeur(['v' => 60.000004, 'f' => '{v:0}%', 't' => 'number']));
+$egal('décimale optionnelle', '2,8s', do_valeur(['v' => 2.8, 'f' => '{v:0.#}s', 't' => 'number']));
+$egal('décimale optionnelle inutile', '3s', do_valeur(['v' => 3.0, 'f' => '{v:0.#}s', 't' => 'number']));
+$egal('signé positif', '+8 %', do_valeur(['v' => 8, 'f' => '{v:+0.#;-0.#}%', 't' => 'number']));
+$egal('signé négatif', '-6 %', do_valeur(['v' => -6, 'f' => '{v:+0.#;-0.#}%', 't' => 'number']));
+$egal('P0', '90 %', do_valeur(['v' => 0.9, 'f' => '{v:P0}', 't' => 'number']));
+$egal('durée', '1 h 30', do_valeur(['v' => 5400, 't' => 'duration']));
+$egal('texte', 'Extrême (800)', do_valeur(['v' => 'Extrême (800)', 't' => 'string']));
+$egal('libellé nettoyé', 'Valeur d\'armure', do_libelle(['k' => 'armorValue', 'n' => "Valeur d'armure :"]));
+$egal('libellé traduit', 'DPS effectif', do_libelle(['k' => 'effectiveDps', 'n' => 'Effective DPS']));
+$egal('initiale accentuée', 'énergie', do_minuscule_initiale('Énergie'));
+$egal('sigle conservé', 'DPS effectif', do_minuscule_initiale('DPS effectif'));
+
+// ---- Classement --------------------------------------------------------------
+$c = do_classement(do_par_id($items, 'bodyfluidextractor_unique_poison_06'), $items);
+$egal('extracteur impur Mk 6 : 1er sur 10', [1, 10, 'bloodExtractionEfficiency'], [$c['rang'], $c['total'], $c['stat']['k']]);
+$c = do_classement(do_par_id($items, 'bodyfluidextractor_02'), $items);
+$egal('Mk 2 : 9e sur 10', [9, 10], [$c['rang'], $c['total']]);
+$egal('un augment n\'a pas de classement', null, do_classement(do_par_id($items, 't6_augment_lasgun1'), $items));
+$pist = do_classement(do_par_id($items, 'heavypistol_unique_headshot_06'), $items);
+$egal('un pistolet se compare aux pistolets', true,
+    count(array_filter($pist['liste'], function ($p) { return $p['it']['cat'] !== 'weapons/sidearms/pistol'; })) === 0);
+
+// ---- Fiches : limites Discord ----------------------------------------------------
+$tous = array_slice(array_column(array_filter($items, function ($i) { return ($i['group'] ?? '') === 'weapons'; }), 'id'), 0, 10);
+$f = do_fiches($tous, $data, 'https://exemple');
+$egal('10 armes : 10 fiches sous 6000 caractères', [10, true], [count($f), do_taille($f) <= 6000]);
+$f = $f2 = do_fiches(['bodyfluidextractor_unique_poison_06'], $data, 'https://exemple');
+$egal('fiche : versions Mk présentes', true, strpos($f[0]['description'], 'Versions : Mk 5 (60 %) · **Mk 6 (75 %)**') !== false);
+$egal('fiche : pas de lien optimiseur pour un outil', false, strpos($f[0]['description'], 'optimiseur') !== false);
+$f = do_fiches(['heavypistol_unique_headshot_06'], $data, 'https://exemple');
+$egal('fiche : lien optimiseur pour une arme', true, strpos($f[0]['description'], 'https://exemple/optimiseur.html#objet=heavypistol_unique_headshot_06') !== false);
+$egal('autocomplétion : mots dans le désordre', 'bodyfluidextractor_unique_poison_06', do_suggestions('impur extr', $items)[0]['value'] ?? null);
+$egal('autocomplétion : 25 au plus', true, count(do_suggestions('', $items)) === 25);
+$egal('icône : un seul /images', 'https://cdn-hosted.gaming.tools/dune/images/dune/gui/textures/icons/gameplay/tools/t_ui_icontoolbodyfluidextractor_unique_poison_06r_d.webp', $f2[0]['thumbnail']['url'] ?? null);
+$egal('coupe en caractères', 'éé…', do_couper('ééééé', 3));
+
+echo $ko ? implode("\n", $ko) . "\n\n" . count($ko) . " échec(s) sur {$n}\n" : "OK ({$n})\n";
+exit($ko ? 1 : 0);

@@ -17,6 +17,7 @@
 //   - /commande + composants cmd_   → discord_commande.php      (lot 3+, pas encore livré)
 //   - composants tpari/tparim/tparimes → epice/discord_paris.php (paris des tournois PvP)
 //   - /carte (+ autocomplétion)     → discord_carte.php         (carte Deep Desert de la semaine)
+//   - /objet, clic droit « Fiches objets », objet_pub: → discord_objet.php (fiches d'objets)
 //
 //  Sécurité : chaque requête Discord est signée. On refuse (401)
 //  tout ce qui n'est pas signé correctement. La clé publique est
@@ -114,11 +115,15 @@ function detect_route(array $body): ?string {
         if ($name === 'commande') return 'commande';
         if ($name === 'plan')     return 'plan';
         if ($name === 'carte')    return 'carte';
+        // `/objet` et le clic droit « Fiches objets » (commande de message, data.type 3).
+        if ($name === 'objet' || $name === 'Fiches objets') return 'objet';
         return null;
     }
 
     if ($type === 3 || $type === 5) {
         $cid = (string)($body['data']['custom_id'] ?? '');
+        // Bouton « Publier dans le salon » des fiches objets (cf. discord_objet.php).
+        if (strpos($cid, 'objet_pub:') === 0) return 'objet';
         // Paris des tournois PvP (cf. epice/discord_paris.php) : boutons du message de
         // paris (tpari:, tparimes:) et son formulaire (tparim:). Les messages déjà
         // postés gardent ces boutons : ne jamais retirer ces préfixes.
@@ -204,6 +209,11 @@ if ($route === 'plan') {
 
 if ($route === 'carte') {
     require __DIR__ . '/discord_carte.php';
+    exit;
+}
+
+if ($route === 'objet') {
+    require __DIR__ . '/discord_objet.php';
     exit;
 }
 

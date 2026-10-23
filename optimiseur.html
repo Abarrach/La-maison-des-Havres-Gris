@@ -207,6 +207,7 @@ input[type=number]{-moz-appearance:textfield;}
 .picker-list{max-height:54vh;overflow-y:auto;padding:8px;}
 .pick-item{display:flex;align-items:center;gap:11px;padding:8px;border-radius:6px;cursor:pointer;border:1px solid transparent;}
 .pick-item:hover{background:rgba(205,164,52,.08);border-color:var(--brun-bordure);}
+.pick-item.pk-vise{background:rgba(205,164,52,.14);border-color:rgba(205,164,52,.7);}
 .pick-item img{width:38px;height:38px;object-fit:contain;background:#0d0705;border:1px solid var(--brun-bordure);border-radius:5px;flex-shrink:0;}
 .pick-item .pi-body{flex:1;min-width:0;}
 .pick-item .pi-name{font-size:.9em;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -554,7 +555,10 @@ function uncondDmgKeys(w){
 function statVal(it,key){const s=(it.stats||[]).find(s=>s.k===key);return s?s.v:undefined;}
 function firstStat(it,keys){for(const k of keys){const v=statVal(it,k);if(v!==undefined&&v!==null)return{k,v};}return null;}
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function iconUrl(p){return p?ICON_BASE+p:'';}
+// icon_base finit par /images et les chemins commencent aussi par /images : le CDN ne sert plus
+// que l'adresse à un seul /images (le double renvoie 404, constaté le 2026-10-23 — toutes les
+// icônes de l'optimiseur étaient masquées par leur onerror).
+function iconUrl(p){return p?ICON_BASE+(/\/images$/.test(ICON_BASE)?p.replace(/^\/images(?=\/)/,''):p):'';}
 function skillById(id){return SKILLS.find(s=>s.id===id);}
 function itemById(id){return DB.find(i=>i.id===id);}
 
@@ -1767,6 +1771,17 @@ document.addEventListener('mousemove',e=>{
     renderAll();
     const wKey=BUILD.weapon1?'weapon1':(BUILD.weapon2?'weapon2':null);
     if(wKey){const sel=document.getElementById('recipe-select');if(sel)sel.value=wKey;showRecipe(BUILD[wKey]);}
+    // Lien « Comparer dans l'optimiseur » des fiches Discord (#objet=<id>) : ouvre le sélecteur
+    // de l'emplacement sur la catégorie de l'objet, l'objet mis en évidence parmi ses
+    // concurrents — SANS toucher au build enregistré du joueur (il équipe s'il le veut).
+    const mo=(location.hash||'').match(/[#&]objet=([^&]+)/);
+    const oit=mo?itemById(decodeURIComponent(mo[1])):null, osl=oit?SLOTS.find(s=>s.accept(oit)):null;
+    if(osl){
+      openPicker(osl.key);
+      const row=document.querySelector('#pk-list .pick-item[data-item="'+CSS.escape(oit.id)+'"]');
+      if(row){row.classList.add('pk-vise');row.scrollIntoView({block:'center'});}
+      history.replaceState(null,'',location.pathname);
+    }
   }catch(e){
     document.getElementById('boot').innerHTML='Impossible de charger la base d\'items.<br><span style="font-size:.8em">Vérifie que stuff_proxy.php + stuff_data.json sont déployés.</span>';
   }

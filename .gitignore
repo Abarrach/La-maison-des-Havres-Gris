@@ -58,6 +58,8 @@ epice/data/paris_discord.log*
 dd_map_update.log
 dd_map_alerte.json
 deep_desert.jpg.tmp
+# Fonds Deep Desert : paquets .gtpk de gaming.tools (12 × 2,2 Mo), retéléchargés par tools/fetch_dd_fonds.sh
+dd_fonds/
 # Sorties Discord non-épice (Labo/Farm/Landsraad) — runtime, recréé par discord_sortie.php
 epice/data/discord_sorties.json
 # Tournois PvP (arbres, scores, podiums) — runtime, recréé par tournois-api.php

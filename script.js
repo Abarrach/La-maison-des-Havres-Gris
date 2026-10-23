@@ -1102,6 +1102,8 @@ function buildDDFilterBar(counts) {
   bar.style.display = 'flex';
 }
 
+let _ddRecolteTimer = null;   // revérification pendant la récolte (cf. fin de loadDDOverlay)
+
 async function loadDDOverlay() {
   ddSetStatus('⏳ Chargement de la carte…');
   ddUpdateStatus();
@@ -1141,6 +1143,11 @@ async function loadDDOverlay() {
   // Proxy = cache serveur, pas forcément la semaine en cours : pas d'envoi.
   if (fromProxy) data.repli = true;
   ddRefreshPublishState();
+  // Semaine en cours de récolte : on revérifie toutes les 5 minutes, pour que la carte se
+  // complète et que le bouton Discord s'allume dès que gaming.tools publie l'épice et les
+  // filons, sans que la page ouverte ait à être rechargée.
+  clearTimeout(_ddRecolteTimer);
+  if (data.enRecolte) _ddRecolteTimer = setTimeout(() => { if (currentMapId === 'deep_desert') loadDDOverlay(); }, 5 * 60 * 1000);
 }
 
 // === PUBLICATION SUR DISCORD =========================================
@@ -1178,6 +1185,60 @@ function ddRoundRect(g, x, y, w, h, r) {
 }
 
 
+// Paquet .gtpk de la variante, gardé SUR NOTRE SITE (dd_fonds/, déposé à la main :
+// le serveur ne peut pas le télécharger, cf. dd_map_update.php et tools/fetch_dd_fonds.sh).
+// Même domaine : ni Cloudflare ni CORS. Format GTPK v2 : en-tête de 48 octets (« GTPK »,
+// version, nombre de tuiles, …, taille d'une entrée, position de l'index), puis l'index
+// (z, x, y en u32, position en u64, longueur en u32), puis les tuiles WebP.
+async function ddLirePaquet(world) {
+  try {
+    const r = await fetch(`dd_fonds/${world}.gtpk`, { cache: 'force-cache' });
+    if (!r.ok) return null;
+    const buf = await r.arrayBuffer(), dv = new DataView(buf);
+    if (buf.byteLength < 48 || String.fromCharCode(...new Uint8Array(buf, 0, 4)) !== 'GTPK') return null;
+    const nb = dv.getUint32(8, true), entree = dv.getUint32(32, true), index = dv.getUint32(36, true);
+    if (dv.getUint32(4, true) !== 2 || entree !== 24) return null;
+    const idx = new Map();
+    for (let i = 0; i < nb; i++) {
+      const o = index + i * 24;
+      const pos = dv.getUint32(o + 12, true) + dv.getUint32(o + 16, true) * 4294967296, len = dv.getUint32(o + 20, true);
+      if (pos + len > buf.byteLength) return null;   // paquet tronqué
+      idx.set(`${dv.getUint32(o, true)}/${dv.getUint32(o + 4, true)}_${dv.getUint32(o + 8, true)}`, [pos, len]);
+    }
+    return (z, x, y) => { const e = idx.get(`${z}/${x}_${y}`); return e ? new Uint8Array(buf, e[0], e[1]) : null; };
+  } catch { return null; }
+}
+
+// Les 64 tuiles du fond (zoom 3, 2048 px : assez pour une image de 1800 px).
+// Source : le paquet local, contrôlé par UNE tuile .webp du CDN comparée octet pour
+// octet (différente = un patch a changé la carte, le paquet est périmé) ; à défaut,
+// les .webp de gaming.tools comme avant. Même logique que dd_map_update.php.
+async function ddFondTuiles(world) {
+  const cdn = (x, y) => `https://cdn-hosted.gaming.tools/dune/map-tiles/${world}/3/${x}_${y}.webp`;
+  const tuile = await ddLirePaquet(world);
+  let paquet = !!(tuile && tuile(3, 0, 0));
+  if (paquet) {
+    try {
+      const r = await fetch(cdn(0, 0));
+      if (r.ok) {
+        const a = new Uint8Array(await r.arrayBuffer()), b = tuile(3, 0, 0);
+        if (a.length !== b.length || a.some((v, i) => v !== b[i])) {
+          console.warn(`[DD] paquet local ${world} périmé : fond pris sur les tuiles .webp`);
+          paquet = false;
+        }
+      }
+    } catch { /* .webp injoignables : le paquet suffit, c'est pour ça qu'on le garde */ }
+  }
+  const tuiles = [];
+  for (let y = 0; y < DD_TILES; y++) for (let x = 0; x < DD_TILES; x++) {
+    const charge = paquet
+      ? (tuile(3, x, y) ? createImageBitmap(new Blob([tuile(3, x, y)], { type: 'image/webp' })).catch(() => null) : Promise.resolve(null))
+      : ddLoadImg(cdn(x, y));
+    tuiles.push(charge.then(im => ({ im, x, y })));
+  }
+  return { tuiles: await Promise.all(tuiles), source: paquet ? 'paquet local' : 'tuiles .webp' };
+}
+
 // Compose l'image de la semaine avec une vue donnée. Reprend les règles de la
 // carte (ddFilterList, ddItemLook, ddClusterScale, et le dessin des icônes de
 // ddMakeIcon + CSS de map.html) pour que l'image ressemble à la carte du site.
@@ -1193,24 +1254,20 @@ async function ddComposeShot(data, vue) {
   cv.width = W; cv.height = H;
   const g = cv.getContext('2d');
 
-  // Fond : les 64 tuiles de la variante, et non deep_desert.jpg — celui-ci n'est
-  // recomposé par cron que le mardi à 6 h 30 UTC : une publication faite juste
-  // après le reset serait partie sur le fond de la semaine précédente. Même
-  // assemblage que dd_map_update.php, étiré comme Leaflet étire deep_desert.jpg.
+  // Fond : les 64 tuiles de la variante (paquet local, sinon .webp — ddFondTuiles),
+  // et non deep_desert.jpg — celui-ci n'est recomposé par cron que le mardi à
+  // 6 h 30 UTC : une publication faite juste après le reset serait partie sur le
+  // fond de la semaine précédente. Étiré comme Leaflet étire deep_desert.jpg.
   const world = 'deepdesert_1_' + String(data.seed).padStart(2, '0');
   const tw = W / DD_TILES, th = H / DD_TILES;
   g.fillStyle = 'rgb(210,175,120)';            // sable neutre si une tuile manque
   g.fillRect(0, 0, W, H);
-  const tuiles = [];
-  for (let y = 0; y < DD_TILES; y++) for (let x = 0; x < DD_TILES; x++) {
-    tuiles.push(ddLoadImg(`https://cdn-hosted.gaming.tools/dune/map-tiles/${world}/3/${x}_${y}.webp`)
-      .then(im => ({ im, x, y })));
-  }
+  const fond = await ddFondTuiles(world);
   let manquantes = 0;
-  for (const { im, x, y } of await Promise.all(tuiles)) {
+  for (const { im, x, y } of fond.tuiles) {
     if (im) g.drawImage(im, x * tw, y * th, tw, th); else manquantes++;
   }
-  if (manquantes > 8) throw new Error(`fond de carte ${world} incomplet (${manquantes} tuiles manquantes)`);
+  if (manquantes > 8) throw new Error(`fond de carte ${world} incomplet (${manquantes} tuiles manquantes, ${fond.source})`);
 
   // Zones PVP/PVE
   for (const z of (data.zones || [])) {

@@ -97,6 +97,26 @@ $egal('autocomplétion : mots dans le désordre', 'bodyfluidextractor_unique_poi
 $egal('autocomplétion : 25 au plus', true, count(do_suggestions('', $items)) === 25);
 $egal('icône : un seul /images', 'https://cdn-hosted.gaming.tools/dune/images/dune/gui/textures/icons/gameplay/tools/t_ui_icontoolbodyfluidextractor_unique_poison_06r_d.webp', $f2[0]['thumbnail']['url'] ?? null);
 $egal('ceinture : pas de classement (fonctions différentes)', null, do_classement(do_par_id($items, 'fullsuspensorbelt_unique_durability'), $items));
+// ---- Où le trouver -----------------------------------------------------------------
+$dataDD = $data;
+$dataDD['_dd'] = dd_plans_semaine(['sites' => [   // relevé factice, au format de dd_cartes/releve.json
+    ['type' => 'shipwreck', 'cell' => 'A2', 'name' => '', 'uniques' => [['nom' => 'Extracteur impur Mk 6', 'pid' => '', 'p' => 0.006, 'pp' => 0.11]]],
+    ['type' => 'ecolab', 'cell' => 'E8', 'name' => '', 'uniques' => [['nom' => 'Extracteur impur Mk 6', 'pid' => '', 'p' => 0.031]]],
+]]);
+$lx = do_lieux(do_par_id($items, 'bodyfluidextractor_unique_poison_06'), $dataDD, false);
+$egal('Deep Desert de la semaine : un site + renvoi vers /carte plan', true,
+    count($lx) === 1 && strpos($lx[0], 'Deep Desert cette semaine') !== false && strpos($lx[0], '(+1 autre site, `/carte plan`)') !== false);
+$egal('sans relevé publié : rien sur le Deep Desert', [], do_lieux(do_par_id($items, 'bodyfluidextractor_unique_poison_06'), $data, false));
+$lx = do_lieux(do_par_id($items, 'heavypistol_unique_headshot_06'), $data, false);
+$egal('lieu nommé avec sa chance', ['📍 **Lieux nommés** : Station expérimentale (Poison) 15,1 % — *chance par coffre ultra-rare*'], $lx);
+$mendia = null; foreach ($items as $it) if ($it['name'] === 'Bottes de Mendia') $mendia = $it;
+$lx = do_lieux($mendia, $data, false);
+$egal('coffres de schémas : types de lieux, sans chance', true, count($lx) === 1 && strpos($lx[0], 'sans chance connue') !== false && strpos($lx[0], '%') === false);
+$egal('fiche compacte : pas de coffres de schémas', [], do_lieux($mendia, $data, true));
+$egal('objet fabriqué : rien', [], do_lieux(do_par_id($items, 'powerpack4'), $data, false));
+$avecLieux = array_slice(array_column(array_filter($items, function ($i) use ($dataDD) { return do_lieux($i, $dataDD, true); }), 'id'), 0, 10);
+$f = do_fiches($avecLieux, $dataDD, 'https://exemple');
+$egal('10 fiches avec lieux : sous 6000 caractères', [10, true], [count($f), do_taille($f) <= 6000]);
 $egal('coupe en caractères', 'éé…', do_couper('ééééé', 3));
 
 echo $ko ? implode("\n", $ko) . "\n\n" . count($ko) . " échec(s) sur {$n}\n" : "OK ({$n})\n";

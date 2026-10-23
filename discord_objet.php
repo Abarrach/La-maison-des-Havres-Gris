@@ -25,6 +25,8 @@
 //  signature Ed25519. Fonctions pures en tête : tools/test_discord_objet.php les teste.
 // ============================================================
 
+require_once __DIR__ . '/dd_discord.php';   // relevé Deep Desert de la semaine (dd_plans_semaine…)
+
 const DO_MAX_FICHES    = 10;    // limite Discord : 10 encadrés par message
 const DO_MAX_CARACT    = 5800;  // limite Discord : 6000 caractères pour tous les encadrés
 const DO_NOM_MIN       = 5;     // « Mamba » oui, mais pas de nom plus court (faux positifs)
@@ -78,12 +80,81 @@ function do_charger(): array {
     static $d = null;
     if ($d === null) {
         $d = json_decode((string)@file_get_contents(__DIR__ . '/stuff_data.json'), true) ?: ['items' => []];
+        $parNom = [];
         foreach ($d['items'] as $i => $it) {
             $d['items'][$i]['_n'] = do_norm($it['name'] ?? '');
             $d['items'][$i]['_b'] = do_base($d['items'][$i]['_n']);
+            $parNom[$d['items'][$i]['_n']] = $it['id'];
         }
+        // Lieux de loot (cf. do_lieux) : coffres des lieux nommés, avec chance…
+        $loot = json_decode((string)@file_get_contents(__DIR__ . '/stuff_loot.json'), true);
+        $d['_loot'] = $loot['loot'] ?? [];
+        // … et coffres posés des schémas uniques, sans chance. Clé = id du plan : on la ramène
+        // à l'id de l'objet (« <id>_schematic »), sinon par le nom du plan (plans_uniques.json).
+        $pl = json_decode((string)@file_get_contents(__DIR__ . '/plan_locations.json'), true);
+        $pu = json_decode((string)@file_get_contents(__DIR__ . '/plans_uniques.json'), true);
+        $d['_plans'] = [];
+        foreach ($pl['locations'] ?? [] as $cle => $lieux) {
+            $id = preg_replace('/^schematic_|_schematic$/', '', $cle);
+            if (!in_array($id, $parNom, true)) $id = $parNom[do_norm($pu['plans'][$cle]['n'] ?? '')] ?? null;
+            if ($id) $d['_plans'][$id] = $lieux;
+        }
+        // Schémas uniques de la semaine en Deep Desert : relevé publié par le bouton de la carte
+        // (le serveur ne peut pas lire gaming.tools lui-même, Cloudflare). Périmé = ignoré.
+        $r = dd_lire_releve();
+        $d['_dd'] = ($r && dd_releve_a_jour($r)) ? dd_plans_semaine($r) : [];
     }
     return $d;
+}
+
+/**
+ * « Où le trouver » : lignes de la fiche, de la plus actionnable à la plus vague.
+ *  1) Deep Desert cette semaine (relevé publié par le bouton de la carte) : site, case, chance ;
+ *  2) lieux nommés (stations expérimentales, donjon) : chance par coffre ultra-rare, dataminée ;
+ *  3) coffres de schémas uniques posés dans les cartes : TYPES de lieux seulement — ni chance
+ *     (elle dépend du pool tiré) ni position (l'assemblage du monde est procédural).
+ * Rien n'est affiché quand on ne sait rien : un objet fabriqué n'a pas de lieu de loot.
+ */
+function do_lieux(array $it, array $data, bool $compacte): array {
+    $l = [];
+    foreach ($data['_dd'] ?? [] as $plan) {
+        $pid = preg_replace('/^schematic_|_schematic$/', '', (string)($plan['pid'] ?? ''));
+        if ($pid !== $it['id'] && do_norm((string)($plan['nom'] ?? '')) !== $it['_n']) continue;
+        $s = $plan['sites'][0] ?? null;
+        if (!$s) break;
+        $autres = count($plan['sites']) - 1;
+        $l[] = '🏜️ **Deep Desert cette semaine** : ' . dd_site_txt($s) . ' · ' . dd_pct_site($s)
+            . ($autres > 0 ? " (+{$autres} autre" . ($autres > 1 ? 's' : '') . ' site' . ($autres > 1 ? 's' : '') . ', `/carte plan`)' : '');
+        break;
+    }
+    $loot = $data['_loot'][$it['id']] ?? [];
+    if ($loot) {
+        usort($loot, function ($a, $b) { return ($b['chance'] ?? 0) <=> ($a['chance'] ?? 0); });
+        $parts = array_map(function ($x) { return $x['location'] . ' ' . do_nombre((float)$x['chance'], 1) . ' %'; },
+            array_slice($loot, 0, $compacte ? 1 : 3));
+        $reste = count($loot) - count($parts);
+        $l[] = '📍 **Lieux nommés** : ' . implode(', ', $parts) . ($reste > 0 ? " (+{$reste})" : '')
+            . ($compacte ? '' : ' — *chance par coffre ultra-rare*');
+    }
+    $plans = $data['_plans'][$it['id']] ?? [];
+    if ($plans && !$compacte) {
+        $types = []; $dd = false;
+        foreach ($plans as $x) {
+            $lieu = (string)($x['lieu'] ?? '');
+            if ($lieu === '') continue;
+            if (strpos($lieu, 'Désert profond') !== false) { $dd = true; continue; }
+            $types[$lieu] = ($types[$lieu] ?? 0) + 1;
+        }
+        arsort($types);
+        $noms = array_map('do_minuscule_initiale', array_keys($types));
+        $txt = implode(', ', array_slice($noms, 0, 4)) . (count($noms) > 4 ? '…' : '');
+        if ($txt !== '' || $dd) {
+            $l[] = '🗝️ **Coffres de schémas uniques** : ' . ($txt !== '' ? $txt . ' (' . count($noms) . ' types de lieux)' : '')
+                . ($dd ? ($txt !== '' ? ' et ' : '') . 'conteneurs ultra-rares du Désert profond' : '')
+                . ' — *sans chance connue*';
+        }
+    }
+    return $l;
 }
 
 /** Objet par identifiant. */
@@ -375,6 +446,9 @@ function do_fiche(array $it, array $data, string $base, bool $compacte, string $
     }
     if ($c) $desc[] = do_classement_txt($c, $it['id']);
     if ($vers = do_versions($it, $items, $c)) $desc[] = $vers;
+    if ($lieux = do_lieux($it, $data, $compacte)) $desc[] = "**Où le trouver**
+" . implode("
+", $lieux);
     $liens = ['[Fiche gaming.tools](https://dune.gaming.tools/fr/items/' . rawurlencode($it['id']) . ')'];
     if ($o = do_lien_optimiseur($it, $base)) $liens[] = '[Comparer dans l\'optimiseur](' . $o . ')';
     $desc[] = implode(' · ', $liens);

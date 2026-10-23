@@ -16,7 +16,9 @@
  * sur les images) — c'est pourquoi la composition de l'image fonctionne.
  *
  * Usage : php dd_map_update.php
- * Cron  : 30 5 * * 2   www-data php /srv/dune-map/v2/dd_map_update.php
+ * Cron  : crontab de l'utilisateur dune (relevé le 2026-10-23), sur la PROD racine :
+ *         30 6 * * 2 /usr/bin/php /srv/dune-map/dd_map_update.php >/dev/null 2>>/srv/dune-map/dd_map_update.log
+ *         Il tourne sous dune, pas www-data : deep_desert.jpg et le marqueur d'alerte lui appartiennent.
  *
  * ── Garde-fous (2026-10-23) ──────────────────────────────────────────────────
  * gaming.tools charge désormais ses propres tuiles en un paquet `.gtpk` ; les `.webp`

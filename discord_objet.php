@@ -37,7 +37,10 @@ const DO_STATS_CLASSEMENT = [
     ['effectiveDps', true], ['dps', true], ['damagePerHit', true],
     ['armorValue', true],
     ['bloodExtractionEfficiency', true], ['fillableCapacity', true], ['dewReapYield', true],
-    ['powerPackPowerPool', true], ['suspensorBeltPowerDrain', false], ['shieldEfficiency', false],
+    // Pas de suspensorBeltPowerDrain : une ceinture de vol complet consomme 57/s, une de planage
+    // 14/s — ce ne sont pas les mêmes fonctions, et classer sur la conso mettrait en tête celles
+    // qui en font le moins. Les ceintures n'ont donc pas de classement.
+    ['powerPackPowerPool', true], ['shieldEfficiency', false],
     ['cuttingPoints', true], ['repairSpeed', true], ['scanRange', true],
     ['healthRestored', true], ['waterGeneration', true],
 ];
@@ -89,13 +92,115 @@ function do_par_id(array $items, string $id): ?array {
     return null;
 }
 
+// ---- Rapprochement des noms abrégés ou mal tapés ----------------------------------
+// Les joueurs écrivent « ceinture elohim » pour « Ceinture à suspenseur de classe Elohim ».
+// Règle : au moins DEUX mots du nom, à moins de DO_FENETRE mots l'un de l'autre, et dont la
+// combinaison ne désigne qu'UN objet (ou les versions Mk d'un même objet : on prend alors la
+// version tapée, sinon la plus haute). Un mot rare seul ne suffit pas : « final » n'existe que
+// dans « Point final », et « au final » est une tournure courante. Par mot : une faute de
+// frappe tolérée (2 au-delà de 8 lettres, jamais sur la première lettre ni sous 5 lettres),
+// ou un début de mot d'au moins 4 lettres (« combi » → « combinaison »).
+const DO_MOTS_VIDES   = ['de', 'du', 'des', 'la', 'le', 'les', 'a', 'au', 'aux', 'et', 'en', 'd', 'l',
+                         'pour', 'sur', 'avec', 'un', 'une'];
+const DO_FENETRE      = 3;
+
+/** Mots significatifs d'un texte normalisé (sans mots vides ni numéro de version). */
+function do_mots(string $norm): array {
+    return array_values(array_filter(explode(' ', $norm), function ($w) {
+        return $w !== '' && !in_array($w, DO_MOTS_VIDES, true) && !preg_match('/^mk\d$/', $w);
+    }));
+}
+
+/** Même mot, à une faute de frappe près, ou son début (4 lettres au moins). */
+function do_proche(string $saisi, string $mot): bool {
+    if ($saisi === $mot) return true;
+    $n = strlen($saisi);
+    if ($n >= 4 && strpos($mot, $saisi) === 0) return true;
+    if ($n < 5 || strlen($mot) < 5 || $saisi[0] !== $mot[0]) return false;
+    return levenshtein($saisi, $mot) <= ($n >= 8 ? 2 : 1);
+}
+
+/**
+ * Candidats approchés : [début, fin, id, score, extrait]. `$exclus` = plages déjà prises
+ * par un nom exact (on ne rapproche pas ce qui est déjà reconnu).
+ */
+function do_approcher(string $t, array $items, array $exclus): array {
+    $df = []; $motsItem = [];
+    foreach ($items as $k => $it) {
+        $motsItem[$k] = array_unique(do_mots($it['_b']));
+        foreach ($motsItem[$k] as $w) $df[$w][] = $k;
+    }
+    $nbItems = max(1, count($items));
+    $idf = function ($w) use ($df, $nbItems) { return log($nbItems / count($df[$w])); };
+
+    preg_match_all('/[a-z0-9]+/', $t, $m, PREG_OFFSET_CAPTURE);
+    $toks = [];   // [mot, début, fin, mots du vocabulaire qu'il peut désigner]
+    foreach ($m[0] as [$w, $p]) {
+        $libre = true;
+        foreach ($exclus as $q) if ($p < $q[1] && $q[0] < $p + strlen($w)) { $libre = false; break; }
+        $vise = [];
+        if ($libre && strlen($w) >= 4 && !ctype_digit($w) && !in_array($w, DO_MOTS_VIDES, true)) {
+            // Un mot qui existe tel quel n'est pas une faute de frappe : « lourd » (13 casques
+            // lourds, donc ambigu) ne doit pas glisser vers « lourde » et un casque précis.
+            if (isset($df[$w])) $vise = [$w];
+            else foreach ($df as $v => $_) if (do_proche($w, $v)) $vise[] = $v;
+        }
+        $toks[] = [$w, $p, $p + strlen($w), $vise];
+    }
+
+    $cands = [];
+    foreach ($toks as $i => [, , , $vise]) {
+        $meilleur = null;
+        $objets = [];
+        foreach ($vise as $v) foreach ($df[$v] as $k) $objets[$k] = true;
+        foreach (array_keys($objets) as $k) {
+            $pris = [];
+            foreach ($vise as $v) if (in_array($v, $motsItem[$k], true)) { $pris[$v] = $i; break; }
+            for ($j = max(0, $i - DO_FENETRE); $j <= min(count($toks) - 1, $i + DO_FENETRE); $j++) {
+                if ($j === $i) continue;
+                foreach ($toks[$j][3] as $u) {
+                    if (!isset($pris[$u]) && in_array($u, $motsItem[$k], true)) { $pris[$u] = $j; break; }
+                }
+            }
+            if (count($pris) < 2) continue;
+            // La COMBINAISON doit désigner un seul objet (ou les versions Mk d'un même objet) :
+            // « pistolet disrupteur regis » (3 mots courants, un seul objet) oui ; « casque lourd »
+            // ou « veste suspenseur » (plusieurs objets différents) non — on ne devine pas.
+            $communs = null;
+            foreach (array_keys($pris) as $u) $communs = $communs === null ? $df[$u] : array_intersect($communs, $df[$u]);
+            // Numéro de version tapé juste après (« combi antiradiation mk5 ») : il écarte les
+            // objets sans cette version (la « tactique ») et départage la famille.
+            $jmax = max($pris);
+            $mk = isset($toks[$jmax + 1]) && preg_match('/^mk[0-9]$/', $toks[$jmax + 1][0]) ? $toks[$jmax + 1][0] : '';
+            $aMk = function ($c) use ($items, $mk) { return substr($items[$c]['_n'], -strlen($mk) - 1) === ' ' . $mk; };
+            if ($mk !== '' && array_filter($communs, $aMk)) $communs = array_filter($communs, $aMk);
+            if (!in_array($k, $communs)) continue;
+            $familles = [];
+            foreach ($communs as $c) $familles[$items[$c]['_b']] = true;
+            if (count($familles) !== 1) continue;
+            $bonMk = $mk !== '' && $aMk($k);
+            $score = array_sum(array_map($idf, array_keys($pris)));
+            $cle = [$bonMk ? 1 : 0, $score, count($pris) / count($motsItem[$k]), $items[$k]['tier'] ?? 0];
+            if ($meilleur === null || $cle > $meilleur['cle']) {
+                $deb = $toks[min($pris)][1]; $fin = $toks[$bonMk ? $jmax + 1 : $jmax][2];
+                $meilleur = ['cle' => $cle, 'c' => [$deb, $fin, $items[$k]['id'], $score, substr($t, $deb, $fin - $deb)]];
+            }
+        }
+        if ($meilleur) $cands[] = $meilleur['c'];
+    }
+    return $cands;
+}
+
 /**
  * Objets cités dans un texte, dans l'ordre où ils apparaissent.
  * 1) noms complets (« Extracteur impur Mk 6 ») ; 2) noms sans version (« extracteur impur »
- * → la version la plus haute). Le plus long l'emporte quand deux noms se chevauchent ;
- * deux objets de même nom (doublons du jeu) → le tier le plus haut.
+ * → la version la plus haute) ; 3) noms abrégés ou mal tapés (do_approcher), notés dans
+ * `$approches` [id => extrait reconnu] pour que la fiche le dise. Le plus long l'emporte
+ * quand deux noms se chevauchent ; deux objets de même nom (doublons du jeu) → le tier le
+ * plus haut.
  */
-function do_trouver(string $texte, array $items): array {
+function do_trouver(string $texte, array $items, ?array &$approches = null): array {
+    $approches = [];
     $t = ' ' . do_norm($texte) . ' ';
     $cands = [];   // [début, fin, id, priorité]
     $parNom = []; $parBase = [];
@@ -124,6 +229,16 @@ function do_trouver(string $texte, array $items): array {
     foreach ($cands as $c) {
         foreach ($pris as $q) if ($c[0] < $q[1] && $q[0] < $c[1]) continue 2;
         $pris[] = $c;
+    }
+    // Rapprochements : le meilleur score d'abord, sans chevaucher un nom déjà retenu.
+    $approx = do_approcher($t, $items, $pris);
+    usort($approx, function ($a, $b) { return $b[3] <=> $a[3]; });
+    $exacts = array_column($pris, 2);
+    foreach ($approx as $c) {
+        if (in_array($c[2], $exacts, true)) continue;
+        foreach ($pris as $q) if ($c[0] < $q[1] && $q[0] < $c[1]) continue 2;
+        $pris[] = $c;
+        $approches[$c[2]] = $c[4];
     }
     usort($pris, function ($a, $b) { return $a[0] <=> $b[0]; });
     $ids = [];
@@ -248,10 +363,12 @@ function do_lien_optimiseur(array $it, string $base): ?string {
 }
 
 /** Une fiche (encadré Discord). `$compacte` : sans description, 6 stats au plus. */
-function do_fiche(array $it, array $data, string $base, bool $compacte): array {
+function do_fiche(array $it, array $data, string $base, bool $compacte, string $approche = ''): array {
     $items = $data['items'];
     $c = do_classement($it, $items);
     $desc = [];
+    // Reconnu par rapprochement : on le dit, pour qu'une erreur se voie tout de suite.
+    if ($approche !== '') $desc[] = "🔎 Reconnu d'après « {$approche} »";
     if (!$compacte && !empty($it['desc'])) {
         $d = (string)$it['desc'];
         $desc[] = '*' . do_couper($d, 220) . '*';
@@ -297,10 +414,10 @@ function do_taille(array $embeds): int {
 }
 
 /** Fiches complètes jusqu'à 2 objets, compactes au-delà ; on rogne si on dépasse 6000 caractères. */
-function do_fiches(array $ids, array $data, string $base): array {
+function do_fiches(array $ids, array $data, string $base, array $approches = []): array {
     $compacte = count($ids) > 2;
     $embeds = [];
-    foreach ($ids as $id) if ($it = do_par_id($data['items'], $id)) $embeds[] = do_fiche($it, $data, $base, $compacte);
+    foreach ($ids as $id) if ($it = do_par_id($data['items'], $id)) $embeds[] = do_fiche($it, $data, $base, $compacte, $approches[$id] ?? '');
     while (do_taille($embeds) > DO_MAX_CARACT) {
         $rogne = false;
         foreach ($embeds as &$e) if (count($e['fields']) > 3) { array_pop($e['fields']); $rogne = true; }
@@ -334,6 +451,16 @@ function do_suggestions(string $saisi, array $items): array {
         foreach ($mots as $m) if (strpos($it['_n'], $m) === false) continue 2;
         $debut = $mots && strpos($it['_n'], reset($mots)) === 0 ? 0 : 1;
         $res[] = [$debut, -($it['tier'] ?? 0), $it['_n'], $it];
+    }
+    // Rien en recherche stricte : on retente en tolérant une faute de frappe par mot (« elohm »).
+    if (!$res && $mots) foreach ($items as $it) {
+        $motsNom = explode(' ', $it['_n']);
+        foreach ($mots as $m) {
+            if (strpos($it['_n'], $m) !== false) continue;
+            foreach ($motsNom as $w) if (do_proche($m, $w)) continue 2;
+            continue 2;
+        }
+        $res[] = [1, -($it['tier'] ?? 0), $it['_n'], $it];
     }
     usort($res, function ($a, $b) { return [$a[0], $a[1], $a[2]] <=> [$b[0], $b[1], $b[2]]; });
     $choix = [];
@@ -369,8 +496,8 @@ function do_prive(string $texte): void {
 }
 
 /** Réponse privée : les fiches + le bouton qui les publie dans le salon. */
-function do_repondre_fiches(array $ids, string $msgSource): void {
-    $embeds = do_fiches($ids, do_charger(), do_base_url());
+function do_repondre_fiches(array $ids, string $msgSource, array $approches = []): void {
+    $embeds = do_fiches($ids, do_charger(), do_base_url(), $approches);
     if (!$embeds) do_prive('Aucun objet reconnu.');
     do_repondre([
         'embeds'     => $embeds,
@@ -402,10 +529,11 @@ if ($type === 2 && (int)($body['data']['type'] ?? 1) === 3) {
     $texte = (string)($msg['content'] ?? '');
     foreach ($msg['embeds'] ?? [] as $e) $texte .= ' | ' . ($e['title'] ?? '') . ' | ' . ($e['description'] ?? '');
     if (trim($texte, ' |') === '') do_prive("Je n'ai pas pu lire le texte de ce message.");
-    $ids = do_trouver($texte, $data['items']);
-    if (!$ids) do_prive("Aucun objet reconnu dans ce message. Les noms doivent être ceux du jeu en français "
-        . "(« Extracteur impur Mk 6 », « MK6 » marche aussi). Pour chercher par nom : `/objet`.");
-    do_repondre_fiches($ids, $cible);
+    $ids = do_trouver($texte, $data['items'], $approches);
+    if (!$ids) do_prive("Aucun objet reconnu dans ce message. Il faut le nom du jeu en français, complet ou au moins "
+        . "deux de ses mots qui ne désignent qu'un objet (« ceinture elohim », « impur mk6 » ne suffit pas). "
+        . "Pour chercher par nom : `/objet`.");
+    do_repondre_fiches($ids, $cible, $approches);
 }
 
 // ---- /objet nom:<…> -----------------------------------------------------------
@@ -413,10 +541,11 @@ if ($type === 2) {
     $saisi = '';
     foreach ($body['data']['options'] ?? [] as $o) if (($o['name'] ?? '') === 'nom') $saisi = (string)($o['value'] ?? '');
     // Choix de l'autocomplétion = identifiant ; texte libre validé sans choisir = recherche par nom.
-    $ids = do_par_id($data['items'], $saisi) ? [$saisi] : do_trouver($saisi, $data['items']);
+    $approches = [];
+    $ids = do_par_id($data['items'], $saisi) ? [$saisi] : do_trouver($saisi, $data['items'], $approches);
     if (!$ids && ($sug = do_suggestions($saisi, $data['items']))) $ids = [$sug[0]['value']];
     if (!$ids) do_prive('Aucun objet ne correspond à « ' . $saisi . ' ».');
-    do_repondre_fiches(array_slice($ids, 0, DO_MAX_FICHES), '');
+    do_repondre_fiches(array_slice($ids, 0, DO_MAX_FICHES), '', $approches);
 }
 
 // ---- Bouton « Publier dans le salon » ----------------------------------------

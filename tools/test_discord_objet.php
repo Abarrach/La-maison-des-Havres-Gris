@@ -34,6 +34,31 @@ $egal('doublon de nom → tier le plus haut', ['combat_light_unique_scanning_hel
 $egal('même objet cité deux fois → une fiche', ['bodyfluidextractor_unique_poison_06'],
     do_trouver('Extracteur impur Mk 6, oui, Extracteur impur Mk6', $items));
 
+// ---- Rapprochement (noms abrégés ou mal tapés) — vrais messages du salon ----------
+$approche = function ($texte) use ($items) { $ids = do_trouver($texte, $items, $ap); return [$ids, $ap]; };
+$egal('« ceinture elohim » (message réel du 21/10)',
+    [['uniquesuspensorbelt_t6'], ['uniquesuspensorbelt_t6' => 'ceinture elohim']],
+    (function () use ($approche, $items) {
+        // l'id exact de la ceinture n'est pas connu d'avance : on le lit par son nom
+        foreach ($items as $it) if ($it['name'] === 'Ceinture à suspenseur de classe Elohim') $id = $it['id'];
+        [$ids, $ap] = $approche('Alanon, premier run, ceinture elohim 😄');
+        return [str_replace($id, 'uniquesuspensorbelt_t6', $ids), array_combine(str_replace($id, 'uniquesuspensorbelt_t6', array_keys($ap)), $ap)];
+    })());
+$nomDe = function ($ids) use ($items) { return array_map(function ($id) use ($items) { return str_replace("\u{a0}", " ", do_par_id($items, $id)["name"]); }, $ids); }; // les noms du jeu ont une espace insécable avant le chiffre Mk
+$egal('faute de frappe (« elohm »)', ['Ceinture à suspenseur de classe Elohim'], $nomDe(do_trouver('une ceinture elohm hier', $items)));
+$egal('mots manquants et fautes', ["Casque d'analyse renforcée"], $nomDe(do_trouver("le casque d'analise renforcé", $items)));
+$egal('trois mots courants, un seul objet', ['Pistolet disrupteur de Regis'], $nomDe(do_trouver('pistolet disrupteur regis', $items)));
+$egal('Mk tapé après un nom approché', ['Extracteur impur Mk 5'], $nomDe(do_trouver('extracteur impure mk5', $items)));
+$egal('début de mot + Mk qui écarte la variante « tactique »', ['Combinaison antiradiations Mk 5'], $nomDe(do_trouver('la combi antiradiation mk5', $items)));
+$egal('pluriels (message réel)', ['Énorme poche de sang'], $nomDe(do_trouver("donc au final les enormes poches de sang ne font rien perdre", $items)));
+$egal('ambigu : plusieurs casques lourds différents → rien', [], do_trouver("le casque lourd c'est mieux", $items));
+$egal('ambigu : plusieurs vestes à suspenseur → rien', [], do_trouver('veste suspenseur', $items));
+$egal('un mot rare seul ne suffit pas (« au final »)', [], do_trouver("au final c'est mieux", $items));
+$egal('message sans objet (réel)', [], do_trouver('Merci à vous pour les beaux moments IG et vocal que vous partagez', $items));
+$egal('message sans objet (réel, 2)', [], do_trouver('Envoyez nous un peu de chance 🍀', $items));
+$egal('nom exact : pas de mention « rapproché »', [], (function () use ($approche) { return $approche('Extracteur impur Mk 6')[1]; })());
+$egal('autocomplétion avec faute', 'Ceinture à suspenseur de classe Elohim', do_par_id($items, do_suggestions('elohm', $items)[0]['value'] ?? '')['name'] ?? null);
+
 // ---- Valeurs affichées --------------------------------------------------------
 $egal('pourcentage', '75 %', do_valeur(['v' => 75, 'f' => '{v:0}%', 't' => 'number']));
 $egal('flottant arrondi', '60 %', do_valeur(['v' => 60.000004, 'f' => '{v:0}%', 't' => 'number']));
@@ -71,6 +96,7 @@ $egal('fiche : lien optimiseur pour une arme', true, strpos($f[0]['description']
 $egal('autocomplétion : mots dans le désordre', 'bodyfluidextractor_unique_poison_06', do_suggestions('impur extr', $items)[0]['value'] ?? null);
 $egal('autocomplétion : 25 au plus', true, count(do_suggestions('', $items)) === 25);
 $egal('icône : un seul /images', 'https://cdn-hosted.gaming.tools/dune/images/dune/gui/textures/icons/gameplay/tools/t_ui_icontoolbodyfluidextractor_unique_poison_06r_d.webp', $f2[0]['thumbnail']['url'] ?? null);
+$egal('ceinture : pas de classement (fonctions différentes)', null, do_classement(do_par_id($items, 'fullsuspensorbelt_unique_durability'), $items));
 $egal('coupe en caractères', 'éé…', do_couper('ééééé', 3));
 
 echo $ko ? implode("\n", $ko) . "\n\n" . count($ko) . " échec(s) sur {$n}\n" : "OK ({$n})\n";

@@ -174,6 +174,7 @@ function do_par_id(array $items, string $id): ?array {
 const DO_MOTS_VIDES   = ['de', 'du', 'des', 'la', 'le', 'les', 'a', 'au', 'aux', 'et', 'en', 'd', 'l',
                          'pour', 'sur', 'avec', 'un', 'une'];
 const DO_FENETRE      = 3;
+const DO_MSG_COURT    = 4;   // mots de 3 lettres et plus : au-delà, un mot seul n'est plus une demande
 
 /** Mots significatifs d'un texte normalisé (sans mots vides ni numéro de version). */
 function do_mots(string $norm): array {
@@ -311,10 +312,61 @@ function do_trouver(string $texte, array $items, ?array &$approches = null): arr
         $pris[] = $c;
         $approches[$c[2]] = $c[4];
     }
+    // Dernier recours, message court qui ne cite rien d'autre : un mot seul (« Elohim »).
+    if (!$pris) foreach (do_mot_seul($t, $items) as $c) { $pris[] = $c; $approches[$c[2]] = $c[4]; }
     usort($pris, function ($a, $b) { return $a[0] <=> $b[0]; });
     $ids = [];
     foreach ($pris as $c) if (!in_array($c[2], $ids, true)) $ids[] = $c[2];
     return array_slice($ids, 0, DO_MAX_FICHES);
+}
+
+/**
+ * Un mot seul, quand le message est COURT (DO_MSG_COURT mots de 3 lettres et plus) et que
+ * rien d'autre n'y a été reconnu : « Elohim », « t'as l'Elohim ? ». Le mot doit désigner un
+ * seul objet (ou les versions Mk d'un même objet) ET être un nom propre dans le nom du jeu
+ * (« au final » : « final » n'existe que dans « Point final », mais en minuscule). Dans une vraie phrase (« on va dans le
+ * désert profond ce soir »), un mot courant qui n'existe que dans « Rite du Désert » ne doit
+ * pas sortir de fiche : c'est la longueur du message qui fait la différence. Candidats au
+ * format de do_approcher : [début, fin, id, score, extrait].
+ */
+/** Mots à majuscule d'un nom, hors premier mot : les noms propres (« Elohim », « Kynes »). */
+function do_noms_propres(string $nom): array {
+    $res = [];
+    foreach (array_slice(preg_split("/[\s'’-]+/u", $nom), 1) as $w) {
+        if (preg_match('/^\p{Lu}/u', $w)) $res[] = do_norm($w);
+    }
+    return $res;
+}
+
+function do_mot_seul(string $t, array $items): array {
+    $longs = array_filter(do_mots(trim($t)), function ($w) { return strlen($w) >= 3; });
+    if (!$longs || count($longs) > DO_MSG_COURT) return [];
+    $df = [];
+    foreach ($items as $k => $it) foreach (array_unique(do_mots($it['_b'])) as $w) $df[$w][] = $k;
+    preg_match_all('/[a-z0-9]+/', $t, $m, PREG_OFFSET_CAPTURE);
+    $toks = $m[0];
+    $res = [];
+    foreach ($toks as $i => [$w, $p]) {
+        if (strlen($w) < 5 || ctype_digit($w) || in_array($w, DO_MOTS_VIDES, true)) continue;
+        $vise = isset($df[$w]) ? [$w] : array_values(array_filter(array_keys($df), function ($v) use ($w) { return do_proche($w, $v); }));
+        foreach ($vise as $v) {
+            $familles = [];
+            foreach ($df[$v] as $k) $familles[$items[$k]['_b']][] = $k;
+            if (count($familles) !== 1 || !in_array($v, do_noms_propres($items[$df[$v][0]]['name']), true)) continue;
+            // Version tapée juste après (« elohim mk6 ») sinon la plus haute.
+            $mk = isset($toks[$i + 1]) && preg_match('/^mk[0-9]$/', $toks[$i + 1][0]) ? $toks[$i + 1][0] : '';
+            $choix = null;
+            foreach (reset($familles) as $k) {
+                $bon = $mk !== '' && substr($items[$k]['_n'], -strlen($mk) - 1) === ' ' . $mk;
+                $cle = [$bon ? 1 : 0, $items[$k]['tier'] ?? 0];
+                if ($choix === null || $cle > $choix[0]) $choix = [$cle, $k, $bon];
+            }
+            $fin = $choix[2] ? $toks[$i + 1][1] + strlen($toks[$i + 1][0]) : $p + strlen($w);
+            $res[] = [$p, $fin, $items[$choix[1]]['id'], 0, substr($t, $p, $fin - $p)];
+            break;
+        }
+    }
+    return $res;
 }
 
 // Sans mbstring (absent du serveur) : longueurs et coupes en CARACTÈRES, pas en octets.
@@ -605,8 +657,8 @@ if ($type === 2 && (int)($body['data']['type'] ?? 1) === 3) {
     if (trim($texte, ' |') === '') do_prive("Je n'ai pas pu lire le texte de ce message.");
     $ids = do_trouver($texte, $data['items'], $approches);
     if (!$ids) do_prive("Aucun objet reconnu dans ce message. Il faut le nom du jeu en français, complet ou au moins "
-        . "deux de ses mots qui ne désignent qu'un objet (« ceinture elohim », « impur mk6 » ne suffit pas). "
-        . "Pour chercher par nom : `/objet`.");
+        . "deux de ses mots qui ne désignent qu'un objet (« ceinture elohim ») ; un mot seul ne marche que dans un "
+        . "message court (« Elohim »). Pour chercher par nom : `/objet`.");
     do_repondre_fiches($ids, $cible, $approches);
 }
 

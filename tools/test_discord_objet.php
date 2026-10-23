@@ -59,6 +59,18 @@ $egal('message sans objet (réel, 2)', [], do_trouver('Envoyez nous un peu de ch
 $egal('nom exact : pas de mention « rapproché »', [], (function () use ($approche) { return $approche('Extracteur impur Mk 6')[1]; })());
 $egal('autocomplétion avec faute', 'Ceinture à suspenseur de classe Elohim', do_par_id($items, do_suggestions('elohm', $items)[0]['value'] ?? '')['name'] ?? null);
 
+// ---- Mot seul dans un message court ------------------------------------------------
+$egal('« Elohim » seul (message réel du 23/10)', ['Ceinture à suspenseur de classe Elohim'], $nomDe(do_trouver('Elohim', $items)));
+$egal('mot seul dans une question courte', ['Ceinture à suspenseur de classe Elohim'], $nomDe(do_trouver("c'est quoi l'Elohim ?", $items)));
+$egal('mot seul avec faute', ['Ceinture à suspenseur de classe Elohim'], $nomDe(do_trouver('elohm', $items)));
+$egal('mot seul + Mk tapé', ["Ailes de l'Empereur Mk 3"], $nomDe(do_trouver("l'empereur mk3", $items)));
+$egal('deux noms propres', ['Morsure de Shishakli', 'Ceinture à suspenseur de classe Elohim'], $nomDe(do_trouver('Shishakli ou Elohim ?', $items)));
+$egal('mot seul : la fiche le signale', ['elohim'], array_values((function () use ($items) { do_trouver('Elohim', $items, $ap); return $ap; })()));
+$egal('message court mais mot en minuscule dans le nom (« au final »)', [], do_trouver("au final c'est mieux", $items));
+$egal('vraie phrase : un mot courant ne déclenche rien', [], do_trouver('on va dans le désert profond ce soir', $items));
+$egal('nom propre de plusieurs objets (set) → rien', [], do_trouver('Mendia', $items));
+$egal('mot isolé ignoré si le message cite déjà un objet', ['Point final'], $nomDe(do_trouver('Point final et Elohim', $items)));
+
 // ---- Valeurs affichées --------------------------------------------------------
 $egal('pourcentage', '75 %', do_valeur(['v' => 75, 'f' => '{v:0}%', 't' => 'number']));
 $egal('flottant arrondi', '60 %', do_valeur(['v' => 60.000004, 'f' => '{v:0}%', 't' => 'number']));

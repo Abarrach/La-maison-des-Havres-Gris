@@ -38,8 +38,14 @@ return [
     // ---- 4. Relevé de présence des rallys (cron epice/rally_presence.php) ----
     'rally_voice_channel_id' => '',  // salon VOCAL où l'on compte les présents — vide = pas de relevé
     'rally_guild_id'         => '',  // serveur de ce salon, seulement s'il diffère de guild_id
-    'alerte_user_id'         => '',  // qui reçoit un MP si le relevé tombe en panne (ton ID) — vide = pas d'alerte
-                                     // tester : php epice/rally_presence.php --alerte-test
+
+    // ---- Alertes en MP (crons qui tombent en panne) ----
+    // Qui reçoit un MP quand un cron échoue : relevé de présence des rallys ET carte Deep
+    // Desert de la semaine (dd_map_update.php : tuiles manquantes ou remplacées, la carte
+    // précédente est gardée). Une alerte par cause et par jour. Vide = pas d'alerte.
+    // Tester : php epice/rally_presence.php --alerte-test
+    //          php dd_map_update.php --alerte-test
+    'alerte_user_id'         => '',  // ton ID Discord
 
     // ---- 5. Tournois PvP ----
     // Serveur dont les membres sont proposés à l'ajout d'un joueur. Vide en prod (vraie

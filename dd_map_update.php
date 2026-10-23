@@ -123,6 +123,11 @@ function dd_alerter(string $cause, string $texte): void {
     log_msg('📨 Alerte envoyée en MP.');
 }
 
+// Heure des MP en heure de Paris : le serveur est en UTC, le message affichait 20:33 pour 22:33.
+function dd_heure_paris(): string {
+    return (new DateTime('now', new DateTimeZone('Europe/Paris')))->format('d/m/Y à H:i');
+}
+
 // Panne : on garde la carte de la semaine précédente, on prévient, on sort en erreur.
 function dd_echec(string $cause, string $detail): void {
     global $world;
@@ -131,7 +136,7 @@ function dd_echec(string $cause, string $detail): void {
         . $detail . chr(10)
         . "La carte de la semaine précédente reste affichée. Piste probable : gaming.tools a changé ses tuiles "
         . "(il charge désormais un paquet `.gtpk`). Journal : `dd_map_update.log`." . chr(10)
-        . '*' . gethostname() . ', ' . date('d/m/Y à H:i') . '*');
+        . '*' . gethostname() . ', ' . dd_heure_paris() . '*');
     exit(1);
 }
 
@@ -153,7 +158,7 @@ if (in_array('--alerte-test', $ARGS, true)) {
     $world = '(essai)';
     dd_alerter('essai-' . time(), "✅ **Essai d'alerte de la carte Deep Desert.**" . chr(10)
         . 'Si tu lis ce message, tu seras prévenu si la carte du mardi ne peut pas être mise à jour.' . chr(10)
-        . '*' . gethostname() . ', ' . date('d/m/Y à H:i') . '*');
+        . '*' . gethostname() . ', ' . dd_heure_paris() . '*');
     @unlink(DD_ALERTE_FICHIER);   // un essai ne doit pas masquer une vraie panne ensuite
     exit(0);
 }

@@ -12,8 +12,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 // ?v= : cache-busting. Bump à chaque modif des modules pour forcer le rechargement
 // (sinon le navigateur sert l'ancienne version mise en cache).
-import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot50eclairage';
-import { createMeshFactory } from './planner_mesh.js?v=lot50eclairage';
+import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot51textures';
+import { createMeshFactory } from './planner_mesh.js?v=lot51textures';
 
 // ============================================================
 // MOTEUR — bascule ancien (géométrie+grille) / nouveau (sockets+meshes réels)
@@ -351,7 +351,7 @@ const EXCLUDED_PIECE_IDS = new Set([
 ]);
 
 async function loadCatalog() {
-  const url = ENGINE === 'sockets' ? 'planner_pieces.json?v=lot50eclairage' : PIECES_JSON_URL;
+  const url = ENGINE === 'sockets' ? 'planner_pieces.json?v=lot51textures' : PIECES_JSON_URL;
   const resp = await fetch(url);
   if (!resp.ok) throw new Error('pieces ' + resp.status);
   const piecesData = await resp.json();
@@ -5083,15 +5083,10 @@ function renderThumb(piece) {
     const obj = scene.clone(true);
     // Matériau argile (les géométries sont PARTAGÉES → on ne touche/dispose QUE les matériaux).
     const mats = [];
-    // Modèle coloré : ses couleurs, sinon argile. Matériaux propres au clone (disposés plus bas).
-    const couleurs = !!scene.userData.couleurs;
-    obj.traverse(o => {
-      if (!o.isMesh) return;
-      o.material = couleurs
-        ? new THREE.MeshStandardMaterial({ vertexColors: true, metalness: 0.1, roughness: 0.85, side: THREE.DoubleSide })
-        : meshFactory.clayMaterial(0xcfc6b4, 1);
-      mats.push(o.material);
-    });
+    // Modèle coloré : ses textures/couleurs (matériaux PARTAGÉS de la fabrique, à ne pas
+    // disposer) ; sinon argile, matériaux propres au clone (disposés plus bas).
+    if (scene.userData.couleurs) meshFactory.couleursDesSommets(obj, 1);
+    else obj.traverse(o => { if (o.isMesh) { o.material = meshFactory.clayMaterial(0xcfc6b4, 1); mats.push(o.material); } });
     const box = new THREE.Box3().setFromObject(obj);
     if (box.isEmpty()) return null;
     const size = box.getSize(new THREE.Vector3());
@@ -7166,7 +7161,7 @@ const MATERIAL_FR = {
 
 async function loadCosts() {
   try {
-    const r = await fetch('planner_costs.json?v=lot50eclairage');
+    const r = await fetch('planner_costs.json?v=lot51textures');
     if (!r.ok) return;
     SUMMARY.costs = await r.json();
     SUMMARY.costIndex = new Map();

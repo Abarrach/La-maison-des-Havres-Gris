@@ -279,14 +279,19 @@ if (listeMateriaux is not null)
     {
         var nom = cle[(cle.LastIndexOf('/') + 1)..];
         var dest = Path.Combine(dossierT, nom + ".png");
-        if (File.Exists(dest)) { nTex++; continue; }
+        var destJpg = Path.Combine(dossierT, nom + ".jpg");
+        if (File.Exists(dest) && File.Exists(destJpg)) { nTex++; continue; }
         try
         {
             if (!provider.TryLoadPackageObject(cle, out var obj) || obj is not CUE4Parse.UE4.Assets.Exports.Texture.UTexture tex) { rateTex++; continue; }
-            // Plus petit mip de 256 px au plus : on n'en tire qu'une couleur moyenne.
+            // Plus petit mip de 256 px au plus : le PNG sert aux couleurs moyennes (lu en Node),
+            // le JPEG est la texture que le planner applique (2026-10-24 : ~20 Ko au lieu de ~100).
             var bmp = CUE4Parse_Conversion.Textures.TextureDecoder.Decode(tex, 256);
             if (bmp is null) { rateTex++; continue; }
             File.WriteAllBytes(dest, CUE4Parse_Conversion.Textures.TextureEncoder.Encode(bmp, CUE4Parse_Conversion.Textures.ETextureFormat.Png, false, out _));
+            using (var sk = CUE4Parse_Conversion.Textures.TextureEncoder.ToSkBitmap(bmp))
+            using (var jpg = sk.Encode(SkiaSharp.SKEncodedImageFormat.Jpeg, 85))
+                File.WriteAllBytes(destJpg, jpg.ToArray());
             nTex++;
         }
         catch { rateTex++; }

@@ -15,7 +15,14 @@
  * Approximation : pas d'usure, de saleté ni de motif ; la peinture personnalisable garde
  * sa couleur de base.
  *
- * Sortie ALLÉGÉE : POSITION, NORMAL, COLOR_0 (octets normalisés) et indices seulement. Les
+ * TEXTURES (2026-10-24, 2e passe) : en plus de la couleur moyenne, chaque sommet garde le
+ * numéro de sa couche (alpha de COLOR_0, local à la primitive) et ses coordonnées de couche
+ * (TEXCOORD_0 = UV2 du jeu × « Layer Tiling »). La primitive porte dans ses extras la table
+ * de ses couches { t: texture, c: teinte }. Les textures (JPEG 256 px) sont partagées par
+ * toutes les pièces : models_planner/couches/*.jpg + couches.json. Le planner les applique ;
+ * sans elles, il retombe sur la couleur moyenne.
+ *
+ * Sortie ALLÉGÉE : POSITION, NORMAL, COLOR_0 (octets normalisés), TEXCOORD_0 et indices seulement. Les
  * modèles source (base locale, tools/models_dir.js) portent 8 jeux de coordonnées, des
  * tangentes et des couleurs que le planner n'utilise pas : 545 Mo → ~150 Mo. La base source
  * reste INTACTE (c'est d'elle qu'on recalcule les couleurs) ; models_planner/ est ce qu'on
@@ -94,9 +101,12 @@ function infoMateriau(nom) {
     doc = parent && parent.ObjectPath ? lireMat(nomDepuisChemin(parent.ObjectPath)) : null;
   }
   let textures = null, grille = null, couleurPlate = null;
-  const teintes = {};
+  const teintes = {}, repetitions = {};
   for (const { ex, props } of chaine) {
     if (!grille && props.OpaqueLayerIndexMap && props.OpaqueLayerIndexMap.ObjectPath) grille = nomDepuisChemin(props.OpaqueLayerIndexMap.ObjectPath);
+    for (const v of props.ScalarParameterValues || []) {
+      if (v.ParameterInfo.Name === 'Layer Tiling' && !(v.ParameterInfo.Index in repetitions)) repetitions[v.ParameterInfo.Index] = v.ParameterValue;
+    }
     for (const v of props.VectorParameterValues || []) {
       const nm = v.ParameterInfo.Name, c = v.ParameterValue;
       if (nm === 'Layer ColorTint' && !(v.ParameterInfo.Index in teintes)) teintes[v.ParameterInfo.Index] = [c.R, c.G, c.B];
@@ -109,7 +119,7 @@ function infoMateriau(nom) {
       if (tab) textures = tab.Properties.Textures.map(t => nomDepuisChemin(t && t.ObjectPath));
     }
   }
-  return (infos[nom] = chaine.length ? { textures, teintes, grille, couleurPlate } : null);
+  return (infos[nom] = chaine.length ? { textures, teintes, repetitions, grille, couleurPlate } : null);
 }
 
 // ── 3. PNG (8 bits, non entrelacé) et couleurs moyennes ────────────────────────────
@@ -168,6 +178,7 @@ const lireIdx = (g, id) => {
   for (let i = 0; i < a.count; i++) out[i] = t === 4 ? g.bin.readUInt32LE(base + i * 4) : t === 2 ? g.bin.readUInt16LE(base + i * 2) : g.bin[base + i];
   return out;
 };
+const texturesUtilisees = new Set();
 const stats = { modeles: 0, avant: 0, apres: 0, sommets: 0, couches: 0, plats: 0, repli: 0, sansTexture: new Set(), sansMat: new Set() };
 
 function colorer(nomModele) {
@@ -191,6 +202,19 @@ function colorer(nomModele) {
       const n = pos.length / 3, col = new Uint8Array(n * 4);
       const grille = info && info.textures && info.grille ? texture(info.grille) : null;
       const uv = grille && p.attributes.TEXCOORD_1 != null ? lire(g, p.attributes.TEXCOORD_1, 2) : null;
+      // UV2 du jeu : coordonnées répétées des couches (UV0 = dépliage unique de la pièce).
+      const uv2 = uv && p.attributes.TEXCOORD_2 != null ? lire(g, p.attributes.TEXCOORD_2, 2) : null;
+      const uvc = uv2 ? new Float32Array(n * 2) : null;
+      const locales = new Map(), table = [];             // couche du matériau → n° local
+      const localeDe = couche => {
+        if (!locales.has(couche)) {
+          const tex = info.textures[couche] || null, tn = info.teintes[couche] || [1, 1, 1];
+          if (tex) texturesUtilisees.add(tex);
+          locales.set(couche, table.length);
+          table.push({ t: tex, c: tn.map(v => +Math.min(4, Math.max(0, v)).toFixed(4)) });
+        }
+        return locales.get(couche);
+      };
       let plate = null;
       if (!uv) {
         plate = /glass|glas|vitre|window/i.test(nomMat) ? VITRE
@@ -209,12 +233,16 @@ function colorer(nomModele) {
           if (!base) stats.sansTexture.add(info.textures[couche]);
           const t = info.teintes[couche] || [1, 1, 1];
           c = (base || ARGILE).map((v, k) => v * t[k]);
-        }
+          if (uvc) {
+            col[i * 4 + 3] = localeDe(couche);
+            const rep = info.repetitions[couche] ?? 1;
+            uvc[i * 2] = uv2[i * 2] * rep; uvc[i * 2 + 1] = uv2[i * 2 + 1] * rep;
+          } else col[i * 4 + 3] = 255;
+        } else col[i * 4 + 3] = 255;                                    // 255 = pas de texture
         for (let k = 0; k < 3; k++) col[i * 4 + k] = Math.round(255 * Math.min(1, Math.max(0, c[k])));
-        col[i * 4 + 3] = 255;
       }
       const idx = p.indices != null ? lireIdx(g, p.indices) : Uint32Array.from({ length: n }, (_, i) => i);
-      prims.push({ pos, nor, col, idx: n <= 65535 ? Uint16Array.from(idx) : idx });
+      prims.push({ pos, nor, col, uvc: table.length ? uvc : null, couches: table, idx: n <= 65535 ? Uint16Array.from(idx) : idx });
       stats.sommets += n;
     }
     meshesSortie.push({ name: m.name, prims });
@@ -246,8 +274,9 @@ function ecrireGlb(f, meshes, noeuds) {
     acces.push({ bufferView: ajouter(p.pos, 34962), componentType: 5126, count: n, type: 'VEC3', min: mn, max: mx }); attr.POSITION = acces.length - 1;
     if (p.nor) { acces.push({ bufferView: ajouter(p.nor, 34962), componentType: 5126, count: n, type: 'VEC3' }); attr.NORMAL = acces.length - 1; }
     acces.push({ bufferView: ajouter(p.col, 34962), componentType: 5121, normalized: true, count: n, type: 'VEC4' }); attr.COLOR_0 = acces.length - 1;
+    if (p.uvc) { acces.push({ bufferView: ajouter(p.uvc, 34962), componentType: 5126, count: n, type: 'VEC2' }); attr.TEXCOORD_0 = acces.length - 1; }
     acces.push({ bufferView: ajouter(p.idx, 34963), componentType: p.idx instanceof Uint16Array ? 5123 : 5125, count: p.idx.length, type: 'SCALAR' });
-    return { attributes: attr, indices: acces.length - 1, material: 0 };
+    return { attributes: attr, indices: acces.length - 1, material: 0, ...(p.uvc ? { extras: { couches: p.couches } } : {}) };
   }) }));
   const gltf = {
     asset: { version: '2.0', generator: GENERATEUR },
@@ -270,8 +299,22 @@ console.log(`▶ ${modeles.length} modèle(s) → ${SORTIE}`);
 for (const m of modeles) {
   try { colorer(m); } catch (e) { console.warn(`  ✘ ${m} : ${e.message}`); }
 }
+// Textures des couches, partagées par toutes les pièces : JPEG copiés tels quels + leur liste.
+const DOSSIER_COUCHES = path.join(SORTIE, 'couches');
+fs.mkdirSync(DOSSIER_COUCHES, { recursive: true });
+const listeCouches = [...texturesUtilisees].sort().filter(nom => {
+  const src = path.join(TRAVAIL, 'textures', nom + '.jpg');
+  if (!fs.existsSync(src)) return false;
+  fs.copyFileSync(src, path.join(DOSSIER_COUCHES, nom + '.jpg'));
+  return true;
+});
+const poidsCouches = listeCouches.reduce((s, nom) => s + fs.statSync(path.join(DOSSIER_COUCHES, nom + '.jpg')).size, 0);
+fs.writeFileSync(path.join(SORTIE, 'couches.json'), JSON.stringify({
+  _note: 'Écrit par tools/build_colored_models.js : textures de couches appliquées par le planner (couches/<nom>.jpg).',
+  textures: listeCouches }) + '\n');
 const pc = v => Math.round(100 * v / Math.max(1, stats.sommets));
 console.log(`✔ ${stats.modeles} modèle(s) — ${(stats.avant / 1048576).toFixed(0)} Mo → ${(stats.apres / 1048576).toFixed(0)} Mo`);
 console.log(`  sommets : ${stats.sommets} — par couches ${pc(stats.couches)} %, couleur unie ${pc(stats.plats)} %, repli argile ${pc(stats.repli)} %`);
+console.log(`  textures de couches : ${listeCouches.length}/${texturesUtilisees.size} (${(poidsCouches / 1048576).toFixed(1)} Mo) → ${DOSSIER_COUCHES}`);
 if (stats.sansMat.size) console.log(`  matériaux introuvables (${stats.sansMat.size}) : ${[...stats.sansMat].slice(0, 8).join(', ')}${stats.sansMat.size > 8 ? '…' : ''}`);
 if (stats.sansTexture.size) console.log(`  textures de couche manquantes (${stats.sansTexture.size}) : ${[...stats.sansTexture].slice(0, 6).join(', ')}`);

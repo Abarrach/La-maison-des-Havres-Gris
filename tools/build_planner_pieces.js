@@ -113,7 +113,14 @@ const MV_MESH = {
   MediumOrnithopter_Vehicle: 'SM_ProxyMesh_Choam_Ornithopter_Medium',
   TransportOrnithopter_Vehicle: 'SM_ProxyMesh_Choam_Ornithopter_Transport',
   TreadWheel_Vehicle: 'SM_ProxyMesh_OldEmpire_TreadWheel',   // trouvé le 2026-10-24 (DLC B1C2)
+  // Tank (pas encore sorti) : pas de proxy dans le jeu, modèle recomposé et COLORÉ par
+  // tools/build_tank_model.js (pièces squelettiques assemblées, couleurs des couches de matériau).
+  Tank_Vehicle: 'SM_Composite_CH_4MGC_Tank',
 };
+// Modèles dont les couleurs de sommets sont à afficher telles quelles (planner_mesh.js).
+const MESH_COLORS = new Set(['Tank_Vehicle']);
+// Contenu annoncé mais pas encore sorti : signalé dans le nom.
+const A_VENIR = new Set(['Tank_Vehicle']);
 
 // --- Ornis AILES REPLIÉES (2026-10-24) : pièces à part dans l'onglet Véhicules ---
 // Le jeu a un modèle replié pour trois ornis (rangé à côté du proxy déployé, jamais cité
@@ -197,6 +204,8 @@ const pieces = v3.pieces.map(p => {
   }
   // Câblage mesh machines/véhicules (survit aux régénérations).
   if (MV_MESH[p.id]) { out.mesh = MV_MESH[p.id]; mvMeshWired++; }
+  if (MESH_COLORS.has(p.id)) out.mesh_colors = true;
+  if (A_VENIR.has(p.id)) out.label_fr = out.label_fr + ' (à venir)';
   // Correction d'axes w/d inversés vs mesh (footprint centré, cf. note ci-dessus).
   if (SWAP_WD_IDS.has(p.id)) {
     out.real_size_m = swapWD(out.real_size_m);
@@ -277,10 +286,12 @@ for (const p of pieces) {
   if (!p.is_vehicle || !p.mesh) continue;
   const bx = glbBoite(p.mesh);
   if (!bx) { console.warn(`  ⚠ ${p.id} : ${p.mesh}.glb absent de la base des modèles — emprise du catalogue gardée`); continue; }
-  const [x0, , z0] = bx.mn, [x1, y1, z1] = bx.mx;
-  p.real_size_m = { w: r2(x1 - x0), d: r2(z1 - z0), h: r2(y1) };
+  const [x0, y0, z0] = bx.mn, [x1, y1, z1] = bx.mx;
+  p.real_size_m = { w: r2(x1 - x0), d: r2(z1 - z0), h: r2(y1 - y0) };
   p.dimensions = { w: fpCells(p.real_size_m.w), d: fpCells(p.real_size_m.d), h: hLevels(p.real_size_m.h), shape: 'square' };
-  p.mesh_center_m = { x: r2((x0 + x1) / 2), z: r2((z0 + z1) / 2) };
+  // y = point le plus bas, posé au sol par planner_mesh.js : le tank descendait de 1,8 m sous
+  // le plancher, les ornis flottaient de 0,6 à 2,3 m (origine des modèles ≠ sol).
+  p.mesh_center_m = { x: r2((x0 + x1) / 2), y: r2(y0), z: r2((z0 + z1) / 2) };
   vehiculesMesures++;
 }
 

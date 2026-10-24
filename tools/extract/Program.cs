@@ -187,6 +187,34 @@ else
 // ── Recherche (--find) : explorer les paks sans rien écrire ───────────────────────
 // Sans ça, chercher un asset demande d'ouvrir FModel et de fouiller à la main — ce qui est
 // précisément ce qu'on vient de supprimer du reste du pipeline.
+// --textures <chemin moteur>[,…] --models <dossier> : textures décodées en PNG (2026-10-24 :
+// recomposer une texture d'aperçu du tank depuis son masque de zones et ses couches).
+var textures = Arg("textures");
+if (textures is not null)
+{
+    var dossierTex = Arg("models") ?? Path.Combine(Directory.GetCurrentDirectory(), "textures");
+    Directory.CreateDirectory(dossierTex);
+    // Le BC7 (masques des véhicules) passe par Detex, bibliothèque native : celle que FModel
+    // dépose dans son dossier de données, ou celle livrée avec CUE4Parse-Conversion.
+    foreach (var dll in new[] { Arg("detex"), @"J:\Download\Fmodel\Output\.data\Detex.dll",
+                                @"J:\Download\dune_extract\CUE4Parse\CUE4Parse-Conversion\Resources\Detex.dll" })
+        if (!string.IsNullOrEmpty(dll) && File.Exists(dll)) { CUE4Parse_Conversion.Textures.BC.DetexHelper.Initialize(dll); break; }
+    foreach (var chemin in textures.Split(',', StringSplitOptions.RemoveEmptyEntries))
+    {
+        var sansObjet = chemin.Contains('.') ? chemin[..chemin.LastIndexOf('.')] : chemin;
+        var cle = sansObjet.StartsWith("/Game/") ? "DuneSandbox/Content" + sansObjet[5..] : sansObjet;
+        var nom = sansObjet[(sansObjet.LastIndexOf('/') + 1)..];
+        if (!provider.TryLoadPackageObject(cle, out var obj) || obj is not CUE4Parse.UE4.Assets.Exports.Texture.UTexture tex)
+        { Console.WriteLine($"  ✘ {nom} — introuvable ou pas une texture"); continue; }
+        var bmp = CUE4Parse_Conversion.Textures.TextureDecoder.Decode(tex);
+        if (bmp is null) { Console.WriteLine($"  ✘ {nom} — décodage impossible"); continue; }
+        var png = CUE4Parse_Conversion.Textures.TextureEncoder.Encode(bmp, CUE4Parse_Conversion.Textures.ETextureFormat.Png, false, out var ext);
+        File.WriteAllBytes(Path.Combine(dossierTex, nom + "." + ext), png);
+        Console.WriteLine($"  ✔ {nom}.{ext} ({bmp.Width}×{bmp.Height})");
+    }
+    return 0;
+}
+
 var motif = Arg("find");
 if (motif is not null)
 {

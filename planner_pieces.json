@@ -1,6 +1,6 @@
 {
   "version": "planner-1",
-  "generated_at": "2026-10-24T11:05:08.588Z",
+  "generated_at": "2026-10-24T11:44:53.556Z",
   "source": {
     "ui": "base_pieces_v3.json",
     "engine": "dune_pieces_sockets.json"
@@ -107850,6 +107850,7 @@
       "mesh_rel": null,
       "mesh_center_m": {
         "x": 0.01,
+        "y": 0,
         "z": 0
       }
     },
@@ -107870,7 +107871,7 @@
       "real_size_m": {
         "w": 6.45,
         "d": 4.75,
-        "h": 3.32
+        "h": 3.19
       },
       "placement_rules": {
         "snap_target": "cell",
@@ -107886,6 +107887,7 @@
       "mesh_rel": null,
       "mesh_center_m": {
         "x": 0,
+        "y": 0.13,
         "z": 0
       }
     },
@@ -107895,18 +107897,18 @@
       "faction_label": "placeables",
       "category": "vehicles",
       "group": "Tank",
-      "label_fr": "Char d'assaut",
+      "label_fr": "Char d'assaut (à venir)",
       "label_en": "Tank",
       "dimensions": {
         "w": 3,
-        "d": 3,
-        "h": 1,
+        "d": 2,
+        "h": 2,
         "shape": "square"
       },
       "real_size_m": {
-        "w": 6.4,
-        "d": 5.4,
-        "h": 2
+        "w": 12.5,
+        "d": 6.91,
+        "h": 4.65
       },
       "placement_rules": {
         "snap_target": "cell",
@@ -107918,8 +107920,14 @@
       "is_machine": true,
       "is_vehicle": true,
       "sockets": [],
-      "mesh": null,
-      "mesh_rel": null
+      "mesh": "SM_Composite_CH_4MGC_Tank",
+      "mesh_rel": null,
+      "mesh_colors": true,
+      "mesh_center_m": {
+        "x": 1.04,
+        "y": -1.83,
+        "z": 0
+      }
     },
     {
       "id": "Sandcrawler_Vehicle",
@@ -107938,7 +107946,7 @@
       "real_size_m": {
         "w": 16.92,
         "d": 10.06,
-        "h": 6.99
+        "h": 7
       },
       "placement_rules": {
         "snap_target": "cell",
@@ -107954,6 +107962,7 @@
       "mesh_rel": null,
       "mesh_center_m": {
         "x": 1.2,
+        "y": -0.01,
         "z": 0
       }
     },
@@ -107974,7 +107983,7 @@
       "real_size_m": {
         "w": 2.63,
         "d": 1.52,
-        "h": 2.5
+        "h": 2.55
       },
       "placement_rules": {
         "snap_target": "cell",
@@ -107990,6 +107999,7 @@
       "mesh_rel": null,
       "mesh_center_m": {
         "x": -0.03,
+        "y": -0.04,
         "z": 0
       }
     },
@@ -108010,7 +108020,7 @@
       "real_size_m": {
         "w": 14.38,
         "d": 19.57,
-        "h": 5.37
+        "h": 4.53
       },
       "placement_rules": {
         "snap_target": "cell",
@@ -108026,6 +108036,7 @@
       "mesh_rel": null,
       "mesh_center_m": {
         "x": -1.85,
+        "y": 0.83,
         "z": -0.01
       }
     },
@@ -108046,7 +108057,7 @@
       "real_size_m": {
         "w": 18.2,
         "d": 42.13,
-        "h": 10.23
+        "h": 11.17
       },
       "placement_rules": {
         "snap_target": "cell",
@@ -108062,6 +108073,7 @@
       "mesh_rel": null,
       "mesh_center_m": {
         "x": -2.34,
+        "y": -0.94,
         "z": 0
       }
     },
@@ -108076,13 +108088,13 @@
       "dimensions": {
         "w": 7,
         "d": 14,
-        "h": 4,
+        "h": 3,
         "shape": "square"
       },
       "real_size_m": {
         "w": 31.95,
         "d": 67.96,
-        "h": 13.2
+        "h": 11.09
       },
       "placement_rules": {
         "snap_target": "cell",
@@ -108098,6 +108110,7 @@
       "mesh_rel": null,
       "mesh_center_m": {
         "x": -3.37,
+        "y": 2.11,
         "z": 0
       }
     },
@@ -108844,7 +108857,7 @@
       "real_size_m": {
         "w": 14.7,
         "d": 6.63,
-        "h": 5.04
+        "h": 4.49
       },
       "placement_rules": {
         "snap_target": "cell",
@@ -108860,6 +108873,7 @@
       "mesh_rel": null,
       "mesh_center_m": {
         "x": -2.72,
+        "y": 0.55,
         "z": 0
       }
     },
@@ -108880,7 +108894,7 @@
       "real_size_m": {
         "w": 27.99,
         "d": 15.32,
-        "h": 7.48
+        "h": 6.66
       },
       "placement_rules": {
         "snap_target": "cell",
@@ -108896,6 +108910,7 @@
       "mesh_rel": null,
       "mesh_center_m": {
         "x": -7.61,
+        "y": 0.83,
         "z": 0
       }
     },
@@ -108916,7 +108931,7 @@
       "real_size_m": {
         "w": 42.08,
         "d": 27.73,
-        "h": 10.35
+        "h": 8.07
       },
       "placement_rules": {
         "snap_target": "cell",
@@ -108932,6 +108947,7 @@
       "mesh_rel": null,
       "mesh_center_m": {
         "x": -8.37,
+        "y": 2.28,
         "z": 0
       }
     }

@@ -99,6 +99,7 @@ export function createMeshFactory({ getPiece, modelsBase = 'models/', scale = 0.
         // par tools/build_planner_pieces.js). Enfant du groupe : suit la rotation de la pièce.
         if (piece.mesh_center_m) {
           m.position.x -= piece.mesh_center_m.x * 100 * SCALE;
+          m.position.y -= (piece.mesh_center_m.y || 0) * 100 * SCALE;   // point le plus bas au sol
           m.position.z -= piece.mesh_center_m.z * 100 * SCALE;
         }
         // Pièce posée → argile clair ; ghost → couleur demandée (doré/vert/rouge).
@@ -106,7 +107,12 @@ export function createMeshFactory({ getPiece, modelsBase = 'models/', scale = 0.
         // swap async écraserait le vert/jaune/rouge par l'argile).
         const body = (g.userData.stabilityTint != null) ? g.userData.stabilityTint
                    : (opacity < 1 ? color : 0xcfc6b4);
-        tint(m, body, opacity);
+        // Modèle coloré (tank recomposé) : ses couleurs de sommets, sauf en fantôme ou en vue
+        // stabilité, où la teinte porte l'information.
+        if (piece.mesh_colors && opacity === 1 && g.userData.stabilityTint == null) {
+          m.traverse(o => { if (o.isMesh) o.material = new THREE.MeshStandardMaterial({
+            vertexColors: true, metalness: 0.15, roughness: 0.8, side: THREE.DoubleSide }); });
+        } else tint(m, body, opacity);
         g.add(m);
       });
     }

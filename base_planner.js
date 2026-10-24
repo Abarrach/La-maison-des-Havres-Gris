@@ -11,8 +11,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 // ?v= : cache-busting. Bump à chaque modif des modules pour forcer le rechargement
 // (sinon le navigateur sert l'ancienne version mise en cache).
-import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot47ornis';
-import { createMeshFactory } from './planner_mesh.js?v=lot47ornis';
+import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot48tank';
+import { createMeshFactory } from './planner_mesh.js?v=lot48tank';
 
 // ============================================================
 // MOTEUR — bascule ancien (géométrie+grille) / nouveau (sockets+meshes réels)
@@ -341,15 +341,16 @@ document.addEventListener('DOMContentLoaded', init);
 // ============================================================
 // Pièces retirées de la palette (entrées dataminées sans mesh / contenu non sorti).
 // Conservé en code (et non par suppression du JSON) pour survivre à une régénération
-// du catalogue. Tank = pas encore sorti ; TreadWheel = sans intérêt ; les 2 fabricateurs
-// n'ont pas de mesh exportable.
+// du catalogue. TreadWheel = sans intérêt ; les 2 fabricateurs n'ont pas de mesh exportable.
+// Le tank, pas encore sorti, est revenu le 2026-10-24 (« (à venir) ») avec un modèle recomposé
+// à partir de ses pièces (tools/build_tank_model.js).
 const EXCLUDED_PIECE_IDS = new Set([
-  'Tank_Vehicle', 'TreadWheel_Vehicle',
+  'TreadWheel_Vehicle',
   'PortableFabricator_Placeable', 'ConstructionFabricator_Placeable',
 ]);
 
 async function loadCatalog() {
-  const url = ENGINE === 'sockets' ? 'planner_pieces.json?v=lot47ornis' : PIECES_JSON_URL;
+  const url = ENGINE === 'sockets' ? 'planner_pieces.json?v=lot48tank' : PIECES_JSON_URL;
   const resp = await fetch(url);
   if (!resp.ok) throw new Error('pieces ' + resp.status);
   const piecesData = await resp.json();
@@ -7130,7 +7131,7 @@ const MATERIAL_FR = {
 
 async function loadCosts() {
   try {
-    const r = await fetch('planner_costs.json?v=lot47ornis');
+    const r = await fetch('planner_costs.json?v=lot48tank');
     if (!r.ok) return;
     SUMMARY.costs = await r.json();
     SUMMARY.costIndex = new Map();

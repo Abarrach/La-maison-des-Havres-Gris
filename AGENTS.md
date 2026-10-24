@@ -371,9 +371,9 @@ Ne pas les reproposer sans élément nouveau.
   contentent d'un `console.warn`, et le « MEILLEUR SCORE » affiché vient du `localStorage`
   écrit avant l'appel serveur. Un joueur peut donc voir un record que le classement ignore —
   c'est ce qui a fait croire deux fois à une triche ou à un bug de classement.
-- **Trois scripts non versionnés** dans `dunelogger/` sur le poste de l'utilisateur :
-  `fix_frozen_data.py` (outil de secours réutilisable, le plus utile), `dune_logger_multi.py`
-  (ancien scraper, remplacé) et `analyze_dune.py`.
+- **Scripts de stats** : versionnés et vérifiés identiques au serveur le 2026-10-24 ; restent sur
+  le serveur seulement, hors crontab, `dune_logger.py`, `dune_logger_simple.py`,
+  `dune_logger_simple_v2.py` et `generate_storage.py` (anciennes versions probables, à trancher).
 - **Registre des plans** (`/plan`) : livré et viable, mais l'utilisateur veut le retravailler.
 - **Données encore en retard sur le jeu** (audit du 2026-10-22, build 26083551) : tout ce que
   le pipeline extrait est à jour (recettes, coûts des machines, Landsraad, capacités compris).

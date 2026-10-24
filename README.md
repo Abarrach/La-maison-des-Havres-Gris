@@ -2111,14 +2111,20 @@ codés en dur seraient à revoir.
 ⚠ La clé awoo n'est jamais en dur : `dune_logger_all.py` la lit dans `awoo_api_key.txt`, à créer à
 la main à côté du script sur le serveur (gitignoré).
 
-⚠ Ce qui est commité est la copie **locale** des scripts. Pour `dune_archiver.py` et
-`build_daily_summary.py` elle correspond à ce qui a été téléversé ; pour `dune_logger_all.py`,
-antérieur, le vérifier avant de se fier au dépôt comme référence.
+✅ **Vérifié le 2026-10-24 (empreintes md5 de `/home/dune/*.py`)** : les trois scripts lancés par
+la crontab — `dune_logger_all.py`, `dune_archiver.py`, `build_daily_summary.py` — sont
+**identiques** à ceux du dépôt, ainsi que `diag_couverture.py`. Le dépôt fait donc référence.
 
-Restent NON versionnés dans le même dossier, à trancher : `fix_frozen_data.py` (outil de secours
-réutilisable — détecte les captures gelées d'un scraper banni, **le plus utile des trois**),
-`dune_logger_multi.py` (ancien scraper Playwright de gaming.tools, remplacé par l'API awoo) et
-`analyze_dune.py` (petite analyse pandas ponctuelle).
+Versionnés le même jour, hors crontab : `fix_frozen_data.py` (outil de secours — détecte les
+captures gelées d'un scraper banni, retire ces lignes et écrit une estimation à part dans
+`dune_counts_estimated.csv` ; `python fix_frozen_data.py dune_counts.csv --dry-run` pour voir sans
+écrire ; c'est lui qui a reconstitué la panne du 25 au 30 juin), `dune_logger_multi.py` (ancien
+scraper Playwright de gaming.tools, remplacé par l'API awoo) et `analyze_dune.py` (petite analyse
+pandas ponctuelle) — ces deux derniers identiques à ceux du serveur.
+
+Présents sur le serveur seulement, hors crontab, jamais versionnés : `dune_logger.py`,
+`dune_logger_simple.py`, `dune_logger_simple_v2.py`, `generate_storage.py` (anciennes versions
+probables du scraper — à trancher).
 
 > [!IMPORTANT]
 > **Où vit la configuration nginx** (l'info manquait, elle a coûté un aller-retour) : la VM sert

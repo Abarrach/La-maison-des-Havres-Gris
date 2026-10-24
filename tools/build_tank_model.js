@@ -40,8 +40,15 @@ const DOSSIER = '/Game/Dune/Vehicles/GroundVehicles/GroundCar/ChoamFaction/4Man'
 
 // Configuration représentée : canon sur la tourelle, booster à l'arrière (emplacements à
 // variantes : canon ou lance-flammes ; booster, stockage ou bouclier).
+// + trois pièces STATIQUES modélisées en place elles aussi (vérifié contre les pièces d'épave,
+// statiques, du même tank : mêmes positions, même échelle) : l'habitacle, qui comble les
+// ouvertures de la caisse, le moteur et le bloc d'alimentation. Les vitres et les bandes de
+// chenilles statiques sont, elles, en coordonnées locales (portées par un os) : écartées.
 const PIECES = ['Body', 'Chassis', 'Cockpit', 'Locomotion_FL', 'Locomotion_FR', 'Locomotion_RL',
-  'Locomotion_RR', 'UT_Gun', 'UT_Boost'].map(n => `SK_CH_4MGC_${n}`);
+  'Locomotion_RR', 'UT_Gun', 'UT_Boost'].map(n => `SK_CH_4MGC_${n}`)
+  .concat(['Body_Interior', 'Engine', 'PSU'].map(n => `SM_CH_4MGC_${n}`));
+// Matériaux sans couches (écrans, vitres) : couleur de repli, linéaire.
+const REPLI = [0.06, 0.07, 0.08];
 
 function extraire(args) {
   execFileSync(EXE, args, { cwd: EXTRACT, stdio: ['ignore', 'inherit', 'inherit'] });
@@ -114,12 +121,15 @@ const parMateriau = {};
 for (const pg of piecesGlb) for (const m of pg.json.materials || []) {
   if (/Decal|_DM$/i.test(m.name) || parMateriau[m.name]) continue;
   parMateriau[m.name] = couches(m.name);
-  if (!parMateriau[m.name] || !parMateriau[m.name].textures) throw new Error(`couches introuvables pour ${m.name}`);
+  if (!parMateriau[m.name] || !parMateriau[m.name].textures) {
+    console.log(`  (${m.name} : pas de couches, couleur de repli)`);
+    parMateriau[m.name] = null;
+  }
 }
 
 // ── 3. Textures des couches + grille → PNG, puis couleur moyenne ──────────────────
 const aDecoder = new Set();
-for (const c of Object.values(parMateriau)) { c.textures.forEach(t => aDecoder.add(t)); if (c.grille) aDecoder.add(c.grille.replace(/\.\d+$/, '')); }
+for (const c of Object.values(parMateriau).filter(Boolean)) { c.textures.forEach(t => aDecoder.add(t)); if (c.grille) aDecoder.add(c.grille.replace(/\.\d+$/, '')); }
 fs.mkdirSync(path.join(TRAVAIL, 'tex'), { recursive: true });
 console.log(`▶ décodage de ${aDecoder.size} textures…`);
 extraire(['--config', confTemp, '--models', path.join(TRAVAIL, 'tex'), '--textures', [...aDecoder].join(',')]);
@@ -188,10 +198,16 @@ const comptes = {};
 for (const pg of piecesGlb) for (const m of pg.json.meshes) for (const p of m.primitives) {
   const nomMat = (pg.json.materials[p.material] || {}).name || '';
   if (/Decal|_DM$/i.test(nomMat)) continue;                                 // décalcomanies : rien à voir de loin
-  const c = parMateriau[nomMat], g = grille(c.grille || '/Game/Dune/Art/MaterialLibrary/Textures/LayerPresets/T_LayerPreset_12_V2_ID_IndexMap_D');
-  const pos = lire(pg, p.attributes.POSITION, 3), nor = lire(pg, p.attributes.NORMAL, 3), uv = lire(pg, p.attributes.TEXCOORD_1, 2);
+  const c = parMateriau[nomMat];
+  const g = c ? grille(c.grille || '/Game/Dune/Art/MaterialLibrary/Textures/LayerPresets/T_LayerPreset_12_V2_ID_IndexMap_D') : null;
+  const pos = lire(pg, p.attributes.POSITION, 3), nor = lire(pg, p.attributes.NORMAL, 3);
+  const uv = (c && p.attributes.TEXCOORD_1 != null) ? lire(pg, p.attributes.TEXCOORD_1, 2) : null;
   const n = pos.length / 3, col = new Uint8Array(n * 4);
   for (let i = 0; i < n; i++) {
+    if (!uv) {   // pas de couches (ou pas de 2e jeu de coordonnées) : couleur de repli
+      for (let k = 0; k < 3; k++) col[i * 4 + k] = Math.round(255 * REPLI[k]);
+      col[i * 4 + 3] = 255; continue;
+    }
     const x = Math.min(g.w - 1, Math.max(0, Math.floor(uv[i * 2] * g.w))), y = Math.min(g.h - 1, Math.max(0, Math.floor(uv[i * 2 + 1] * g.h)));
     const couche = Math.min(c.textures.length - 1, g.data[(y * g.w + x) * g.canaux]);
     comptes[couche] = (comptes[couche] || 0) + 1;

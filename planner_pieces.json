@@ -1,6 +1,6 @@
 {
   "version": "planner-1",
-  "generated_at": "2026-10-24T11:44:53.556Z",
+  "generated_at": "2026-10-24T15:56:33.484Z",
   "source": {
     "ui": "base_pieces_v3.json",
     "engine": "dune_pieces_sockets.json"

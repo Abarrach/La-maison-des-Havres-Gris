@@ -9,8 +9,15 @@
  *
  * Le jeu n'a pour la plupart des véhicules qu'un SM_ProxyMesh d'un seul tenant, au matériau
  * gris « blockout » : rien à colorer. Les vrais véhicules sont modulaires (caisse, châssis,
- * cockpit, roues ou ailes, moteur…) et leurs pièces sont modélisées EN PLACE : posées à la même
- * origine, elles forment le véhicule (vérifié sur le tank, puis sur chacun). On les fusionne
+ * cockpit, roues ou ailes, moteur…) et leurs pièces sont modélisées EN PLACE, à une exception :
+ * le CHÂSSIS est dans son propre repère, le reste est accroché à son os « body ». Toutes les
+ * autres pièces sont donc relevées de la hauteur de cet os (2026-10-24 : châssis du buggy
+ * posé sur le toit, patins de l'orni léger au-dessus de la caisse ; les épaves, aux mêmes
+ * positions que les pièces saines, confirment que chaque pièce est juste DANS SON repère).
+ * Lue dans les matrices de liaison (inverseBindMatrices) du squelette : la hauteur seule, en
+ * valeur absolue, car le repère du châssis est retourné sur certains véhicules (os à −1,5 m
+ * pour le buggy, +3,67 m pour l'orni moyen) alors que les pièces tombent juste relevées de
+ * |hauteur| dans les deux cas — comparé aux maquettes du jeu. On les fusionne
  * en gardant ce que tools/build_colored_models.js lit (POSITION, NORMAL, TEXCOORD_0..2 et le
  * NOM des matériaux) : il les colore et les texture ensuite comme n'importe quelle pièce.
  *
@@ -156,17 +163,36 @@ function ecrireGlb(f, prims, nomsMat, nom) {
   fs.writeFileSync(f, Buffer.concat([tete, bj, js, bb, bin]));
 }
 
+/** Position (repère du maillage) de l'os nommé, d'après sa matrice de liaison inverse. */
+function positionOs(g, nom) {
+  const s = g.json.skins && g.json.skins[0];
+  if (!s) return null;
+  const k = s.joints.findIndex(n => (g.json.nodes[n].name || '').toLowerCase() === nom);
+  if (k < 0) return null;
+  const a = g.json.accessors[s.inverseBindMatrices], bv = g.json.bufferViews[a.bufferView];
+  const o = (bv.byteOffset || 0) + (a.byteOffset || 0) + k * 64, m = [];
+  for (let i = 0; i < 16; i++) m.push(g.bin.readFloatLE(o + i * 4));
+  // Inverse d'une matrice rigide (colonnes) : t = −Rᵀ·t_ibm.
+  return [0, 1, 2].map(c => -(m[c * 4] * m[12] + m[c * 4 + 1] * m[13] + m[c * 4 + 2] * m[14]));
+}
+
 for (const [cle, v] of choisis) {
   const prims = [], nomsMat = [], boites = [];
+  const chassis = v.pieces.find(p => /^SK_.*Chassis/.test(p));
+  const gc = chassis && fs.existsSync(path.join(MESHES, chassis + '.glb')) ? lireGlb(path.join(MESHES, chassis + '.glb')) : null;
+  const osBody = gc && positionOs(gc, 'body');
+  const releve = osBody ? Math.abs(osBody[1]) : 0;
   for (const piece of v.pieces) {
     const f = path.join(MESHES, piece + '.glb');
     if (!fs.existsSync(f)) { console.warn(`  ✘ ${cle} : ${piece} introuvable`); continue; }
     const g = lireGlb(f);
+    const dy = piece === chassis ? 0 : releve;
     const mn = [Infinity, Infinity, Infinity], mx = [-Infinity, -Infinity, -Infinity];
     for (const m of g.json.meshes || []) for (const p of m.primitives) {
       const nomMat = (g.json.materials && g.json.materials[p.material] || {}).name || '';
       if (/Decal|_DM$/i.test(nomMat)) continue;                        // décalcomanies
       const pos = lire(g, p.attributes.POSITION, 3);
+      if (dy) for (let i = 1; i < pos.length; i += 3) pos[i] += dy;
       for (let i = 0; i < pos.length; i++) { mn[i % 3] = Math.min(mn[i % 3], pos[i]); mx[i % 3] = Math.max(mx[i % 3], pos[i]); }
       const nor = p.attributes.NORMAL != null ? lire(g, p.attributes.NORMAL, 3) : null;
       const uvs = [0, 1, 2].map(k => p.attributes['TEXCOORD_' + k] != null ? lire(g, p.attributes['TEXCOORD_' + k], 2) : null);
@@ -181,5 +207,5 @@ for (const [cle, v] of choisis) {
   if (!prims.length) continue;
   const dst = path.join(BASE, v.sortie + '.glb');
   ecrireGlb(dst, prims, nomsMat, v.sortie);
-  console.log(`✔ ${cle} → ${path.basename(dst)} (${v.pieces.length} pièces, ${prims.length} morceaux, ${(fs.statSync(dst).size / 1048576).toFixed(1)} Mo)`);
+  console.log(`✔ ${cle} → ${path.basename(dst)} (relevé ${releve.toFixed(2)} m, ${v.pieces.length} pièces, ${prims.length} morceaux, ${(fs.statSync(dst).size / 1048576).toFixed(1)} Mo)`);
 }

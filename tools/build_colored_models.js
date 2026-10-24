@@ -52,8 +52,17 @@ const VITRE = [0.12, 0.16, 0.2];
 
 // ── 1. Modèles et matériaux à traiter ──────────────────────────────────────────
 const pieces = JSON.parse(fs.readFileSync(path.join(RACINE, 'planner_pieces.json'), 'utf8')).pieces;
+// Maquettes de véhicules (SM_ProxyMesh, gris « blockout ») restées faute de pièces dans cette
+// pose : elles prennent la peinture principale du véhicule recomposé (couche la plus étendue,
+// sa teinte, son grain), projetée sur la maquette. Une seule couleur, mais plus d'argile.
+const PROXY_LIVREE = {
+  SM_ProxyMesh_Choam_Ornithopter_Light: 'SM_Composite_AOL_Ornithopter_Light',
+  SM_ProxyMesh_Atreides_Ornithopter_Medium_Folded: 'SM_Composite_AMO_Ornithopter_Medium',
+  SM_ProxyMesh_Choam_Ornithopter_Transport_Folded: 'SM_Composite_CTO_Ornithopter_Transport',
+};
 let modeles = [...new Set(pieces.map(p => p.mesh).filter(Boolean))];
-if (SEUL.length) modeles = modeles.filter(m => SEUL.includes(m));
+if (SEUL.length) modeles = modeles.filter(m => SEUL.includes(m) || Object.entries(PROXY_LIVREE).some(([px, c]) => c === m && SEUL.includes(px)));
+modeles.sort((a, b) => (Object.values(PROXY_LIVREE).includes(b) ? 1 : 0) - (Object.values(PROXY_LIVREE).includes(a) ? 1 : 0));
 const lireGlb = f => {
   const b = fs.readFileSync(f), len = b.readUInt32LE(12);
   return { json: JSON.parse(b.slice(20, 20 + len).toString()), bin: b.slice(20 + len + 8) };
@@ -193,6 +202,21 @@ function teinteCouche(info, couche) {
   const lum = m ? Math.max(0.05, 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]) : 1;
   return s.map(v => v / lum);
 }
+// Peinture dominante de chaque véhicule recomposé : « matériau|couche » → sommets + densité
+// des coordonnées de couche (unités d'UV par mètre, pour garder l'échelle du grain).
+const dominantes = {};
+function noterDominante(nomModele, nomMat, couche) {
+  const d = dominantes[nomModele] || (dominantes[nomModele] = new Map());
+  const cle = nomMat + '|' + couche, e = d.get(cle) || { n: 0, nomMat, couche, du: 0, dp: 0 };
+  e.n++;
+  d.set(cle, e);
+  return e;
+}
+function densite(e, pos, uv2, a, b) {
+  const dp = Math.hypot(pos[a * 3] - pos[b * 3], pos[a * 3 + 1] - pos[b * 3 + 1], pos[a * 3 + 2] - pos[b * 3 + 2]);
+  if (dp < 0.05) return;
+  e.dp += dp; e.du += Math.hypot(uv2[a * 2] - uv2[b * 2], uv2[a * 2 + 1] - uv2[b * 2 + 1]);
+}
 const stats = { modeles: 0, avant: 0, apres: 0, sommets: 0, couches: 0, plats: 0, repli: 0, sansTexture: new Set(), sansMat: new Set() };
 
 function colorer(nomModele) {
@@ -200,14 +224,23 @@ function colorer(nomModele) {
   if (!fs.existsSync(src)) return;
   const g = lireGlb(src);
   stats.avant += fs.statSync(src).size;
+  const estRecompose = Object.values(PROXY_LIVREE).includes(nomModele);
   if ((g.json.asset.generator || '').startsWith('DuneMap')) {        // déjà allégé et coloré (tank)
     fs.copyFileSync(src, dst); stats.apres += fs.statSync(dst).size; stats.modeles++; return;
   }
   const meshesSortie = [];
+  // Maquette : la peinture dominante de son véhicule, partout.
+  const ref = PROXY_LIVREE[nomModele] && dominantes[PROXY_LIVREE[nomModele]];
+  // La couche 0 d'abord : la peinture principale, celle que le joueur personnalise (vert sur
+  // l'orni moyen Atréides, crème sur le transport CHOAM) ; parmi elles, la plus étendue. Sur
+  // les véhicules TOUTES les couches ont une couleur de faction : l'étendue seule choisissait
+  // le métal des ailes, qui couvre plus de sommets que la caisse.
+  const livree = ref && [...ref.values()].sort((a, b) => (a.couche === 0 ? 0 : 1) - (b.couche === 0 ? 0 : 1) || b.n - a.n)[0];
   for (const m of g.json.meshes || []) {
     const prims = [];
     for (const p of m.primitives) {
       const nomMat = (g.json.materials && g.json.materials[p.material] || {}).name || '';
+      if (livree) { prims.push(peindreMaquette(g, p, livree)); continue; }
       if (/Decal|_DM$/i.test(nomMat)) continue;                        // décalcomanies : rien à voir de loin
       const info = infoMateriau(nomMat);
       if (!info) stats.sansMat.add(nomMat);
@@ -249,6 +282,7 @@ function colorer(nomModele) {
           c = (base || ARGILE).map((v, k) => v * t[k]);
           if (uvc) {
             col[i * 4 + 3] = localeDe(couche);
+            if (estRecompose) noterDominante(nomModele, nomMat, couche);
             const rep = info.repetitions[couche] ?? 1;
             uvc[i * 2] = uv2[i * 2] * rep; uvc[i * 2 + 1] = uv2[i * 2 + 1] * rep;
           } else col[i * 4 + 3] = 255;
@@ -256,6 +290,16 @@ function colorer(nomModele) {
         for (let k = 0; k < 3; k++) col[i * 4 + k] = Math.round(255 * Math.min(1, Math.max(0, c[k])));
       }
       const idx = p.indices != null ? lireIdx(g, p.indices) : Uint32Array.from({ length: n }, (_, i) => i);
+      if (estRecompose && uvc) {                     // densité des UV de couche, sur les arêtes
+        const d = dominantes[nomModele];
+        for (let k = 0; k + 2 < idx.length && k < 30000; k += 3) {
+          const a = idx[k], b = idx[k + 1];
+          if (col[a * 4 + 3] !== col[b * 4 + 3]) continue;
+          const couche = [...locales.entries()].find(([, l]) => l === col[a * 4 + 3]);
+          const e = couche && d && d.get(nomMat + '|' + couche[0]);
+          if (e) densite(e, pos, uv2, a, b);
+        }
+      }
       prims.push({ pos, nor, col, uvc: table.length ? uvc : null, couches: table, idx: n <= 65535 ? Uint16Array.from(idx) : idx });
       stats.sommets += n;
     }
@@ -270,6 +314,31 @@ function colorer(nomModele) {
   ecrireGlb(dst, meshesSortie, noeuds);
   stats.apres += fs.statSync(dst).size;
   stats.modeles++;
+}
+
+// Maquette repeinte : une couche (texture + teinte de la peinture dominante), coordonnées
+// projetées depuis la position selon la face (axe dominant de la normale), à la densité du
+// véhicule recomposé.
+function peindreMaquette(g, p, livree) {
+  const info = infoMateriau(livree.nomMat), couche = livree.couche;
+  const pos = lire(g, p.attributes.POSITION, 3);
+  const nor = p.attributes.NORMAL != null ? lire(g, p.attributes.NORMAL, 3) : null;
+  const n = pos.length / 3, col = new Uint8Array(n * 4), uvc = new Float32Array(n * 2);
+  const tex = info.textures[couche] || null, tn = teinteCouche(info, couche);
+  if (tex) texturesUtilisees.add(tex);
+  const base = (tex && moyenne(tex)) || ARGILE, c = base.map((v, k) => v * tn[k]);
+  const d = (livree.dp ? livree.du / livree.dp : 1) * (info.repetitions[couche] ?? 1);
+  for (let i = 0; i < n; i++) {
+    for (let k = 0; k < 3; k++) col[i * 4 + k] = Math.round(255 * Math.min(1, Math.max(0, c[k])));
+    col[i * 4 + 3] = 0;
+    const ax = nor ? Math.abs(nor[i * 3]) : 0, ay = nor ? Math.abs(nor[i * 3 + 1]) : 1, az = nor ? Math.abs(nor[i * 3 + 2]) : 0;
+    const [u, v] = ay >= ax && ay >= az ? [pos[i * 3], pos[i * 3 + 2]] : ax >= az ? [pos[i * 3 + 2], pos[i * 3 + 1]] : [pos[i * 3], pos[i * 3 + 1]];
+    uvc[i * 2] = u * d; uvc[i * 2 + 1] = v * d;
+  }
+  const idx = p.indices != null ? lireIdx(g, p.indices) : Uint32Array.from({ length: n }, (_, i) => i);
+  stats.couches += n; stats.sommets += n;
+  return { pos, nor, col, uvc, couches: [{ t: tex, c: tn.map(v => +Math.min(4, Math.max(0, v)).toFixed(4)) }],
+    idx: n <= 65535 ? Uint16Array.from(idx) : idx };
 }
 
 function ecrireGlb(f, meshes, noeuds) {

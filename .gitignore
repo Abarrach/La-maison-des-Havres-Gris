@@ -93,3 +93,8 @@ bd/pages/
 
 # Cartes Deep Desert publiées sur Discord + relevé de la semaine — runtime, créé par dd_publish.php
 dd_cartes/
+# Planner autonome : seuls le mode d'emploi et la conf nginx sont suivis, le reste est
+# régénéré par tools/build_planner_standalone.js (copies du planner du site + models/)
+planner-standalone/*
+!planner-standalone/README.md
+!planner-standalone/nginx.conf

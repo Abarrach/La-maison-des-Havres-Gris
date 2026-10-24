@@ -338,6 +338,9 @@ Script Python d'archivage hebdomadaire. Maintient `dune_counts.csv` dans une fen
 
 ### Constructeur de Base (`base_planner.html`)
 
+> [!NOTE]
+> **Édition publique autonome (`planner-standalone/`, 2026-10-24).** Le même constructeur en site statique, sans compte ni PHP, à héberger ailleurs : partage par lien auto-porteur (`#p=` gzip + base64url) et export/import `.json`. Le dossier est **généré** depuis le planner du site par `node tools/build_planner_standalone.js` (`--models=<dossier>` pour joindre les `.glb`) : transformations repérées de `base_planner.html` + copie des fichiers que la page charge ; seuls `README.md` et `nginx.conf` y sont versionnés. `base_planner.js` expose pour cela `window.bpSerializePlanData` / `bpApplyPlanData`. La copie faite à la main en juin (worktree `wizardly-buck`) était restée vingt lots en arrière — d'où le générateur. Mode d'emploi : `planner-standalone/README.md`.
+
 > [!IMPORTANT]
 > **Refonte v2 (2026-06) — moteur sockets + meshes réels du jeu.** Le planner n'utilise plus
 > de primitives schématiques : il charge les **vrais maillages `.glb`** extraits du jeu (FModel)
@@ -1769,6 +1772,7 @@ DuneMap/
 ├── planner.js            # Planificateur d'événements
 ├── migration.js          # Logique de migration (validation, refus, Discord)
 ├── base_planner.js       # Logique 3D du Constructeur de Base (Three.js, moteur sockets, ~6150 lignes)
+├── planner-standalone/   # Édition publique autonome du constructeur — GÉNÉRÉE par tools/build_planner_standalone.js
 ├── auth-guard.js         # Protection des pages (garde client + validation serveur session_check.php)
 ├── pages.js              # Registre central des tuiles du menu (clé, lien, image, icône, titre) — source unique
 ├── page-guard.js         # Garde d'accès par page (bloque hidden/wip pour les joueurs ; admin = accès total)

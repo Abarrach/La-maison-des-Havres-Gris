@@ -11,8 +11,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 // ?v= : cache-busting. Bump à chaque modif des modules pour forcer le rechargement
 // (sinon le navigateur sert l'ancienne version mise en cache).
-import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot45couts';
-import { createMeshFactory } from './planner_mesh.js?v=lot45couts';
+import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot46public';
+import { createMeshFactory } from './planner_mesh.js?v=lot46public';
 
 // ============================================================
 // MOTEUR — bascule ancien (géométrie+grille) / nouveau (sockets+meshes réels)
@@ -349,7 +349,7 @@ const EXCLUDED_PIECE_IDS = new Set([
 ]);
 
 async function loadCatalog() {
-  const url = ENGINE === 'sockets' ? 'planner_pieces.json?v=lot45couts' : PIECES_JSON_URL;
+  const url = ENGINE === 'sockets' ? 'planner_pieces.json?v=lot46public' : PIECES_JSON_URL;
   const resp = await fetch(url);
   if (!resp.ok) throw new Error('pieces ' + resp.status);
   const piecesData = await resp.json();
@@ -7048,6 +7048,11 @@ function animate() {
   if (orbitControls.enabled) orbitControls.update();
   renderer.render(scene, activeCam);
 }
+// Export / import / partage par lien de l'édition publique (planner-standalone, généré par
+// tools/build_planner_standalone.js) : le module n'expose rien d'autre à la page.
+window.bpSerializePlanData = bpSerializePlanData;
+window.bpApplyPlanData     = bpApplyPlanData;
+
 // Hook debug (test/preview) : permet de capturer (pause la boucle rAF) et d'inspecter.
 window.__bp = {
   state, placedMeshes, socketEngine, meshFactory,
@@ -7125,7 +7130,7 @@ const MATERIAL_FR = {
 
 async function loadCosts() {
   try {
-    const r = await fetch('planner_costs.json?v=lot45couts');
+    const r = await fetch('planner_costs.json?v=lot46public');
     if (!r.ok) return;
     SUMMARY.costs = await r.json();
     SUMMARY.costIndex = new Map();

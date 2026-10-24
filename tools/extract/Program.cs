@@ -22,6 +22,7 @@
 //               [--paks <dossier>] [--usmap <f.usmap>] [--mapstructtypes <f.json>]
 //               [--out <racine d'export>] [--aes 0x…]
 using CUE4Parse.Encryption.Aes;
+using CUE4Parse.UE4.Assets.Exports.SkeletalMesh;
 using CUE4Parse.UE4.Assets.Exports.StaticMesh;
 using CUE4Parse_Conversion;
 using CUE4Parse_Conversion.Meshes;
@@ -292,11 +293,20 @@ if (Drapeau("meshes"))
                 // Le catalogue donne un chemin moteur (/Game/…) ; le provider indexe à partir
                 // du nom de projet. On traduit, sinon rien ne se charge.
                 var cle = chemin.StartsWith("/Game/") ? "DuneSandbox/Content" + chemin[5..] : chemin;
-                if (!provider.TryLoadPackageObject(cle, out var obj) || obj is not UStaticMesh maillage)
-                { echoues++; rates.Add($"mesh {nom} — asset introuvable ou pas un StaticMesh"); continue; }
+                if (!provider.TryLoadPackageObject(cle, out var obj))
+                { echoues++; rates.Add($"mesh {nom} — asset introuvable"); continue; }
 
+                // StaticMesh, ou SkeletalMesh exporté dans sa pose de repos (2026-10-24 : le
+                // tank 4MGC n'existe qu'en pièces squelettiques, sans proxy statique).
                 var options = new ExporterOptions { MeshFormat = EMeshFormat.Gltf2, ExportMaterials = false };
-                var exporteur = new MeshExporter(maillage, options);
+                MeshExporter? exporteur = obj switch
+                {
+                    UStaticMesh sm => new MeshExporter(sm, options),
+                    USkeletalMesh sk => new MeshExporter(sk, options),
+                    _ => null,
+                };
+                if (exporteur is null)
+                { echoues++; rates.Add($"mesh {nom} — ni StaticMesh ni SkeletalMesh"); continue; }
                 if (!exporteur.TryWriteToDir(new DirectoryInfo(tmp), out _, out var ecrit))
                 { echoues++; rates.Add($"mesh {nom} — export refusé"); continue; }
 

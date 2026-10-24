@@ -1,6 +1,6 @@
 {
   "_note": "Écrit par tools/update_datamine.js. Dit de QUEL build du jeu proviennent les données du site, et quand chaque étape a tourné pour la dernière fois. Versionné exprès : c'est la seule trace de la fraîcheur des données.",
-  "updated_at": "2026-10-22T22:28:31.179Z",
+  "updated_at": "2026-10-24T10:39:55.659Z",
   "game": {
     "build_id": "26083551",
     "last_updated": "2026-10-22T09:49:12.000Z",
@@ -214,6 +214,12 @@
           "entrees": 213
         }
       }
+    },
+    "meshes": {
+      "ran_at": "2026-10-24T10:39:55.659Z",
+      "game_build_id": "26083551",
+      "sources": {},
+      "outputs": {}
     }
   }
 }

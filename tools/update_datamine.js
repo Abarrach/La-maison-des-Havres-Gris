@@ -40,7 +40,7 @@
  *   --with-snapshot        snapshot gaming.tools (réseau, ~30 min, souvent bloqué Cloudflare)
  *   --with-univers         plans_uniques.json (demande un export d'addon collé dans un .txt)
  *   --run-planner-import   base_pieces_v3.json via le script externe import_building_data.js
- *   --with-meshes          recopie les .glb du planner depuis l'export FModel
+ *   --with-meshes          (sans effet depuis le 2026-10-24 : l'étape meshes est automatique)
  *   --all                  les quatre ci-dessus d'un coup
  *
  *   Chemins : détectés depuis les réglages FModel (%APPDATA%/FModel/AppSettings.json).
@@ -482,16 +482,19 @@ const STEPS = [
       + 'planner_utilities.json. À relancer après toute régénération de base_pieces_v3.json.',
   },
   {
+    // Automatique depuis le 2026-10-24 (avant : opt-in, et recopie d'un export FModel fait à
+    // la main par tools/flatten_glb.js, qui reste disponible). L'extracteur n'exporte que les
+    // meshes du catalogue ABSENTS de la base locale : sans nouveau set, il ne fait rien.
     id: 'meshes',
-    label: 'Meshes .glb référencés par le planner → models/',
-    script: 'tools/flatten_glb.js',
-    args: (c) => [c.exportsRoot].filter(Boolean),
-    outputs: [],           // models/ est gitignoré (357 Mo) : pas de diff possible, pas d'état de sortie
+    label: 'Meshes .glb du catalogue → base locale des modèles (export depuis les paks)',
+    exe: (c) => c.extracteur,
+    args: () => ['--config', path.join(ROOT, 'tools/extract/extract.config.json'), '--meshes', '--only', 'aucune-table'],
+    outputs: [],           // base locale hors dépôt (~785 Mo) : pas de diff possible, pas d'état de sortie
     sources: [], paks: ['Environment_Structures.pak', 'Environment_Props.pak', 'Art.pak', 'Vehicles.pak', 'Placables.pak'],
-    optIn: 'meshes',
-    requiresLocal: ['planner_pieces.json'],
-    note: 'Ne copie que les meshes cités par planner_pieces.json. models/ n\'est pas versionné : '
-      + 'les .glb nouveaux ou changés doivent être envoyés au serveur par WinSCP.',
+    requiresLocal: ['base_pieces_v3.json'],
+    note: 'Écrit dans la base locale UNIQUE (meshes.out de extract.config.json, cf. tools/models_dir.js), '
+      + 'quel que soit le worktree. Les .glb nouveaux s\'envoient ensuite au serveur (/srv/dune-map/models/) '
+      + 'par WinSCP, et l\'édition publique se régénère avec node tools/build_planner_standalone.js.',
   },
 ];
 

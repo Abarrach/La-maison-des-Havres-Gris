@@ -1557,6 +1557,17 @@ DuneExtract --meshes --mesh-filter Sard   # un seul set
 DuneExtract --meshes --mesh-force         # réécrit ceux déjà présents
 ```
 
+**Base locale UNIQUE des modèles (2026-10-24)** : `J:/Download/Serveur/Carte Dune OK/DuneMap/models/`
+(checkout principal, gitignorée, ~785 Mo), réglée dans `meshes.out` de `tools/extract/extract.config.json`
+et lue par `tools/models_dir.js` (donc aussi par `flatten_glb.js` et `build_planner_standalone.js`).
+Avant, un chemin relatif faisait écrire chaque export dans le `models/` du worktree courant : les 82
+meshes Sardaukar du 19/10 étaient restés dans un worktree et aucune copie locale n'était complète.
+Constituée le 2026-10-24 (copie de juin + export du 20/10 + 8 meshes CHOAM `SM_MTX_Env_PB_Choam_*`
+exportés ce jour-là, **absents du serveur** jusque-là). L'étape `meshes` d'`update_datamine.js` est
+désormais **automatique** (plus besoin de `--with-meshes`) : après un patch qui touche les paks de
+structures, elle exporte les meshes du catalogue absents de la base, et seulement ceux-là. Les `.glb`
+nouveaux s'envoient ensuite au serveur (`/srv/dune-map/models/`) par WinSCP.
+
 Le nom de sortie est le nom d'asset (`SM_Player_PB_Sard_Column.glb`), c'est-à-dire
 exactement ce que `planner_pieces.json` référence dans son champ `mesh`.
 

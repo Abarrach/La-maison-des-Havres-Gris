@@ -1,4 +1,5 @@
-// Aplati les .glb exportés par FModel vers ./models/<basename>.glb
+// Aplati les .glb exportés par FModel vers la base locale des modèles (<base>/<basename>.glb,
+// cf. tools/models_dir.js : meshes.out de tools/extract/extract.config.json)
 // Usage : node tools/flatten_glb.js [dossier_export_FModel] [--all]
 //
 // Par défaut : copie UNIQUEMENT les meshes RÉFÉRENCÉS par planner_pieces.json
@@ -8,7 +9,7 @@
 const fs = require('fs'), path = require('path');
 
 const ROOT = path.join(__dirname, '..');
-const projModels = path.join(ROOT, 'models');
+const projModels = require('./models_dir')();
 const args = process.argv.slice(2);
 const all = args.includes('--all');
 const dirArg = args.find(a => !a.startsWith('--'));

@@ -95,7 +95,8 @@ for (const f of [...fichiers].sort()) {
 console.log(`✔ planner-standalone/index.html + ${fichiers.size} fichiers (${(total / 1048576).toFixed(1)} Mo)`);
 
 // ── Modèles 3D (gros : seulement sur demande) ─────────────────────────────────────
-const modeles = OPT_MODELES && OPT_MODELES.includes('=') ? path.resolve(OPT_MODELES.split('=')[1]) : path.join(RACINE, 'models');
+// Par défaut : la base locale unique des modèles (tools/models_dir.js), tenue à jour par le pipeline.
+const modeles = OPT_MODELES && OPT_MODELES.includes('=') ? path.resolve(OPT_MODELES.split('=')[1]) : require('./models_dir')();
 if (OPT_MODELES) {
   if (!fs.existsSync(modeles)) throw new Error(`${modeles} introuvable : récupérer models/ depuis le serveur (/srv/dune-map/models/)`);
   fs.cpSync(modeles, path.join(SORTIE, 'models'), { recursive: true });

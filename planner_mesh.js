@@ -129,6 +129,9 @@ export function createMeshFactory({ getPiece, modelsBase = 'models/', scale = 0.
         g.userData.couleurs = !!(scene.userData.couleurs || piece.mesh_colors) && opacity === 1;
         if (g.userData.couleurs && g.userData.stabilityTint == null) couleursDesSommets(m);
         else tint(m, body, opacity);
+        // Ombres portées et reçues : c'est ce qui donne le relief (murs sur le sol, débords).
+        // Pas pour le fantôme : une pièce pas encore posée ne doit pas assombrir le plan.
+        if (opacity === 1) m.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
         g.add(m);
       });
     }

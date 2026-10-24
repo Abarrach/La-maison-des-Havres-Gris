@@ -9,10 +9,11 @@
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 // ?v= : cache-busting. Bump à chaque modif des modules pour forcer le rechargement
 // (sinon le navigateur sert l'ancienne version mise en cache).
-import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot49couleurs';
-import { createMeshFactory } from './planner_mesh.js?v=lot49couleurs';
+import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot50eclairage';
+import { createMeshFactory } from './planner_mesh.js?v=lot50eclairage';
 
 // ============================================================
 // MOTEUR — bascule ancien (géométrie+grille) / nouveau (sockets+meshes réels)
@@ -98,7 +99,7 @@ function getPieceColor(piece) {
 }
 
 const COLOR_GROUND      = 0x0d0805;
-const COLOR_CLAIM_FLOOR = 0x2a1a08;
+const COLOR_CLAIM_FLOOR = 0x1a1005;   // assombri avec l'éclairage plein soleil (lot50) : même rendu qu'avant
 const COLOR_GRID_MINOR  = 0x4b3010;
 const COLOR_GRID_MAJOR  = 0x78501a;
 const COLOR_CLAIM_BORDER = 0xcda434;
@@ -350,7 +351,7 @@ const EXCLUDED_PIECE_IDS = new Set([
 ]);
 
 async function loadCatalog() {
-  const url = ENGINE === 'sockets' ? 'planner_pieces.json?v=lot49couleurs' : PIECES_JSON_URL;
+  const url = ENGINE === 'sockets' ? 'planner_pieces.json?v=lot50eclairage' : PIECES_JSON_URL;
   const resp = await fetch(url);
   if (!resp.ok) throw new Error('pieces ' + resp.status);
   const piecesData = await resp.json();
@@ -454,12 +455,21 @@ function setupRenderer() {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type    = THREE.PCFSoftShadowMap;
   renderer.outputColorSpace  = THREE.SRGBColorSpace;
+  // Exposition « plein soleil » (2026-10-24) : sans courbe de tons, les pièces colorées
+  // sortaient marron-gris. ACES garde le sol sombre tout en faisant ressortir les couleurs.
+  renderer.toneMapping         = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.1;
   dom.container.appendChild(renderer.domElement);
   renderer.domElement.style.display = 'block';
 }
 function setupLights() {
-  scene.add(new THREE.AmbientLight(0xffe8c0, 0.45));
-  const sun = new THREE.DirectionalLight(0xfff0d0, 1.1);
+  // Lumière d'environnement (pièce neutre précalculée) : éclaire aussi les faces à l'ombre,
+  // comme le ciel et le sable en jeu, au lieu d'une ambiance uniforme qui aplatit tout.
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  scene.environmentIntensity = 0.5;
+  pmrem.dispose();
+  const sun = new THREE.DirectionalLight(0xfff1dc, 2.6);
   sun.position.set(15, 30, 10);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
@@ -469,8 +479,10 @@ function setupLights() {
   sun.shadow.camera.bottom = -30;
   sun.shadow.camera.near = 1;
   sun.shadow.camera.far  = 80;
+  sun.shadow.bias = -0.0004;          // les pièces portent ET reçoivent des ombres : sans biais,
+  sun.shadow.normalBias = 0.02;       // leurs propres faces se couvrent de rayures
   scene.add(sun);
-  scene.add(new THREE.HemisphereLight(0xffe8c0, 0x1a0f05, 0.3));
+  scene.add(new THREE.HemisphereLight(0xfff4e0, 0x8a6a48, 0.9));   // ciel chaud / rebond du sable
 }
 
 // ============================================================
@@ -5045,6 +5057,10 @@ function _initThumbRenderer() {
   _thumbRenderer.setSize(THUMB_SIZE, THUMB_SIZE);
   _thumbRenderer.setPixelRatio(1);
   _thumbRenderer.setClearColor(0x000000, 0);
+  // Même courbe de tons que la scène, un cran plus exposée : les vignettes colorées sortaient
+  // brun foncé sur le fond sombre de la palette.
+  _thumbRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+  _thumbRenderer.toneMappingExposure = 1.6;
   _thumbScene = new THREE.Scene();
   // Éclairage homogène : hémisphère (pas de face totalement sombre) + key + headlight
   // (suit la caméra → la face vue est toujours éclairée). Évite le rendu « à moitié sombre ».
@@ -5067,7 +5083,15 @@ function renderThumb(piece) {
     const obj = scene.clone(true);
     // Matériau argile (les géométries sont PARTAGÉES → on ne touche/dispose QUE les matériaux).
     const mats = [];
-    obj.traverse(o => { if (o.isMesh) { o.material = meshFactory.clayMaterial(0xcfc6b4, 1); mats.push(o.material); } });
+    // Modèle coloré : ses couleurs, sinon argile. Matériaux propres au clone (disposés plus bas).
+    const couleurs = !!scene.userData.couleurs;
+    obj.traverse(o => {
+      if (!o.isMesh) return;
+      o.material = couleurs
+        ? new THREE.MeshStandardMaterial({ vertexColors: true, metalness: 0.1, roughness: 0.85, side: THREE.DoubleSide })
+        : meshFactory.clayMaterial(0xcfc6b4, 1);
+      mats.push(o.material);
+    });
     const box = new THREE.Box3().setFromObject(obj);
     if (box.isEmpty()) return null;
     const size = box.getSize(new THREE.Vector3());
@@ -7142,7 +7166,7 @@ const MATERIAL_FR = {
 
 async function loadCosts() {
   try {
-    const r = await fetch('planner_costs.json?v=lot49couleurs');
+    const r = await fetch('planner_costs.json?v=lot50eclairage');
     if (!r.ok) return;
     SUMMARY.costs = await r.json();
     SUMMARY.costIndex = new Map();

@@ -94,6 +94,13 @@ export function createMeshFactory({ getPiece, modelsBase = 'models/', scale = 0.
         // 1 m = 100 cm = 100×SCALE unités monde → échelle mesh = 100×SCALE.
         m.scale.setScalar(100 * SCALE * MESH_TUNE.scale);
         m.rotation.set(MESH_TUNE.rotX, MESH_TUNE.rotY, MESH_TUNE.rotZ);
+        // Véhicules : leur modèle n'est pas centré sur son origine (ornis décalés de 2 à 8 m
+        // vers l'arrière) alors que l'emprise l'est → on recentre (centre en mètres, mesuré
+        // par tools/build_planner_pieces.js). Enfant du groupe : suit la rotation de la pièce.
+        if (piece.mesh_center_m) {
+          m.position.x -= piece.mesh_center_m.x * 100 * SCALE;
+          m.position.z -= piece.mesh_center_m.z * 100 * SCALE;
+        }
         // Pièce posée → argile clair ; ghost → couleur demandée (doré/vert/rouge).
         // Si une teinte de stabilité est active sur le groupe, elle prime (sinon le
         // swap async écraserait le vert/jaune/rouge par l'argile).

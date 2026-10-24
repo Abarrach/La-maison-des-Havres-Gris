@@ -12,7 +12,20 @@
   "meshes": {
     "_note": "Export glTF des meshes du Constructeur (--meshes). Le nom de sortie est le nom d'asset, exactement ce que planner_pieces.json référence. Par défaut on ne refait pas un .glb déjà présent (--mesh-force pour forcer, --mesh-filter <texte> pour se limiter à un set). `out` = la base LOCALE UNIQUE des modèles, dans le checkout principal (gitignorée) : un chemin relatif écrivait dans le models/ du worktree courant, et les exports se dispersaient (cf. tools/models_dir.js).",
     "catalogue": "../../base_pieces_v3.json",
-    "out": "J:/Download/Serveur/Carte Dune OK/DuneMap/models"
+    "out": "J:/Download/Serveur/Carte Dune OK/DuneMap/models",
+    "_extra": "Meshes utilisés par le planner sans qu'une pièce du catalogue les cite : véhicules complets (SM_ProxyMesh, cf. MV_MESH et VEHICULES_REPLIES de tools/build_planner_pieces.js), dont les ornis ailes repliées. Exportés avec le reste par --meshes.",
+    "extra": [
+      "/Game/Dune/Vehicles/GroundVehicles/GroundCar/ChoamFaction/1Man/Mesh/ProxyMeshes/SM_ProxyMesh_Choam_GC_Sandbike.SM_ProxyMesh_Choam_GC_Sandbike",
+      "/Game/Dune/Vehicles/GroundVehicles/GroundCar/ChoamFaction/Buggy/Mesh/ProxyMeshes/SM_ProxyMesh_Choam_GC_Buggy.SM_ProxyMesh_Choam_GC_Buggy",
+      "/Game/Dune/Vehicles/GroundVehicles/GroundCar/ChoamFaction/Industrial/Mesh/ProxyMeshes/SM_ProxyMesh_Choam_GC_Industrial.SM_ProxyMesh_Choam_GC_Industrial",
+      "/Game/DLC/B1C2/Vehicles/GroundVehicles/GroundCar/OldEmpireFaction/TreadWheel/Mesh/ProxyMeshes/SM_ProxyMesh_OldEmpire_TreadWheel.SM_ProxyMesh_OldEmpire_TreadWheel",
+      "/Game/Dune/Vehicles/FlyingVehicles/Ornithopter/ChoamFaction/Light/Mesh/ProxyMeshes/SM_ProxyMesh_Choam_Ornithopter_Light.SM_ProxyMesh_Choam_Ornithopter_Light",
+      "/Game/Dune/Vehicles/FlyingVehicles/Ornithopter/ChoamFaction/Medium/Mesh/ProxyMeshes/SM_ProxyMesh_Choam_Ornithopter_Medium.SM_ProxyMesh_Choam_Ornithopter_Medium",
+      "/Game/Dune/Vehicles/FlyingVehicles/Ornithopter/ChoamFaction/Transport/Mesh/ProxyMeshes/SM_ProxyMesh_Choam_Ornithopter_Transport.SM_ProxyMesh_Choam_Ornithopter_Transport",
+      "/Game/Dune/Vehicles/FlyingVehicles/Ornithopter/AtreidesFaction/Light/Mesh/ProxyMeshes/SM_ProxyMesh_Atreides_Ornithopter_Light_Folded.SM_ProxyMesh_Atreides_Ornithopter_Light_Folded",
+      "/Game/Dune/Vehicles/FlyingVehicles/Ornithopter/AtreidesFaction/Medium/Mesh/ProxyMeshes/SM_ProxyMesh_Atreides_Ornithopter_Medium_Folded.SM_ProxyMesh_Atreides_Ornithopter_Medium_Folded",
+      "/Game/Dune/Vehicles/FlyingVehicles/Ornithopter/ChoamFaction/Transport/Mesh/ProxyMeshes/SM_ProxyMesh_Choam_Ornithopter_Transport_Folded.SM_ProxyMesh_Choam_Ornithopter_Transport_Folded"
+    ]
   },
 
   "targets": [

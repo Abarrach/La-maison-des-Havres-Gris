@@ -262,6 +262,11 @@ if (Drapeau("meshes"))
     else
     {
         var pieces = (JObject.Parse(File.ReadAllText(catalogue))["pieces"] as JArray) ?? new JArray();
+        // Meshes que le planner utilise SANS qu'une pièce du catalogue les cite (véhicules
+        // complets, ornis ailes repliées) : `meshes.extra` de la config, mêmes chemins moteur.
+        // Sans cette liste, ils ne venaient que d'un export FModel fait une fois à la main.
+        foreach (var x in (confMeshes?["extra"] as JArray) ?? new JArray())
+            pieces.Add(new JObject { ["mesh_path"] = x.ToString() });
         // mesh_path → nom de fichier attendu : dernier segment, sans le suffixe « .Objet ».
         var voulus = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var piece in pieces)

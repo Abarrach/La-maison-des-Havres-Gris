@@ -1,11 +1,11 @@
 {
   "version": "planner-1",
-  "generated_at": "2026-10-20T12:48:43.674Z",
+  "generated_at": "2026-10-24T11:05:08.588Z",
   "source": {
     "ui": "base_pieces_v3.json",
     "engine": "dune_pieces_sockets.json"
   },
-  "count": 786,
+  "count": 789,
   "pieces": [
     {
       "id": "Atreides_Outpost_Column",
@@ -107826,15 +107826,15 @@
       "label_fr": "Moto des sables",
       "label_en": "Sandbike",
       "dimensions": {
-        "w": 2,
+        "w": 1,
         "d": 1,
         "h": 1,
         "shape": "square"
       },
       "real_size_m": {
-        "w": 2.6,
-        "d": 1,
-        "h": 1.2
+        "w": 3.22,
+        "d": 1.72,
+        "h": 1.5
       },
       "placement_rules": {
         "snap_target": "cell",
@@ -107847,7 +107847,11 @@
       "is_vehicle": true,
       "sockets": [],
       "mesh": "SM_ProxyMesh_Choam_GC_Sandbike",
-      "mesh_rel": null
+      "mesh_rel": null,
+      "mesh_center_m": {
+        "x": 0.01,
+        "z": 0
+      }
     },
     {
       "id": "Buggy_Vehicle",
@@ -107858,15 +107862,15 @@
       "label_fr": "Buggy",
       "label_en": "Buggy",
       "dimensions": {
-        "w": 3,
-        "d": 2,
+        "w": 2,
+        "d": 1,
         "h": 1,
         "shape": "square"
       },
       "real_size_m": {
-        "w": 5.3,
-        "d": 2.7,
-        "h": 2.4
+        "w": 6.45,
+        "d": 4.75,
+        "h": 3.32
       },
       "placement_rules": {
         "snap_target": "cell",
@@ -107879,7 +107883,11 @@
       "is_vehicle": true,
       "sockets": [],
       "mesh": "SM_ProxyMesh_Choam_GC_Buggy",
-      "mesh_rel": null
+      "mesh_rel": null,
+      "mesh_center_m": {
+        "x": 0,
+        "z": 0
+      }
     },
     {
       "id": "Tank_Vehicle",
@@ -107922,15 +107930,15 @@
       "label_fr": "Chenille",
       "label_en": "Sandcrawler",
       "dimensions": {
-        "w": 2,
-        "d": 3,
+        "w": 4,
+        "d": 2,
         "h": 2,
         "shape": "square"
       },
       "real_size_m": {
-        "w": 5,
-        "d": 5.8,
-        "h": 4
+        "w": 16.92,
+        "d": 10.06,
+        "h": 6.99
       },
       "placement_rules": {
         "snap_target": "cell",
@@ -107943,7 +107951,11 @@
       "is_vehicle": true,
       "sockets": [],
       "mesh": "SM_ProxyMesh_Choam_GC_Industrial",
-      "mesh_rel": null
+      "mesh_rel": null,
+      "mesh_center_m": {
+        "x": 1.2,
+        "z": 0
+      }
     },
     {
       "id": "TreadWheel_Vehicle",
@@ -107954,15 +107966,15 @@
       "label_fr": "Roue tout-terrain",
       "label_en": "TreadWheel",
       "dimensions": {
-        "w": 2,
+        "w": 1,
         "d": 1,
         "h": 1,
         "shape": "square"
       },
       "real_size_m": {
-        "w": 2.6,
-        "d": 0.8,
-        "h": 1.6
+        "w": 2.63,
+        "d": 1.52,
+        "h": 2.5
       },
       "placement_rules": {
         "snap_target": "cell",
@@ -107974,8 +107986,12 @@
       "is_machine": true,
       "is_vehicle": true,
       "sockets": [],
-      "mesh": null,
-      "mesh_rel": null
+      "mesh": "SM_ProxyMesh_OldEmpire_TreadWheel",
+      "mesh_rel": null,
+      "mesh_center_m": {
+        "x": -0.03,
+        "z": 0
+      }
     },
     {
       "id": "LightOrnithopter_Vehicle",
@@ -107987,14 +108003,14 @@
       "label_en": "LightOrnithopter",
       "dimensions": {
         "w": 3,
-        "d": 1,
+        "d": 4,
         "h": 2,
         "shape": "square"
       },
       "real_size_m": {
-        "w": 7,
-        "d": 2.4,
-        "h": 2.6
+        "w": 14.38,
+        "d": 19.57,
+        "h": 5.37
       },
       "placement_rules": {
         "snap_target": "cell",
@@ -108007,7 +108023,11 @@
       "is_vehicle": true,
       "sockets": [],
       "mesh": "SM_ProxyMesh_Choam_Ornithopter_Light",
-      "mesh_rel": null
+      "mesh_rel": null,
+      "mesh_center_m": {
+        "x": -1.85,
+        "z": -0.01
+      }
     },
     {
       "id": "MediumOrnithopter_Vehicle",
@@ -108018,15 +108038,15 @@
       "label_fr": "Ornithoptère d'assaut",
       "label_en": "MediumOrnithopter",
       "dimensions": {
-        "w": 5,
-        "d": 2,
-        "h": 1,
+        "w": 4,
+        "d": 9,
+        "h": 3,
         "shape": "square"
       },
       "real_size_m": {
-        "w": 10.54,
-        "d": 2.76,
-        "h": 2.44
+        "w": 18.2,
+        "d": 42.13,
+        "h": 10.23
       },
       "placement_rules": {
         "snap_target": "cell",
@@ -108039,7 +108059,11 @@
       "is_vehicle": true,
       "sockets": [],
       "mesh": "SM_ProxyMesh_Choam_Ornithopter_Medium",
-      "mesh_rel": null
+      "mesh_rel": null,
+      "mesh_center_m": {
+        "x": -2.34,
+        "z": 0
+      }
     },
     {
       "id": "TransportOrnithopter_Vehicle",
@@ -108051,14 +108075,14 @@
       "label_en": "TransportOrnithopter",
       "dimensions": {
         "w": 7,
-        "d": 5,
-        "h": 3,
+        "d": 14,
+        "h": 4,
         "shape": "square"
       },
       "real_size_m": {
-        "w": 16,
-        "d": 12,
-        "h": 5.6
+        "w": 31.95,
+        "d": 67.96,
+        "h": 13.2
       },
       "placement_rules": {
         "snap_target": "cell",
@@ -108071,7 +108095,11 @@
       "is_vehicle": true,
       "sockets": [],
       "mesh": "SM_ProxyMesh_Choam_Ornithopter_Transport",
-      "mesh_rel": null
+      "mesh_rel": null,
+      "mesh_center_m": {
+        "x": -3.37,
+        "z": 0
+      }
     },
     {
       "id": "WindTurbineOmnidirectional_Placeable",
@@ -108798,6 +108826,114 @@
       "mesh": "SM_Env_Prop_Frem_Deathstill",
       "power": -200,
       "water_capacity": 500
+    },
+    {
+      "id": "LightOrnithopter_Vehicle_Folded",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "vehicles",
+      "group": "LightOrnithopter",
+      "label_fr": "Ornithoptère éclaireur (ailes repliées)",
+      "label_en": "LightOrnithopter",
+      "dimensions": {
+        "w": 3,
+        "d": 2,
+        "h": 2,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 14.7,
+        "d": 6.63,
+        "h": 5.04
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 900005.5,
+      "icon_path": "",
+      "mesh_path": "",
+      "is_machine": true,
+      "is_vehicle": true,
+      "sockets": [],
+      "mesh": "SM_ProxyMesh_Atreides_Ornithopter_Light_Folded",
+      "mesh_rel": null,
+      "mesh_center_m": {
+        "x": -2.72,
+        "z": 0
+      }
+    },
+    {
+      "id": "MediumOrnithopter_Vehicle_Folded",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "vehicles",
+      "group": "MediumOrnithopter",
+      "label_fr": "Ornithoptère d'assaut (ailes repliées)",
+      "label_en": "MediumOrnithopter",
+      "dimensions": {
+        "w": 6,
+        "d": 3,
+        "h": 2,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 27.99,
+        "d": 15.32,
+        "h": 7.48
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 900006.5,
+      "icon_path": "",
+      "mesh_path": "",
+      "is_machine": true,
+      "is_vehicle": true,
+      "sockets": [],
+      "mesh": "SM_ProxyMesh_Atreides_Ornithopter_Medium_Folded",
+      "mesh_rel": null,
+      "mesh_center_m": {
+        "x": -7.61,
+        "z": 0
+      }
+    },
+    {
+      "id": "TransportOrnithopter_Vehicle_Folded",
+      "faction_id": "placeables",
+      "faction_label": "placeables",
+      "category": "vehicles",
+      "group": "TransportOrnithopter",
+      "label_fr": "Ornithoptère de transport (ailes repliées)",
+      "label_en": "TransportOrnithopter",
+      "dimensions": {
+        "w": 9,
+        "d": 6,
+        "h": 3,
+        "shape": "square"
+      },
+      "real_size_m": {
+        "w": 42.08,
+        "d": 27.73,
+        "h": 10.35
+      },
+      "placement_rules": {
+        "snap_target": "cell",
+        "footprint_shape": "square"
+      },
+      "menu_order": 900007.5,
+      "icon_path": "",
+      "mesh_path": "",
+      "is_machine": true,
+      "is_vehicle": true,
+      "sockets": [],
+      "mesh": "SM_ProxyMesh_Choam_Ornithopter_Transport_Folded",
+      "mesh_rel": null,
+      "mesh_center_m": {
+        "x": -8.37,
+        "z": 0
+      }
     }
   ]
 }

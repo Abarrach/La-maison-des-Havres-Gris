@@ -112,7 +112,20 @@ const MV_MESH = {
   LightOrnithopter_Vehicle: 'SM_ProxyMesh_Choam_Ornithopter_Light',
   MediumOrnithopter_Vehicle: 'SM_ProxyMesh_Choam_Ornithopter_Medium',
   TransportOrnithopter_Vehicle: 'SM_ProxyMesh_Choam_Ornithopter_Transport',
+  TreadWheel_Vehicle: 'SM_ProxyMesh_OldEmpire_TreadWheel',   // trouvé le 2026-10-24 (DLC B1C2)
 };
+
+// --- Ornis AILES REPLIÉES (2026-10-24) : pièces à part dans l'onglet Véhicules ---
+// Le jeu a un modèle replié pour trois ornis (rangé à côté du proxy déployé, jamais cité
+// par le catalogue, donc jamais extrait) : un orni posé au sol a les ailes repliées, et
+// c'est sa vraie emprise dans un hangar. Clone de la pièce d'origine (même label_en →
+// mêmes coûts dans la Synthèse), seul le modèle change. Les deux légers/moyens repliés
+// sont des modèles Atréides : le jeu n'en a pas en version CHOAM.
+const VEHICULES_REPLIES = [
+  { id: 'LightOrnithopter_Vehicle_Folded',     base: 'LightOrnithopter_Vehicle',     mesh: 'SM_ProxyMesh_Atreides_Ornithopter_Light_Folded' },
+  { id: 'MediumOrnithopter_Vehicle_Folded',    base: 'MediumOrnithopter_Vehicle',    mesh: 'SM_ProxyMesh_Atreides_Ornithopter_Medium_Folded' },
+  { id: 'TransportOrnithopter_Vehicle_Folded', base: 'TransportOrnithopter_Vehicle', mesh: 'SM_ProxyMesh_Choam_Ornithopter_Transport_Folded' },
+];
 let mvMeshWired = 0;
 
 // --- Correction des axes w/d inversés (footprint des placeables) ---
@@ -229,6 +242,48 @@ UTILITIES.forEach((u, i) => {
   utilWired++;
 });
 
+// ── Véhicules : ailes repliées + emprise prise SUR LE MODÈLE (2026-10-24) ─────
+// L'emprise des véhicules (real_size_m du catalogue) était très en dessous de leur modèle :
+// orni de transport réservé 16 × 12 m pour un modèle de 32 × 68 m — il traversait les murs
+// quelle que soit la position des ailes, et « est-ce que ça tient ? » ne voulait rien dire.
+// On mesure donc la boîte du .glb (mètres ; X = largeur w, Z = profondeur d, Y = hauteur,
+// comme pour les utilitaires), et on note son centre : le modèle n'est pas centré sur son
+// origine (ornis : -1,9 à -3,4 m en X), planner_mesh.js le recentre sur l'emprise.
+const glbBoite = (() => {
+  const dossier = require('./models_dir')();
+  return nom => {
+    const f = path.join(dossier, nom + '.glb');
+    if (!fs.existsSync(f)) return null;
+    const b = fs.readFileSync(f);
+    const j = JSON.parse(b.slice(20, 20 + b.readUInt32LE(12)).toString());
+    const mn = [Infinity, Infinity, Infinity], mx = [-Infinity, -Infinity, -Infinity];
+    for (const m of j.meshes || []) for (const pr of m.primitives || []) {
+      const a = j.accessors[pr.attributes.POSITION];
+      for (let i = 0; i < 3; i++) { mn[i] = Math.min(mn[i], a.min[i]); mx[i] = Math.max(mx[i], a.max[i]); }
+    }
+    return { mn, mx };
+  };
+})();
+const r2 = v => Math.round(v * 100) / 100;
+let repliesAjoutes = 0, vehiculesMesures = 0;
+for (const v of VEHICULES_REPLIES) {
+  const base = pieces.find(p => p.id === v.base);
+  if (!base) { console.warn(`  ⚠ ${v.id} : pièce d'origine ${v.base} absente`); continue; }
+  pieces.push({ ...base, id: v.id, label_fr: base.label_fr + ' (ailes repliées)', mesh: v.mesh,
+                menu_order: (base.menu_order || 0) + 0.5 });
+  repliesAjoutes++;
+}
+for (const p of pieces) {
+  if (!p.is_vehicle || !p.mesh) continue;
+  const bx = glbBoite(p.mesh);
+  if (!bx) { console.warn(`  ⚠ ${p.id} : ${p.mesh}.glb absent de la base des modèles — emprise du catalogue gardée`); continue; }
+  const [x0, , z0] = bx.mn, [x1, y1, z1] = bx.mx;
+  p.real_size_m = { w: r2(x1 - x0), d: r2(z1 - z0), h: r2(y1) };
+  p.dimensions = { w: fpCells(p.real_size_m.w), d: fpCells(p.real_size_m.d), h: hLevels(p.real_size_m.h), shape: 'square' };
+  p.mesh_center_m = { x: r2((x0 + x1) / 2), z: r2((z0 + z1) / 2) };
+  vehiculesMesures++;
+}
+
 const result = {
   version: 'planner-1',
   generated_at: new Date().toISOString(),
@@ -250,3 +305,5 @@ console.log(`  mesh machines/véhicules câblés : ${mvMeshWired}`);
 console.log(`  sockets courbes désactivés sur sols arrondis : ${deactivatedFloorCurved}`);
 console.log(`  axes w/d inversés corrigés (footprint centré) : ${swappedAxes}`);
 console.log(`  utilitaires injectés (cat. utilities)         : ${utilWired}`);
+console.log(`  ornis ailes repliées ajoutés                  : ${repliesAjoutes}`);
+console.log(`  véhicules mesurés sur leur modèle             : ${vehiculesMesures}`);

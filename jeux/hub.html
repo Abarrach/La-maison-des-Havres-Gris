@@ -237,7 +237,7 @@ body::after { display: none; }
 <script>
 (function () {
     const me = localStorage.getItem('user') || '';
-    const GAME_NAMES = { orni_flap: 'Ornithopter Flap', spice_runner: 'Spice Runner', sandstorm_memory: 'Sandstorm Memory', worm_rider: 'Worm Rider', muaddib_rescue: "Muad'Dib Rescue", sandwalk: 'La Marche du Désert', dernier_rempart: 'Dernier Rempart' };
+    const GAME_NAMES = { orni_flap: 'Ornithopter Flap', spice_runner: 'Spice Runner', sandstorm_memory: 'Sandstorm Memory', worm_rider: 'Worm Rider', muaddib_rescue: "Muad'Dib Rescue", sandwalk: 'La Marche du Désert' /* jeu retiré le 2026-10-24, nom gardé pour d'éventuels scores de test */, dernier_rempart: 'Dernier Rempart' };
     let currentFilter = '';
     let currentScope = 'weekly'; // 'weekly' = classement de la semaine (remis à zéro chaque mardi 05:00 UTC) · 'alltime' = Hall of Fame
 

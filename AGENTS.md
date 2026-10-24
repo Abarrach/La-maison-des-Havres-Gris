@@ -355,8 +355,8 @@ Ne pas les reproposer sans élément nouveau.
 - **Compagnon type gaming.tools** (lecture mémoire du jeu) : refusé — application native,
   autorisation Funcom nécessaire.
 - **Multiplicateur de dégâts à la tête par arme** : non dataminable, donc pas affiché.
-- **« La Marche du Désert »** (6ᵉ mini-jeu) : commité mais **non déployé**, jugé « pas
-  top » par l'utilisateur — problème de game design, pas technique.
+- **« La Marche du Désert »** (6ᵉ mini-jeu de rythme) : jamais déployé, jugé « pas top »
+  (game design, pas technique) ; **retiré du dépôt le 2026-10-24**, refonte Codex abandonnée.
 - **Auto-inscription** (`register.html` + action serveur) : supprimée volontairement, les
   comptes hors Discord sont créés à la main.
 

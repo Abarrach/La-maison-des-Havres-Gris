@@ -12,8 +12,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 // ?v= : cache-busting. Bump à chaque modif des modules pour forcer le rechargement
 // (sinon le navigateur sert l'ancienne version mise en cache).
-import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot51textures';
-import { createMeshFactory } from './planner_mesh.js?v=lot51textures';
+import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot52vehicules';
+import { createMeshFactory } from './planner_mesh.js?v=lot52vehicules';
 
 // ============================================================
 // MOTEUR — bascule ancien (géométrie+grille) / nouveau (sockets+meshes réels)
@@ -344,14 +344,14 @@ document.addEventListener('DOMContentLoaded', init);
 // Conservé en code (et non par suppression du JSON) pour survivre à une régénération
 // du catalogue. TreadWheel = sans intérêt ; les 2 fabricateurs n'ont pas de mesh exportable.
 // Le tank, pas encore sorti, est revenu le 2026-10-24 (« (à venir) ») avec un modèle recomposé
-// à partir de ses pièces (tools/build_tank_model.js).
+// à partir de ses pièces (tools/build_vehicle_models.js).
 const EXCLUDED_PIECE_IDS = new Set([
   'TreadWheel_Vehicle',
   'PortableFabricator_Placeable', 'ConstructionFabricator_Placeable',
 ]);
 
 async function loadCatalog() {
-  const url = ENGINE === 'sockets' ? 'planner_pieces.json?v=lot51textures' : PIECES_JSON_URL;
+  const url = ENGINE === 'sockets' ? 'planner_pieces.json?v=lot52vehicules' : PIECES_JSON_URL;
   const resp = await fetch(url);
   if (!resp.ok) throw new Error('pieces ' + resp.status);
   const piecesData = await resp.json();
@@ -7161,7 +7161,7 @@ const MATERIAL_FR = {
 
 async function loadCosts() {
   try {
-    const r = await fetch('planner_costs.json?v=lot51textures');
+    const r = await fetch('planner_costs.json?v=lot52vehicules');
     if (!r.ok) return;
     SUMMARY.costs = await r.json();
     SUMMARY.costIndex = new Map();

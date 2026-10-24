@@ -253,7 +253,7 @@ diffuseColor.rgb *= couleurCouche;`);
         // Modèle coloré (tank recomposé) : ses couleurs de sommets, sauf en fantôme ou en vue
         // stabilité, où la teinte porte l'information.
         // Retenu sur le groupe : la vue stabilité doit savoir rendre ses couleurs à la pièce.
-        g.userData.couleurs = !!(scene.userData.couleurs || piece.mesh_colors) && opacity === 1;
+        g.userData.couleurs = !!scene.userData.couleurs && opacity === 1;
         if (g.userData.couleurs && g.userData.stabilityTint == null) couleursDesSommets(m);
         else tint(m, body, opacity);
         // Ombres portées et reçues : c'est ce qui donne le relief (murs sur le sol, débords).

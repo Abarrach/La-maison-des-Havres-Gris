@@ -1,6 +1,6 @@
 {
   "version": "planner-1",
-  "generated_at": "2026-10-24T15:56:33.484Z",
+  "generated_at": "2026-10-24T18:16:12.629Z",
   "source": {
     "ui": "base_pieces_v3.json",
     "engine": "dune_pieces_sockets.json"
@@ -107832,9 +107832,9 @@
         "shape": "square"
       },
       "real_size_m": {
-        "w": 3.22,
-        "d": 1.72,
-        "h": 1.5
+        "w": 3.11,
+        "d": 1.81,
+        "h": 2
       },
       "placement_rules": {
         "snap_target": "cell",
@@ -107846,11 +107846,11 @@
       "is_machine": true,
       "is_vehicle": true,
       "sockets": [],
-      "mesh": "SM_ProxyMesh_Choam_GC_Sandbike",
+      "mesh": "SM_Composite_ATR_1MGC_Sandbike",
       "mesh_rel": null,
       "mesh_center_m": {
-        "x": 0.01,
-        "y": 0,
+        "x": 0.02,
+        "y": -0.69,
         "z": 0
       }
     },
@@ -107869,9 +107869,9 @@
         "shape": "square"
       },
       "real_size_m": {
-        "w": 6.45,
-        "d": 4.75,
-        "h": 3.19
+        "w": 6.79,
+        "d": 4.72,
+        "h": 3.55
       },
       "placement_rules": {
         "snap_target": "cell",
@@ -107883,11 +107883,11 @@
       "is_machine": true,
       "is_vehicle": true,
       "sockets": [],
-      "mesh": "SM_ProxyMesh_Choam_GC_Buggy",
+      "mesh": "SM_Composite_ACB_Buggy",
       "mesh_rel": null,
       "mesh_center_m": {
-        "x": 0,
-        "y": 0.13,
+        "x": -0.26,
+        "y": -1.39,
         "z": 0
       }
     },
@@ -107922,7 +107922,6 @@
       "sockets": [],
       "mesh": "SM_Composite_CH_4MGC_Tank",
       "mesh_rel": null,
-      "mesh_colors": true,
       "mesh_center_m": {
         "x": 1.04,
         "y": -1.83,
@@ -107944,9 +107943,9 @@
         "shape": "square"
       },
       "real_size_m": {
-        "w": 16.92,
-        "d": 10.06,
-        "h": 7
+        "w": 17.11,
+        "d": 10.4,
+        "h": 6.98
       },
       "placement_rules": {
         "snap_target": "cell",
@@ -107958,11 +107957,11 @@
       "is_machine": true,
       "is_vehicle": true,
       "sockets": [],
-      "mesh": "SM_ProxyMesh_Choam_GC_Industrial",
+      "mesh": "SM_Composite_CIGC_Sandcrawler",
       "mesh_rel": null,
       "mesh_center_m": {
-        "x": 1.2,
-        "y": -0.01,
+        "x": 1.31,
+        "y": -2,
         "z": 0
       }
     },
@@ -108049,15 +108048,15 @@
       "label_fr": "Ornithoptère d'assaut",
       "label_en": "MediumOrnithopter",
       "dimensions": {
-        "w": 4,
+        "w": 5,
         "d": 9,
-        "h": 3,
+        "h": 2,
         "shape": "square"
       },
       "real_size_m": {
-        "w": 18.2,
-        "d": 42.13,
-        "h": 11.17
+        "w": 22.06,
+        "d": 44.27,
+        "h": 7.13
       },
       "placement_rules": {
         "snap_target": "cell",
@@ -108069,11 +108068,11 @@
       "is_machine": true,
       "is_vehicle": true,
       "sockets": [],
-      "mesh": "SM_ProxyMesh_Choam_Ornithopter_Medium",
+      "mesh": "SM_Composite_AMO_Ornithopter_Medium",
       "mesh_rel": null,
       "mesh_center_m": {
-        "x": -2.34,
-        "y": -0.94,
+        "x": -4.64,
+        "y": -2.96,
         "z": 0
       }
     },
@@ -108092,9 +108091,9 @@
         "shape": "square"
       },
       "real_size_m": {
-        "w": 31.95,
-        "d": 67.96,
-        "h": 11.09
+        "w": 31.8,
+        "d": 68.2,
+        "h": 8.5
       },
       "placement_rules": {
         "snap_target": "cell",
@@ -108106,11 +108105,11 @@
       "is_machine": true,
       "is_vehicle": true,
       "sockets": [],
-      "mesh": "SM_ProxyMesh_Choam_Ornithopter_Transport",
+      "mesh": "SM_Composite_CTO_Ornithopter_Transport",
       "mesh_rel": null,
       "mesh_center_m": {
-        "x": -3.37,
-        "y": 2.11,
+        "x": -3.42,
+        "y": -2.51,
         "z": 0
       }
     },
@@ -108855,9 +108854,9 @@
         "shape": "square"
       },
       "real_size_m": {
-        "w": 14.7,
-        "d": 6.63,
-        "h": 4.49
+        "w": 14.44,
+        "d": 6.21,
+        "h": 4.17
       },
       "placement_rules": {
         "snap_target": "cell",
@@ -108869,11 +108868,11 @@
       "is_machine": true,
       "is_vehicle": true,
       "sockets": [],
-      "mesh": "SM_ProxyMesh_Atreides_Ornithopter_Light_Folded",
+      "mesh": "SM_Composite_AOL_Ornithopter_Light",
       "mesh_rel": null,
       "mesh_center_m": {
-        "x": -2.72,
-        "y": 0.55,
+        "x": -2.56,
+        "y": -1.3,
         "z": 0
       }
     },

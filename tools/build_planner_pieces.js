@@ -105,20 +105,18 @@ const MV_MESH = {
   Advanced_SurvivalFabricator_Placeable: 'SM_Env_Prop_Choam_Fabricator_Survival_Advanced_01_assemble',
   LargeOreRefinery_Placeable: 'SM_Env_Prop_Choam_OreRefinery_Large',
   LargeSpiceRefinery_Placeable: 'SM_Env_Prop_Choam_SpiceRefinery_Large_Full',
-  // Véhicules (6) — ProxyMeshes
-  Sandbike_Vehicle: 'SM_ProxyMesh_Choam_GC_Sandbike',
-  Buggy_Vehicle: 'SM_ProxyMesh_Choam_GC_Buggy',
-  Sandcrawler_Vehicle: 'SM_ProxyMesh_Choam_GC_Industrial',
-  LightOrnithopter_Vehicle: 'SM_ProxyMesh_Choam_Ornithopter_Light',
-  MediumOrnithopter_Vehicle: 'SM_ProxyMesh_Choam_Ornithopter_Medium',
-  TransportOrnithopter_Vehicle: 'SM_ProxyMesh_Choam_Ornithopter_Transport',
-  TreadWheel_Vehicle: 'SM_ProxyMesh_OldEmpire_TreadWheel',   // trouvé le 2026-10-24 (DLC B1C2)
-  // Tank (pas encore sorti) : pas de proxy dans le jeu, modèle recomposé et COLORÉ par
-  // tools/build_tank_model.js (pièces squelettiques assemblées, couleurs des couches de matériau).
-  Tank_Vehicle: 'SM_Composite_CH_4MGC_Tank',
+  // Véhicules — recomposés depuis leurs vraies pièces par tools/build_vehicle_models.js
+  // (livrée Atréides quand elle existe, puis colorés/texturés comme les pièces). Les proxys du
+  // jeu (SM_ProxyMesh, gris uni) restent là où il n'existe pas de pose équivalente.
+  Sandbike_Vehicle: 'SM_Composite_ATR_1MGC_Sandbike',
+  Buggy_Vehicle: 'SM_Composite_ACB_Buggy',
+  Sandcrawler_Vehicle: 'SM_Composite_CIGC_Sandcrawler',
+  LightOrnithopter_Vehicle: 'SM_ProxyMesh_Choam_Ornithopter_Light',     // pièces modélisées ailes repliées
+  MediumOrnithopter_Vehicle: 'SM_Composite_AMO_Ornithopter_Medium',
+  TransportOrnithopter_Vehicle: 'SM_Composite_CTO_Ornithopter_Transport',
+  TreadWheel_Vehicle: 'SM_ProxyMesh_OldEmpire_TreadWheel',   // trouvé le 2026-10-24 (DLC B1C2), pas de pièces
+  Tank_Vehicle: 'SM_Composite_CH_4MGC_Tank',                  // pas encore sorti, pas de proxy
 };
-// Modèles dont les couleurs de sommets sont à afficher telles quelles (planner_mesh.js).
-const MESH_COLORS = new Set(['Tank_Vehicle']);
 // Contenu annoncé mais pas encore sorti : signalé dans le nom.
 const A_VENIR = new Set(['Tank_Vehicle']);
 
@@ -129,7 +127,8 @@ const A_VENIR = new Set(['Tank_Vehicle']);
 // mêmes coûts dans la Synthèse), seul le modèle change. Les deux légers/moyens repliés
 // sont des modèles Atréides : le jeu n'en a pas en version CHOAM.
 const VEHICULES_REPLIES = [
-  { id: 'LightOrnithopter_Vehicle_Folded',     base: 'LightOrnithopter_Vehicle',     mesh: 'SM_ProxyMesh_Atreides_Ornithopter_Light_Folded' },
+  // L'orni léger replié : ses vraies pièces (modélisées ailes repliées), plus le proxy.
+  { id: 'LightOrnithopter_Vehicle_Folded',     base: 'LightOrnithopter_Vehicle',     mesh: 'SM_Composite_AOL_Ornithopter_Light' },
   { id: 'MediumOrnithopter_Vehicle_Folded',    base: 'MediumOrnithopter_Vehicle',    mesh: 'SM_ProxyMesh_Atreides_Ornithopter_Medium_Folded' },
   { id: 'TransportOrnithopter_Vehicle_Folded', base: 'TransportOrnithopter_Vehicle', mesh: 'SM_ProxyMesh_Choam_Ornithopter_Transport_Folded' },
 ];
@@ -204,7 +203,6 @@ const pieces = v3.pieces.map(p => {
   }
   // Câblage mesh machines/véhicules (survit aux régénérations).
   if (MV_MESH[p.id]) { out.mesh = MV_MESH[p.id]; mvMeshWired++; }
-  if (MESH_COLORS.has(p.id)) out.mesh_colors = true;
   if (A_VENIR.has(p.id)) out.label_fr = out.label_fr + ' (à venir)';
   // Correction d'axes w/d inversés vs mesh (footprint centré, cf. note ci-dessus).
   if (SWAP_WD_IDS.has(p.id)) {

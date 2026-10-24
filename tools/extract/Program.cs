@@ -370,6 +370,9 @@ if (Drapeau("meshes"))
     var dossierModels = Arg("models") ?? Resoudre(confMeshes?["out"]?.ToString());
     var filtre = Arg("mesh-filter");
     var refaire = Drapeau("mesh-force");
+    // --lod N : niveau de détail simplifié (le plus fin disponible ≤ N). 2026-10-24 : les
+    // véhicules recomposés pesaient 1 million de sommets en LOD0, pour un planner vu de loin.
+    var lodVoulu = int.TryParse(Arg("lod"), out var lv) ? lv : 0;
 
     if (catalogue is null || !File.Exists(catalogue) || dossierModels is null)
         Console.WriteLine("\nmeshes : ⚠ catalogue ou dossier de sortie non configuré — étape ignorée");
@@ -411,7 +414,8 @@ if (Drapeau("meshes"))
 
                 // StaticMesh, ou SkeletalMesh exporté dans sa pose de repos (2026-10-24 : le
                 // tank 4MGC n'existe qu'en pièces squelettiques, sans proxy statique).
-                var options = new ExporterOptions { MeshFormat = EMeshFormat.Gltf2, ExportMaterials = false };
+                var options = new ExporterOptions { MeshFormat = EMeshFormat.Gltf2, ExportMaterials = false,
+                    LodFormat = lodVoulu > 0 ? ELodFormat.AllLods : ELodFormat.FirstLod };
                 MeshExporter? exporteur = obj switch
                 {
                     UStaticMesh sm => new MeshExporter(sm, options),
@@ -423,6 +427,14 @@ if (Drapeau("meshes"))
                 if (!exporteur.TryWriteToDir(new DirectoryInfo(tmp), out _, out var ecrit))
                 { echoues++; rates.Add($"mesh {nom} — export refusé"); continue; }
 
+                // Tous les LOD écrits (X_LOD0.glb, X_LOD1.glb…) : on garde le plus simple ≤ N.
+                if (lodVoulu > 0)
+                {
+                    var lods = Directory.GetFiles(Path.GetDirectoryName(ecrit)!, nom + "_LOD*.glb")
+                        .Select(f => (f, i: int.TryParse(Path.GetFileNameWithoutExtension(f)[(nom.Length + 4)..], out var k) ? k : -1))
+                        .Where(x => x.i >= 0 && x.i <= lodVoulu).OrderBy(x => x.i).ToList();
+                    if (lods.Count > 0) ecrit = lods[^1].f;
+                }
                 // L'exporteur range par dossier d'origine : on ramène à plat sous le nom attendu.
                 File.Copy(ecrit, dest, true);
                 exportes++;

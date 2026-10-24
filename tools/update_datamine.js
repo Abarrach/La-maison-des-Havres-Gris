@@ -472,6 +472,16 @@ const STEPS = [
       + 'par piece evite le pont faction -> set -> nom anglais.',
   },
   {
+    // Avant planner_pieces : l'emprise des véhicules est mesurée sur ces modèles.
+    id: 'vehicules',
+    label: 'Véhicules recomposés depuis leurs pièces (livrée Atréides, LOD 2) → base locale',
+    script: 'tools/build_vehicle_models.js',
+    outputs: [],           // base locale hors dépôt
+    sources: [], paks: ['Vehicles.pak'],
+    requiresLocal: [],
+    note: 'Écrit SM_Composite_*.glb dans la base locale ; l\'étape couleurs les colore et les texture ensuite.',
+  },
+  {
     id: 'planner_pieces',
     label: 'Catalogue unifié du planner (pièces + sockets + utilitaires)',
     script: 'tools/build_planner_pieces.js',

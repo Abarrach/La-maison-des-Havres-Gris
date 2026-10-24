@@ -6,7 +6,7 @@
  *   node tools/build_colored_models.js --extraire   (refait l'extraction des matériaux)
  *   node tools/build_colored_models.js --seul=SM_Truc,SM_Machin   (essai sur quelques modèles)
  *
- * Même méthode que le tank (tools/build_tank_model.js), appliquée à tous les modèles que
+ * Méthode mise au point sur le tank (2026-10-24), appliquée à tous les modèles que
  * planner_pieces.json référence : le jeu n'a pas de texture « couleur » d'une pièce, son
  * matériau superpose 12 couches de la bibliothèque du jeu, et chaque morceau choisit sa
  * couche par son 2e jeu de coordonnées (TEXCOORD_1), qui pointe dans une case de la grille
@@ -101,7 +101,10 @@ function infoMateriau(nom) {
     doc = parent && parent.ObjectPath ? lireMat(nomDepuisChemin(parent.ObjectPath)) : null;
   }
   let textures = null, grille = null, couleurPlate = null;
-  const teintes = {}, repetitions = {};
+  const teintes = {}, repetitions = {}, surcharges = {};
+  // Véhicules : leur peinture est personnalisable, la texture de base est blanche et la couleur
+  // par défaut (celle du pack de teintes de la faction) est dans « Layer Override - ColorTint ».
+  const vehicule = chaine.some(({ ex }) => ex.some(e => /^MI?_DuneMaster_(LayeredMaterial_)?Vehicles?$/.test(e.Name || '')));
   for (const { ex, props } of chaine) {
     if (!grille && props.OpaqueLayerIndexMap && props.OpaqueLayerIndexMap.ObjectPath) grille = nomDepuisChemin(props.OpaqueLayerIndexMap.ObjectPath);
     for (const v of props.ScalarParameterValues || []) {
@@ -110,6 +113,7 @@ function infoMateriau(nom) {
     for (const v of props.VectorParameterValues || []) {
       const nm = v.ParameterInfo.Name, c = v.ParameterValue;
       if (nm === 'Layer ColorTint' && !(v.ParameterInfo.Index in teintes)) teintes[v.ParameterInfo.Index] = [c.R, c.G, c.B];
+      if (vehicule && nm === 'Layer Override - ColorTint' && c.A > 0 && !(v.ParameterInfo.Index in surcharges)) surcharges[v.ParameterInfo.Index] = [c.R, c.G, c.B];
       if (!couleurPlate && /^(Base ?Color|Color|Tint|Albedo)$/i.test(nm)) couleurPlate = [c.R, c.G, c.B];
     }
     if (!textures) {
@@ -119,7 +123,7 @@ function infoMateriau(nom) {
       if (tab) textures = tab.Properties.Textures.map(t => nomDepuisChemin(t && t.ObjectPath));
     }
   }
-  return (infos[nom] = chaine.length ? { textures, teintes, repetitions, grille, couleurPlate } : null);
+  return (infos[nom] = chaine.length ? { textures, teintes, repetitions, surcharges, grille, couleurPlate } : null);
 }
 
 // ── 3. PNG (8 bits, non entrelacé) et couleurs moyennes ────────────────────────────
@@ -179,6 +183,16 @@ const lireIdx = (g, id) => {
   return out;
 };
 const texturesUtilisees = new Set();
+// Teinte d'une couche. Couleur de surcharge (véhicules) : elle REMPLACE la couleur de la couche ;
+// divisée par la luminance moyenne de la texture, pour que texture × teinte retombe en moyenne
+// sur elle tout en gardant le grain de la texture.
+function teinteCouche(info, couche) {
+  const s = info.surcharges && info.surcharges[couche];
+  if (!s) return info.teintes[couche] || [1, 1, 1];
+  const m = info.textures && moyenne(info.textures[couche]);
+  const lum = m ? Math.max(0.05, 0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]) : 1;
+  return s.map(v => v / lum);
+}
 const stats = { modeles: 0, avant: 0, apres: 0, sommets: 0, couches: 0, plats: 0, repli: 0, sansTexture: new Set(), sansMat: new Set() };
 
 function colorer(nomModele) {
@@ -208,7 +222,7 @@ function colorer(nomModele) {
       const locales = new Map(), table = [];             // couche du matériau → n° local
       const localeDe = couche => {
         if (!locales.has(couche)) {
-          const tex = info.textures[couche] || null, tn = info.teintes[couche] || [1, 1, 1];
+          const tex = info.textures[couche] || null, tn = teinteCouche(info, couche);
           if (tex) texturesUtilisees.add(tex);
           locales.set(couche, table.length);
           table.push({ t: tex, c: tn.map(v => +Math.min(4, Math.max(0, v)).toFixed(4)) });
@@ -231,7 +245,7 @@ function colorer(nomModele) {
           const couche = Math.min(info.textures.length - 1, grille.data[(y * grille.w + x) * grille.canaux]);
           const base = moyenne(info.textures[couche]);
           if (!base) stats.sansTexture.add(info.textures[couche]);
-          const t = info.teintes[couche] || [1, 1, 1];
+          const t = teinteCouche(info, couche);
           c = (base || ARGILE).map((v, k) => v * t[k]);
           if (uvc) {
             col[i * 4 + 3] = localeDe(couche);
@@ -302,6 +316,11 @@ for (const m of modeles) {
 // Textures des couches, partagées par toutes les pièces : JPEG copiés tels quels + leur liste.
 const DOSSIER_COUCHES = path.join(SORTIE, 'couches');
 fs.mkdirSync(DOSSIER_COUCHES, { recursive: true });
+// --seul : les autres modèles gardent leurs textures, la liste se complète au lieu d'être refaite.
+const ancienneListe = path.join(SORTIE, 'couches.json');
+if (SEUL.length && fs.existsSync(ancienneListe)) {
+  for (const nom of JSON.parse(fs.readFileSync(ancienneListe, 'utf8')).textures || []) texturesUtilisees.add(nom);
+}
 const listeCouches = [...texturesUtilisees].sort().filter(nom => {
   const src = path.join(TRAVAIL, 'textures', nom + '.jpg');
   if (!fs.existsSync(src)) return false;

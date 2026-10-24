@@ -71,6 +71,8 @@ epice/data/paris.json
 # Meshes du jeu extraits via FModel (lourd ~357Mo + assets Funcom) — déploiement WinSCP séparé
 models/
 *.glb
+# Les mêmes, colorés et allégés par tools/build_colored_models.js : c'est ce dossier qu'on déploie
+models_planner/
 
 # Caches runtime des proxies gaming.tools (recréés par les .php ; ne pas commiter)
 dd_cache.json

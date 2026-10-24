@@ -496,6 +496,20 @@ const STEPS = [
       + 'quel que soit le worktree. Les .glb nouveaux s\'envoient ensuite au serveur (/srv/dune-map/models/) '
       + 'par WinSCP, et l\'édition publique se régénère avec node tools/build_planner_standalone.js.',
   },
+  {
+    // Après meshes : les modèles servis par le site sont les versions COLORÉES et allégées,
+    // pas la base brute. --extraire relit les matériaux dans les paks (un patch peut changer
+    // une teinte sans ajouter de pièce) ; le tout tourne en priorité basse.
+    id: 'couleurs',
+    label: 'Modèles du planner colorés et allégés (base locale → models_planner/)',
+    script: 'tools/build_colored_models.js',
+    args: () => ['--extraire'],
+    outputs: [],           // models_planner/ hors dépôt (~170 Mo)
+    sources: [], paks: ['Environment_Structures.pak', 'Environment_Props.pak', 'Art.pak', 'Vehicles.pak', 'Placables.pak'],
+    requiresLocal: ['planner_pieces.json'],
+    note: 'Écrit models_planner/ à côté de la base locale. C\'est CE dossier qu\'on envoie au serveur '
+      + '(/srv/dune-map/models/, mêmes noms de fichiers), et non la base brute.',
+  },
 ];
 
 // ── Données dataminées SANS pipeline automatisé (résultat de l'audit) ────────

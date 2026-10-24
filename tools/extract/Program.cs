@@ -215,6 +215,86 @@ if (textures is not null)
     return 0;
 }
 
+// --materiaux <fichier de noms> --models <dossier> (2026-10-24) : pour colorer les modèles du
+// planner. Chaque matériau est retrouvé PAR SON NOM dans les paks, exporté en JSON avec toute
+// sa lignée de parents (<dossier>/json/<clé du pak>.json), et les textures de ses couches
+// (« Layer BaseColor ») et sa grille de couches (OpaqueLayerIndexMap) sont décodées en PNG
+// (<dossier>/textures/<nom>.png). Le calcul des couleurs est fait par tools/build_colored_models.js.
+var listeMateriaux = Arg("materiaux");
+if (listeMateriaux is not null)
+{
+    var dossierM = Arg("models") ?? Path.Combine(Directory.GetCurrentDirectory(), "materiaux");
+    foreach (var dll in new[] { Arg("detex"), @"J:\Download\Fmodel\Output\.data\Detex.dll",
+                                @"J:\Download\dune_extract\CUE4Parse\CUE4Parse-Conversion\Resources\Detex.dll" })
+        if (!string.IsNullOrEmpty(dll) && File.Exists(dll)) { CUE4Parse_Conversion.Textures.BC.DetexHelper.Initialize(dll); break; }
+    var parNom = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    foreach (var k in provider.Files.Keys)
+        if (k.EndsWith(".uasset", StringComparison.OrdinalIgnoreCase))
+        {
+            var nomFichier = k[(k.LastIndexOf('/') + 1)..^".uasset".Length];
+            if (!parNom.ContainsKey(nomFichier)) parNom[nomFichier] = k[..^".uasset".Length];
+        }
+    string? CleDe(string objectPath)   // « /Game/Dune/X/Y.0 » ou « /Game/Dune/X/Y.Y » → clé du pak
+    {
+        var c = objectPath;
+        var point = c.LastIndexOf('.');
+        if (point > c.LastIndexOf('/')) c = c[..point];
+        if (c.StartsWith("/Game/")) c = "DuneSandbox/Content" + c[5..];
+        return provider.Files.ContainsKey(c + ".uasset") ? c : null;
+    }
+    var faits = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    var texCouches = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    int nMat = 0, introuvables = 0;
+    void Exporter(string cle)
+    {
+        if (!faits.Add(cle)) return;
+        var objets = provider.LoadPackageObjects(cle).ToArray();
+        if (objets.Length == 0) return;
+        var json = JsonConvert.SerializeObject(objets, Formatting.None);
+        var dest = Path.Combine(dossierM, "json", cle.Replace('/', Path.DirectorySeparatorChar) + ".json");
+        Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
+        File.WriteAllText(dest, json);
+        nMat++;
+        foreach (var o in JArray.Parse(json))
+        {
+            var props = o["Properties"];
+            if (o["Type"]?.ToString() == "Texture2DRefArray" && (o["Name"]?.ToString() ?? "").Contains("Layer BaseColor"))
+                foreach (var t in (props?["Textures"] as JArray) ?? new JArray())
+                    if ((t as JObject)?["ObjectPath"] is JToken tp && CleDe(tp.ToString()) is string tc) texCouches.Add(tc);
+            // Une référence vide sort en JValue null (murs Harkonnen niveau 3) : on vérifie le type.
+            if ((props?["OpaqueLayerIndexMap"] as JObject)?["ObjectPath"] is JToken im && CleDe(im.ToString()) is string ic) texCouches.Add(ic);
+            if ((props?["Parent"] as JObject)?["ObjectPath"] is JToken pa && CleDe(pa.ToString()) is string pc) Exporter(pc);
+        }
+    }
+    foreach (var nom in File.ReadAllLines(listeMateriaux).Select(l => l.Trim()).Where(l => l.Length > 0))
+    {
+        if (!parNom.TryGetValue(nom, out var cle)) { introuvables++; continue; }
+        try { Exporter(cle); } catch (Exception e) { Console.WriteLine($"  ✘ {nom} — {e.Message}"); }
+    }
+    Console.WriteLine($"matériaux : {nMat} exporté(s) (parents compris), {introuvables} nom(s) introuvable(s)");
+    var dossierT = Path.Combine(dossierM, "textures");
+    Directory.CreateDirectory(dossierT);
+    int nTex = 0, rateTex = 0;
+    foreach (var cle in texCouches)
+    {
+        var nom = cle[(cle.LastIndexOf('/') + 1)..];
+        var dest = Path.Combine(dossierT, nom + ".png");
+        if (File.Exists(dest)) { nTex++; continue; }
+        try
+        {
+            if (!provider.TryLoadPackageObject(cle, out var obj) || obj is not CUE4Parse.UE4.Assets.Exports.Texture.UTexture tex) { rateTex++; continue; }
+            // Plus petit mip de 256 px au plus : on n'en tire qu'une couleur moyenne.
+            var bmp = CUE4Parse_Conversion.Textures.TextureDecoder.Decode(tex, 256);
+            if (bmp is null) { rateTex++; continue; }
+            File.WriteAllBytes(dest, CUE4Parse_Conversion.Textures.TextureEncoder.Encode(bmp, CUE4Parse_Conversion.Textures.ETextureFormat.Png, false, out _));
+            nTex++;
+        }
+        catch { rateTex++; }
+    }
+    Console.WriteLine($"textures  : {nTex} décodée(s), {rateTex} échec(s)");
+    return 0;
+}
+
 var motif = Arg("find");
 if (motif is not null)
 {

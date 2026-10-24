@@ -11,8 +11,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 // ?v= : cache-busting. Bump à chaque modif des modules pour forcer le rechargement
 // (sinon le navigateur sert l'ancienne version mise en cache).
-import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot48tank';
-import { createMeshFactory } from './planner_mesh.js?v=lot48tank';
+import { createEngine, M, costMatch, typeMatch } from './planner_socket_engine.js?v=lot49couleurs';
+import { createMeshFactory } from './planner_mesh.js?v=lot49couleurs';
 
 // ============================================================
 // MOTEUR — bascule ancien (géométrie+grille) / nouveau (sockets+meshes réels)
@@ -350,7 +350,7 @@ const EXCLUDED_PIECE_IDS = new Set([
 ]);
 
 async function loadCatalog() {
-  const url = ENGINE === 'sockets' ? 'planner_pieces.json?v=lot48tank' : PIECES_JSON_URL;
+  const url = ENGINE === 'sockets' ? 'planner_pieces.json?v=lot49couleurs' : PIECES_JSON_URL;
   const resp = await fetch(url);
   if (!resp.ok) throw new Error('pieces ' + resp.status);
   const piecesData = await resp.json();
@@ -1723,6 +1723,7 @@ function updateFloorVisibility() {
       if (fz > cur) { mesh.visible = false; continue; }    // entièrement au-dessus
       mesh.visible = true;
       const op = (cur <= ft) ? 1 : 0.28;                   // dans le span = opaque, sinon estompé
+      if (mesh.userData.couleurs && mesh.userData.stabilityTint == null) { meshFactory.couleursDesSommets(mesh, op); continue; }
       mesh.traverse(o => { if (o.isMesh && o.material) {
         o.material.transparent = op < 1; o.material.opacity = op; o.material.needsUpdate = true;
       }});
@@ -5439,7 +5440,9 @@ function applySolidView() {
       mesh.visible = true;
       // Groupes socket (ENGINE=sockets) → traverse les sous-meshes
       if (mesh.isGroup) {
-        mesh.traverse(o => { if (o.isMesh && o.material) {
+        // Modèle coloré : matériau partagé → on reprend l'opaque partagé au lieu de le modifier.
+        if (mesh.userData.couleurs && mesh.userData.stabilityTint == null) meshFactory.couleursDesSommets(mesh, 1);
+        else mesh.traverse(o => { if (o.isMesh && o.material) {
           o.material.transparent = false; o.material.opacity = 1; o.material.needsUpdate = true;
         }});
       } else {
@@ -5455,7 +5458,8 @@ function applySolidView() {
     // ── Mode normal : restaurer la visibilité ───────────────────────────────
     for (const mesh of placedMeshes.values()) {
       if (mesh.isGroup) {
-        mesh.traverse(o => { if (o.isMesh && o.material) { o.material.transparent = false; o.material.opacity = 1; o.material.needsUpdate = true; }});
+        if (mesh.userData.couleurs && mesh.userData.stabilityTint == null) meshFactory.couleursDesSommets(mesh, 1);
+        else mesh.traverse(o => { if (o.isMesh && o.material) { o.material.transparent = false; o.material.opacity = 1; o.material.needsUpdate = true; }});
         continue;
       }
       if (mesh.userData.glassPanel) mesh.userData.glassPanel.visible = true;
@@ -6455,6 +6459,13 @@ function applyStabilityVisuals() {
     if (mesh.isGroup) {
       const target = state.showStability ? stabilityColorFor(state.stabilityMap.get(id)) : 0xcfc6b4;
       mesh.userData.stabilityTint = state.showStability ? target : null;   // mémorisé pour le swap glb async
+      // Modèle coloré : son matériau est PARTAGÉ (couleurs dans les sommets) — le teinter
+      // teindrait tous les autres. On lui donne une argile à lui, et on lui rend ses couleurs.
+      if (mesh.userData.couleurs) {
+        if (state.showStability) mesh.traverse(o => { if (o.isMesh) o.material = meshFactory.clayMaterial(target, 1); });
+        else meshFactory.couleursDesSommets(mesh);
+        continue;
+      }
       mesh.traverse(o => { if (o.isMesh && o.material && o.material.color) o.material.color.setHex(target); });
       continue;
     }
@@ -7131,7 +7142,7 @@ const MATERIAL_FR = {
 
 async function loadCosts() {
   try {
-    const r = await fetch('planner_costs.json?v=lot48tank');
+    const r = await fetch('planner_costs.json?v=lot49couleurs');
     if (!r.ok) return;
     SUMMARY.costs = await r.json();
     SUMMARY.costIndex = new Map();

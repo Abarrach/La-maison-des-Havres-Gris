@@ -44,7 +44,13 @@ export function createMeshFactory({ getPiece, modelsBase = 'models/', scale = 0.
     if (cache.has(basename)) return cache.get(basename);
     const p = new Promise(res => loader.load(
       modelsBase + basename + '.glb',
-      g => res(g.scene),
+      g => {
+        // Modèle coloré par tools/build_colored_models.js (ou le tank) : couleurs de sommets
+        // à afficher telles quelles. Les anciens modèles ont aussi un COLOR_0 (celui du jeu,
+        // sans rapport avec la couleur) : c'est le générateur qui fait foi, pas l'attribut.
+        g.scene.userData.couleurs = /^DuneMap/.test((g.asset && g.asset.generator) || '');
+        res(g.scene);
+      },
       undefined,
       () => res(null)));
     cache.set(basename, p);
@@ -56,6 +62,16 @@ export function createMeshFactory({ getPiece, modelsBase = 'models/', scale = 0.
       color, metalness: 0.0, roughness: 0.9, side: THREE.DoubleSide,
       transparent: opacity < 1, opacity,
     });
+  }
+  // Matériaux PARTAGÉS des modèles colorés (la couleur est dans les sommets), un par opacité :
+  // l'estompage des étages inférieurs ne doit pas estomper toutes les pièces colorées.
+  const materiauxCouleurs = new Map();
+  function couleursDesSommets(obj, opacity = 1) {
+    if (!materiauxCouleurs.has(opacity)) materiauxCouleurs.set(opacity, new THREE.MeshStandardMaterial({
+      vertexColors: true, metalness: 0.1, roughness: 0.85, side: THREE.DoubleSide,
+      transparent: opacity < 1, opacity }));
+    const mat = materiauxCouleurs.get(opacity);
+    obj.traverse(o => { if (o.isMesh) o.material = mat; });
   }
   function tint(obj, color, opacity) {
     obj.traverse(o => { if (o.isMesh) o.material = clayMaterial(color, opacity); });
@@ -109,10 +125,10 @@ export function createMeshFactory({ getPiece, modelsBase = 'models/', scale = 0.
                    : (opacity < 1 ? color : 0xcfc6b4);
         // Modèle coloré (tank recomposé) : ses couleurs de sommets, sauf en fantôme ou en vue
         // stabilité, où la teinte porte l'information.
-        if (piece.mesh_colors && opacity === 1 && g.userData.stabilityTint == null) {
-          m.traverse(o => { if (o.isMesh) o.material = new THREE.MeshStandardMaterial({
-            vertexColors: true, metalness: 0.15, roughness: 0.8, side: THREE.DoubleSide }); });
-        } else tint(m, body, opacity);
+        // Retenu sur le groupe : la vue stabilité doit savoir rendre ses couleurs à la pièce.
+        g.userData.couleurs = !!(scene.userData.couleurs || piece.mesh_colors) && opacity === 1;
+        if (g.userData.couleurs && g.userData.stabilityTint == null) couleursDesSommets(m);
+        else tint(m, body, opacity);
         g.add(m);
       });
     }
@@ -120,7 +136,7 @@ export function createMeshFactory({ getPiece, modelsBase = 'models/', scale = 0.
   }
 
   return {
-    buildObject, loadModel, pieceBox, clayMaterial,
+    buildObject, loadModel, pieceBox, clayMaterial, couleursDesSommets,
     setUseReal(v) { useReal = v; },
     get SCALE() { return SCALE; },
   };

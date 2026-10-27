@@ -18,6 +18,7 @@
 //   - composants tpari/tparim/tparimes → epice/discord_paris.php (paris des tournois PvP)
 //   - /carte (+ autocomplétion)     → discord_carte.php         (carte Deep Desert de la semaine)
 //   - /objet, clic droit « Fiches objets », objet_pub: → discord_objet.php (fiches d'objets)
+//   - /decret + menu decret_choix   → discord_decret.php        (sondage des décrets du Landsraad)
 //
 //  Sécurité : chaque requête Discord est signée. On refuse (401)
 //  tout ce qui n'est pas signé correctement. La clé publique est
@@ -115,6 +116,7 @@ function detect_route(array $body): ?string {
         if ($name === 'commande') return 'commande';
         if ($name === 'plan')     return 'plan';
         if ($name === 'carte')    return 'carte';
+        if ($name === 'decret')   return 'decret';
         // `/objet` et le clic droit « Fiches objets » (commande de message, data.type 3).
         if ($name === 'objet' || $name === 'Fiches objets') return 'objet';
         return null;
@@ -124,6 +126,8 @@ function detect_route(array $body): ?string {
         $cid = (string)($body['data']['custom_id'] ?? '');
         // Bouton « Publier dans le salon » des fiches objets (cf. discord_objet.php).
         if (strpos($cid, 'objet_pub:') === 0) return 'objet';
+        // Menu du sondage des décrets (cf. discord_decret.php).
+        if (strpos($cid, 'decret_') === 0) return 'decret';
         // Paris des tournois PvP (cf. epice/discord_paris.php) : boutons du message de
         // paris (tpari:, tparimes:) et son formulaire (tparim:). Les messages déjà
         // postés gardent ces boutons : ne jamais retirer ces préfixes.
@@ -214,6 +218,11 @@ if ($route === 'carte') {
 
 if ($route === 'objet') {
     require __DIR__ . '/discord_objet.php';
+    exit;
+}
+
+if ($route === 'decret') {
+    require __DIR__ . '/discord_decret.php';
     exit;
 }
 

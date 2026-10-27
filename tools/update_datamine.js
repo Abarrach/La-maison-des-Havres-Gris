@@ -421,6 +421,17 @@ const STEPS = [
       + 'de la note de patch, declaree dans DESACTIVEES en tete du script.',
   },
   {
+    id: 'decrets',
+    label: 'Décrets du Landsraad (menus de /decret)',
+    script: 'tools/build_landsraad_decrets.js',
+    args: (c) => [c.exportRoot],
+    outputs: ['landsraad_decrets.json'],
+    sources: ['Systems/Landsraad/DT_LandsraadDecrees.json'],
+    paks: ['*'],
+    note: 'Un décret nouveau garde son nom du jeu dans le sondage tant qu\'il n\'a pas de résumé '
+      + '(table COURT du script, 55 caractères max chez Discord).',
+  },
+  {
     id: 'plans_univers',
     label: 'Univers des plans uniques apprenables',
     script: 'tools/build_plans_uniques.js',

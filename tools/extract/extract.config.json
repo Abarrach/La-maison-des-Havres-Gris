@@ -108,6 +108,12 @@
       "note": "pools de missions Landsraad, un par spécialité"
     },
     {
+      "id": "landsraad_decrees",
+      "path": "Systems/Landsraad/DT_LandsraadDecrees",
+      "mode": "file",
+      "note": "décrets du Landsraad : nom, texte, effet (alimente landsraad_decrets.json, menus de /decret)"
+    },
+    {
       "id": "maps_info",
       "path": "Maps/DT_MapsInfo",
       "mode": "file",

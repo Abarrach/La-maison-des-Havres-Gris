@@ -146,6 +146,17 @@ L'équivalent des infobulles wowhead des forums. Discord n'exécute aucun script
 - **Mise en service** : déployer `discord_objet.php`, `discord_interactions.php`, `discord_register_objet.php`, `optimiseur.html`, puis ouvrir **`discord_register_objet.php`** dans le navigateur (POST, n'efface pas les autres commandes). Discord peut demander de relancer l'application (Ctrl+R) pour faire apparaître l'entrée du menu.
 - Testé en local : repérage, valeurs, classements, limites de taille, réponses complètes du dispatcher (clic droit, `/objet` par identifiant et en texte libre, autocomplétion, message sans objet, publication). Essayé en prod le 2026-10-23 : `/objet` et le clic droit répondent ; le premier essai réel (« ceinture elohim ») a motivé le rapprochement des noms abrégés.
 
+#### Sondage des décrets du Landsraad (`/decret`) — 🧪 À TESTER SUR /v2 (2026-10-28)
+Chaque semaine après Coriolis, le jeu propose quelques décrets au vote du Landsraad ; la guilde en choisit un par sondage. Jusqu'ici il fallait qu'un officier se connecte, relève les décrets puis rédige le sondage à la main : trop tard certains matins.
+- **Pas de lecture automatique possible** : les décrets de la semaine sont **tirés au sort par serveur** (colonne `Weight` de la table du jeu) et aucun site ne les publie (gaming.tools n'a que le catalogue des Maisons, recherche du 2026-10-28). Un membre doit donc les voir en jeu ; on réduit le reste à trois clics.
+- **`/decret`** (ouvert à **tous les membres**, comme la carte) : menu privé des 10 décrets du jeu, on coche ceux proposés (2 ou 3), et le bot poste un **sondage Discord natif** dans `decret_channel_id` (à défaut, le salon de la commande), avec l'effet complet de chaque décret au-dessus et, si `decret_role_id` est renseigné, une mention du rôle. Durée : `decret_poll_heures` (24 h par défaut).
+- **Un sondage par semaine** (même découpage que la carte DD : mardi, blocs fixes de 7 × 24 h). Un autre membre qui tape `/decret` reçoit le lien de celui déjà lancé. **L'auteur, ou un membre qui peut gérer les messages**, peut le remplacer (erreur de saisie) : l'ancien est supprimé, le neuf reposté. Revérifié au moment de publier : deux membres qui valident en même temps ne doublent pas le sondage.
+- **Réponse immédiate** (« Publication du sondage… ») puis publication après `fastcgi_finish_request` : suppression de l'ancien + envoi du nouveau ne tiennent pas forcément dans les 3 s de Discord. Le message privé est ensuite mis à jour avec le lien, ou le motif du refus.
+- **Catalogue dataminé** : `landsraad_decrets.json`, généré par `tools/build_landsraad_decrets.js` depuis `Systems/Landsraad/DT_LandsraadDecrees` (cible `landsraad_decrees` de DuneExtract, étape `decrets` de `update_datamine.js`). Noms et effets en français du jeu ; décrets désactivés ou solo écartés. Deux décrets portent le même nom (« En l'honneur des défunts », distance et mêlée) : le libellé de réponse (55 caractères max chez Discord) est un résumé écrit par identifiant dans la table `COURT` du script ; un décret nouveau sans résumé garde son nom du jeu et le script le signale.
+- **Fichiers** : `discord_decret.php` (handler), route `decret` dans `discord_interactions.php` (nom `decret`, préfixe `decret_`), `discord_register_decret.php`, état de la semaine dans `epice/data/decret_semaine.json`, journal `epice/data/discord_decret.log`.
+- **Mise en service** (/v2 d'abord, app « DuneMap Dev ») : déployer `discord_decret.php`, `discord_interactions.php`, `landsraad_decrets.json`, `discord_register_decret.php` ; renseigner `decret_channel_id` (et au besoin `decret_role_id`, `decret_poll_heures`) dans `epice/discord_sortie_config.php` ; droits du bot dans ce salon : « Voir le salon », « Envoyer des messages », **« Créer des sondages »** et, pour remplacer, « Gérer les messages » ; puis ouvrir **`discord_register_decret.php`** dans le navigateur (POST, n'efface pas les autres commandes).
+- Testé en local avec un faux bot (réponses du handler et corps envoyés à Discord) : menu, publication, état écrit, autre membre renvoyé au lien, remplacement par l'auteur et par un modérateur, validations simultanées. Pas encore testé contre le vrai Discord.
+
 #### Ménage automatique — bases des joueurs partis du Discord
 - **`discord_purge.php`** retire de la carte les bases des comptes qui ne sont **plus membres du Discord** de la guilde. Un partant ne revient jamais sur le site, donc la revérification de session (`session_check.php`) ne se déclenche jamais pour lui : sans ce script, sa base restait jusqu'à un ménage manuel.
 - Usage : `php discord_purge.php` (**simulation**, n'écrit rien) puis `php discord_purge.php --apply`. Cron conseillé : `0 6 * * *`.
@@ -1824,6 +1835,9 @@ DuneMap/
 ├── discord_register_carte.php # Déclare /carte (POST, à lancer une fois)
 ├── discord_objet.php     # Fiches objets : clic droit « Fiches objets » + /objet (classement par catégorie)
 ├── discord_register_objet.php # Déclare « Fiches objets » et /objet (POST, à lancer une fois)
+├── discord_decret.php    # /decret : sondage des décrets du Landsraad de la semaine
+├── discord_register_decret.php # Déclare /decret (POST, à lancer une fois)
+├── landsraad_decrets.json # Décrets du Landsraad dataminés (tools/build_landsraad_decrets.js)
 │
 # Collecte & archivage (sur le serveur, hors DuneMap/)
 # /home/dune/dune_logger_all.py   # Scrape gaming.tools toutes les heures → /srv/dune-map/dune_counts.csv

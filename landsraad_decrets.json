@@ -1,0 +1,91 @@
+{
+  "generated_at": "2026-10-27T23:37:25.760Z",
+  "source": "datamine : Systems/Landsraad/DT_LandsraadDecrees (nom, effet, poids de tirage)",
+  "note": "Généré par tools/build_landsraad_decrets.js — ne pas éditer à la main. « court » = libellé de réponse de sondage (55 caractères max chez Discord), écrit dans le script.",
+  "decrets": [
+    {
+      "id": "ExperienceRateIncrease",
+      "nom": "Collaboration des savoirs",
+      "effet": "Gains d'expérience augmentés de 50 %",
+      "court": "Collaboration des savoirs — XP +50 %",
+      "emoji": "📚",
+      "poids": 1.5
+    },
+    {
+      "id": "CraftingCostReduced",
+      "nom": "Contrat de production du CHOM",
+      "effet": "Coûts de fabrication réduits de 25 %",
+      "court": "Contrat de production — fabrication −25 %",
+      "emoji": "🔨",
+      "poids": 1.5
+    },
+    {
+      "id": "RepairAndRefiningTimes",
+      "nom": "Contrat de raffinage du CHOM",
+      "effet": "Coûts de réparation et temps de raffinage réduits de 75 %",
+      "court": "Contrat de raffinage — réparation/raffinage −75 %",
+      "emoji": "🔧",
+      "poids": 1.5
+    },
+    {
+      "id": "DropInventoryOnDefeatActive",
+      "nom": "Droit de pillage",
+      "effet": "Dans les zones JcJ du désert profond, les personnages qui se font vaincre perdent tous les objets qu'ils ont sur eux et n'importe qui peut les récupérer.",
+      "court": "Droit de pillage — butin total en DD JcJ",
+      "emoji": "💀",
+      "poids": 1
+    },
+    {
+      "id": "RangedDamageIncreased",
+      "nom": "En l'honneur des défunts",
+      "effet": "Dégâts d'arme à distance augmentés de 33 %",
+      "court": "En l'honneur des défunts — distance +33 %",
+      "emoji": "🎯",
+      "poids": 1.5
+    },
+    {
+      "id": "MeleeDamageIncreased",
+      "nom": "En l'honneur des défunts",
+      "effet": "Dégâts d'arme de corps à corps augmentés de 33 %",
+      "court": "En l'honneur des défunts — mêlée +33 %",
+      "emoji": "🔪",
+      "poids": 1.5
+    },
+    {
+      "id": "SpecialVendorActive_Weapons",
+      "nom": "Droits exclusifs d'importation d'armes",
+      "effet": "Accès à un vendeur d'armes du Landsraad",
+      "court": "Importation — vendeur d'armes",
+      "emoji": "🔫",
+      "poids": 1.5,
+      "maison": "Moritani"
+    },
+    {
+      "id": "SpecialVendorActive_Armor",
+      "nom": "Droits exclusifs d'importation d'armures",
+      "effet": "Accès à un vendeur d'armures du Landsraad",
+      "court": "Importation — vendeur d'armures",
+      "emoji": "🥋",
+      "poids": 1.5,
+      "maison": "Novebruns"
+    },
+    {
+      "id": "SpecialVendorActive_Utilities",
+      "nom": "Droits exclusifs d'importation d'outils",
+      "effet": "Accès à un vendeur d'outils du Landsraad",
+      "court": "Importation — vendeur d'outils",
+      "emoji": "🧰",
+      "poids": 1.5,
+      "maison": "Maros"
+    },
+    {
+      "id": "SpecialVendorActive_Vehicles",
+      "nom": "Droits d'importation exclusifs",
+      "effet": "Accès à un vendeur du Landsraad",
+      "court": "Importation — vendeur de véhicules",
+      "emoji": "🚙",
+      "poids": 1.5,
+      "maison": "Dyvetz"
+    }
+  ]
+}

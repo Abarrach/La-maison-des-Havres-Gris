@@ -46,7 +46,7 @@ function cmd_log($msg) {
 // invalide, `echo false` n'écrit rien, Discord ne reçoit rien et rien ne plante — c'est
 // exactement le symptôme qu'on traque depuis le début.
 ob_start(function ($sortie) {
-    dlog($sortie === ''
+    cmd_log($sortie === ''
         ? 'RÉPONSE VIDE (rien émis) — Discord ne recevra rien'
         : 'RÉPONSE ' . strlen($sortie) . ' octets — ' . substr($sortie, 0, 150));
     return $sortie;

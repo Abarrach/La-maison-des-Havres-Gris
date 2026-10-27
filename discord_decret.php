@@ -183,7 +183,7 @@ if ($type === 3 && ($body['data']['custom_id'] ?? '') === 'decret_choix') {
     $chan  = trim((string)($CFG['decret_channel_id'] ?? '')) ?: (string)($body['channel_id'] ?? '');
     $guild = (string)($body['guild_id'] ?? '');
     $role  = trim((string)($CFG['decret_role_id'] ?? ''));
-    $heures = max(1, min(768, (int)($CFG['decret_poll_heures'] ?? 24)));
+    $heures = max(1, min(768, (int)($CFG['decret_poll_heures'] ?? 8)));
 
     if ($existant && !empty($existant['message_id'])) {
         [$code, $j] = dd_api($bot, 'DELETE', "/channels/{$existant['channel_id']}/messages/{$existant['message_id']}");

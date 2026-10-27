@@ -36,7 +36,7 @@ return [
     'dd_channel_id'        => '',  // carte Deep Desert de la semaine (bouton de la carte, /carte) — pas de repli
     'decret_channel_id'    => '',  // sondage des décrets du Landsraad (/decret) — vide = salon où la commande est tapée
     'decret_role_id'       => '',  // rôle mentionné au lancement du sondage — vide = pas de mention
-    'decret_poll_heures'   => 24,  // durée du sondage, en heures (1 à 768)
+    'decret_poll_heures'   => 8,   // durée du sondage, en heures (1 à 768)
 
     // ---- 4. Relevé de présence des rallys (cron epice/rally_presence.php) ----
     'rally_voice_channel_id' => '',  // salon VOCAL où l'on compte les présents — vide = pas de relevé

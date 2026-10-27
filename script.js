@@ -1284,9 +1284,31 @@ async function ddComposeShot(data, vue) {
   }
   g.globalAlpha = 1;
 
-  // PAS de grille dessinée ici : les tuiles gaming.tools portent déjà les lignes
-  // ET le nom de chaque case, en gros. La grille de createDDGrid les doublait sur
-  // l'image (deux étiquettes par case, constaté au premier essai).
+  // Grille A1-I9. Les tuiles de gaming.tools portaient autrefois les lignes et le nom
+  // de chaque case (la grille avait été retirée d'ici, elle doublait les étiquettes) ;
+  // celles d'aujourd'hui, paquet local comme .webp, sont nues (constaté le 2026-10-27 :
+  // image publiée sans grille). Mêmes repères que createDDGrid, un peu plus marqués :
+  // l'image est vue réduite dans le fil Discord.
+  {
+    const ROWS = 'ABCDEFGHI', cw = W / 9, ch = H / 9;
+    g.strokeStyle = 'rgba(255,255,255,0.3)'; g.lineWidth = 1.5 * k;
+    g.beginPath();
+    for (let i = 0; i <= 9; i++) {
+      g.moveTo(i * cw, 0); g.lineTo(i * cw, H);
+      g.moveTo(0, i * ch); g.lineTo(W, i * ch);
+    }
+    g.stroke();
+    // Étiquette au coin bas-gauche de chaque case (rangée A en bas), comme sur le site.
+    g.font = `bold ${Math.round(16 * k)}px sans-serif`;
+    g.textBaseline = 'bottom';
+    g.fillStyle = 'rgba(255,255,255,0.75)';
+    g.shadowColor = 'rgba(0,0,0,0.95)'; g.shadowBlur = 3 * k;
+    for (let r = 0; r < 9; r++) {
+      for (let c = 0; c < 9; c++) g.fillText(ROWS[r] + (c + 1), c * cw + cw * 0.03, H - r * ch - ch * 0.1);
+    }
+    g.shadowColor = 'transparent'; g.shadowBlur = 0;
+    g.textBaseline = 'alphabetic';
+  }
 
   // Marqueurs visibles, dans l'ordre d'empilement de Leaflet (position à l'écran
   // + zIndexOffset) : un gros champ ne doit pas disparaître sous un petit.

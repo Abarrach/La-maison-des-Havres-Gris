@@ -4,8 +4,9 @@
 //
 //  /decret          menu PRIVÉ : on coche les décrets que le jeu propose
 //                   cette semaine (2 ou 3) ;
-//  choix validé  →  le bot poste un SONDAGE Discord natif dans le salon
-//                   `decret_channel_id` (à défaut, le salon de la commande).
+//  choix validé  →  le bot poste les décrets de la semaine et, dessous, le SONDAGE
+//                   Discord natif de la guilde (« jouer le Landsraad activement ou
+//                   non ? ») dans `decret_channel_id` (à défaut, le salon de la commande).
 //
 //  Pourquoi un menu : les décrets de la semaine sont tirés au sort par serveur et
 //  aucun site ne les publie (recherche du 2026-10-28). Il faut qu'un membre les voie en
@@ -34,6 +35,19 @@ require_once __DIR__ . '/dd_discord.php';   // dd_reset_courant, dd_date_fr, dd_
 const DECRET_ETAT = __DIR__ . '/epice/data/decret_semaine.json';
 // Gérer les messages (0x2000) ou Administrateur (0x8) : peut remplacer le sondage d'un autre.
 const DECRET_PERM_GERER = 0x2000 | 0x8;
+
+// Le sondage de la guilde : jouer le Landsraad activement ou non, au vu des décrets
+// affichés au-dessus. Texte repris de celui que la guilde postait à la main (2026-10-28),
+// retouché à la marge. Limites Discord : question 300 caractères, réponse 55.
+const DECRET_QUESTION = "⚔️ VOTE pour jouer ACTIVEMENT ou NON le Landsraad cette semaine. "
+    . "Activement = ACHETER et FINIR les maisons, et FARMER les autres maisons le plus tôt possible "
+    . "pour avoir la force de vote qui garantit notre décret. NON = chacun fait ce qu'il veut.";
+const DECRET_REPONSES = [
+    ['✅', 'OUI'],
+    ['🌙', 'OUI et dispo mardi soir pour farmer Landsraad'],
+    ['🌘', 'OUI et dispo mercredi soir pour farmer Landsraad'],
+    ['❌', 'NON'],
+];
 
 function decret_log($msg) {
     $dir = __DIR__ . '/epice/data';
@@ -201,10 +215,10 @@ if ($type === 3 && ($body['data']['custom_id'] ?? '') === 'decret_choix') {
             . implode("\n", $lignes)
             . "\n-# Proposés par le jeu cette semaine · relevés par {$auteur['nom']} avec /decret",
         'poll' => [
-            'question'          => ['text' => 'Quel décret la guilde soutient-elle cette semaine ?'],
-            'answers'           => array_map(function ($d) {
-                return ['poll_media' => ['text' => decret_coupe($d['court'], 55), 'emoji' => ['name' => $d['emoji']]]];
-            }, $choix),
+            'question'          => ['text' => decret_coupe(DECRET_QUESTION, 300)],
+            'answers'           => array_map(function ($r) {
+                return ['poll_media' => ['text' => decret_coupe($r[1], 55), 'emoji' => ['name' => $r[0]]]];
+            }, DECRET_REPONSES),
             'duration'          => $heures,
             'allow_multiselect' => false,
             'layout_type'       => 1,

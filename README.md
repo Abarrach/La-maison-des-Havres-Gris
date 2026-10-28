@@ -146,6 +146,16 @@ L'équivalent des infobulles wowhead des forums. Discord n'exécute aucun script
 - **Mise en service** : déployer `discord_objet.php`, `discord_interactions.php`, `discord_register_objet.php`, `optimiseur.html`, puis ouvrir **`discord_register_objet.php`** dans le navigateur (POST, n'efface pas les autres commandes). Discord peut demander de relancer l'application (Ctrl+R) pour faire apparaître l'entrée du menu.
 - Testé en local : repérage, valeurs, classements, limites de taille, réponses complètes du dispatcher (clic droit, `/objet` par identifiant et en texte libre, autocomplétion, message sans objet, publication). Essayé en prod le 2026-10-23 : `/objet` et le clic droit répondent ; le premier essai réel (« ceinture elohim ») a motivé le rapprochement des noms abrégés.
 
+#### Aide du bot (`/aide`) — 🧪 À TESTER SUR /v2 (2026-10-28)
+Le bot a désormais huit points d'entrée, que personne ne connaît tous : `/aide` les résume en une réponse.
+- **Réponse privée classée par usage** (📅 Sorties, 🛠️ Fabrication, 📜 Plans, 🏜️ Deep Desert, 🔎 Objets, 🏛️ Landsraad), une phrase par commande : à quoi elle sert, quand s'en servir.
+- **Commandes cliquables** : mentions de commande Discord (`</sortie creer:ID>`), un clic pré-remplit la commande dans la barre de saisie. Le clic droit « Fiches objets » ne se mentionne pas : il est décrit (« Clic droit sur un message → Applications → Fiches objets »).
+- **La liste ne ment jamais** : on demande à Discord les commandes **réellement enregistrées** (globales + serveur `guild_id`, deux appels en parallèle bornés à 1,5 s pour tenir les 3 s). Une commande pas encore en prod — `/plan` aujourd'hui — n'apparaît pas ; une commande neuve apparaît dès son enregistrement, dans « 🧩 Autres » avec sa description Discord tant qu'elle n'a pas sa ligne dans le catalogue. Réponse gardée **une heure** (`epice/data/aide_commandes.json`) ; si Discord ne répond pas, cache même périmé, et sans cache tout le catalogue sans liens (le pied de l'encart le dit).
+- **📢 Publier dans le salon** (comme les fiches objets) : la même aide en public, pour l'épingler dans un salon d'accueil. Bouton 🌐 vers le site.
+- **Ajouter une commande au bot = lui écrire sa ligne** dans `AIDE_FAMILLES`, en tête de `discord_aide.php`.
+- **Fichiers** : `discord_aide.php`, route `aide` dans `discord_interactions.php` (nom `aide`, préfixe `aide_`), `discord_register_aide.php`. **Mise en service** : déployer ces trois fichiers, puis ouvrir `discord_register_aide.php` (POST, n'efface pas les autres commandes).
+- Testé en local : rendu sur une liste de commandes semblable à la prod (sans `/plan`, plus une commande inconnue), rendu sans Discord, chemin complet `/aide` et Publier (78 ms avec un refus de Discord, rien mis en cache dans ce cas). Pas encore testé contre le vrai Discord.
+
 #### Sondage des décrets du Landsraad (`/decret`) — 🧪 À TESTER SUR /v2 (2026-10-28)
 Chaque semaine après Coriolis, le jeu propose quelques décrets au vote du Landsraad ; au vu de ces décrets, la guilde vote par sondage pour jouer le Landsraad **activement ou non** cette semaine. Jusqu'ici il fallait qu'un officier se connecte, relève les décrets puis rédige le sondage à la main : trop tard certains matins.
 - **Pas de lecture automatique possible** : les décrets de la semaine sont **tirés au sort par serveur** (colonne `Weight` de la table du jeu) et aucun site ne les publie (gaming.tools n'a que le catalogue des Maisons, recherche du 2026-10-28). Un membre doit donc les voir en jeu ; on réduit le reste à trois clics.
@@ -1837,6 +1847,8 @@ DuneMap/
 ├── discord_register_objet.php # Déclare « Fiches objets » et /objet (POST, à lancer une fois)
 ├── discord_decret.php    # /decret : sondage des décrets du Landsraad de la semaine
 ├── discord_register_decret.php # Déclare /decret (POST, à lancer une fois)
+├── discord_aide.php      # /aide : tout ce que sait faire le bot, commandes cliquables
+├── discord_register_aide.php # Déclare /aide (POST, à lancer une fois)
 ├── landsraad_decrets.json # Décrets du Landsraad dataminés (tools/build_landsraad_decrets.js)
 │
 # Collecte & archivage (sur le serveur, hors DuneMap/)

@@ -30,10 +30,6 @@ const AIDE_FAMILLES = [
     ['🛠️ Fabrication', [
         ['commande creer', "Demander un craft à la guilde. L'annonce a ses boutons : ✋ je m'en charge · ✅ terminé · ↩️ je laisse · 🗑️ supprimer."],
     ]],
-    ['📜 Plans de la guilde', [
-        ['plan qui-a',  "Qui peut fabriquer ce plan unique, à quel rang, avec combien de charges."],
-        ['plan manque', "Les angles morts : les plans que personne n'a, ou qu'une seule personne détient."],
-    ]],
     ['🏜️ Deep Desert', [
         ['carte', "La carte de la semaine : épice, filons, grottes, labos, schémas uniques. Avec l'option `plan`, où tombe un schéma unique cette semaine."],
     ]],

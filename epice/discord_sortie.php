@@ -1228,7 +1228,7 @@ function handle_create($body, $stype = 'epice') {
         'createur'    => $user['name'],
         'discord'     => [
             'user_id'    => $user['id'],
-            'channel_id' => $body['channel_id']        ?? ($body['channel']['id'] ?? ''),
+            'channel_id' => sortie_salon($body),   // là où l'encart est posté (suppression, purge)
             'guild_id'   => $body['guild_id']          ?? '',
         ],
         'signups'     => [],
@@ -1258,8 +1258,23 @@ function handle_create($body, $stype = 'epice') {
     // Repli sur l'ancien comportement (réponse type 4) si le formulaire vient d'une
     // slash command, ou si le bot_token manque : mieux vaut un éphémère résiduel qu'une
     // sortie enregistrée dont l'encart n'est jamais posté.
-    $chan     = $body['channel_id'] ?? ($body['channel']['id'] ?? '');
+    $chan     = sortie_salon($body);
+    $ailleurs = $chan !== (string)($body['channel_id'] ?? ($body['channel']['id'] ?? ''));
     $depuisUI = isset($body['message']) && $chan !== '' && !empty($CFG['bot_token']);
+
+    // Formulaire venu d'une slash command, mais encart attendu dans un AUTRE salon
+    // (sortie_channel_id) : une réponse type 4 le poserait ici. Accusé privé, puis le bot
+    // poste l'encart lui-même dans le bon salon.
+    if (!$depuisUI && $ailleurs && $chan !== '' && !empty($CFG['bot_token'])) {
+        echo json_encode(['type' => 4, 'data' => ['flags' => 64,
+            'content' => "✅ Activité créée : l'encart est posté dans <#{$chan}>."]], JSON_UNESCAPED_UNICODE);
+        while (ob_get_level() > 0) ob_end_flush();   // le tampon doit partir AVANT la clôture
+        if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
+        $mid = discord_post_message_api($chan, build_sortie_message($sortie));
+        if ($mid !== '') mutate_sortie($sortie['id'], function (&$s) use ($mid) { $s['discord']['message_id'] = $mid; });
+        else dlog('handle_create: encart non posté pour sortie ' . $sortie['id'] . ' (canal ' . $chan . ')');
+        exit;
+    }
 
     if (!$depuisUI) {
         echo json_encode(['type' => 4, 'data' => build_sortie_message($sortie)]);
@@ -1285,7 +1300,8 @@ function handle_create($body, $stype = 'epice') {
     echo json_encode(['type' => 7, 'data' => [
         'flags'      => 32768,
         'components' => [['type' => 17, 'components' => [
-            ['type' => 10, 'content' => "### ✅ Activité créée\n{$t['icon']} **" . $titre . "**\nL'encart est posté dans le canal, les inscriptions sont ouvertes."],
+            ['type' => 10, 'content' => "### ✅ Activité créée\n{$t['icon']} **" . $titre . "**\nL'encart est posté dans "
+                . ($ailleurs ? "<#{$chan}>" : 'le canal') . ", les inscriptions sont ouvertes."],
         ]]],
     ]], JSON_UNESCAPED_UNICODE);
 
@@ -1303,11 +1319,25 @@ function handle_create($body, $stype = 'epice') {
         // Si la suppression échoue, l'utilisateur voit « ✅ Activité créée » — un état
         // correct. Un type 6 (accusé muet) suivi d'un échec de suppression laisserait
         // à l'écran l'ancien sélecteur d'activité, comme si rien ne s'était passé.
-        delete_interaction_original($body);
+        // Sauf si l'encart est parti dans un AUTRE salon (sortie_channel_id) : l'accusé est
+        // alors la seule trace, ici, de l'endroit où il est — on le garde.
+        if (!$ailleurs) delete_interaction_original($body);
     } else {
         dlog('handle_create: encart non posté pour sortie ' . $sortie['id'] . ' (canal ' . $chan . ') — la sortie existe côté données mais pas dans le canal');
     }
     exit;
+}
+
+/**
+ * Salon où poster l'encart d'une nouvelle sortie : `sortie_channel_id` s'il est renseigné,
+ * sinon le salon où la commande a été tapée (comportement d'origine). Avec le réglage, une
+ * sortie lancée depuis n'importe quel salon — par exemple via le lien cliquable de /aide —
+ * arrive au bon endroit.
+ */
+function sortie_salon($body): string {
+    global $CFG;
+    $fixe = trim((string)($CFG['sortie_channel_id'] ?? ''));
+    return $fixe !== '' ? $fixe : (string)($body['channel_id'] ?? ($body['channel']['id'] ?? ''));
 }
 
 // Supprime la réponse d'interaction en cours (ici : l'éphémère du sélecteur, édité

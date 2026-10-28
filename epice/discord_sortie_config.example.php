@@ -29,6 +29,7 @@ return [
     'site_url' => 'https://havresgris.ddns.net',
 
     // ---- 3. Les salons où le bot poste ----
+    'sortie_channel_id'    => '',  // annonces de sortie (/sortie creer) — vide = salon où la commande est tapée
     'commandes_channel_id' => '',  // demandes de fabrication (page Commandes) — vide = ancien webhook, sans boutons
     'partage_channel_id'   => '',  // partage de la récolte d'une sortie + repli des tournois et de la BD
     'tournoi_channel_id'   => '',  // tournois PvP : lancement et vainqueurs — vide = partage_channel_id

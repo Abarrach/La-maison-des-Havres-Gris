@@ -42,6 +42,12 @@ const AIDE_FAMILLES = [
     ]],
 ];
 
+// Commandes enregistrées chez Discord qu'on ne présente PAS aux joueurs (nom de commande,
+// toutes sous-commandes comprises). /plan : enregistré mais pas déployé (registre des
+// plans hors production, décision de l'utilisateur) — sans cette liste, il sortait dans
+// « Autres ».
+const AIDE_MASQUEES = ['aide', 'plan'];
+
 const AIDE_PUB   = 'aide_pub';
 const AIDE_CACHE = __DIR__ . '/epice/data/aide_commandes.json';
 const AIDE_TTL   = 3600;
@@ -93,7 +99,7 @@ function aide_embed(?array $cmds, string $base): array {
     if ($cmds !== null) {
         $autres = [];
         foreach ($cmds as $cle => $c) {
-            if (isset($connues[$cle]) || $cle === 'aide') continue;
+            if (isset($connues[$cle]) || in_array(explode(' ', $cle)[0], AIDE_MASQUEES, true)) continue;
             $autres[] = aide_mention($cle, $cmds) . ($c['desc'] !== '' ? ' — ' . $c['desc'] : '');
         }
         if ($autres) $champs[] = ['name' => '🧩 Autres', 'value' => implode("\n", $autres)];

@@ -6,7 +6,7 @@
 //            Desert…), chaque commande CLIQUABLE (mention de commande Discord :
 //            un clic la pré-remplit dans la barre de saisie) ;
 //  📢        bouton « Publier dans le salon », pour l'épingler dans un salon
-//            d'accueil (même principe que les fiches objets).
+//            d'accueil — montré aux admins et modérateurs seulement.
 //
 //  La liste ne ment jamais : on demande à Discord quelles commandes sont RÉELLEMENT
 //  enregistrées (serveur `guild_id` + globales). Une commande pas encore en prod
@@ -48,6 +48,10 @@ const AIDE_FAMILLES = [
 const AIDE_MASQUEES = ['aide', 'plan'];
 
 const AIDE_PUB   = 'aide_pub';
+// Publier l'aide dans un salon : admins et modérateurs seulement (demande de l'utilisateur,
+// 2026-10-28 : éviter que chacun la reposte). Reconnus à leurs droits Discord dans le
+// salon : Administrateur (0x8) ou Gérer les messages (0x2000), comme pour /decret.
+const AIDE_PERM_PUBLIER = 0x2000 | 0x8;
 const AIDE_CACHE = __DIR__ . '/epice/data/aide_commandes.json';
 const AIDE_TTL   = 3600;
 
@@ -184,19 +188,25 @@ $lienSite = ['type' => 2, 'style' => 5, 'label' => 'Le site de la guilde', 'emoj
 $type = (int)($body['type'] ?? 0);
 
 // ---- /aide : privé, avec le bouton qui publie -----------------------------------
+// Droits du membre dans CE salon (chaîne décimale, absente en message privé).
+$peutPublier = ((int)($body['member']['permissions'] ?? 0) & AIDE_PERM_PUBLIER) !== 0;
+
 if ($type === 2) {
+    $boutons = [$lienSite];
+    if ($peutPublier) array_unshift($boutons,
+        ['type' => 2, 'style' => 2, 'label' => 'Publier dans le salon', 'emoji' => ['name' => '📢'], 'custom_id' => AIDE_PUB]);
     aide_repondre([
         'embeds'     => [aide_embed(aide_commandes($CFG), $base)],
         'flags'      => 64,
-        'components' => [['type' => 1, 'components' => [
-            ['type' => 2, 'style' => 2, 'label' => 'Publier dans le salon', 'emoji' => ['name' => '📢'], 'custom_id' => AIDE_PUB],
-            $lienSite,
-        ]]],
+        'components' => [['type' => 1, 'components' => $boutons]],
     ]);
 }
 
 // ---- 📢 Publier dans le salon : l'aide, publique, recalculée -------------------
 if ($type === 3 && ($body['data']['custom_id'] ?? '') === AIDE_PUB) {
+    // Revérifié au clic : le bouton n'est montré qu'aux bons membres, mais un droit retiré
+    // entre-temps ne doit pas pouvoir servir.
+    if (!$peutPublier) aide_repondre(['content' => "📢 Publier l'aide est réservé aux admins et modérateurs.", 'flags' => 64]);
     aide_repondre([
         'embeds'           => [aide_embed(aide_commandes($CFG), $base)],
         'components'       => [['type' => 1, 'components' => [$lienSite]]],

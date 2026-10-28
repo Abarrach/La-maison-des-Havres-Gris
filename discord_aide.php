@@ -43,9 +43,8 @@ const AIDE_FAMILLES = [
 ];
 
 // Commandes enregistrées chez Discord qu'on ne présente PAS aux joueurs (nom de commande,
-// toutes sous-commandes comprises). /plan : enregistré mais pas déployé (registre des
-// plans hors production, décision de l'utilisateur) — sans cette liste, il sortait dans
-// « Autres ».
+// toutes sous-commandes comprises). /plan : déployé, mais volontairement NON documenté
+// (choix de l'utilisateur, 2026-10-28) — sans cette liste, il sortait dans « Autres ».
 const AIDE_MASQUEES = ['aide', 'plan'];
 
 const AIDE_PUB   = 'aide_pub';

@@ -2,7 +2,8 @@
 // ============================================================
 //  COMMANDE DISCORD /aide — tout ce que sait faire le bot, en une réponse
 //
-//  /aide     réponse PRIVÉE, classée par usage (sorties, fabrication, Deep
+//  /aide     (ou clic droit sur un membre → Applications → « Aide du bot »)
+//            réponse PRIVÉE, classée par usage (sorties, fabrication, Deep
 //            Desert…), chaque commande CLIQUABLE (mention de commande Discord :
 //            un clic la pré-remplit dans la barre de saisie) ;
 //  📢        bouton « Publier dans le salon », pour l'épingler dans un salon
@@ -45,7 +46,8 @@ const AIDE_FAMILLES = [
 // Commandes enregistrées chez Discord qu'on ne présente PAS aux joueurs (nom de commande,
 // toutes sous-commandes comprises). /plan : déployé, mais volontairement NON documenté
 // (choix de l'utilisateur, 2026-10-28) — sans cette liste, il sortait dans « Autres ».
-const AIDE_MASQUEES = ['aide', 'plan'];
+// « @Aide du bot » : le clic droit qui ouvre cette même aide, inutile de l'y annoncer.
+const AIDE_MASQUEES = ['aide', 'plan', '@Aide du bot'];
 
 const AIDE_PUB   = 'aide_pub';
 // Publier l'aide dans un salon : admins et modérateurs seulement (demande de l'utilisateur,
@@ -102,7 +104,7 @@ function aide_embed(?array $cmds, string $base): array {
     if ($cmds !== null) {
         $autres = [];
         foreach ($cmds as $cle => $c) {
-            if (isset($connues[$cle]) || in_array(explode(' ', $cle)[0], AIDE_MASQUEES, true)) continue;
+            if (isset($connues[$cle]) || in_array($cle, AIDE_MASQUEES, true) || in_array(explode(' ', $cle)[0], AIDE_MASQUEES, true)) continue;
             $autres[] = aide_mention($cle, $cmds) . ($c['desc'] !== '' ? ' — ' . $c['desc'] : '');
         }
         if ($autres) $champs[] = ['name' => '🧩 Autres', 'value' => implode("\n", $autres)];

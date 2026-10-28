@@ -19,7 +19,7 @@
 //   - /carte (+ autocomplétion)     → discord_carte.php         (carte Deep Desert de la semaine)
 //   - /objet, clic droit « Fiches objets », objet_pub: → discord_objet.php (fiches d'objets)
 //   - /decret + menu decret_choix   → discord_decret.php        (sondage des décrets du Landsraad)
-//   - /aide + bouton aide_pub       → discord_aide.php          (tout ce que sait faire le bot)
+//   - /aide, clic droit « Aide du bot », aide_pub → discord_aide.php (tout ce que sait faire le bot)
 //
 //  Sécurité : chaque requête Discord est signée. On refuse (401)
 //  tout ce qui n'est pas signé correctement. La clé publique est
@@ -118,7 +118,7 @@ function detect_route(array $body): ?string {
         if ($name === 'plan')     return 'plan';
         if ($name === 'carte')    return 'carte';
         if ($name === 'decret')   return 'decret';
-        if ($name === 'aide')     return 'aide';
+        if ($name === 'aide' || $name === 'Aide du bot') return 'aide';   // + clic droit sur un membre
         // `/objet` et le clic droit « Fiches objets » (commande de message, data.type 3).
         if ($name === 'objet' || $name === 'Fiches objets') return 'objet';
         return null;
